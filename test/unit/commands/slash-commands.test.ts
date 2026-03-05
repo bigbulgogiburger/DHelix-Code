@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { join } from "node:path";
 import { configCommand } from "../../../src/commands/config.js";
 import { diffCommand } from "../../../src/commands/diff.js";
 import { doctorCommand } from "../../../src/commands/doctor.js";
@@ -55,14 +56,37 @@ describe("Phase 6 slash commands", () => {
     expect(result.output).toBeTypeOf("string");
   });
 
-  it("/export should have correct metadata", () => {
-    expect(exportCommand.name).toBe("export");
-    expect(exportCommand.description).toBeDefined();
+  it("/export should export conversation", async () => {
+    const tmpContext = { ...baseContext, workingDirectory: join(process.cwd(), "test", "tmp") };
+    const result = await exportCommand.execute("test-export.md", tmpContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("exported");
+    // Cleanup
+    const { unlink } = await import("node:fs/promises");
+    try {
+      await unlink(join(tmpContext.workingDirectory, "test-export.md"));
+    } catch {
+      /* ignore */
+    }
   });
 
-  it("/fork should have correct metadata", () => {
-    expect(forkCommand.name).toBe("fork");
-    expect(forkCommand.description).toBeDefined();
+  it("/export should use default filename", async () => {
+    const tmpContext = { ...baseContext, workingDirectory: join(process.cwd(), "test", "tmp") };
+    const result = await exportCommand.execute("", tmpContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("dbcode-conversation");
+  });
+
+  it("/fork should create fork", async () => {
+    const result = await forkCommand.execute("my-fork", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("my-fork");
+  });
+
+  it("/fork should use default name", async () => {
+    const result = await forkCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("fork-");
   });
 
   it("/output-style should list available styles", async () => {
