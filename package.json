@@ -9,6 +9,10 @@
   "exports": {
     ".": "./dist/index.js"
   },
+  "files": [
+    "dist/",
+    "bin/"
+  ],
   "engines": {
     "node": ">=20.0.0"
   },
