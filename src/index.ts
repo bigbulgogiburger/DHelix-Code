@@ -5,6 +5,16 @@ import { App } from "./cli/App.js";
 import { OpenAICompatibleClient } from "./llm/client.js";
 import { loadConfig } from "./config/loader.js";
 import { VERSION, APP_NAME, LLM_DEFAULTS } from "./constants.js";
+import { ToolRegistry } from "./tools/registry.js";
+import { selectStrategy } from "./llm/tool-call-strategy.js";
+import { PermissionManager } from "./permissions/manager.js";
+import { fileReadTool } from "./tools/definitions/file-read.js";
+import { fileWriteTool } from "./tools/definitions/file-write.js";
+import { fileEditTool } from "./tools/definitions/file-edit.js";
+import { bashExecTool } from "./tools/definitions/bash-exec.js";
+import { globSearchTool } from "./tools/definitions/glob-search.js";
+import { grepSearchTool } from "./tools/definitions/grep-search.js";
+import { askUserTool } from "./tools/definitions/ask-user.js";
 
 const program = new Command();
 
@@ -38,10 +48,31 @@ program
       timeout: config.llm.timeout,
     });
 
+    // Register tools
+    const toolRegistry = new ToolRegistry();
+    toolRegistry.registerAll([
+      fileReadTool,
+      fileWriteTool,
+      fileEditTool,
+      bashExecTool,
+      globSearchTool,
+      grepSearchTool,
+      askUserTool,
+    ]);
+
+    // Select tool call strategy
+    const strategy = selectStrategy(config.llm.model);
+
+    // Create permission manager
+    const permissionManager = new PermissionManager("default");
+
     render(
       React.createElement(App, {
         client,
         model: config.llm.model,
+        toolRegistry,
+        strategy,
+        permissionManager,
         showStatusBar: config.ui.statusBar,
       }),
     );
