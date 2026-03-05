@@ -138,4 +138,103 @@ describe("HookRunner", () => {
     expect(result.results[0].exitCode).toBe(0);
     expect(result.results[1].exitCode).not.toBe(0);
   });
+
+  it("should handle blocking hook (exit code 2)", async () => {
+    const config: HookConfig = {
+      PreToolUse: [
+        {
+          hooks: [{ type: "command", command: "exit 2" }],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("PreToolUse", { event: "PreToolUse" });
+    expect(result.blocked).toBe(true);
+    expect(result.results[0].blocked).toBe(true);
+    expect(result.results[0].exitCode).toBe(2);
+  });
+
+  it("should handle prompt handler as placeholder", async () => {
+    const config: HookConfig = {
+      PreToolUse: [
+        {
+          hooks: [{ type: "prompt", prompt: "Check this action" }],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("PreToolUse", {
+      event: "PreToolUse",
+      toolCall: { id: "1", name: "file_write", arguments: {} },
+    });
+    expect(result.blocked).toBe(false);
+    expect(result.results[0].handlerType).toBe("prompt");
+  });
+
+  it("should handle agent handler as placeholder", async () => {
+    const config: HookConfig = {
+      PreToolUse: [
+        {
+          hooks: [{ type: "agent", agent: "security-check" }],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("PreToolUse", {
+      event: "PreToolUse",
+      toolCall: { id: "1", name: "bash_exec", arguments: {} },
+    });
+    expect(result.blocked).toBe(false);
+    expect(result.results[0].handlerType).toBe("agent");
+  });
+
+  it("should support glob matcher pattern", async () => {
+    const config: HookConfig = {
+      PostToolUse: [
+        {
+          matcher: "file_*",
+          hooks: [{ type: "command", command: "echo glob-match" }],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("PostToolUse", {
+      event: "PostToolUse",
+      toolCall: { id: "1", name: "file_edit", arguments: {} },
+    });
+    expect(result.results).toHaveLength(1);
+    expect(result.results[0].stdout).toContain("glob-match");
+  });
+
+  it("should not block when handler has blocking: false", async () => {
+    const config: HookConfig = {
+      PreToolUse: [
+        {
+          hooks: [{ type: "command", command: "exit 2", blocking: false }],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("PreToolUse", { event: "PreToolUse" });
+    expect(result.blocked).toBe(false);
+    expect(result.results[0].blocked).toBe(true);
+  });
+
+  it("should interpolate FILE_PATH and SESSION_ID", async () => {
+    const config: HookConfig = {
+      PostToolUse: [
+        {
+          hooks: [{ type: "command", command: "echo $FILE_PATH $SESSION_ID" }],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("PostToolUse", {
+      event: "PostToolUse",
+      filePath: "/tmp/test.ts",
+      sessionId: "sess-123",
+    });
+    expect(result.results[0].stdout).toContain("/tmp/test.ts");
+    expect(result.results[0].stdout).toContain("sess-123");
+  });
 });
