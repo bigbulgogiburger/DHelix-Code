@@ -1,5 +1,6 @@
 import { getPlatform } from "../utils/platform.js";
 import { APP_NAME, VERSION } from "../constants.js";
+import { type ToolRegistry } from "../tools/registry.js";
 
 /** System prompt section */
 interface PromptSection {
@@ -15,6 +16,7 @@ interface PromptSection {
 export function buildSystemPrompt(options?: {
   projectInstructions?: string;
   workingDirectory?: string;
+  toolRegistry?: ToolRegistry;
   customSections?: readonly PromptSection[];
 }): string {
   const sections: PromptSection[] = [
@@ -34,6 +36,14 @@ export function buildSystemPrompt(options?: {
       priority: 80,
     },
   ];
+
+  if (options?.toolRegistry && options.toolRegistry.size > 0) {
+    sections.push({
+      id: "tools",
+      content: buildToolsSection(options.toolRegistry),
+      priority: 85,
+    });
+  }
 
   if (options?.projectInstructions) {
     sections.push({
@@ -71,6 +81,17 @@ function buildEnvironmentSection(workingDirectory?: string): string {
 - Working directory: ${cwd}
 - Shell: ${platform === "win32" ? "cmd.exe / PowerShell" : "bash"}
 - Date: ${new Date().toISOString().split("T")[0]}`;
+}
+
+function buildToolsSection(registry: ToolRegistry): string {
+  const defs = registry.getDefinitionsForLLM();
+  const lines = defs.map((d) => `- **${d.function.name}**: ${d.function.description}`);
+
+  return `# Available Tools
+
+You have the following tools available. Use them to complete tasks:
+
+${lines.join("\n")}`;
 }
 
 function buildConventionsSection(): string {

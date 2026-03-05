@@ -13,6 +13,9 @@ export type AppEvents = {
   /** LLM streaming errored */
   "llm:error": { error: Error };
 
+  /** Agent loop iteration started */
+  "agent:iteration": { iteration: number };
+
   /** Tool execution started */
   "tool:start": { name: string; id: string };
   /** Tool execution completed */
