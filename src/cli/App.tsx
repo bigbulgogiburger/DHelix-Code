@@ -9,6 +9,8 @@ import { ErrorBanner } from "./components/ErrorBanner.js";
 import { ToolCallBlock } from "./components/ToolCallBlock.js";
 import { PermissionPrompt } from "./components/PermissionPrompt.js";
 import { useConversation } from "./hooks/useConversation.js";
+import { useKeybindings, type Keybinding } from "./hooks/useKeybindings.js";
+import { TaskListView } from "./components/TaskListView.js";
 import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
 import { buildSystemPrompt } from "../core/system-prompt-builder.js";
 import { runAgentLoop, type PermissionResult } from "../core/agent-loop.js";
@@ -19,6 +21,8 @@ import { type PermissionManager } from "../permissions/manager.js";
 import { type ExtractedToolCall } from "../tools/types.js";
 import { type CommandRegistry } from "../commands/registry.js";
 import { type ContextManager } from "../core/context-manager.js";
+import { type HookRunner } from "../hooks/runner.js";
+import { type Task } from "../core/task-manager.js";
 import { createEventEmitter } from "../utils/events.js";
 
 interface AppProps {
@@ -29,6 +33,8 @@ interface AppProps {
   readonly permissionManager: PermissionManager;
   readonly commandRegistry?: CommandRegistry;
   readonly contextManager?: ContextManager;
+  readonly hookRunner?: HookRunner;
+  readonly tasks?: readonly Task[];
   readonly sessionId?: string;
   readonly showStatusBar?: boolean;
 }
@@ -56,6 +62,8 @@ export function App({
   permissionManager,
   commandRegistry,
   contextManager,
+  hookRunner,
+  tasks,
   sessionId,
   showStatusBar = true,
 }: AppProps) {
@@ -79,6 +87,23 @@ export function App({
 
   const events = useMemo(() => createEventEmitter(), []);
 
+  // Register keybindings
+  const keybindings = useMemo<Keybinding[]>(
+    () => [
+      {
+        key: "c",
+        ctrl: true,
+        handler: () => {
+          if (isProcessing) {
+            events.emit("input:abort", undefined);
+          }
+        },
+      },
+    ],
+    [isProcessing, events],
+  );
+  useKeybindings(keybindings, !pendingPermission);
+
   /** Process a single user message through the agent loop */
   const processMessage = useCallback(
     async (input: string) => {
@@ -88,6 +113,21 @@ export function App({
       setError(null);
       setToolCalls([]);
       setCommandOutput(null);
+
+      // Run UserPromptSubmit hooks
+      if (hookRunner) {
+        const hookResult = await hookRunner.run("UserPromptSubmit", {
+          event: "UserPromptSubmit",
+          sessionId,
+          workingDirectory: process.cwd(),
+          data: { input },
+        });
+        if (hookResult.blocked) {
+          setError(`Blocked by hook: ${hookResult.blockReason ?? "Unknown reason"}`);
+          setIsProcessing(false);
+          return;
+        }
+      }
 
       const systemPrompt = buildSystemPrompt({
         toolRegistry,
@@ -151,6 +191,15 @@ export function App({
       } catch (err) {
         setError(err instanceof Error ? err.message : String(err));
       } finally {
+        // Run Stop hooks
+        if (hookRunner) {
+          await hookRunner.run("Stop", {
+            event: "Stop",
+            sessionId,
+            workingDirectory: process.cwd(),
+          });
+        }
+
         setIsProcessing(false);
         setStreamingText("");
 
@@ -171,6 +220,8 @@ export function App({
       strategy,
       permissionManager,
       contextManager,
+      hookRunner,
+      sessionId,
       events,
     ],
   );
@@ -280,6 +331,8 @@ export function App({
       ) : null}
 
       {error ? <ErrorBanner message={error} /> : null}
+
+      {tasks && tasks.length > 0 ? <TaskListView tasks={tasks} title="Tasks" /> : null}
 
       <Box marginTop={1}>
         <UserInput onSubmit={handleSubmit} isDisabled={false} />
