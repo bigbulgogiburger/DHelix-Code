@@ -30,6 +30,14 @@ export type AppEvents = {
   "input:submit": { content: string };
   /** User requested abort */
   "input:abort": undefined;
+
+  /** Auto-lint requested after file mutation */
+  "lint:request": {
+    toolName: string;
+    toolId: string;
+    lintCommand: string;
+    testCommand?: string;
+  };
 };
 
 /** Typed event emitter for the application */

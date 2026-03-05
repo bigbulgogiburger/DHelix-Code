@@ -40,6 +40,7 @@ import { forkCommand } from "./commands/fork.js";
 import { outputStyleCommand } from "./commands/output-style.js";
 import { renameCommand } from "./commands/rename.js";
 import { costCommand } from "./commands/cost.js";
+import { updateCommand } from "./commands/update.js";
 import { ContextManager } from "./core/context-manager.js";
 import { SessionManager } from "./core/session-manager.js";
 import { loadHookConfig } from "./hooks/loader.js";
@@ -64,6 +65,7 @@ program
     "Output format for headless mode: text, json, stream-json",
     "text",
   )
+  .option("--add-dir <dirs...>", "Additional directories to include (monorepo/multi-repo)")
   .action(
     async (opts: {
       model: string;
@@ -74,6 +76,7 @@ program
       resume?: string;
       print?: string;
       outputFormat: string;
+      addDir?: string[];
     }) => {
       const resolved = await loadConfig({
         llm: {
@@ -129,6 +132,15 @@ program
         workingDirectory: process.cwd(),
       });
 
+      // Resolve additional directories for monorepo/multi-repo support
+      const additionalDirs: string[] = [];
+      if (opts.addDir) {
+        const { resolve } = await import("node:path");
+        for (const dir of opts.addDir) {
+          additionalDirs.push(resolve(dir));
+        }
+      }
+
       // Register slash commands
       const commandRegistry = new CommandRegistry();
       const commands = [
@@ -155,6 +167,7 @@ program
         outputStyleCommand,
         renameCommand,
         costCommand,
+        updateCommand,
       ];
       for (const cmd of commands) {
         commandRegistry.register(cmd);
