@@ -1,5 +1,6 @@
 import { Command } from "commander";
 import { render } from "ink";
+import { join } from "node:path";
 import React from "react";
 import { App } from "./cli/App.js";
 import { OpenAICompatibleClient } from "./llm/client.js";
@@ -24,8 +25,15 @@ import { resumeCommand } from "./commands/resume.js";
 import { rewindCommand } from "./commands/rewind.js";
 import { effortCommand } from "./commands/effort.js";
 import { fastCommand } from "./commands/fast.js";
+import { simplifyCommand } from "./commands/simplify.js";
+import { batchCommand } from "./commands/batch.js";
+import { debugCommand } from "./commands/debug.js";
+import { mcpCommand } from "./commands/mcp.js";
 import { ContextManager } from "./core/context-manager.js";
 import { SessionManager } from "./core/session-manager.js";
+import { loadHookConfig } from "./hooks/loader.js";
+import { HookRunner } from "./hooks/runner.js";
+import { runHeadless } from "./cli/headless.js";
 
 const program = new Command();
 
@@ -39,6 +47,12 @@ program
   .option("-v, --verbose", "Enable verbose logging", false)
   .option("-c, --continue", "Continue the most recent session")
   .option("-r, --resume <session-id>", "Resume a specific session")
+  .option("-p, --print <prompt>", "Headless mode: run prompt and print result")
+  .option(
+    "--output-format <format>",
+    "Output format for headless mode: text, json, stream-json",
+    "text",
+  )
   .action(
     async (opts: {
       model: string;
@@ -47,6 +61,8 @@ program
       verbose: boolean;
       continue?: boolean;
       resume?: string;
+      print?: string;
+      outputFormat: string;
     }) => {
       const resolved = await loadConfig({
         llm: {
@@ -92,6 +108,16 @@ program
         maxContextTokens: config.llm.contextWindow,
       });
 
+      // Load hook configuration
+      const hookConfig = await loadHookConfig(join(process.cwd(), ".dbcode"));
+      const hookRunner = new HookRunner(hookConfig);
+
+      // Run SessionStart hooks
+      await hookRunner.run("SessionStart", {
+        event: "SessionStart",
+        workingDirectory: process.cwd(),
+      });
+
       // Register slash commands
       const commandRegistry = new CommandRegistry();
       const commands = [
@@ -103,11 +129,29 @@ program
         rewindCommand,
         effortCommand,
         fastCommand,
+        simplifyCommand,
+        batchCommand,
+        debugCommand,
+        mcpCommand,
       ];
       for (const cmd of commands) {
         commandRegistry.register(cmd);
       }
       setHelpCommands(commands);
+
+      // Headless mode: run prompt and exit
+      if (opts.print) {
+        await runHeadless({
+          prompt: opts.print,
+          client,
+          model: config.llm.model,
+          strategy,
+          toolRegistry,
+          outputFormat: opts.outputFormat as "text" | "json" | "stream-json",
+          workingDirectory: process.cwd(),
+        });
+        return;
+      }
 
       // Handle session resume
       let sessionId: string | undefined;
