@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import { MessageList } from "./components/MessageList.js";
 import { StreamingMessage } from "./components/StreamingMessage.js";
 import { UserInput } from "./components/UserInput.js";
@@ -17,6 +17,8 @@ import { type ToolRegistry } from "../tools/registry.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type PermissionManager } from "../permissions/manager.js";
 import { type ExtractedToolCall } from "../tools/types.js";
+import { type CommandRegistry } from "../commands/registry.js";
+import { type ContextManager } from "../core/context-manager.js";
 import { createEventEmitter } from "../utils/events.js";
 
 interface AppProps {
@@ -25,6 +27,9 @@ interface AppProps {
   readonly toolRegistry: ToolRegistry;
   readonly strategy: ToolCallStrategy;
   readonly permissionManager: PermissionManager;
+  readonly commandRegistry?: CommandRegistry;
+  readonly contextManager?: ContextManager;
+  readonly sessionId?: string;
   readonly showStatusBar?: boolean;
 }
 
@@ -45,35 +50,50 @@ interface PendingPermission {
 /** Root application component */
 export function App({
   client,
-  model,
+  model: initialModel,
   toolRegistry,
   strategy,
   permissionManager,
+  commandRegistry,
+  contextManager,
+  sessionId,
   showStatusBar = true,
 }: AppProps) {
-  const { conversation, addUserMessage, addAssistantMessage } = useConversation("main");
+  const {
+    conversation,
+    addUserMessage,
+    addAssistantMessage,
+    reset: clearConversation,
+  } = useConversation("main");
   const [isProcessing, setIsProcessing] = useState(false);
   const [streamingText, setStreamingText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [tokenCount, setTokenCount] = useState(0);
   const [toolCalls, setToolCalls] = useState<readonly ToolCallDisplay[]>([]);
   const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
+  const [commandOutput, setCommandOutput] = useState<string | null>(null);
+  const [activeModel, setActiveModel] = useState(initialModel);
+
+  // Message queue — allows typing while LLM is responding (FIFO)
+  const messageQueueRef = useRef<string[]>([]);
 
   const events = useMemo(() => createEventEmitter(), []);
 
-  const handleSubmit = useCallback(
+  /** Process a single user message through the agent loop */
+  const processMessage = useCallback(
     async (input: string) => {
       addUserMessage(input);
       setIsProcessing(true);
       setStreamingText("");
       setError(null);
       setToolCalls([]);
+      setCommandOutput(null);
 
       const systemPrompt = buildSystemPrompt({
         toolRegistry,
       });
 
-      const messages: ChatMessage[] = [
+      let messages: ChatMessage[] = [
         { role: "system", content: systemPrompt },
         ...conversation.toMessagesForLLM().map((m) => ({
           role: m.role as ChatMessage["role"],
@@ -82,11 +102,16 @@ export function App({
         { role: "user" as const, content: input },
       ];
 
+      // Apply context management if available
+      if (contextManager) {
+        messages = [...contextManager.prepare(messages)];
+      }
+
       try {
         const result = await runAgentLoop(
           {
             client,
-            model,
+            model: activeModel,
             toolRegistry,
             strategy,
             events,
@@ -128,6 +153,12 @@ export function App({
       } finally {
         setIsProcessing(false);
         setStreamingText("");
+
+        // Process queued messages
+        const nextMessage = messageQueueRef.current.shift();
+        if (nextMessage) {
+          void processMessage(nextMessage);
+        }
       }
     },
     [
@@ -135,11 +166,55 @@ export function App({
       addUserMessage,
       addAssistantMessage,
       client,
-      model,
+      activeModel,
       toolRegistry,
       strategy,
       permissionManager,
+      contextManager,
       events,
+    ],
+  );
+
+  const handleSubmit = useCallback(
+    async (input: string) => {
+      // Handle slash commands
+      if (commandRegistry && commandRegistry.isCommand(input)) {
+        const result = await commandRegistry.execute(input, {
+          workingDirectory: process.cwd(),
+          sessionId,
+          model: activeModel,
+          emit: events.emit as (event: string, data?: unknown) => void,
+        });
+
+        if (result) {
+          setCommandOutput(result.output);
+
+          if (result.shouldClear) {
+            clearConversation();
+          }
+          if (result.newModel) {
+            setActiveModel(result.newModel);
+          }
+        }
+        return;
+      }
+
+      // If processing, queue the message
+      if (isProcessing) {
+        messageQueueRef.current.push(input);
+        return;
+      }
+
+      void processMessage(input);
+    },
+    [
+      commandRegistry,
+      sessionId,
+      activeModel,
+      events,
+      isProcessing,
+      processMessage,
+      clearConversation,
     ],
   );
 
@@ -174,7 +249,7 @@ export function App({
           dbcode
         </Text>
         <Text color="gray"> v0.1.0 </Text>
-        <Text color="gray">({model})</Text>
+        <Text color="gray">({activeModel})</Text>
       </Box>
 
       <MessageList messages={completedMessages} />
@@ -198,15 +273,27 @@ export function App({
         />
       ) : null}
 
+      {commandOutput ? (
+        <Box marginY={1}>
+          <Text>{commandOutput}</Text>
+        </Box>
+      ) : null}
+
       {error ? <ErrorBanner message={error} /> : null}
 
       <Box marginTop={1}>
-        <UserInput onSubmit={handleSubmit} isDisabled={isProcessing} />
+        <UserInput onSubmit={handleSubmit} isDisabled={false} />
       </Box>
+
+      {messageQueueRef.current.length > 0 ? (
+        <Box>
+          <Text color="gray">({messageQueueRef.current.length} message(s) queued)</Text>
+        </Box>
+      ) : null}
 
       {showStatusBar ? (
         <StatusBar
-          model={model}
+          model={activeModel}
           tokenCount={tokenCount}
           maxTokens={128_000}
           isStreaming={isProcessing}
