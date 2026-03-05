@@ -189,7 +189,12 @@ export function App({
           setTokenCount((prev) => prev + client.countTokens(lastMessage.content));
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err));
+        const errorMsg = err instanceof Error ? err.message : String(err);
+        const errorCause =
+          err && typeof err === "object" && "context" in err
+            ? (err as { context: Record<string, unknown> }).context.cause
+            : undefined;
+        setError(errorCause ? `${errorMsg}: ${errorCause}` : errorMsg);
       } finally {
         // Run Stop hooks
         if (hookRunner) {

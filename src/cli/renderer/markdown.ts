@@ -1,5 +1,5 @@
 import { Marked } from "marked";
-import markedTerminal from "marked-terminal";
+import { markedTerminal } from "marked-terminal";
 
 let markedInstance: Marked | undefined;
 
@@ -14,7 +14,7 @@ function getMarked(): Marked {
         reflowText: true,
         width: process.stdout.columns || 80,
         showSectionPrefix: false,
-      }) as Parameters<typeof markedInstance.use>[0],
+      }),
     );
   }
   return markedInstance;
