@@ -29,6 +29,17 @@ import { simplifyCommand } from "./commands/simplify.js";
 import { batchCommand } from "./commands/batch.js";
 import { debugCommand } from "./commands/debug.js";
 import { mcpCommand } from "./commands/mcp.js";
+import { configCommand } from "./commands/config.js";
+import { diffCommand } from "./commands/diff.js";
+import { doctorCommand } from "./commands/doctor.js";
+import { statsCommand } from "./commands/stats.js";
+import { contextCommand } from "./commands/context.js";
+import { copyCommand } from "./commands/copy.js";
+import { exportCommand } from "./commands/export.js";
+import { forkCommand } from "./commands/fork.js";
+import { outputStyleCommand } from "./commands/output-style.js";
+import { renameCommand } from "./commands/rename.js";
+import { costCommand } from "./commands/cost.js";
 import { ContextManager } from "./core/context-manager.js";
 import { SessionManager } from "./core/session-manager.js";
 import { loadHookConfig } from "./hooks/loader.js";
@@ -133,6 +144,17 @@ program
         batchCommand,
         debugCommand,
         mcpCommand,
+        configCommand,
+        diffCommand,
+        doctorCommand,
+        statsCommand,
+        contextCommand,
+        copyCommand,
+        exportCommand,
+        forkCommand,
+        outputStyleCommand,
+        renameCommand,
+        costCommand,
       ];
       for (const cmd of commands) {
         commandRegistry.register(cmd);

@@ -5,19 +5,42 @@ interface StatusBarProps {
   readonly tokenCount: number;
   readonly maxTokens: number;
   readonly isStreaming: boolean;
+  readonly effortLevel?: string;
+  readonly sessionName?: string;
 }
 
-/** Status bar showing model, token usage, and streaming state */
-export function StatusBar({ model, tokenCount, maxTokens, isStreaming }: StatusBarProps) {
+/** Build a visual usage bar */
+function usageBar(ratio: number, width = 15): string {
+  const filled = Math.round(ratio * width);
+  const empty = width - filled;
+  return "[" + "#".repeat(filled) + "-".repeat(empty) + "]";
+}
+
+/** Status bar showing model, token usage, context %, effort level, and streaming state */
+export function StatusBar({
+  model,
+  tokenCount,
+  maxTokens,
+  isStreaming,
+  effortLevel,
+  sessionName,
+}: StatusBarProps) {
   const usage = maxTokens > 0 ? Math.round((tokenCount / maxTokens) * 100) : 0;
+  const ratio = maxTokens > 0 ? tokenCount / maxTokens : 0;
   const usageColor = usage > 80 ? "red" : usage > 60 ? "yellow" : "green";
 
   return (
     <Box borderStyle="single" borderColor="gray" paddingX={1} justifyContent="space-between">
-      <Text color="blue">{model}</Text>
-      <Text color={usageColor}>
-        {tokenCount.toLocaleString()}/{maxTokens.toLocaleString()} tokens ({usage}%)
-      </Text>
+      <Box gap={1}>
+        <Text color="blue">{model}</Text>
+        {sessionName ? <Text color="gray">({sessionName})</Text> : null}
+      </Box>
+      <Box gap={1}>
+        <Text color={usageColor}>
+          {usageBar(ratio)} {usage}%
+        </Text>
+        {effortLevel ? <Text color="magenta">[{effortLevel}]</Text> : null}
+      </Box>
       {isStreaming ? <Text color="yellow">streaming...</Text> : <Text color="gray">ready</Text>}
     </Box>
   );
