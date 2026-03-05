@@ -1,0 +1,84 @@
+import { getPlatform } from "../utils/platform.js";
+import { APP_NAME, VERSION } from "../constants.js";
+
+/** System prompt section */
+interface PromptSection {
+  readonly id: string;
+  readonly content: string;
+  readonly priority: number;
+}
+
+/**
+ * Build the system prompt from modular sections.
+ * Higher priority sections appear first.
+ */
+export function buildSystemPrompt(options?: {
+  projectInstructions?: string;
+  workingDirectory?: string;
+  customSections?: readonly PromptSection[];
+}): string {
+  const sections: PromptSection[] = [
+    {
+      id: "identity",
+      content: buildIdentitySection(),
+      priority: 100,
+    },
+    {
+      id: "environment",
+      content: buildEnvironmentSection(options?.workingDirectory),
+      priority: 90,
+    },
+    {
+      id: "conventions",
+      content: buildConventionsSection(),
+      priority: 80,
+    },
+  ];
+
+  if (options?.projectInstructions) {
+    sections.push({
+      id: "project",
+      content: `# Project Instructions\n\n${options.projectInstructions}`,
+      priority: 70,
+    });
+  }
+
+  if (options?.customSections) {
+    sections.push(...options.customSections);
+  }
+
+  const sorted = [...sections].sort((a, b) => b.priority - a.priority);
+  return sorted.map((s) => s.content).join("\n\n---\n\n");
+}
+
+function buildIdentitySection(): string {
+  return `# System Identity
+
+You are ${APP_NAME} v${VERSION}, an AI coding assistant running in the user's terminal.
+You help with software engineering tasks: writing code, debugging, refactoring, explaining code, and more.
+You have access to tools for reading/writing files, executing commands, and searching the codebase.
+
+Be concise, accurate, and helpful. Prefer showing code over explaining in words.`;
+}
+
+function buildEnvironmentSection(workingDirectory?: string): string {
+  const platform = getPlatform();
+  const cwd = workingDirectory ?? process.cwd();
+
+  return `# Environment
+
+- Platform: ${platform}
+- Working directory: ${cwd}
+- Shell: ${platform === "win32" ? "cmd.exe / PowerShell" : "bash"}
+- Date: ${new Date().toISOString().split("T")[0]}`;
+}
+
+function buildConventionsSection(): string {
+  return `# Conventions
+
+- Read files before modifying them
+- Make minimal, focused changes
+- Prefer editing existing files over creating new ones
+- Use the appropriate tool for each task
+- Ask the user when requirements are unclear`;
+}
