@@ -5,6 +5,7 @@ import { type ExtractedToolCall, type ToolCallResult } from "../tools/types.js";
 import { executeToolCall } from "../tools/executor.js";
 import { type AppEventEmitter } from "../utils/events.js";
 import { AGENT_LOOP } from "../constants.js";
+import { LLMError } from "../utils/error.js";
 
 /** Configuration for the agent loop */
 export interface AgentLoopConfig {
@@ -19,6 +20,8 @@ export interface AgentLoopConfig {
   readonly signal?: AbortSignal;
   readonly workingDirectory?: string;
   readonly checkPermission?: (call: ExtractedToolCall) => Promise<PermissionResult>;
+  /** Maximum LLM call retries per iteration (default: 2) */
+  readonly maxRetries?: number;
 }
 
 /** Result of a permission check */
@@ -34,16 +37,74 @@ export interface AgentLoopResult {
   readonly aborted: boolean;
 }
 
+/** Error classification for retry decisions */
+type LLMErrorClass = "transient" | "overload" | "permanent";
+
+/**
+ * Classify an LLM error to determine retry behavior.
+ */
+function classifyLLMError(error: unknown): LLMErrorClass {
+  if (!(error instanceof Error)) return "permanent";
+
+  const message = error.message.toLowerCase();
+
+  if (
+    message.includes("rate limit") ||
+    message.includes("429") ||
+    message.includes("overload") ||
+    message.includes("503") ||
+    message.includes("capacity")
+  ) {
+    return "overload";
+  }
+
+  if (
+    message.includes("timeout") ||
+    message.includes("econnreset") ||
+    message.includes("econnrefused") ||
+    message.includes("500") ||
+    message.includes("502") ||
+    message.includes("504") ||
+    message.includes("network")
+  ) {
+    return "transient";
+  }
+
+  return "permanent";
+}
+
+/**
+ * Wait for a delay, respecting abort signal.
+ */
+function waitWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new LLMError("Aborted"));
+      return;
+    }
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener("abort", () => {
+      clearTimeout(timer);
+      reject(new LLMError("Aborted"));
+    });
+  });
+}
+
 /**
  * Run the ReAct agent loop.
  * Repeatedly: call LLM → extract tool calls → check permissions → execute → append results → loop.
  * Stops when: no tool calls, max iterations reached, or aborted.
+ *
+ * Error recovery: classify-retry-fallback pattern.
+ * - Transient/overload errors: retry with exponential backoff
+ * - Permanent errors: fail immediately
  */
 export async function runAgentLoop(
   config: AgentLoopConfig,
   initialMessages: readonly ChatMessage[],
 ): Promise<AgentLoopResult> {
   const maxIterations = config.maxIterations ?? AGENT_LOOP.maxIterations;
+  const maxRetries = config.maxRetries ?? 2;
   const messages: ChatMessage[] = [...initialMessages];
   let iterations = 0;
 
@@ -59,17 +120,50 @@ export async function runAgentLoop(
     const toolDefs = config.toolRegistry.getDefinitionsForLLM();
     const prepared = config.strategy.prepareRequest(messages, toolDefs);
 
-    // Call LLM
+    // Call LLM with retry logic
     config.events.emit("llm:start", { iteration: iterations });
 
-    const response = await config.client.chat({
-      model: config.model,
-      messages: prepared.messages,
-      tools: prepared.tools,
-      temperature: config.temperature ?? 0,
-      maxTokens: config.maxTokens ?? 4096,
-      signal: config.signal,
-    });
+    let response;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        response = await config.client.chat({
+          model: config.model,
+          messages: prepared.messages,
+          tools: prepared.tools,
+          temperature: config.temperature ?? 0,
+          maxTokens: config.maxTokens ?? 4096,
+          signal: config.signal,
+        });
+        break;
+      } catch (error) {
+        lastError = error;
+        const errorClass = classifyLLMError(error);
+
+        if (errorClass === "permanent") {
+          throw error;
+        }
+
+        // Retry with exponential backoff for transient/overload errors
+        if (attempt < maxRetries) {
+          const delay = 1000 * Math.pow(2, attempt);
+          config.events.emit("llm:error", {
+            error: error instanceof Error ? error : new Error(String(error)),
+          });
+          await waitWithAbort(delay, config.signal);
+        }
+      }
+    }
+
+    if (!response) {
+      throw lastError instanceof LLMError
+        ? lastError
+        : new LLMError("LLM call failed after retries", {
+            cause: lastError instanceof Error ? lastError.message : String(lastError),
+            attempts: maxRetries + 1,
+          });
+    }
 
     config.events.emit("llm:complete", {
       tokenCount: response.usage.totalTokens,
