@@ -8,7 +8,7 @@ export default defineConfig({
   clean: true,
   dts: true,
   sourcemap: true,
-  splitting: false,
+  splitting: true,
   external: ["ink", "react"],
   esbuildOptions(options) {
     options.jsx = "automatic";

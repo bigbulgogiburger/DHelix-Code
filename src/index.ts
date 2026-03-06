@@ -1,52 +1,5 @@
-import "dotenv/config";
 import { Command } from "commander";
-import { render } from "ink";
-import { join } from "node:path";
-import React from "react";
-import { App } from "./cli/App.js";
-import { OpenAICompatibleClient } from "./llm/client.js";
-import { loadConfig } from "./config/loader.js";
 import { VERSION, APP_NAME, LLM_DEFAULTS } from "./constants.js";
-import { ToolRegistry } from "./tools/registry.js";
-import { selectStrategy } from "./llm/tool-call-strategy.js";
-import { PermissionManager } from "./permissions/manager.js";
-import { fileReadTool } from "./tools/definitions/file-read.js";
-import { fileWriteTool } from "./tools/definitions/file-write.js";
-import { fileEditTool } from "./tools/definitions/file-edit.js";
-import { bashExecTool } from "./tools/definitions/bash-exec.js";
-import { globSearchTool } from "./tools/definitions/glob-search.js";
-import { grepSearchTool } from "./tools/definitions/grep-search.js";
-import { askUserTool } from "./tools/definitions/ask-user.js";
-import { CommandRegistry } from "./commands/registry.js";
-import { clearCommand } from "./commands/clear.js";
-import { compactCommand } from "./commands/compact.js";
-import { helpCommand, setHelpCommands } from "./commands/help.js";
-import { modelCommand } from "./commands/model.js";
-import { resumeCommand } from "./commands/resume.js";
-import { rewindCommand } from "./commands/rewind.js";
-import { effortCommand } from "./commands/effort.js";
-import { fastCommand } from "./commands/fast.js";
-import { simplifyCommand } from "./commands/simplify.js";
-import { batchCommand } from "./commands/batch.js";
-import { debugCommand } from "./commands/debug.js";
-import { mcpCommand } from "./commands/mcp.js";
-import { configCommand } from "./commands/config.js";
-import { diffCommand } from "./commands/diff.js";
-import { doctorCommand } from "./commands/doctor.js";
-import { statsCommand } from "./commands/stats.js";
-import { contextCommand } from "./commands/context.js";
-import { copyCommand } from "./commands/copy.js";
-import { exportCommand } from "./commands/export.js";
-import { forkCommand } from "./commands/fork.js";
-import { outputStyleCommand } from "./commands/output-style.js";
-import { renameCommand } from "./commands/rename.js";
-import { costCommand } from "./commands/cost.js";
-import { updateCommand } from "./commands/update.js";
-import { ContextManager } from "./core/context-manager.js";
-import { SessionManager } from "./core/session-manager.js";
-import { loadHookConfig } from "./hooks/loader.js";
-import { HookRunner } from "./hooks/runner.js";
-import { runHeadless } from "./cli/headless.js";
 
 const program = new Command();
 
@@ -79,6 +32,97 @@ program
       outputFormat: string;
       addDir?: string[];
     }) => {
+      // Load dotenv only when running the action (not for --help / --version)
+      await import("dotenv/config");
+
+      // Dynamic imports — keep startup fast for --help / --version
+      const { join } = await import("node:path");
+      const [
+        { loadConfig },
+        { OpenAICompatibleClient },
+        { ToolRegistry },
+        { selectStrategy },
+        { PermissionManager },
+        { ContextManager },
+        { SessionManager },
+        { loadHookConfig },
+        { HookRunner },
+        { fileReadTool },
+        { fileWriteTool },
+        { fileEditTool },
+        { bashExecTool },
+        { globSearchTool },
+        { grepSearchTool },
+        { askUserTool },
+        { CommandRegistry },
+        { clearCommand },
+        { compactCommand },
+        { helpCommand, setHelpCommands },
+        { modelCommand },
+        { resumeCommand },
+        { rewindCommand },
+        { effortCommand },
+        { fastCommand },
+        { simplifyCommand },
+        { batchCommand },
+        { debugCommand },
+        { mcpCommand },
+        { configCommand },
+        { diffCommand },
+        { doctorCommand },
+        { statsCommand },
+        { contextCommand },
+        { copyCommand },
+        { exportCommand },
+        { forkCommand },
+        { outputStyleCommand },
+        { renameCommand },
+        { costCommand },
+        { updateCommand },
+      ] = await Promise.all([
+        import("./config/loader.js"),
+        import("./llm/client.js"),
+        import("./tools/registry.js"),
+        import("./llm/tool-call-strategy.js"),
+        import("./permissions/manager.js"),
+        import("./core/context-manager.js"),
+        import("./core/session-manager.js"),
+        import("./hooks/loader.js"),
+        import("./hooks/runner.js"),
+        import("./tools/definitions/file-read.js"),
+        import("./tools/definitions/file-write.js"),
+        import("./tools/definitions/file-edit.js"),
+        import("./tools/definitions/bash-exec.js"),
+        import("./tools/definitions/glob-search.js"),
+        import("./tools/definitions/grep-search.js"),
+        import("./tools/definitions/ask-user.js"),
+        import("./commands/registry.js"),
+        import("./commands/clear.js"),
+        import("./commands/compact.js"),
+        import("./commands/help.js"),
+        import("./commands/model.js"),
+        import("./commands/resume.js"),
+        import("./commands/rewind.js"),
+        import("./commands/effort.js"),
+        import("./commands/fast.js"),
+        import("./commands/simplify.js"),
+        import("./commands/batch.js"),
+        import("./commands/debug.js"),
+        import("./commands/mcp.js"),
+        import("./commands/config.js"),
+        import("./commands/diff.js"),
+        import("./commands/doctor.js"),
+        import("./commands/stats.js"),
+        import("./commands/context.js"),
+        import("./commands/copy.js"),
+        import("./commands/export.js"),
+        import("./commands/fork.js"),
+        import("./commands/output-style.js"),
+        import("./commands/rename.js"),
+        import("./commands/cost.js"),
+        import("./commands/update.js"),
+      ]);
+
       // Only pass explicitly-set CLI options as overrides
       const llmOverrides: Record<string, unknown> = {
         temperature: LLM_DEFAULTS.temperature,
@@ -137,11 +181,10 @@ program
       });
 
       // Resolve additional directories for monorepo/multi-repo support
-      const additionalDirs: string[] = [];
       if (opts.addDir) {
         const { resolve } = await import("node:path");
         for (const dir of opts.addDir) {
-          additionalDirs.push(resolve(dir));
+          void resolve(dir);
         }
       }
 
@@ -180,6 +223,7 @@ program
 
       // Headless mode: run prompt and exit
       if (opts.print) {
+        const { runHeadless } = await import("./cli/headless.js");
         await runHeadless({
           prompt: opts.print,
           client,
@@ -209,6 +253,12 @@ program
           model: config.llm.model,
         });
       }
+
+      const [{ render }, React, { App }] = await Promise.all([
+        import("ink"),
+        import("react"),
+        import("./cli/App.js"),
+      ]);
 
       render(
         React.createElement(App, {
