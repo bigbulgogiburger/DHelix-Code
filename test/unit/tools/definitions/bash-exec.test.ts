@@ -33,4 +33,21 @@ describe("bash_exec tool", () => {
     const result = await bashExecTool.execute({ command: "echo error >&2" }, context);
     expect(result.output).toContain("error");
   });
+
+  it("should handle command with no output", async () => {
+    const result = await bashExecTool.execute({ command: "true" }, context);
+    expect(result.isError).toBe(false);
+    // Should get "(no output)" since `true` produces no stdout/stderr
+    expect(result.output).toBeTypeOf("string");
+  });
+
+  it("should handle nonexistent command", async () => {
+    // A command that doesn't exist - should fail with exit code != 0
+    const result = await bashExecTool.execute(
+      { command: "this_command_does_not_exist_xyz_123" },
+      context,
+    );
+    expect(result.isError).toBe(true);
+    expect(result.output).toBeTypeOf("string");
+  });
 });
