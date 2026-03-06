@@ -1,4 +1,5 @@
 declare module "marked-terminal" {
+  import { type MarkedExtension } from "marked";
   interface MarkedTerminalOptions {
     reflowText?: boolean;
     width?: number;
@@ -6,6 +7,6 @@ declare module "marked-terminal" {
     tab?: number;
     emoji?: boolean;
   }
-  function markedTerminal(options?: MarkedTerminalOptions): unknown;
+  function markedTerminal(options?: MarkedTerminalOptions): MarkedExtension;
   export default markedTerminal;
 }
