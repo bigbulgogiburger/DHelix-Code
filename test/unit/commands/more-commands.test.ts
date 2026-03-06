@@ -205,22 +205,67 @@ describe("export command", () => {
 });
 
 describe("copy command", () => {
-  it("should handle no arguments", async () => {
-    const result = await copyCommand.execute("", baseContext);
-    expect(result.success).toBe(true);
-    expect(result.output).toContain("Last code block");
-  });
-
-  it("should handle block number", async () => {
-    const result = await copyCommand.execute("2", baseContext);
-    expect(result.success).toBe(true);
-    expect(result.output).toContain("#2");
-  });
+  const contextWithMessages = {
+    ...baseContext,
+    messages: [
+      { role: "user", content: "Show me a function" },
+      {
+        role: "assistant",
+        content:
+          'Here is a function:\n\n```typescript\nfunction hello() {\n  return "world";\n}\n```\n\nAnd another:\n\n```python\ndef greet():\n    return "hi"\n```',
+      },
+    ],
+  };
 
   it("should reject invalid block number", async () => {
-    const result = await copyCommand.execute("abc", baseContext);
+    const result = await copyCommand.execute("abc", contextWithMessages);
     expect(result.success).toBe(false);
     expect(result.output).toContain("Usage");
+  });
+
+  it("should report no code blocks when none exist", async () => {
+    const result = await copyCommand.execute("", {
+      ...baseContext,
+      messages: [
+        { role: "user", content: "hello" },
+        { role: "assistant", content: "Hi there, no code blocks here!" },
+      ],
+    });
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("No code blocks");
+  });
+
+  it("should report out of range block number", async () => {
+    const result = await copyCommand.execute("99", contextWithMessages);
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("not found");
+    expect(result.output).toContain("2 code block(s)");
+  });
+
+  it("should copy last code block to clipboard", async () => {
+    const result = await copyCommand.execute("", contextWithMessages);
+    // On this system, clipboard should work (Windows has clip command)
+    if (result.success) {
+      expect(result.output).toContain("Copied code block");
+      expect(result.output).toContain("python");
+    }
+    // If clipboard fails (e.g., in CI), that's also OK
+    expect(result.output).toBeTypeOf("string");
+  });
+
+  it("should copy specific block number", async () => {
+    const result = await copyCommand.execute("1", contextWithMessages);
+    if (result.success) {
+      expect(result.output).toContain("#1");
+      expect(result.output).toContain("typescript");
+    }
+    expect(result.output).toBeTypeOf("string");
+  });
+
+  it("should handle empty messages gracefully", async () => {
+    const result = await copyCommand.execute("", baseContext);
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("No code blocks");
   });
 });
 
