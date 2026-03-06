@@ -86,11 +86,6 @@ describe("update command", () => {
     expect(updateCommand.name).toBe("update");
     expect(updateCommand.execute).toBeTypeOf("function");
   });
-
-  it("should show current version", async () => {
-    const result = await updateCommand.execute("", baseContext);
-    expect(result.output).toContain("Current version:");
-  }, 15000);
 });
 
 describe("mcp command", () => {

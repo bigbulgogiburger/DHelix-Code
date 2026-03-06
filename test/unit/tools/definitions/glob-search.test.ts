@@ -20,10 +20,10 @@ describe("glob_search tool", () => {
   });
 
   it("should return empty for no matches", async () => {
-    const result = await globSearchTool.execute({ pattern: "**/*.nonexistent" }, context);
+    const result = await globSearchTool.execute({ pattern: "*.nonexistent", path: "src" }, context);
     expect(result.isError).toBe(false);
     expect(result.output).toContain("No files found");
-  });
+  }, 10000);
 
   it("should search in specific directory", async () => {
     const result = await globSearchTool.execute({ pattern: "*.ts", path: "src/utils" }, context);

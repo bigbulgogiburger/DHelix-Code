@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useState, useCallback, useMemo, useRef } from "react";
+import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { MessageList } from "./components/MessageList.js";
 import { StreamingMessage } from "./components/StreamingMessage.js";
 import { UserInput } from "./components/UserInput.js";
@@ -91,6 +91,25 @@ export function App({
   const messageQueueRef = useRef<string[]>([]);
 
   const events = useMemo(() => createEventEmitter(), []);
+
+  // Wire up event listeners for live tool call display
+  useEffect(() => {
+    const onToolStart = ({ name, id }: { name: string; id: string }) => {
+      setToolCalls((prev) => [...prev, { id, name, status: "running" }]);
+    };
+    const onToolComplete = ({ id, isError }: { name: string; id: string; isError: boolean }) => {
+      setToolCalls((prev) =>
+        prev.map((tc) => (tc.id === id ? { ...tc, status: isError ? "error" : "complete" } : tc)),
+      );
+    };
+
+    events.on("tool:start", onToolStart);
+    events.on("tool:complete", onToolComplete);
+    return () => {
+      events.off("tool:start", onToolStart);
+      events.off("tool:complete", onToolComplete);
+    };
+  }, [events]);
 
   // Register keybindings
   const keybindings = useMemo<Keybinding[]>(
