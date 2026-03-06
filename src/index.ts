@@ -54,8 +54,8 @@ program
   .name(APP_NAME)
   .description("AI coding assistant for local/external LLMs")
   .version(VERSION)
-  .option("-m, --model <model>", "LLM model name", LLM_DEFAULTS.model)
-  .option("-u, --base-url <url>", "OpenAI-compatible API base URL", LLM_DEFAULTS.baseUrl)
+  .option("-m, --model <model>", "LLM model name")
+  .option("-u, --base-url <url>", "OpenAI-compatible API base URL")
   .option("-k, --api-key <key>", "API key")
   .option("-v, --verbose", "Enable verbose logging", false)
   .option("-c, --continue", "Continue the most recent session")
@@ -69,8 +69,8 @@ program
   .option("--add-dir <dirs...>", "Additional directories to include (monorepo/multi-repo)")
   .action(
     async (opts: {
-      model: string;
-      baseUrl: string;
+      model?: string;
+      baseUrl?: string;
       apiKey?: string;
       verbose: boolean;
       continue?: boolean;
@@ -79,16 +79,19 @@ program
       outputFormat: string;
       addDir?: string[];
     }) => {
+      // Only pass explicitly-set CLI options as overrides
+      const llmOverrides: Record<string, unknown> = {
+        temperature: LLM_DEFAULTS.temperature,
+        maxTokens: LLM_DEFAULTS.maxTokens,
+        contextWindow: 128_000,
+        timeout: 60_000,
+      };
+      if (opts.model) llmOverrides.model = opts.model;
+      if (opts.baseUrl) llmOverrides.baseUrl = opts.baseUrl;
+      if (opts.apiKey) llmOverrides.apiKey = opts.apiKey;
+
       const resolved = await loadConfig({
-        llm: {
-          model: opts.model,
-          baseUrl: opts.baseUrl,
-          apiKey: opts.apiKey,
-          temperature: LLM_DEFAULTS.temperature,
-          maxTokens: LLM_DEFAULTS.maxTokens,
-          contextWindow: 128_000,
-          timeout: 60_000,
-        },
+        llm: llmOverrides as typeof LLM_DEFAULTS & { contextWindow: number; timeout: number },
         verbose: opts.verbose,
       });
 
