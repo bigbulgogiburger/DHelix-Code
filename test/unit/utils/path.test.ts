@@ -5,6 +5,9 @@ import {
   joinPath,
   baseName,
   extName,
+  dirName,
+  resolvePath,
+  relativePath,
 } from "../../../src/utils/path.js";
 
 describe("normalizePath", () => {
@@ -57,5 +60,40 @@ describe("extName", () => {
 
   it("should return empty for no extension", () => {
     expect(extName("Makefile")).toBe("");
+  });
+});
+
+describe("dirName", () => {
+  it("should return directory name", () => {
+    const result = dirName("src/utils/path.ts");
+    expect(result).toBe("src/utils");
+  });
+
+  it("should return dot for file without directory", () => {
+    const result = dirName("file.ts");
+    expect(result).toBe(".");
+  });
+});
+
+describe("resolvePath", () => {
+  it("should resolve and normalize a path", () => {
+    const result = resolvePath("src", "utils", "path.ts");
+    expect(result).toContain("src/utils/path.ts");
+    expect(result).not.toContain("\\");
+  });
+});
+
+describe("relativePath", () => {
+  it("should compute relative path", () => {
+    const result = relativePath("/a/b", "/a/b/c/d.ts");
+    expect(result).toBe("c/d.ts");
+  });
+});
+
+describe("isAbsolutePath (Windows)", () => {
+  it("should detect Windows drive paths", () => {
+    // Windows-style paths should work on all platforms
+    expect(isAbsolutePath("C:\\Users\\test")).toBe(true);
+    expect(isAbsolutePath("D:/Projects/file.ts")).toBe(true);
   });
 });
