@@ -1,4 +1,5 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
+import { SessionManager } from "../../../src/core/session-manager.js";
 import { join } from "node:path";
 import { configCommand } from "../../../src/commands/config.js";
 import { diffCommand } from "../../../src/commands/diff.js";
@@ -113,6 +114,17 @@ describe("Phase 6 slash commands", () => {
     const result = await renameCommand.execute("new-name", baseContext);
     expect(result.success).toBe(false);
     expect(result.output).toContain("Rename failed");
+  });
+
+  it("/rename should successfully rename a session", async () => {
+    const renameMock = vi.spyOn(SessionManager.prototype, "renameSession");
+    renameMock.mockResolvedValueOnce(undefined);
+
+    const result = await renameCommand.execute("my-new-name", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain('Session renamed to: "my-new-name"');
+
+    renameMock.mockRestore();
   });
 
   it("/cost should show token cost info", async () => {

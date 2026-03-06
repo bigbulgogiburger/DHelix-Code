@@ -1,4 +1,4 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { clearCommand } from "../../../src/commands/clear.js";
 import { compactCommand } from "../../../src/commands/compact.js";
 import { helpCommand, setHelpCommands } from "../../../src/commands/help.js";
@@ -55,6 +55,15 @@ describe("Core slash commands", () => {
   it("/model should switch model with args", async () => {
     const result = await modelCommand.execute("gpt-4", baseContext);
     expect(result.newModel).toBe("gpt-4");
+  });
+
+  it("/model should show developer role note for o1 model", async () => {
+    const result = await modelCommand.execute("", {
+      ...baseContext,
+      model: "o1",
+    });
+    expect(result.output).toContain("developer role");
+    expect(result.success).toBe(true);
   });
 
   it("/effort should show current level without args", async () => {
@@ -428,5 +437,35 @@ describe("fork command", () => {
     });
     expect(result.success).toBe(false);
     expect(result.output).toContain("Fork failed");
+  });
+
+  it("should successfully fork a session", async () => {
+    const forkMock = vi.spyOn(SessionManager.prototype, "forkSession");
+    forkMock.mockResolvedValueOnce("new-session-id-123");
+
+    const result = await forkCommand.execute("My Fork", {
+      ...baseContext,
+      sessionId: "existing-session",
+    });
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("Session forked successfully");
+    expect(result.output).toContain("new-session-id-123");
+    expect(result.output).toContain('"My Fork"');
+
+    forkMock.mockRestore();
+  });
+
+  it("should successfully fork without custom name", async () => {
+    const forkMock = vi.spyOn(SessionManager.prototype, "forkSession");
+    forkMock.mockResolvedValueOnce("forked-id-456");
+
+    const result = await forkCommand.execute("", {
+      ...baseContext,
+      sessionId: "existing-session",
+    });
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("forked-id-456");
+
+    forkMock.mockRestore();
   });
 });
