@@ -76,6 +76,23 @@ describe("CommandRegistry", () => {
     expect(result!.success).toBe(false);
     expect(result!.output).toContain("Unknown command");
   });
+
+  it("should catch command execution errors gracefully", async () => {
+    const registry = new CommandRegistry();
+    registry.register({
+      name: "explode",
+      description: "Always throws",
+      usage: "/explode",
+      execute: async () => {
+        throw new Error("Boom!");
+      },
+    });
+
+    const result = await registry.execute("/explode", createContext());
+    expect(result).not.toBeNull();
+    expect(result!.success).toBe(false);
+    expect(result!.output).toContain("Boom!");
+  });
 });
 
 describe("/clear command", () => {
