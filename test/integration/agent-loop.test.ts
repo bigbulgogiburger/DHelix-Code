@@ -432,6 +432,42 @@ describe("Agent Loop Integration", () => {
     }
   });
 
+  it("should abort immediately if signal already aborted before retry delay", async () => {
+    const controller = new AbortController();
+    let callCount = 0;
+
+    const provider: LLMProvider = {
+      name: "mock",
+      chat: vi.fn(async () => {
+        callCount++;
+        // Abort synchronously so signal is already aborted when waitWithAbort starts
+        controller.abort();
+        throw new Error("500 server error");
+      }),
+      stream: vi.fn(),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const events = createEventEmitter();
+
+    await expect(
+      runAgentLoop(
+        {
+          client: provider,
+          model: "test",
+          toolRegistry: new ToolRegistry(),
+          strategy: createMockStrategy(),
+          events,
+          maxRetries: 3,
+          signal: controller.signal,
+        },
+        [{ role: "user", content: "test" }],
+      ),
+    ).rejects.toThrow("Aborted");
+
+    expect(callCount).toBe(1);
+  });
+
   it("should abort during retry delay", async () => {
     const controller = new AbortController();
     let callCount = 0;
