@@ -219,6 +219,7 @@ program
           permissionManager,
           commandRegistry,
           contextManager,
+          sessionManager,
           sessionId,
           showStatusBar: config.ui.statusBar,
         }),

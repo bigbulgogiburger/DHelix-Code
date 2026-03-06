@@ -5,6 +5,7 @@ import { StreamingMessage } from "./components/StreamingMessage.js";
 import { UserInput } from "./components/UserInput.js";
 import { Spinner } from "./components/Spinner.js";
 import { StatusBar } from "./components/StatusBar.js";
+import { Logo } from "./components/Logo.js";
 import { ErrorBanner } from "./components/ErrorBanner.js";
 import { ToolCallBlock } from "./components/ToolCallBlock.js";
 import { PermissionPrompt } from "./components/PermissionPrompt.js";
@@ -23,7 +24,9 @@ import { type CommandRegistry } from "../commands/registry.js";
 import { type ContextManager } from "../core/context-manager.js";
 import { type HookRunner } from "../hooks/runner.js";
 import { type Task } from "../core/task-manager.js";
+import { type SessionManager } from "../core/session-manager.js";
 import { createEventEmitter } from "../utils/events.js";
+import { VERSION } from "../constants.js";
 
 interface AppProps {
   readonly client: LLMProvider;
@@ -34,6 +37,7 @@ interface AppProps {
   readonly commandRegistry?: CommandRegistry;
   readonly contextManager?: ContextManager;
   readonly hookRunner?: HookRunner;
+  readonly sessionManager?: SessionManager;
   readonly tasks?: readonly Task[];
   readonly sessionId?: string;
   readonly showStatusBar?: boolean;
@@ -63,6 +67,7 @@ export function App({
   commandRegistry,
   contextManager,
   hookRunner,
+  sessionManager,
   tasks,
   sessionId,
   showStatusBar = true,
@@ -188,6 +193,16 @@ export function App({
           addAssistantMessage(lastMessage.content);
           setTokenCount((prev) => prev + client.countTokens(lastMessage.content));
         }
+
+        // Persist to session
+        if (sessionManager && sessionId) {
+          void sessionManager.appendMessages(sessionId, [
+            { role: "user", content: input },
+            ...(lastMessage && lastMessage.role === "assistant"
+              ? [{ role: "assistant" as const, content: lastMessage.content }]
+              : []),
+          ]);
+        }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
         const errorCause =
@@ -226,6 +241,7 @@ export function App({
       permissionManager,
       contextManager,
       hookRunner,
+      sessionManager,
       sessionId,
       events,
     ],
@@ -301,11 +317,15 @@ export function App({
   return (
     <Box flexDirection="column" padding={1}>
       <Box marginBottom={1}>
-        <Text color="cyan" bold>
-          dbcode
-        </Text>
-        <Text color="gray"> v0.1.0 </Text>
-        <Text color="gray">({activeModel})</Text>
+        <Logo />
+        <Box flexDirection="column" justifyContent="center" marginLeft={2}>
+          <Text color="cyan" bold>
+            dbcode
+          </Text>
+          <Text color="gray">
+            v{VERSION} ({activeModel})
+          </Text>
+        </Box>
       </Box>
 
       <MessageList messages={completedMessages} />
