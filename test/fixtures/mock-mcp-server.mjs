@@ -38,14 +38,38 @@ rl.on("line", (line) => {
       };
       process.stdout.write(JSON.stringify(response) + "\n");
     } else if (msg.method === "tools/call") {
-      const response = {
-        jsonrpc: "2.0",
-        id: msg.id,
-        result: {
-          content: [{ type: "text", text: `Echo: ${msg.params?.arguments?.message ?? ""}` }],
-        },
-      };
-      process.stdout.write(JSON.stringify(response) + "\n");
+      if (msg.params?.name === "__error_test") {
+        const response = {
+          jsonrpc: "2.0",
+          id: msg.id,
+          error: { code: -32600, message: "Tool error test", data: { detail: "test" } },
+        };
+        process.stdout.write(JSON.stringify(response) + "\n");
+      } else if (msg.params?.name === "__notify_test") {
+        // Send a notification before the response
+        const notification = {
+          jsonrpc: "2.0",
+          method: "notifications/tools/list_changed",
+        };
+        process.stdout.write(JSON.stringify(notification) + "\n");
+        const response = {
+          jsonrpc: "2.0",
+          id: msg.id,
+          result: {
+            content: [{ type: "text", text: "notified" }],
+          },
+        };
+        process.stdout.write(JSON.stringify(response) + "\n");
+      } else {
+        const response = {
+          jsonrpc: "2.0",
+          id: msg.id,
+          result: {
+            content: [{ type: "text", text: `Echo: ${msg.params?.arguments?.message ?? ""}` }],
+          },
+        };
+        process.stdout.write(JSON.stringify(response) + "\n");
+      }
     } else if (msg.method === "resources/list") {
       const response = {
         jsonrpc: "2.0",

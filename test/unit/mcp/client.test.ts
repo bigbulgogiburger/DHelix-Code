@@ -188,6 +188,40 @@ describe("MCPClient", () => {
     expect(client.getState()).toBe("error");
   }, 10000);
 
+  it("should handle JSON-RPC error response", async () => {
+    client = new MCPClient({
+      name: "mock-server",
+      transport: "stdio",
+      command: "node",
+      args: [mockServerPath],
+    });
+
+    await client.connect();
+    await expect(client.callTool("__error_test", {})).rejects.toThrow("Tool error test");
+  }, 10000);
+
+  it("should handle tools/list_changed notification", async () => {
+    client = new MCPClient({
+      name: "mock-server",
+      transport: "stdio",
+      command: "node",
+      args: [mockServerPath],
+    });
+
+    let notified = false;
+    client.setToolsChangedCallback(() => {
+      notified = true;
+    });
+
+    await client.connect();
+    // Call __notify_test which sends a notification before responding
+    const result = await client.callTool("__notify_test", {});
+    expect(result.content[0].text).toBe("notified");
+    // Give a tick for the notification to process
+    await new Promise((r) => setTimeout(r, 50));
+    expect(notified).toBe(true);
+  }, 10000);
+
   it("should resolve env vars in config", async () => {
     process.env.TEST_MCP_VAR = "resolved-value";
     client = new MCPClient({
