@@ -104,4 +104,10 @@ describe("executeSkill", () => {
     const skill = makeSkill({ body: "" });
     await expect(executeSkill(skill, makeContext())).rejects.toThrow("no body content");
   });
+
+  it("should handle failing shell command gracefully", async () => {
+    const skill = makeSkill({ body: "Output: `!nonexistent_command_xyz_12345`" });
+    const result = await executeSkill(skill, makeContext());
+    expect(result.prompt).toContain("[Command failed:");
+  });
 });

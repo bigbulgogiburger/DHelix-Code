@@ -170,6 +170,20 @@ describe("ContextManager", () => {
     }
   });
 
+  it("should compact when prepare detects need", () => {
+    const manager = new ContextManager({
+      maxContextTokens: 500,
+      compactionThreshold: 0.5,
+      preserveRecentTurns: 2,
+    });
+
+    const messages: ChatMessage[] = [msg("system", "sys"), ...createTurns(10, 200)];
+    const prepared = manager.prepare(messages);
+
+    // Should be compacted (fewer messages)
+    expect(prepared.length).toBeLessThan(messages.length);
+  });
+
   it("should expose correct token budget", () => {
     const manager = new ContextManager({
       maxContextTokens: 10_000,
