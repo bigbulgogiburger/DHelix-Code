@@ -110,4 +110,28 @@ describe("executeSkill", () => {
     const result = await executeSkill(skill, makeContext());
     expect(result.prompt).toContain("[Command failed:");
   });
+
+  it("should return empty string for out-of-range $N positional args", async () => {
+    const skill = makeSkill({ body: "Third: $2, Fifth: $5" });
+    const result = await executeSkill(skill, makeContext());
+    expect(result.prompt).toBe("Third: , Fifth: ");
+  });
+
+  it("should return empty string for out-of-range $ARGUMENTS[N]", async () => {
+    const skill = makeSkill({ body: "A2: $ARGUMENTS[2], A9: $ARGUMENTS[9]" });
+    const result = await executeSkill(skill, makeContext());
+    expect(result.prompt).toBe("A2: , A9: ");
+  });
+
+  it("should handle empty positional args", async () => {
+    const skill = makeSkill({ body: "First: $0" });
+    const result = await executeSkill(skill, makeContext({ arguments: "", positionalArgs: [] }));
+    expect(result.prompt).toBe("First: ");
+  });
+
+  it("should interpolate DBCODE_SKILL_DIR", async () => {
+    const skill = makeSkill({ body: "Dir: ${DBCODE_SKILL_DIR}" });
+    const result = await executeSkill(skill, makeContext({ skillDir: "/skills" }));
+    expect(result.prompt).toBe("Dir: /skills");
+  });
 });
