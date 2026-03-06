@@ -2,9 +2,74 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // Mock the OpenAI SDK before importing the client
 const mockCreate = vi.fn();
+
 vi.mock("openai", () => {
+  class MockAPIError extends Error {
+    status: number;
+    headers: Record<string, string>;
+    constructor(
+      status: number,
+      message: string,
+      headers: Record<string, string> = {},
+    ) {
+      super(message);
+      this.status = status;
+      this.headers = headers;
+      this.name = "APIError";
+    }
+  }
+
+  class MockAuthenticationError extends MockAPIError {
+    constructor(message: string) {
+      super(401, message);
+      this.name = "AuthenticationError";
+    }
+  }
+
+  class MockPermissionDeniedError extends MockAPIError {
+    constructor(message: string) {
+      super(403, message);
+      this.name = "PermissionDeniedError";
+    }
+  }
+
+  class MockRateLimitError extends MockAPIError {
+    constructor(message: string, headers: Record<string, string> = {}) {
+      super(429, message, headers);
+      this.name = "RateLimitError";
+    }
+  }
+
+  class MockInternalServerError extends MockAPIError {
+    constructor(message: string) {
+      super(500, message);
+      this.name = "InternalServerError";
+    }
+  }
+
+  class MockAPIConnectionError extends Error {
+    constructor(message: string) {
+      super(message);
+      this.name = "APIConnectionError";
+    }
+  }
+
+  class MockAPIConnectionTimeoutError extends MockAPIConnectionError {
+    constructor(message: string) {
+      super(message);
+      this.name = "APIConnectionTimeoutError";
+    }
+  }
+
   return {
     default: class MockOpenAI {
+      static APIError = MockAPIError;
+      static AuthenticationError = MockAuthenticationError;
+      static PermissionDeniedError = MockPermissionDeniedError;
+      static RateLimitError = MockRateLimitError;
+      static InternalServerError = MockInternalServerError;
+      static APIConnectionError = MockAPIConnectionError;
+      static APIConnectionTimeoutError = MockAPIConnectionTimeoutError;
       chat = {
         completions: {
           create: mockCreate,
@@ -20,6 +85,7 @@ vi.mock("../../../src/llm/token-counter.js", () => ({
   countTokens: (text: string) => Math.ceil(text.length / 4),
 }));
 
+import OpenAI from "openai";
 import { OpenAICompatibleClient } from "../../../src/llm/client.js";
 import { type ChatMessage } from "../../../src/llm/provider.js";
 
@@ -158,7 +224,6 @@ describe("OpenAICompatibleClient", () => {
       });
 
       expect(response.content).toBe("Got it!");
-      // Verify the messages were passed correctly
       const callArgs = mockCreate.mock.calls[0][0];
       expect(callArgs.messages[1].role).toBe("assistant");
       expect(callArgs.messages[1].tool_calls).toHaveLength(1);
@@ -188,7 +253,6 @@ describe("OpenAICompatibleClient", () => {
 
       const callArgs = mockCreate.mock.calls[0][0];
       expect(callArgs.messages[0].role).toBe("developer");
-      // Should not include temperature for o1
       expect(callArgs.temperature).toBeUndefined();
     });
 
@@ -216,9 +280,115 @@ describe("OpenAICompatibleClient", () => {
       });
 
       const callArgs = mockCreate.mock.calls[0][0];
-      // deepseek-coder does not support tools
       expect(callArgs.tools).toBeUndefined();
     });
+  });
+
+  describe("chat error handling", () => {
+    it("should provide clear message for authentication errors (401)", async () => {
+      mockCreate.mockRejectedValueOnce(
+        new (OpenAI as unknown as { AuthenticationError: new (msg: string) => Error }).AuthenticationError("Invalid API key"),
+      );
+
+      await expect(
+        client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        }),
+      ).rejects.toThrow("Authentication failed");
+    });
+
+    it("should provide clear message for permission denied (403)", async () => {
+      mockCreate.mockRejectedValueOnce(
+        new (OpenAI as unknown as { PermissionDeniedError: new (msg: string) => Error }).PermissionDeniedError("No access"),
+      );
+
+      await expect(
+        client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        }),
+      ).rejects.toThrow("Permission denied");
+    });
+
+    it("should retry on rate limit (429) and eventually throw", async () => {
+      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const err = new RLE("Rate limit exceeded", { "retry-after": "0" });
+      mockCreate
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err);
+
+      await expect(
+        client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        }),
+      ).rejects.toThrow("Rate limit exceeded");
+
+      // 1 initial + 3 retries = 4 calls
+      expect(mockCreate).toHaveBeenCalledTimes(4);
+    }, 15000);
+
+    it("should retry on server error (500) and succeed on second try", async () => {
+      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error }).InternalServerError;
+      mockCreate.mockRejectedValueOnce(new ISE("Internal server error")).mockResolvedValueOnce({
+        choices: [
+          {
+            message: { content: "OK", tool_calls: undefined },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      });
+
+      const response = await client.chat({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: "Hi" }],
+        maxTokens: 100,
+      });
+
+      expect(response.content).toBe("OK");
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    }, 15000);
+
+    it("should not retry on non-retryable errors", async () => {
+      mockCreate.mockRejectedValueOnce(new Error("Invalid request format"));
+
+      await expect(
+        client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        }),
+      ).rejects.toThrow("LLM chat request failed");
+
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+    });
+
+    it("should retry on timeout and provide clear message", async () => {
+      const ACTE = (OpenAI as unknown as { APIConnectionTimeoutError: new (msg: string) => Error }).APIConnectionTimeoutError;
+      const err = new ACTE("Request timed out");
+      mockCreate
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err);
+
+      await expect(
+        client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        }),
+      ).rejects.toThrow("timed out");
+
+      expect(mockCreate).toHaveBeenCalledTimes(4);
+    }, 15000);
   });
 
   describe("stream", () => {
@@ -329,6 +499,36 @@ describe("OpenAICompatibleClient", () => {
 
       await expect(streamIt()).rejects.toThrow("LLM stream request failed");
     });
+
+    it("should retry stream on server errors", async () => {
+      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error }).InternalServerError;
+      const chunks = [
+        { choices: [{ delta: { content: "Hello" } }] },
+        { choices: [{ delta: {} }] },
+      ];
+
+      mockCreate.mockRejectedValueOnce(new ISE("Server overloaded")).mockResolvedValueOnce({
+        [Symbol.asyncIterator]: async function* () {
+          for (const chunk of chunks) {
+            yield chunk;
+          }
+        },
+      });
+
+      const result: string[] = [];
+      for await (const chunk of client.stream({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: "Hi" }],
+        maxTokens: 100,
+      })) {
+        if (chunk.type === "text-delta" && chunk.text) {
+          result.push(chunk.text);
+        }
+      }
+
+      expect(result).toEqual(["Hello"]);
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    }, 15000);
   });
 
   describe("countTokens", () => {

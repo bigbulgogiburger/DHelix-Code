@@ -12,6 +12,12 @@ import { countTokens } from "./token-counter.js";
 import { LLMError } from "../utils/error.js";
 import { getModelCapabilities, type ModelCapabilities } from "./model-capabilities.js";
 
+/** Maximum number of retries for transient errors */
+const MAX_RETRIES = 3;
+
+/** Base delay between retries in ms */
+const BASE_RETRY_DELAY_MS = 1_000;
+
 /**
  * Convert our ChatMessage to OpenAI format, adapting for model capabilities.
  */
@@ -75,6 +81,89 @@ function toOpenAITools(tools: readonly ToolDefinitionForLLM[]): OpenAI.ChatCompl
   }));
 }
 
+/** Check if an error is retryable (transient server/network issues) */
+function isRetryableError(error: unknown): boolean {
+  if (error instanceof OpenAI.RateLimitError) return true;
+  if (error instanceof OpenAI.InternalServerError) return true;
+  if (error instanceof OpenAI.APIConnectionError) return true;
+  if (error instanceof OpenAI.APIConnectionTimeoutError) return true;
+  // Also check status code for generic APIError (502, 503)
+  if (error instanceof OpenAI.APIError) {
+    const status = error.status;
+    return status === 429 || status === 500 || status === 502 || status === 503;
+  }
+  return false;
+}
+
+/** Get retry delay in ms, respecting Retry-After header if available */
+function getRetryDelay(error: unknown, attempt: number): number {
+  // Check for Retry-After header on rate limit errors
+  if (error instanceof OpenAI.APIError && error.headers) {
+    const retryAfter = error.headers["retry-after"];
+    if (retryAfter) {
+      const seconds = Number(retryAfter);
+      if (!Number.isNaN(seconds) && seconds > 0) {
+        return seconds * 1_000;
+      }
+    }
+  }
+  // Exponential backoff: 1s, 2s, 4s
+  return BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
+}
+
+/** Convert OpenAI SDK errors to descriptive LLMError */
+function classifyError(error: unknown, operation: string, model: string): LLMError {
+  if (error instanceof LLMError) return error;
+
+  if (error instanceof OpenAI.AuthenticationError) {
+    return new LLMError(
+      "Authentication failed. Check your API key (OPENAI_API_KEY or DBCODE_API_KEY).",
+      { model, cause: error.message, status: error.status },
+    );
+  }
+  if (error instanceof OpenAI.PermissionDeniedError) {
+    return new LLMError(
+      "Permission denied. Your API key may lack access to this model.",
+      { model, cause: error.message, status: error.status },
+    );
+  }
+  if (error instanceof OpenAI.RateLimitError) {
+    return new LLMError(
+      "Rate limit exceeded. Please wait before retrying.",
+      { model, cause: error.message, status: 429 },
+    );
+  }
+  if (error instanceof OpenAI.APIConnectionTimeoutError) {
+    return new LLMError(
+      "Request timed out. The model may be overloaded or the connection is slow.",
+      { model, cause: error.message },
+    );
+  }
+  if (error instanceof OpenAI.APIConnectionError) {
+    return new LLMError(
+      "Failed to connect to the API. Check your network and baseURL configuration.",
+      { model, cause: error.message },
+    );
+  }
+  if (error instanceof OpenAI.APIError) {
+    return new LLMError(`API error (${error.status}): ${error.message}`, {
+      model,
+      cause: error.message,
+      status: error.status,
+    });
+  }
+
+  return new LLMError(`LLM ${operation} failed`, {
+    model,
+    cause: error instanceof Error ? error.message : String(error),
+  });
+}
+
+/** Sleep for the given number of milliseconds */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 /** Configuration for OpenAI-compatible client */
 export interface OpenAIClientConfig {
   readonly baseURL: string;
@@ -85,6 +174,7 @@ export interface OpenAIClientConfig {
 /**
  * OpenAI-compatible LLM client.
  * Works with any OpenAI-compatible API (OpenAI, Ollama, vLLM, llama.cpp, etc.)
+ * Includes automatic retries for transient errors with exponential backoff.
  */
 export class OpenAICompatibleClient implements LLMProvider {
   readonly name = "openai-compatible";
@@ -94,131 +184,158 @@ export class OpenAICompatibleClient implements LLMProvider {
     this.client = new OpenAI({
       baseURL: config.baseURL,
       apiKey: config.apiKey ?? "no-key-required",
-      timeout: config.timeout ?? 60_000,
+      timeout: config.timeout ?? 120_000,
+      maxRetries: 0, // We handle retries ourselves for better control
     });
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
-    try {
-      const caps = getModelCapabilities(request.model);
-      const params: Record<string, unknown> = {
-        model: request.model,
-        messages: toOpenAIMessages(request.messages, caps),
-        max_tokens: request.maxTokens,
-      };
-      // Only include temperature for models that support it
-      if (caps.supportsTemperature && request.temperature !== undefined) {
-        params.temperature = request.temperature;
-      }
-      // Only include tools for models that support them
-      if (caps.supportsTools && request.tools) {
-        params.tools = toOpenAITools(request.tools);
-      }
-      const response = await this.client.chat.completions.create(
-        params as unknown as OpenAI.ChatCompletionCreateParamsNonStreaming,
-        { signal: request.signal },
-      );
+    let lastError: unknown;
 
-      const choice = response.choices[0];
-      if (!choice) {
-        throw new LLMError("No response choice from LLM");
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return await this._chatOnce(request);
+      } catch (error) {
+        lastError = error;
+
+        if (error instanceof LLMError) throw error;
+        if (!isRetryableError(error) || attempt === MAX_RETRIES) break;
+
+        const delay = getRetryDelay(error, attempt);
+        await sleep(delay);
       }
-
-      const toolCalls: ToolCallRequest[] =
-        choice.message.tool_calls?.map((tc) => ({
-          id: tc.id,
-          name: tc.function.name,
-          arguments: tc.function.arguments,
-        })) ?? [];
-
-      return {
-        content: choice.message.content ?? "",
-        toolCalls,
-        usage: {
-          promptTokens: response.usage?.prompt_tokens ?? 0,
-          completionTokens: response.usage?.completion_tokens ?? 0,
-          totalTokens: response.usage?.total_tokens ?? 0,
-        },
-        finishReason: choice.finish_reason ?? "stop",
-      };
-    } catch (error) {
-      if (error instanceof LLMError) throw error;
-      throw new LLMError("LLM chat request failed", {
-        model: request.model,
-        cause: error instanceof Error ? error.message : String(error),
-      });
     }
+
+    throw classifyError(lastError, "chat request", request.model);
+  }
+
+  private async _chatOnce(request: ChatRequest): Promise<ChatResponse> {
+    const caps = getModelCapabilities(request.model);
+    const params: Record<string, unknown> = {
+      model: request.model,
+      messages: toOpenAIMessages(request.messages, caps),
+      max_tokens: request.maxTokens,
+    };
+    // Only include temperature for models that support it
+    if (caps.supportsTemperature && request.temperature !== undefined) {
+      params.temperature = request.temperature;
+    }
+    // Only include tools for models that support them
+    if (caps.supportsTools && request.tools) {
+      params.tools = toOpenAITools(request.tools);
+    }
+    const response = await this.client.chat.completions.create(
+      params as unknown as OpenAI.ChatCompletionCreateParamsNonStreaming,
+      { signal: request.signal },
+    );
+
+    const choice = response.choices[0];
+    if (!choice) {
+      throw new LLMError("No response choice from LLM");
+    }
+
+    const toolCalls: ToolCallRequest[] =
+      choice.message.tool_calls?.map((tc) => ({
+        id: tc.id,
+        name: tc.function.name,
+        arguments: tc.function.arguments,
+      })) ?? [];
+
+    return {
+      content: choice.message.content ?? "",
+      toolCalls,
+      usage: {
+        promptTokens: response.usage?.prompt_tokens ?? 0,
+        completionTokens: response.usage?.completion_tokens ?? 0,
+        totalTokens: response.usage?.total_tokens ?? 0,
+      },
+      finishReason: choice.finish_reason ?? "stop",
+    };
   }
 
   async *stream(request: ChatRequest): AsyncIterable<ChatChunk> {
-    try {
-      const caps = getModelCapabilities(request.model);
-      const params: Record<string, unknown> = {
-        model: request.model,
-        messages: toOpenAIMessages(request.messages, caps),
-        max_tokens: request.maxTokens,
-        stream: true,
-      };
-      if (caps.supportsTemperature && request.temperature !== undefined) {
-        params.temperature = request.temperature;
+    let lastError: unknown;
+
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        yield* this._streamOnce(request);
+        return;
+      } catch (error) {
+        lastError = error;
+
+        if (error instanceof LLMError) throw error;
+        if (!isRetryableError(error) || attempt === MAX_RETRIES) break;
+
+        const delay = getRetryDelay(error, attempt);
+        await sleep(delay);
       }
-      if (caps.supportsTools && request.tools) {
-        params.tools = toOpenAITools(request.tools);
-      }
-      const stream = await this.client.chat.completions.create(
-        params as unknown as OpenAI.ChatCompletionCreateParamsStreaming,
-        { signal: request.signal },
-      );
-
-      const toolCallsInProgress = new Map<
-        number,
-        { id: string; name: string; arguments: string }
-      >();
-
-      for await (const chunk of stream) {
-        const delta = chunk.choices[0]?.delta;
-        if (!delta) continue;
-
-        // Text content
-        if (delta.content) {
-          yield { type: "text-delta", text: delta.content };
-        }
-
-        // Tool calls
-        if (delta.tool_calls) {
-          for (const tc of delta.tool_calls) {
-            const existing = toolCallsInProgress.get(tc.index);
-            if (existing) {
-              existing.arguments += tc.function?.arguments ?? "";
-            } else {
-              toolCallsInProgress.set(tc.index, {
-                id: tc.id ?? "",
-                name: tc.function?.name ?? "",
-                arguments: tc.function?.arguments ?? "",
-              });
-            }
-            yield {
-              type: "tool-call-delta",
-              toolCall: {
-                id: tc.id ?? existing?.id,
-                name: tc.function?.name ?? existing?.name,
-                arguments: tc.function?.arguments ?? "",
-              },
-            };
-          }
-        }
-      }
-
-      yield {
-        type: "done",
-        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-      };
-    } catch (error) {
-      throw new LLMError("LLM stream request failed", {
-        model: request.model,
-        cause: error instanceof Error ? error.message : String(error),
-      });
     }
+
+    throw classifyError(lastError, "stream request", request.model);
+  }
+
+  private async *_streamOnce(request: ChatRequest): AsyncIterable<ChatChunk> {
+    const caps = getModelCapabilities(request.model);
+    const params: Record<string, unknown> = {
+      model: request.model,
+      messages: toOpenAIMessages(request.messages, caps),
+      max_tokens: request.maxTokens,
+      stream: true,
+    };
+    if (caps.supportsTemperature && request.temperature !== undefined) {
+      params.temperature = request.temperature;
+    }
+    if (caps.supportsTools && request.tools) {
+      params.tools = toOpenAITools(request.tools);
+    }
+    const stream = await this.client.chat.completions.create(
+      params as unknown as OpenAI.ChatCompletionCreateParamsStreaming,
+      { signal: request.signal },
+    );
+
+    const toolCallsInProgress = new Map<
+      number,
+      { id: string; name: string; arguments: string }
+    >();
+
+    for await (const chunk of stream) {
+      const delta = chunk.choices[0]?.delta;
+      if (!delta) continue;
+
+      // Text content
+      if (delta.content) {
+        yield { type: "text-delta", text: delta.content };
+      }
+
+      // Tool calls (incremental assembly)
+      if (delta.tool_calls) {
+        for (const tc of delta.tool_calls) {
+          const existing = toolCallsInProgress.get(tc.index);
+          if (existing) {
+            existing.arguments += tc.function?.arguments ?? "";
+          } else {
+            toolCallsInProgress.set(tc.index, {
+              id: tc.id ?? "",
+              name: tc.function?.name ?? "",
+              arguments: tc.function?.arguments ?? "",
+            });
+          }
+          yield {
+            type: "tool-call-delta",
+            toolCall: {
+              id: tc.id ?? existing?.id,
+              name: tc.function?.name ?? existing?.name,
+              arguments: tc.function?.arguments ?? "",
+            },
+          };
+        }
+      }
+    }
+
+    yield {
+      type: "done",
+      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+    };
   }
 
   countTokens(text: string): number {

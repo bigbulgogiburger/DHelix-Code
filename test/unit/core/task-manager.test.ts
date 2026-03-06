@@ -36,6 +36,8 @@ describe("TaskManager", () => {
 
   it("should update task status", async () => {
     const task = await manager.create({ title: "Update me" });
+    // Ensure at least 1ms passes so updatedAt differs
+    await new Promise((r) => setTimeout(r, 5));
     const updated = await manager.update(task.id, { status: "in_progress" });
     expect(updated.status).toBe("in_progress");
     expect(updated.updatedAt).not.toBe(task.updatedAt);
