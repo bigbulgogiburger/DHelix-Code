@@ -226,4 +226,40 @@ program
     },
   );
 
-program.parse();
+// Global error handler — user-friendly messages, zero stack traces
+program.parseAsync().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  const cause =
+    error && typeof error === "object" && "context" in error
+      ? (error as { context: Record<string, unknown> }).context
+      : undefined;
+
+  // Classify and provide actionable guidance
+  const lowerMsg = message.toLowerCase();
+  const causeStr = cause ? JSON.stringify(cause).toLowerCase() : "";
+  if (
+    lowerMsg.includes("connection") ||
+    lowerMsg.includes("econnrefused") ||
+    causeStr.includes("connection")
+  ) {
+    const url = cause?.model ?? "the configured endpoint";
+    process.stderr.write(
+      `Error: Cannot connect to ${url}.\nIs the server running? Check with: dbcode --base-url <url>\n`,
+    );
+  } else if (lowerMsg.includes("401") || lowerMsg.includes("unauthorized")) {
+    process.stderr.write(
+      `Error: Invalid API key.\nSet with: dbcode --api-key <key> or OPENAI_API_KEY env var\n`,
+    );
+  } else if (lowerMsg.includes("404") || lowerMsg.includes("not found")) {
+    const model = cause?.model ?? "unknown";
+    process.stderr.write(`Error: Model '${model}' not found.\nTry: dbcode --model gpt-4o\n`);
+  } else if (lowerMsg.includes("rate limit") || lowerMsg.includes("429")) {
+    process.stderr.write(`Error: Rate limited. Please wait a moment and try again.\n`);
+  } else {
+    process.stderr.write(`Error: ${message}\n`);
+    if (cause) {
+      process.stderr.write(`Details: ${JSON.stringify(cause)}\n`);
+    }
+  }
+  process.exit(1);
+});
