@@ -4,6 +4,7 @@ import { type LLMProvider, type ChatMessage } from "../../src/llm/provider.js";
 import { ToolRegistry } from "../../src/tools/registry.js";
 import { type ToolCallStrategy } from "../../src/llm/tool-call-strategy.js";
 import { createEventEmitter } from "../../src/utils/events.js";
+import { LLMError } from "../../src/utils/error.js";
 import { z } from "zod";
 
 /** Create a mock LLM provider */
@@ -384,5 +385,94 @@ describe("Agent Loop Integration", () => {
     expect(emittedEvents).toContain("iteration");
     expect(emittedEvents).toContain("llm:start");
     expect(emittedEvents).toContain("llm:complete");
+  });
+
+  it("should re-throw LLMError directly when retries exhausted", async () => {
+    const provider: LLMProvider = {
+      name: "mock",
+      chat: vi.fn(async () => {
+        throw new LLMError("Rate limit exceeded", { status: 429 });
+      }),
+      stream: vi.fn(),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const events = createEventEmitter();
+
+    await expect(
+      runAgentLoop(
+        {
+          client: provider,
+          model: "test",
+          toolRegistry: new ToolRegistry(),
+          strategy: createMockStrategy(),
+          events,
+          maxRetries: 1,
+        },
+        [{ role: "user", content: "test" }],
+      ),
+    ).rejects.toThrow("Rate limit exceeded");
+
+    // Verify the thrown error is actually a LLMError instance
+    try {
+      await runAgentLoop(
+        {
+          client: provider,
+          model: "test",
+          toolRegistry: new ToolRegistry(),
+          strategy: createMockStrategy(),
+          events,
+          maxRetries: 0,
+        },
+        [{ role: "user", content: "test" }],
+      );
+    } catch (error) {
+      expect(error).toBeInstanceOf(LLMError);
+      expect((error as LLMError).message).toBe("Rate limit exceeded");
+    }
+  });
+
+  it("should abort during retry delay", async () => {
+    const controller = new AbortController();
+    let callCount = 0;
+
+    const provider: LLMProvider = {
+      name: "mock",
+      chat: vi.fn(async () => {
+        callCount++;
+        if (callCount === 1) {
+          // After first call fails, abort during the retry delay
+          setTimeout(() => controller.abort(), 50);
+          throw new Error("500 server error");
+        }
+        return {
+          content: "Should not reach here",
+          toolCalls: [],
+          usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+        };
+      }),
+      stream: vi.fn(),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const events = createEventEmitter();
+
+    await expect(
+      runAgentLoop(
+        {
+          client: provider,
+          model: "test",
+          toolRegistry: new ToolRegistry(),
+          strategy: createMockStrategy(),
+          events,
+          maxRetries: 3,
+          signal: controller.signal,
+        },
+        [{ role: "user", content: "test" }],
+      ),
+    ).rejects.toThrow("Aborted");
+
+    // Only the first attempt should have been made before abort
+    expect(callCount).toBe(1);
   });
 });
