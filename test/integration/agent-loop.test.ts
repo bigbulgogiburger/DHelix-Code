@@ -219,6 +219,50 @@ describe("Agent Loop Integration", () => {
     expect(result.iterations).toBe(2);
   });
 
+  it("should use default rejection message when reason is undefined", async () => {
+    const provider = createMockProvider([
+      {
+        content: "Running tool.",
+        toolCalls: [{ id: "tc1", name: "echo_tool", arguments: { text: "hello" } }],
+      },
+      { content: "OK, permission denied." },
+    ]);
+
+    const registry = new ToolRegistry();
+    registry.register({
+      name: "echo_tool",
+      description: "Echo text",
+      parameterSchema: z.object({ text: z.string() }),
+      permissionLevel: "safe",
+      execute: async (params: { text: string }) => ({
+        output: params.text,
+        isError: false,
+      }),
+    });
+
+    const events = createEventEmitter();
+    const result = await runAgentLoop(
+      {
+        client: provider,
+        model: "test",
+        toolRegistry: registry,
+        strategy: createMockStrategy(),
+        events,
+        checkPermission: async () => ({
+          allowed: false,
+        }),
+      },
+      [{ role: "user", content: "Echo hello" }],
+    );
+
+    expect(result.iterations).toBe(2);
+    // Verify the "User rejected" default was used in the tool result
+    const toolMsg = result.messages.find(
+      (m) => m.role === "tool" && m.content.includes("User rejected"),
+    );
+    expect(toolMsg).toBeDefined();
+  });
+
   it("should retry transient errors and succeed", async () => {
     let callCount = 0;
     const provider: LLMProvider = {

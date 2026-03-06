@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { loadInstructions } from "../../../src/instructions/loader.js";
+import { loadInstructions, InstructionLoadError } from "../../../src/instructions/loader.js";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
 
@@ -94,5 +94,12 @@ describe("instructions/loader", () => {
     // No .dbcode/rules/ directory
     const result = await loadInstructions(tmpDir);
     expect(result.pathRules).toBe("");
+  });
+
+  it("should have InstructionLoadError with proper code", () => {
+    const err = new InstructionLoadError("load failed", { path: "/test" });
+    expect(err).toBeInstanceOf(Error);
+    expect(err.code).toBe("INSTRUCTION_LOAD_ERROR");
+    expect(err.message).toBe("load failed");
   });
 });

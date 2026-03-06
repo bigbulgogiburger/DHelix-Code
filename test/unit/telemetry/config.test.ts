@@ -55,6 +55,12 @@ describe("TelemetryConfig", () => {
     expect(config.exportIntervalMs).toBe(5000);
   });
 
+  it("should read prometheus port from env", () => {
+    process.env.DBCODE_TELEMETRY_PROMETHEUS_PORT = "9090";
+    const config = loadTelemetryConfig();
+    expect(config.prometheusPort).toBe(9090);
+  });
+
   it("should have default resource attributes as empty object", () => {
     const config = loadTelemetryConfig();
     expect(config.resourceAttributes).toEqual({});

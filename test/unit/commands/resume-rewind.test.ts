@@ -300,6 +300,15 @@ describe("config command", () => {
     expect(result.success).toBe(true);
   });
 
+  it("should show (none) when sessionId is undefined", async () => {
+    const result = await configCommand.execute("", {
+      ...baseContext,
+      sessionId: undefined,
+    });
+    expect(result.output).toContain("(none)");
+    expect(result.success).toBe(true);
+  });
+
   it("should change model with model key and value", async () => {
     const result = await configCommand.execute("model gpt-4o-mini", baseContext);
     expect(result.output).toContain("gpt-4o-mini");
