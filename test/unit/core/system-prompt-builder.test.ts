@@ -1,9 +1,10 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterAll } from "vitest";
 import { buildSystemPrompt } from "../../../src/core/system-prompt-builder.js";
 import { ToolRegistry } from "../../../src/tools/registry.js";
 import { z } from "zod";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
+import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 
 describe("buildSystemPrompt", () => {
   it("should build a prompt with identity section", () => {
@@ -93,5 +94,36 @@ describe("buildSystemPrompt", () => {
       workingDirectory: join(tmpdir(), `no-project-${Date.now()}`),
     });
     expect(prompt).not.toContain("Project type:");
+  });
+
+  describe("project type detection", () => {
+    const baseDir = join(tmpdir(), `dbcode-project-types-${Date.now()}`);
+
+    afterAll(() => {
+      try {
+        rmSync(baseDir, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
+    });
+
+    const cases: Array<{ type: string; marker: string }> = [
+      { type: "Rust", marker: "Cargo.toml" },
+      { type: "Go", marker: "go.mod" },
+      { type: "Python", marker: "pyproject.toml" },
+      { type: "Java", marker: "pom.xml" },
+      { type: "Ruby", marker: "Gemfile" },
+    ];
+
+    for (const { type, marker } of cases) {
+      it(`should detect ${type} project type`, () => {
+        const dir = join(baseDir, type.toLowerCase());
+        mkdirSync(dir, { recursive: true });
+        writeFileSync(join(dir, marker), "");
+
+        const prompt = buildSystemPrompt({ workingDirectory: dir });
+        expect(prompt).toContain(`Project type: ${type}`);
+      });
+    }
   });
 });
