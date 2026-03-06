@@ -103,4 +103,29 @@ describe("Conversation", () => {
     expect(llmMessages[1].role).toBe("user");
     expect(llmMessages[2].role).toBe("assistant");
   });
+
+  it("should include tool_call_id for tool messages in LLM format", () => {
+    const conv = Conversation.create("test-1")
+      .appendUserMessage("Read file")
+      .appendAssistantMessage("Reading...", [
+        { id: "tc-1", name: "file_read", arguments: '{"path":"a.ts"}' },
+      ])
+      .appendToolResults([{ id: "tc-1", output: "contents", isError: false }]);
+
+    const llmMessages = conv.toMessagesForLLM();
+    expect(llmMessages).toHaveLength(3);
+    expect(llmMessages[2].role).toBe("tool");
+    expect(llmMessages[2].tool_call_id).toBe("tc-1");
+  });
+
+  it("should include tool_calls for assistant messages with tools in LLM format", () => {
+    const toolCalls = [{ id: "tc-2", name: "bash_exec", arguments: '{"command":"ls"}' }];
+    const conv = Conversation.create("test-1")
+      .appendUserMessage("List files")
+      .appendAssistantMessage("Running command.", toolCalls);
+
+    const llmMessages = conv.toMessagesForLLM();
+    expect(llmMessages[1].tool_calls).toHaveLength(1);
+    expect(llmMessages[1].tool_calls![0].name).toBe("bash_exec");
+  });
 });

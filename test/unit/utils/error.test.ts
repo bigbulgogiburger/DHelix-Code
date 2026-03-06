@@ -4,6 +4,9 @@ import {
   ConfigError,
   LLMError,
   ToolError,
+  PermissionError,
+  AuthError,
+  ConversationError,
   isBaseError,
 } from "../../../src/utils/error.js";
 
@@ -46,6 +49,21 @@ describe("Error subclasses", () => {
   it("ToolError should have correct code", () => {
     const error = new ToolError("tool failed");
     expect(error.code).toBe("TOOL_ERROR");
+  });
+
+  it("PermissionError should have correct code", () => {
+    const error = new PermissionError("denied");
+    expect(error.code).toBe("PERMISSION_ERROR");
+  });
+
+  it("AuthError should have correct code", () => {
+    const error = new AuthError("unauthorized");
+    expect(error.code).toBe("AUTH_ERROR");
+  });
+
+  it("ConversationError should have correct code", () => {
+    const error = new ConversationError("bad state");
+    expect(error.code).toBe("CONVERSATION_ERROR");
   });
 });
 
