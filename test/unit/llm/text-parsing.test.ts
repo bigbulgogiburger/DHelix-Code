@@ -51,6 +51,19 @@ describe("TextParsingStrategy", () => {
       expect(prepared.tools).toBeUndefined();
     });
 
+    it("should append tool instructions at end when all messages are system", () => {
+      const messages = [
+        { role: "system" as const, content: "System 1" },
+        { role: "system" as const, content: "System 2" },
+      ];
+
+      const prepared = strategy.prepareRequest(messages, sampleTools);
+
+      expect(prepared.messages.length).toBe(3);
+      // Tool instructions should be appended after all system messages
+      expect(prepared.messages[2].content).toContain("file_read");
+    });
+
     it("should not inject if no tools", () => {
       const messages = [{ role: "user" as const, content: "Hello" }];
       const prepared = strategy.prepareRequest(messages, []);
