@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
-import { runAgentLoop, type AgentLoopConfig } from "../../src/core/agent-loop.js";
-import { type LLMProvider, type ChatMessage } from "../../src/llm/provider.js";
+import { runAgentLoop } from "../../src/core/agent-loop.js";
+import { type LLMProvider } from "../../src/llm/provider.js";
 import { ToolRegistry } from "../../src/tools/registry.js";
 import { type ToolCallStrategy } from "../../src/llm/tool-call-strategy.js";
 import { createEventEmitter } from "../../src/utils/events.js";

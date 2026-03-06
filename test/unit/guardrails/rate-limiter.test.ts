@@ -1,5 +1,4 @@
 import { describe, it, expect } from "vitest";
-import { Glob } from "glob";
 
 // Test that guardrails module structure exists
 describe("guardrails module", () => {

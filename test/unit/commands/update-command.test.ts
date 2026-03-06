@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { VERSION, APP_NAME } from "../../../src/constants.js";
+import { VERSION } from "../../../src/constants.js";
 
 // Mock child_process exec
 const mockExec = vi.fn();
@@ -11,7 +11,7 @@ vi.mock("node:util", () => ({
     return async (command: string) => {
       // Call the mock exec and extract the callback-based result
       return new Promise((resolve, reject) => {
-        (fn as Function)(
+        (fn as (...args: unknown[]) => void)(
           command,
           { timeout: 30_000 },
           (error: Error | null, stdout: string, stderr: string) => {

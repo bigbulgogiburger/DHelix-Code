@@ -17,7 +17,7 @@ import { doctorCommand } from "../../../src/commands/doctor.js";
 import { forkCommand } from "../../../src/commands/fork.js";
 import { SessionManager } from "../../../src/core/session-manager.js";
 import { metrics, COUNTERS } from "../../../src/telemetry/metrics.js";
-import { rm, mkdir, writeFile } from "node:fs/promises";
+import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 

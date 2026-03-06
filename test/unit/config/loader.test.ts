@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { loadConfig } from "../../../src/config/loader.js";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";

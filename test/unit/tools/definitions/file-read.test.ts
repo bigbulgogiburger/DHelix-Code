@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { fileReadTool } from "../../../../src/tools/definitions/file-read.js";
-import { join } from "node:path";
 
 const context = {
   workingDirectory: process.cwd(),

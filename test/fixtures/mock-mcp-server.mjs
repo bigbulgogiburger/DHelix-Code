@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global process */
 /**
  * Simple mock MCP server for testing.
  * Reads JSON-RPC requests from stdin, responds on stdout.

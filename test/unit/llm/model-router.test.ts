@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { ModelRouter, type ModelRouterConfig } from "../../../src/llm/model-router.js";
+import { ModelRouter } from "../../../src/llm/model-router.js";
 import { type LLMProvider } from "../../../src/llm/provider.js";
 import { LLMError } from "../../../src/utils/error.js";
 

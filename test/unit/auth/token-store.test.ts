@@ -1,9 +1,7 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach, vi } from "vitest";
 import { resolveToken, saveToken } from "../../../src/auth/token-store.js";
 import { TokenManager } from "../../../src/auth/token-manager.js";
-import { writeFile, mkdir, readFile, rm } from "node:fs/promises";
-import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { writeFile, mkdir } from "node:fs/promises";
 
 describe("token-store", () => {
   const originalEnv = { ...process.env };
