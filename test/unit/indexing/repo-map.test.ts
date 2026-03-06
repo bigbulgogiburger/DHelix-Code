@@ -1,5 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { buildRepoMap, renderRepoMap, type RepoMap } from "../../../src/indexing/repo-map.js";
+import {
+  buildRepoMap,
+  renderRepoMap,
+  RepoMapError,
+  type RepoMap,
+} from "../../../src/indexing/repo-map.js";
 import { join } from "node:path";
 
 describe("repo-map", () => {
@@ -117,6 +122,13 @@ describe("repo-map", () => {
       };
       const output = renderRepoMap(map, 10000);
       expect(output).not.toContain("internal.ts");
+    });
+
+    it("should have RepoMapError with proper code", () => {
+      const err = new RepoMapError("map failed", { root: "/test" });
+      expect(err).toBeInstanceOf(Error);
+      expect(err.code).toBe("REPO_MAP_ERROR");
+      expect(err.message).toBe("map failed");
     });
 
     it("should return header for empty map", () => {

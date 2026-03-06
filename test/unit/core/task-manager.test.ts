@@ -159,6 +159,12 @@ describe("TaskManager", () => {
     await expect(manager.delete("nonexistent")).rejects.toThrow("Task not found");
   });
 
+  it("should get all tasks", async () => {
+    const all = manager.getAll();
+    expect(all.length).toBe(manager.size);
+    expect(all.length).toBeGreaterThan(0);
+  });
+
   it("should track size", async () => {
     const before = manager.size;
     await manager.create({ title: "Size check" });
