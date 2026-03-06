@@ -16,6 +16,7 @@ import { statsCommand } from "../../../src/commands/stats.js";
 import { doctorCommand } from "../../../src/commands/doctor.js";
 import { forkCommand } from "../../../src/commands/fork.js";
 import { SessionManager } from "../../../src/core/session-manager.js";
+import { metrics, COUNTERS } from "../../../src/telemetry/metrics.js";
 import { rm, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -382,6 +383,17 @@ describe("stats command", () => {
     expect(result.output).toContain("Input");
     expect(result.output).toContain("Output");
     expect(result.output).toContain("Total");
+  });
+
+  it("should show token bar chart when tokens > 0", async () => {
+    // Increment token counters so totalTokens > 0 branch is taken
+    metrics.increment(COUNTERS.tokensUsed, 500, { type: "input", model: "test-model" });
+    metrics.increment(COUNTERS.tokensUsed, 200, { type: "output", model: "test-model" });
+
+    const result = await statsCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("#"); // input bar
+    expect(result.output).toContain("="); // output bar
   });
 
   it("should show N/A for missing session", async () => {
