@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { loadConfig } from "../../../src/config/loader.js";
+import { mkdir, writeFile, rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 describe("loadConfig", () => {
   const originalEnv = { ...process.env };
@@ -96,5 +99,49 @@ describe("loadConfig", () => {
     expect(resolved.config.llm.apiKey).toBe("dbcode-key");
     delete process.env.DBCODE_API_KEY;
     delete process.env.OPENAI_API_KEY;
+  });
+
+  it("should load project config from .dbcode/config.json", async () => {
+    // Clear env vars so they don't override project config
+    const savedKey = process.env.OPENAI_API_KEY;
+    const savedDbKey = process.env.DBCODE_API_KEY;
+    const savedModel = process.env.DBCODE_MODEL;
+    delete process.env.OPENAI_API_KEY;
+    delete process.env.DBCODE_API_KEY;
+    delete process.env.DBCODE_MODEL;
+
+    const tmpDir = join(tmpdir(), `dbcode-config-test-${Date.now()}`);
+    const projectConfigDir = join(tmpDir, ".dbcode");
+    await mkdir(projectConfigDir, { recursive: true });
+    await writeFile(
+      join(projectConfigDir, "config.json"),
+      JSON.stringify({ llm: { model: "project-model" } }),
+      "utf-8",
+    );
+
+    const resolved = await loadConfig({}, tmpDir);
+    expect(resolved.config.llm.model).toBe("project-model");
+    expect(resolved.sources.get("llm")).toBe("project");
+
+    // Restore env
+    if (savedKey) process.env.OPENAI_API_KEY = savedKey;
+    if (savedDbKey) process.env.DBCODE_API_KEY = savedDbKey;
+    if (savedModel) process.env.DBCODE_MODEL = savedModel;
+    await rm(tmpDir, { recursive: true, force: true });
+  });
+
+  it("should throw on invalid config schema", async () => {
+    await expect(
+      loadConfig({
+        llm: {
+          model: "",
+          baseUrl: "",
+          temperature: -999,
+          maxTokens: -1,
+          contextWindow: -1,
+          timeout: -1,
+        },
+      }),
+    ).rejects.toThrow("Invalid configuration");
   });
 });
