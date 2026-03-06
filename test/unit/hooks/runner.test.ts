@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { HookRunner } from "../../../src/hooks/runner.js";
+import { HookRunner, HookError } from "../../../src/hooks/runner.js";
 import { type HookConfig, type HookEventPayload } from "../../../src/hooks/types.js";
 
 describe("HookRunner", () => {
@@ -375,6 +375,14 @@ describe("HookRunner", () => {
     } finally {
       globalThis.fetch = originalFetch;
     }
+  });
+
+  it("should have HookError with proper code and context", () => {
+    const err = new HookError("hook failed", { hook: "test-hook" });
+    expect(err).toBeInstanceOf(Error);
+    expect(err.code).toBe("HOOK_ERROR");
+    expect(err.message).toBe("hook failed");
+    expect(err.context).toEqual({ hook: "test-hook" });
   });
 
   it("should interpolate FILE_PATH and SESSION_ID", async () => {

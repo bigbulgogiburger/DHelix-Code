@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { resolveMentions, buildMentionContext } from "../../../src/mentions/resolver.js";
+import {
+  resolveMentions,
+  buildMentionContext,
+  MentionResolveError,
+} from "../../../src/mentions/resolver.js";
 import { type ParsedMention } from "../../../src/mentions/parser.js";
 import { mkdir, writeFile, rm } from "node:fs/promises";
 import { join } from "node:path";
@@ -296,6 +300,16 @@ describe("mentions/resolver", () => {
 
     it("should return empty for empty array", () => {
       expect(buildMentionContext([])).toBe("");
+    });
+  });
+
+  describe("MentionResolveError", () => {
+    it("should have proper error code and context", () => {
+      const err = new MentionResolveError("resolve failed", { mention: "@test.ts" });
+      expect(err).toBeInstanceOf(Error);
+      expect(err.code).toBe("MENTION_RESOLVE_ERROR");
+      expect(err.message).toBe("resolve failed");
+      expect(err.context).toEqual({ mention: "@test.ts" });
     });
   });
 });

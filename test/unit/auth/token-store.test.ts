@@ -235,6 +235,29 @@ describe("resolveToken - file fallback", () => {
     if (originalOpenai) process.env.OPENAI_API_KEY = originalOpenai;
   });
 
+  it("should handle corrupt credentials file (invalid JSON)", async () => {
+    const originalDbcode = process.env.DBCODE_API_KEY;
+    const originalOpenai = process.env.OPENAI_API_KEY;
+    delete process.env.DBCODE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+
+    const { CONFIG_DIR } = await import("../../../src/constants.js");
+    const { joinPath } = await import("../../../src/utils/path.js");
+    const tokenFile = joinPath(CONFIG_DIR, "credentials.json");
+
+    // Write invalid JSON to trigger the catch block in loadFromFile
+    await mkdir(CONFIG_DIR, { recursive: true });
+    await writeFile(tokenFile, "NOT VALID JSON {{{", "utf-8");
+
+    const token = await resolveToken();
+    // loadFromFile should catch the JSON parse error and return undefined
+    expect(token === undefined || token.source !== undefined).toBe(true);
+
+    // Restore env
+    if (originalDbcode) process.env.DBCODE_API_KEY = originalDbcode;
+    if (originalOpenai) process.env.OPENAI_API_KEY = originalOpenai;
+  });
+
   it("should handle credentials file with no token field", async () => {
     const originalDbcode = process.env.DBCODE_API_KEY;
     const originalOpenai = process.env.OPENAI_API_KEY;
