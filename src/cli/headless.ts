@@ -5,6 +5,7 @@ import { runAgentLoop } from "../core/agent-loop.js";
 import { buildSystemPrompt } from "../core/system-prompt-builder.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { createEventEmitter } from "../utils/events.js";
+import { getModelCapabilities } from "../llm/model-capabilities.js";
 
 /** Output format for headless mode */
 export type HeadlessOutputFormat = "text" | "json" | "stream-json";
@@ -80,6 +81,7 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     });
   }
 
+  const modelCaps = getModelCapabilities(model);
   const result = await runAgentLoop(
     {
       client,
@@ -89,6 +91,7 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
       events,
       maxIterations,
       workingDirectory,
+      maxContextTokens: modelCaps.maxContextTokens,
     },
     initialMessages,
   );

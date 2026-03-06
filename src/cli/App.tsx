@@ -23,6 +23,7 @@ import { type PermissionManager } from "../permissions/manager.js";
 import { type ExtractedToolCall } from "../tools/types.js";
 import { type CommandRegistry } from "../commands/registry.js";
 import { type ContextManager } from "../core/context-manager.js";
+import { getModelCapabilities } from "../llm/model-capabilities.js";
 import { type HookRunner } from "../hooks/runner.js";
 import { type Task } from "../core/task-manager.js";
 import { type SessionManager } from "../core/session-manager.js";
@@ -197,6 +198,7 @@ export function App({
       }
 
       try {
+        const modelCaps = getModelCapabilities(activeModel);
         const result = await runAgentLoop(
           {
             client,
@@ -205,6 +207,7 @@ export function App({
             strategy,
             events,
             useStreaming: true,
+            maxContextTokens: modelCaps.maxContextTokens,
             checkPermission: async (call) => {
               const tool = toolRegistry.get(call.name);
               if (!tool) {

@@ -7,6 +7,7 @@ import { consumeStream } from "../llm/streaming.js";
 import { type AppEventEmitter } from "../utils/events.js";
 import { AGENT_LOOP } from "../constants.js";
 import { LLMError } from "../utils/error.js";
+import { ContextManager } from "./context-manager.js";
 
 /** Configuration for the agent loop */
 export interface AgentLoopConfig {
@@ -25,6 +26,10 @@ export interface AgentLoopConfig {
   readonly maxRetries?: number;
   /** Use streaming for LLM calls (emits text deltas via events) */
   readonly useStreaming?: boolean;
+  /** Maximum tokens for the context window (enables auto-compaction) */
+  readonly maxContextTokens?: number;
+  /** Maximum characters per individual tool result (default: 12000) */
+  readonly maxToolResultChars?: number;
 }
 
 /** Result of a permission check */
@@ -50,6 +55,11 @@ function classifyLLMError(error: unknown): LLMErrorClass {
   if (!(error instanceof Error)) return "permanent";
 
   const message = error.message.toLowerCase();
+
+  // "Request too large" is permanent — retrying the same payload won't help
+  if (message.includes("request too large") || message.includes("too many tokens")) {
+    return "permanent";
+  }
 
   if (
     message.includes("rate limit") ||
@@ -108,8 +118,14 @@ export async function runAgentLoop(
 ): Promise<AgentLoopResult> {
   const maxIterations = config.maxIterations ?? AGENT_LOOP.maxIterations;
   const maxRetries = config.maxRetries ?? 2;
+  const maxToolResultChars = config.maxToolResultChars ?? 12_000;
   const messages: ChatMessage[] = [...initialMessages];
   let iterations = 0;
+
+  // Context manager for auto-compaction when token budget is exceeded
+  const contextManager = new ContextManager({
+    maxContextTokens: config.maxContextTokens,
+  });
 
   while (iterations < maxIterations) {
     if (config.signal?.aborted) {
@@ -119,9 +135,12 @@ export async function runAgentLoop(
     iterations++;
     config.events.emit("agent:iteration", { iteration: iterations });
 
+    // Apply context compaction if messages exceed token budget
+    const managedMessages = [...contextManager.prepare(messages)];
+
     // Prepare request with tool definitions
     const toolDefs = config.toolRegistry.getDefinitionsForLLM();
-    const prepared = config.strategy.prepareRequest(messages, toolDefs);
+    const prepared = config.strategy.prepareRequest(managedMessages, toolDefs);
 
     // Call LLM with retry logic
     config.events.emit("llm:start", { iteration: iterations });
@@ -244,8 +263,19 @@ export async function runAgentLoop(
       });
     }
 
+    // Truncate oversized tool results before appending
+    const truncatedResults = results.map((r) => {
+      if (r.output.length <= maxToolResultChars) return r;
+      return {
+        ...r,
+        output:
+          r.output.slice(0, maxToolResultChars) +
+          `\n\n[... truncated, showing first ${maxToolResultChars} of ${r.output.length} chars]`,
+      };
+    });
+
     // Append tool results as messages
-    const toolMessages = config.strategy.formatToolResults(results);
+    const toolMessages = config.strategy.formatToolResults(truncatedResults);
     messages.push(...toolMessages);
   }
 
