@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.example.bookapi.controller.BookControllerTest" tests="6" skipped="0" failures="0" errors="0" timestamp="2026-03-06T15:03:51" hostname="pyeondohun-ui-MacBookPro.local" time="0.506">
+  <properties/>
+  <testcase name="testGetBookByIdNotFound()" classname="com.example.bookapi.controller.BookControllerTest" time="0.342"/>
+  <testcase name="testGetAllBooks()" classname="com.example.bookapi.controller.BookControllerTest" time="0.018"/>
+  <testcase name="testUpdateBook()" classname="com.example.bookapi.controller.BookControllerTest" time="0.029"/>
+  <testcase name="testGetBookById()" classname="com.example.bookapi.controller.BookControllerTest" time="0.004"/>
+  <testcase name="testCreateBook()" classname="com.example.bookapi.controller.BookControllerTest" time="0.003"/>
+  <testcase name="testDeleteBook()" classname="com.example.bookapi.controller.BookControllerTest" time="0.108"/>
+  <system-out><![CDATA[00:03:50.000 [Test worker] INFO org.springframework.test.context.support.AnnotationConfigContextLoaderUtils -- Could not detect default configuration classes for test class [com.example.bookapi.controller.BookControllerTest]: BookControllerTest does not declare any static, non-private, non-final, nested classes annotated with @Configuration.
+00:03:50.038 [Test worker] INFO org.springframework.boot.test.context.SpringBootTestContextBootstrapper -- Found @SpringBootConfiguration com.example.bookapi.BookApiApplication for test class com.example.bookapi.controller.BookControllerTest
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::                (v3.2.3)
+
+2026-03-07T00:03:50.153+09:00  INFO 37326 --- [    Test worker] c.e.b.controller.BookControllerTest      : Starting BookControllerTest using Java 21.0.8 with PID 37326 (started by pyeondohun in /Users/pyeondohun/development/dbcode/test-projects/spring-boot-api)
+2026-03-07T00:03:50.154+09:00  INFO 37326 --- [    Test worker] c.e.b.controller.BookControllerTest      : No active profile set, falling back to 1 default profile: "default"
+2026-03-07T00:03:50.374+09:00  INFO 37326 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Bootstrapping Spring Data JPA repositories in DEFAULT mode.
+2026-03-07T00:03:50.390+09:00  INFO 37326 --- [    Test worker] .s.d.r.c.RepositoryConfigurationDelegate : Finished Spring Data repository scanning in 14 ms. Found 2 JPA repository interfaces.
+2026-03-07T00:03:50.531+09:00  INFO 37326 --- [    Test worker] o.hibernate.jpa.internal.util.LogHelper  : HHH000204: Processing PersistenceUnitInfo [name: default]
+2026-03-07T00:03:50.548+09:00  INFO 37326 --- [    Test worker] org.hibernate.Version                    : HHH000412: Hibernate ORM core version 6.4.4.Final
+2026-03-07T00:03:50.558+09:00  INFO 37326 --- [    Test worker] o.h.c.internal.RegionFactoryInitiator    : HHH000026: Second-level cache disabled
+2026-03-07T00:03:50.632+09:00  INFO 37326 --- [    Test worker] o.s.o.j.p.SpringPersistenceUnitInfo      : No LoadTimeWeaver setup: ignoring JPA class transformer
+2026-03-07T00:03:50.640+09:00  INFO 37326 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Starting...
+2026-03-07T00:03:50.701+09:00  INFO 37326 --- [    Test worker] com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Added connection conn0: url=jdbc:h2:mem:testdb user=SA
+2026-03-07T00:03:50.701+09:00  INFO 37326 --- [    Test worker] com.zaxxer.hikari.HikariDataSource       : HikariPool-1 - Start completed.
+2026-03-07T00:03:51.007+09:00  INFO 37326 --- [    Test worker] o.h.e.t.j.p.i.JtaPlatformInitiator       : HHH000489: No JTA platform available (set 'hibernate.transaction.jta.platform' to enable JTA platform integration)
+2026-03-07T00:03:51.030+09:00  INFO 37326 --- [    Test worker] j.LocalContainerEntityManagerFactoryBean : Initialized JPA EntityManagerFactory for persistence unit 'default'
+2026-03-07T00:03:51.236+09:00  WARN 37326 --- [    Test worker] JpaBaseConfiguration$JpaWebConfiguration : spring.jpa.open-in-view is enabled by default. Therefore, database queries may be performed during view rendering. Explicitly configure spring.jpa.open-in-view to disable this warning
+2026-03-07T00:03:51.371+09:00  INFO 37326 --- [    Test worker] o.s.b.a.h2.H2ConsoleAutoConfiguration    : H2 console available at '/h2-console'. Database available at 'jdbc:h2:mem:testdb'
+2026-03-07T00:03:51.395+09:00  INFO 37326 --- [    Test worker] o.s.b.t.m.w.SpringBootMockServletContext : Initializing Spring TestDispatcherServlet ''
+2026-03-07T00:03:51.396+09:00  INFO 37326 --- [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Initializing Servlet ''
+2026-03-07T00:03:51.396+09:00  INFO 37326 --- [    Test worker] o.s.t.web.servlet.TestDispatcherServlet  : Completed initialization in 0 ms
+2026-03-07T00:03:51.410+09:00  INFO 37326 --- [    Test worker] c.e.b.controller.BookControllerTest      : Started BookControllerTest in 1.328 seconds (process running for 1.722)
+]]></system-out>
+  <system-err><![CDATA[WARNING: A Java agent has been loaded dynamically (/Users/pyeondohun/.gradle/caches/modules-2/files-2.1/net.bytebuddy/byte-buddy-agent/1.14.12/be4984cb6fd1ef1d11f218a648889dfda44b8a15/byte-buddy-agent-1.14.12.jar)
+WARNING: If a serviceability tool is in use, please run with -XX:+EnableDynamicAgentLoading to hide this warning
+WARNING: If a serviceability tool is not in use, please run with -Djdk.instrument.traceUsage for more information
+WARNING: Dynamic loading of agents will be disallowed by default in a future release
+]]></system-err>
+</testsuite>
