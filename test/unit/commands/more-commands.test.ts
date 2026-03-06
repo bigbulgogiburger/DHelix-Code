@@ -37,7 +37,14 @@ describe("Core slash commands", () => {
   it("/compact should return instructions", async () => {
     const result = await compactCommand.execute("", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toBeTypeOf("string");
+    expect(result.output).toContain("Compaction triggered");
+  });
+
+  it("/compact should accept focus topic", async () => {
+    const result = await compactCommand.execute("API changes", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("API changes");
+    expect(result.output).toContain("focus");
   });
 
   it("/help should list commands", async () => {

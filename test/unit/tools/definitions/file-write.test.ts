@@ -38,6 +38,16 @@ describe("file_write tool", () => {
     expect(written).toBe("hello\nworld");
   });
 
+  it("should handle write errors gracefully", async () => {
+    // Try to write to an invalid path (e.g., a path with null bytes or impossibly deep)
+    const result = await fileWriteTool.execute(
+      { path: "\0invalid-path", content: "test" },
+      context,
+    );
+    expect(result.isError).toBe(true);
+    expect(result.output).toContain("Failed to write file");
+  });
+
   it("should create parent directories", async () => {
     const nestedPath = join(tmpDir, "nested", "deep", "file.txt");
     const result = await fileWriteTool.execute(

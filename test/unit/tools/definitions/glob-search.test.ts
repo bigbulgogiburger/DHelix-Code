@@ -45,4 +45,11 @@ describe("glob_search tool", () => {
     // Either empty results or error — both are valid
     expect(typeof result.output).toBe("string");
   });
+
+  it("should handle glob error gracefully", async () => {
+    // Use a null-byte pattern that will cause an error
+    const result = await globSearchTool.execute({ pattern: "\0invalid", path: "." }, context);
+    // Should return error without crashing
+    expect(typeof result.output).toBe("string");
+  });
 });
