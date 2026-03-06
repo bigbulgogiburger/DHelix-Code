@@ -19,9 +19,15 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("Working directory:");
   });
 
-  it("should include conventions section", () => {
+  it("should include doing tasks section", () => {
     const prompt = buildSystemPrompt();
-    expect(prompt).toContain("Read files before modifying");
+    expect(prompt).toContain("Doing tasks");
+    expect(prompt).toContain("Read files before modifying them");
+  });
+
+  it("should include code quality section", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toContain("Code quality");
   });
 
   it("should include tools section when registry provided", () => {
@@ -39,10 +45,23 @@ describe("buildSystemPrompt", () => {
     expect(prompt).toContain("A test tool");
   });
 
+  it("should include tool usage guidelines when tools provided", () => {
+    const registry = new ToolRegistry();
+    registry.register({
+      name: "file_read",
+      description: "Read a file",
+      parameterSchema: z.object({}),
+      permissionLevel: "safe",
+      execute: async () => ({ output: "ok", isError: false }),
+    });
+    const prompt = buildSystemPrompt({ toolRegistry: registry });
+    expect(prompt).toContain("Tool usage guidelines");
+  });
+
   it("should not include tools section when registry empty", () => {
     const registry = new ToolRegistry();
     const prompt = buildSystemPrompt({ toolRegistry: registry });
-    expect(prompt).not.toContain("Available Tools");
+    expect(prompt).not.toContain("Using your tools");
   });
 
   it("should include project instructions when provided", () => {
@@ -94,6 +113,24 @@ describe("buildSystemPrompt", () => {
       workingDirectory: join(tmpdir(), `no-project-${Date.now()}`),
     });
     expect(prompt).not.toContain("Project type:");
+  });
+
+  it("should auto-load DBCODE.md from .dbcode directory", () => {
+    const dir = join(tmpdir(), `dbcode-prompt-autoload-${Date.now()}`);
+    mkdirSync(join(dir, ".dbcode"), { recursive: true });
+    writeFileSync(join(dir, ".dbcode", "DBCODE.md"), "Use strict TypeScript", "utf-8");
+
+    const prompt = buildSystemPrompt({ workingDirectory: dir });
+    expect(prompt).toContain("Use strict TypeScript");
+    expect(prompt).toContain("Project Instructions");
+
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("should include recent git commits", () => {
+    // dbcode project root is a git repo with commits
+    const prompt = buildSystemPrompt({ workingDirectory: process.cwd() });
+    expect(prompt).toContain("Recent commits:");
   });
 
   describe("project type detection", () => {
