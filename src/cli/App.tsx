@@ -103,11 +103,17 @@ export function App({
       );
     };
 
+    const onTextDelta = ({ text }: { text: string }) => {
+      setStreamingText((prev) => prev + text);
+    };
+
     events.on("tool:start", onToolStart);
     events.on("tool:complete", onToolComplete);
+    events.on("llm:text-delta", onTextDelta);
     return () => {
       events.off("tool:start", onToolStart);
       events.off("tool:complete", onToolComplete);
+      events.off("llm:text-delta", onTextDelta);
     };
   }, [events]);
 
@@ -179,6 +185,7 @@ export function App({
             toolRegistry,
             strategy,
             events,
+            useStreaming: true,
             checkPermission: async (call) => {
               const tool = toolRegistry.get(call.name);
               if (!tool) {

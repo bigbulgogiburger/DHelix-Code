@@ -319,6 +319,48 @@ describe("Agent Loop Integration", () => {
     expect(provider.chat).toHaveBeenCalledTimes(1);
   });
 
+  it("should use streaming mode when useStreaming is enabled", async () => {
+    const events = createEventEmitter();
+    const textDeltas: string[] = [];
+    events.on("llm:text-delta", ({ text }) => textDeltas.push(text));
+
+    const provider: LLMProvider = {
+      name: "mock",
+      chat: vi.fn(),
+      stream: vi.fn(async function* () {
+        yield { type: "text-delta" as const, text: "Hello " };
+        yield { type: "text-delta" as const, text: "world!" };
+        yield {
+          type: "done" as const,
+          usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        };
+      }),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const result = await runAgentLoop(
+      {
+        client: provider,
+        model: "test",
+        toolRegistry: new ToolRegistry(),
+        strategy: createMockStrategy(),
+        events,
+        useStreaming: true,
+      },
+      [{ role: "user", content: "test" }],
+    );
+
+    expect(result.iterations).toBe(1);
+    expect(textDeltas).toEqual(["Hello ", "world!"]);
+    // chat() should NOT have been called
+    expect(provider.chat).not.toHaveBeenCalled();
+    // stream() should have been called
+    expect(provider.stream).toHaveBeenCalledTimes(1);
+    // Final message should have the accumulated text
+    const lastMsg = result.messages[result.messages.length - 1];
+    expect(lastMsg.content).toBe("Hello world!");
+  });
+
   it("should emit events during execution", async () => {
     const provider = createMockProvider([{ content: "Done." }]);
     const events = createEventEmitter();

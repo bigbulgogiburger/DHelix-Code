@@ -1,8 +1,9 @@
-import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
+import { type LLMProvider, type ChatMessage, type ChatResponse } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { type ExtractedToolCall, type ToolCallResult } from "../tools/types.js";
 import { executeToolCall } from "../tools/executor.js";
+import { consumeStream } from "../llm/streaming.js";
 import { type AppEventEmitter } from "../utils/events.js";
 import { AGENT_LOOP } from "../constants.js";
 import { LLMError } from "../utils/error.js";
@@ -22,6 +23,8 @@ export interface AgentLoopConfig {
   readonly checkPermission?: (call: ExtractedToolCall) => Promise<PermissionResult>;
   /** Maximum LLM call retries per iteration (default: 2) */
   readonly maxRetries?: number;
+  /** Use streaming for LLM calls (emits text deltas via events) */
+  readonly useStreaming?: boolean;
 }
 
 /** Result of a permission check */
@@ -123,19 +126,37 @@ export async function runAgentLoop(
     // Call LLM with retry logic
     config.events.emit("llm:start", { iteration: iterations });
 
-    let response;
+    const chatRequest = {
+      model: config.model,
+      messages: prepared.messages,
+      tools: prepared.tools,
+      temperature: config.temperature ?? 0,
+      maxTokens: config.maxTokens ?? 4096,
+      signal: config.signal,
+    };
+
+    let response: ChatResponse | undefined;
     let lastError: unknown;
 
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        response = await config.client.chat({
-          model: config.model,
-          messages: prepared.messages,
-          tools: prepared.tools,
-          temperature: config.temperature ?? 0,
-          maxTokens: config.maxTokens ?? 4096,
-          signal: config.signal,
-        });
+        if (config.useStreaming) {
+          // Streaming mode: accumulate chunks while emitting text deltas
+          const stream = config.client.stream(chatRequest);
+          const accumulated = await consumeStream(stream, {
+            onTextDelta: (text) => {
+              config.events.emit("llm:text-delta", { text });
+            },
+          });
+          response = {
+            content: accumulated.text,
+            toolCalls: accumulated.toolCalls,
+            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            finishReason: "stop",
+          };
+        } else {
+          response = await config.client.chat(chatRequest);
+        }
         break;
       } catch (error) {
         lastError = error;
