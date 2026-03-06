@@ -5,8 +5,8 @@ describe("configSchema", () => {
   it("should parse valid full config", () => {
     const result = configSchema.safeParse({
       llm: {
-        baseUrl: "http://localhost:11434/v1",
-        model: "llama3.1",
+        baseUrl: "https://api.openai.com/v1",
+        model: "gpt-4o",
         temperature: 0.5,
         maxTokens: 2048,
         contextWindow: 64000,
@@ -18,7 +18,7 @@ describe("configSchema", () => {
 
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.llm.model).toBe("llama3.1");
+      expect(result.data.llm.model).toBe("gpt-4o");
       expect(result.data.verbose).toBe(true);
     }
   });
@@ -27,7 +27,7 @@ describe("configSchema", () => {
     const result = configSchema.safeParse({});
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.llm.model).toBe("llama3.1");
+      expect(result.data.llm.model).toBe("gpt-4o");
       expect(result.data.llm.temperature).toBe(0.0);
       expect(result.data.permissionMode).toBe("default");
       expect(result.data.verbose).toBe(false);

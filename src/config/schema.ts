@@ -2,11 +2,11 @@ import { z } from "zod";
 
 /** LLM provider configuration */
 export const llmConfigSchema = z.object({
-  baseUrl: z.string().url().default("http://localhost:11434/v1"),
+  baseUrl: z.string().url().default("https://api.openai.com/v1"),
   apiKey: z.string().optional(),
-  model: z.string().default("llama3.1"),
+  model: z.string().default("gpt-4o"),
   temperature: z.number().min(0).max(2).default(0.0),
-  maxTokens: z.number().positive().default(4096),
+  maxTokens: z.number().positive().default(16384),
   contextWindow: z.number().positive().default(128_000),
   timeout: z.number().positive().default(60_000),
 });

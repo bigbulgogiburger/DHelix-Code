@@ -40,10 +40,7 @@ export function relativePath(from: string, to: string): string {
   return normalizePath(relative(from, to));
 }
 
-/** Check if a path is absolute */
+/** Check if a path is absolute (recognizes both Unix and Windows formats on all platforms) */
 export function isAbsolutePath(p: string): boolean {
-  if (isWindows()) {
-    return /^[a-zA-Z]:[\\/]/.test(p) || p.startsWith("/");
-  }
-  return p.startsWith("/");
+  return /^[a-zA-Z]:[\\/]/.test(p) || p.startsWith("/");
 }

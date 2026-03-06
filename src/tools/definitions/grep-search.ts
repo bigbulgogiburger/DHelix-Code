@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { readFile } from "node:fs/promises";
-import { glob } from "node:fs/promises";
+import fg from "fast-glob";
 import { join } from "node:path";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath, normalizePath } from "../../utils/path.js";
@@ -26,10 +26,8 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     const results: string[] = [];
     const includePattern = params.include ?? "**/*";
 
-    const files: string[] = [];
-    for await (const entry of glob(includePattern, { cwd: searchPath })) {
-      files.push(join(searchPath, entry));
-    }
+    const entries = await fg(includePattern, { cwd: searchPath, dot: false, onlyFiles: true });
+    const files: string[] = entries.map((entry) => join(searchPath, entry));
 
     for (const filePath of files) {
       try {

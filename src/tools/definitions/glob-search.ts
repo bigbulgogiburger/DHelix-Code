@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { glob } from "node:fs/promises";
+import fg from "fast-glob";
 import { stat } from "node:fs/promises";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath, normalizePath } from "../../utils/path.js";
@@ -20,13 +20,12 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
   try {
     const matches: { path: string; mtime: number }[] = [];
 
-    for await (const entry of glob(params.pattern, { cwd: searchDir })) {
+    const entries = await fg(params.pattern, { cwd: searchDir, dot: false, onlyFiles: true });
+    for (const entry of entries) {
       const fullPath = join(searchDir, entry);
       try {
         const stats = await stat(fullPath);
-        if (stats.isFile()) {
-          matches.push({ path: normalizePath(entry), mtime: stats.mtimeMs });
-        }
+        matches.push({ path: normalizePath(entry), mtime: stats.mtimeMs });
       } catch {
         // Skip files we can't stat
       }

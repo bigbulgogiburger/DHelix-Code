@@ -3,10 +3,10 @@ import { DEFAULT_CONFIG } from "../../../src/config/defaults.js";
 
 describe("DEFAULT_CONFIG", () => {
   it("should have LLM defaults", () => {
-    expect(DEFAULT_CONFIG.llm.model).toBe("llama3.1");
-    expect(DEFAULT_CONFIG.llm.baseUrl).toBe("http://localhost:11434/v1");
+    expect(DEFAULT_CONFIG.llm.model).toBe("gpt-4o");
+    expect(DEFAULT_CONFIG.llm.baseUrl).toBe("https://api.openai.com/v1");
     expect(DEFAULT_CONFIG.llm.temperature).toBe(0.0);
-    expect(DEFAULT_CONFIG.llm.maxTokens).toBe(4096);
+    expect(DEFAULT_CONFIG.llm.maxTokens).toBe(16384);
     expect(DEFAULT_CONFIG.llm.contextWindow).toBe(128_000);
     expect(DEFAULT_CONFIG.llm.timeout).toBe(60_000);
   });

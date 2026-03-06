@@ -3,10 +3,10 @@ import { type AppConfig } from "./types.js";
 /** Default configuration values */
 export const DEFAULT_CONFIG: AppConfig = {
   llm: {
-    baseUrl: "http://localhost:11434/v1",
-    model: "llama3.1",
+    baseUrl: "https://api.openai.com/v1",
+    model: "gpt-4o",
     temperature: 0.0,
-    maxTokens: 4096,
+    maxTokens: 16384,
     contextWindow: 128_000,
     timeout: 60_000,
   },

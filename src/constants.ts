@@ -47,11 +47,11 @@ export const TOKEN_DEFAULTS = {
 /** LLM defaults */
 export const LLM_DEFAULTS = {
   /** Default API base URL (OpenAI-compatible) */
-  baseUrl: "http://localhost:11434/v1",
+  baseUrl: "https://api.openai.com/v1",
   /** Default model name */
-  model: "llama3.1",
+  model: "gpt-4o",
   /** Default temperature */
   temperature: 0.0,
   /** Default max tokens for response */
-  maxTokens: 4096,
+  maxTokens: 16384,
 } as const;
