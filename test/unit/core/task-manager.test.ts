@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterAll } from "vitest";
-import { join } from "node:path";
+import { join, dirname } from "node:path";
 import { tmpdir } from "node:os";
 import { rm } from "node:fs/promises";
 import { TaskManager } from "../../../src/core/task-manager.js";
@@ -141,5 +141,68 @@ describe("TaskManager", () => {
     const found = manager2.get(task.id);
     expect(found).toBeDefined();
     expect(found!.title).toBe("Persist me");
+  });
+
+  it("should cascade delete children", async () => {
+    const parent = await manager.create({ title: "Parent to delete" });
+    const child1 = await manager.create({ title: "Child A", parentId: parent.id });
+    const child2 = await manager.create({ title: "Child B", parentId: parent.id });
+
+    await manager.delete(parent.id, true);
+
+    expect(manager.get(parent.id)).toBeUndefined();
+    expect(manager.get(child1.id)).toBeUndefined();
+    expect(manager.get(child2.id)).toBeUndefined();
+  });
+
+  it("should throw when deleting nonexistent task", async () => {
+    await expect(manager.delete("nonexistent")).rejects.toThrow("Task not found");
+  });
+
+  it("should track size", async () => {
+    const before = manager.size;
+    await manager.create({ title: "Size check" });
+    expect(manager.size).toBe(before + 1);
+  });
+
+  it("should create task with metadata", async () => {
+    const task = await manager.create({
+      title: "With meta",
+      metadata: { priority: "high", estimate: 3 },
+    });
+    expect(task.metadata).toEqual({ priority: "high", estimate: 3 });
+  });
+
+  it("should update task metadata", async () => {
+    const task = await manager.create({
+      title: "Meta update",
+      metadata: { key: "original" },
+    });
+    const updated = await manager.update(task.id, {
+      metadata: { key: "changed", extra: true },
+    });
+    expect(updated.metadata).toEqual({ key: "changed", extra: true });
+  });
+
+  it("should update task description", async () => {
+    const task = await manager.create({ title: "Desc test", description: "Old" });
+    const updated = await manager.update(task.id, { description: "New" });
+    expect(updated.description).toBe("New");
+  });
+
+  it("should throw when parent doesn't exist", async () => {
+    await expect(manager.create({ title: "Orphan", parentId: "nonexistent" })).rejects.toThrow(
+      "Parent task not found",
+    );
+  });
+
+  it("should throw on corrupt store file", async () => {
+    const { writeFile, mkdir } = await import("node:fs/promises");
+    const corruptPath = join(testDir, "corrupt-tasks.json");
+    await mkdir(dirname(corruptPath), { recursive: true });
+    await writeFile(corruptPath, "not valid json{{{", "utf-8");
+
+    const corruptManager = new TaskManager(corruptPath);
+    await expect(corruptManager.load()).rejects.toThrow("Failed to load tasks");
   });
 });

@@ -30,4 +30,19 @@ describe("glob_search tool", () => {
     expect(result.isError).toBe(false);
     expect(result.output).toContain("error.ts");
   });
+
+  it("should search without path parameter (uses cwd)", async () => {
+    const result = await globSearchTool.execute({ pattern: "package.json" }, context);
+    expect(result.isError).toBe(false);
+    expect(result.output).toContain("package.json");
+  });
+
+  it("should handle nonexistent search directory gracefully", async () => {
+    const result = await globSearchTool.execute(
+      { pattern: "*.ts", path: "/nonexistent/path/xyz" },
+      context,
+    );
+    // Either empty results or error — both are valid
+    expect(typeof result.output).toBe("string");
+  });
 });
