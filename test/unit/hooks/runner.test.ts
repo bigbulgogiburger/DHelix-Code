@@ -220,6 +220,41 @@ describe("HookRunner", () => {
     expect(result.results[0].blocked).toBe(true);
   });
 
+  it("should capture blockReason from stdout on blocking hook", async () => {
+    const config: HookConfig = {
+      PreToolUse: [
+        {
+          hooks: [
+            {
+              type: "command",
+              command: "echo Dangerous operation detected && exit 2",
+            },
+          ],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("PreToolUse", { event: "PreToolUse" });
+    expect(result.blocked).toBe(true);
+    expect(result.blockReason).toBe("Dangerous operation detected");
+  });
+
+  it("should interpolate custom data variables", async () => {
+    const config: HookConfig = {
+      UserPromptSubmit: [
+        {
+          hooks: [{ type: "command", command: "echo $input" }],
+        },
+      ],
+    };
+    const runner = new HookRunner(config);
+    const result = await runner.run("UserPromptSubmit", {
+      event: "UserPromptSubmit",
+      data: { input: "test-value" },
+    });
+    expect(result.results[0].stdout).toBe("test-value");
+  });
+
   it("should interpolate FILE_PATH and SESSION_ID", async () => {
     const config: HookConfig = {
       PostToolUse: [
