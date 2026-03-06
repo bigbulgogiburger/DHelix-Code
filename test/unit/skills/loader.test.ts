@@ -113,6 +113,24 @@ describe("loadSkill", () => {
     await expect(loadSkill(skillPath)).rejects.toThrow("missing frontmatter");
   });
 
+  it("should parse single-quoted string values", async () => {
+    const skillPath = join(testDir, "single-quoted.md");
+    await writeFile(
+      skillPath,
+      [
+        "---",
+        "name: 'single-quoted'",
+        "description: 'A single-quoted description'",
+        "---",
+        "body",
+      ].join("\n"),
+    );
+
+    const skill = await loadSkill(skillPath);
+    expect(skill.frontmatter.name).toBe("single-quoted");
+    expect(skill.frontmatter.description).toBe("A single-quoted description");
+  });
+
   it("should parse context and agent fields", async () => {
     const skillPath = join(testDir, "forked.md");
     await writeFile(

@@ -130,4 +130,30 @@ describe("accumulateChunk edge cases", () => {
     acc = accumulateChunk(acc, { type: "text-delta" });
     expect(acc.text).toBe("");
   });
+
+  it("should handle tool-call-delta with undefined arguments on new call", () => {
+    let acc = createStreamAccumulator();
+    acc = accumulateChunk(acc, {
+      type: "tool-call-delta",
+      toolCall: { id: "tc-1", name: "my_tool" },
+    });
+    expect(acc.toolCalls).toHaveLength(1);
+    expect(acc.toolCalls[0].arguments).toBe("");
+  });
+
+  it("should handle tool-call-delta with undefined arguments on existing call", () => {
+    let acc = createStreamAccumulator();
+    // First: create a tool call
+    acc = accumulateChunk(acc, {
+      type: "tool-call-delta",
+      toolCall: { id: "tc-1", name: "my_tool", arguments: '{"a":' },
+    });
+    // Second: append with undefined arguments
+    acc = accumulateChunk(acc, {
+      type: "tool-call-delta",
+      toolCall: { id: "tc-1" },
+    });
+    expect(acc.toolCalls).toHaveLength(1);
+    expect(acc.toolCalls[0].arguments).toBe('{"a":');
+  });
 });

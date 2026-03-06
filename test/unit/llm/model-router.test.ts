@@ -290,6 +290,111 @@ describe("ModelRouter", () => {
     await expect(streamIt()).rejects.toThrow("403 forbidden");
   });
 
+  it("should abort immediately if signal already aborted before retry sleep", async () => {
+    const controller = new AbortController();
+    controller.abort();
+
+    const primary = mockProvider("primary", "500 server error");
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      maxRetries: 3,
+      retryDelayMs: 1,
+    });
+
+    await expect(
+      router.chat({
+        model: "gpt-4",
+        messages: [{ role: "user", content: "test" }],
+        tools: [],
+        temperature: 0,
+        maxTokens: 100,
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow("Request aborted");
+
+    // Only the first attempt before abort
+    expect(primary.chat).toHaveBeenCalledTimes(1);
+  });
+
+  it("should abort during retry sleep delay", async () => {
+    const controller = new AbortController();
+    let callCount = 0;
+
+    const primary: LLMProvider = {
+      name: "primary",
+      chat: vi.fn(async () => {
+        callCount++;
+        if (callCount === 1) {
+          setTimeout(() => controller.abort(), 10);
+          throw new Error("500 server error");
+        }
+        return {
+          content: "should not reach",
+          toolCalls: [],
+          usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+        };
+      }),
+      stream: vi.fn(async function* () {
+        yield { type: "text-delta" as const, text: "x" };
+      }),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      maxRetries: 3,
+      retryDelayMs: 5000, // Long delay so abort fires during it
+    });
+
+    await expect(
+      router.chat({
+        model: "gpt-4",
+        messages: [{ role: "user", content: "test" }],
+        tools: [],
+        temperature: 0,
+        maxTokens: 100,
+        signal: controller.signal,
+      }),
+    ).rejects.toThrow("Request aborted");
+
+    expect(callCount).toBe(1);
+  });
+
+  it("should re-throw LLMError directly when retries exhausted without fallback", async () => {
+    const primary: LLMProvider = {
+      name: "primary",
+      chat: vi.fn(async () => {
+        throw new LLMError("Custom LLM error");
+      }),
+      stream: vi.fn(async function* () {
+        yield { type: "text-delta" as const, text: "x" };
+      }),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      maxRetries: 0,
+    });
+
+    try {
+      await router.chat({
+        model: "gpt-4",
+        messages: [{ role: "user", content: "test" }],
+        tools: [],
+        temperature: 0,
+        maxTokens: 100,
+      });
+    } catch (error) {
+      // Should be the original LLMError, not wrapped
+      expect(error).toBeInstanceOf(LLMError);
+      expect((error as LLMError).message).toBe("Custom LLM error");
+    }
+  });
+
   it("should stream successfully from primary", async () => {
     const primary: LLMProvider = {
       name: "primary",

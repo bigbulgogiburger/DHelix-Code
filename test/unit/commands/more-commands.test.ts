@@ -270,6 +270,22 @@ describe("export command", () => {
     expect(result.output).toContain("Export failed");
   });
 
+  it("should show N/A when sessionId is undefined", async () => {
+    const { mkdir, readFile } = await import("node:fs/promises");
+    await mkdir(exportDir, { recursive: true });
+
+    const result = await exportCommand.execute("no-session.md", {
+      ...baseContext,
+      workingDirectory: exportDir,
+      sessionId: undefined,
+      messages: [{ role: "user", content: "test" }],
+    });
+    expect(result.success).toBe(true);
+
+    const content = await readFile(join(exportDir, "no-session.md"), "utf-8");
+    expect(content).toContain("N/A");
+  });
+
   it("should skip system messages in export", async () => {
     const { mkdir, readFile } = await import("node:fs/promises");
     await mkdir(exportDir, { recursive: true });
