@@ -289,6 +289,7 @@ export function App({
       sessionManager,
       sessionId,
       events,
+      projectInstructions,
     ],
   );
 
@@ -333,6 +334,7 @@ export function App({
       sessionId,
       activeModel,
       events,
+      conversation.messages,
       isProcessing,
       processMessage,
       clearConversation,

@@ -1,5 +1,4 @@
 import { Marked } from "marked";
-// eslint-disable-next-line @typescript-eslint/no-require-imports
 import markedTerminal from "marked-terminal";
 
 let markedInstance: Marked | undefined;

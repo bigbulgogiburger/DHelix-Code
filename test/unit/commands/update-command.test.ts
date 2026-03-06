@@ -11,10 +11,14 @@ vi.mock("node:util", () => ({
     return async (command: string) => {
       // Call the mock exec and extract the callback-based result
       return new Promise((resolve, reject) => {
-        fn(command, { timeout: 30_000 }, (error: Error | null, stdout: string, stderr: string) => {
-          if (error) reject(error);
-          else resolve({ stdout, stderr });
-        });
+        (fn as Function)(
+          command,
+          { timeout: 30_000 },
+          (error: Error | null, stdout: string, stderr: string) => {
+            if (error) reject(error);
+            else resolve({ stdout, stderr });
+          },
+        );
       });
     };
   },
@@ -100,6 +104,63 @@ describe("update command (mocked)", () => {
     });
 
     expect(result.output).toContain("Update check failed");
+    expect(result.success).toBe(false);
+  });
+
+  it("should perform successful update when newer version available", async () => {
+    let callCount = 0;
+    mockExec.mockImplementation(
+      (cmd: string, _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: npm view — returns newer version
+          cb(null, "99.99.99\n", "");
+        } else {
+          // Second call: npm install — success
+          cb(null, "added 1 package\n", "");
+        }
+      },
+    );
+
+    const { updateCommand } = await import("../../../src/commands/update.js");
+    const result = await updateCommand.execute("", {
+      workingDirectory: process.cwd(),
+      model: "test",
+      sessionId: "test",
+      emit: () => {},
+    });
+
+    expect(result.output).toContain("Latest version: 99.99.99");
+    expect(result.output).toContain("Updated to 99.99.99 successfully");
+    expect(result.output).toContain("Restart dbcode");
+    expect(result.success).toBe(true);
+  });
+
+  it("should handle update install failure with ERR in output", async () => {
+    let callCount = 0;
+    mockExec.mockImplementation(
+      (cmd: string, _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
+        callCount++;
+        if (callCount === 1) {
+          // First call: npm view — returns newer version
+          cb(null, "99.99.99\n", "");
+        } else {
+          // Second call: npm install — fails with ERR
+          cb(null, "ERR! code EACCES\nERR! permission denied\n", "");
+        }
+      },
+    );
+
+    const { updateCommand } = await import("../../../src/commands/update.js");
+    const result = await updateCommand.execute("", {
+      workingDirectory: process.cwd(),
+      model: "test",
+      sessionId: "test",
+      emit: () => {},
+    });
+
+    expect(result.output).toContain("Update failed");
+    expect(result.output).toContain("Try manually");
     expect(result.success).toBe(false);
   });
 });

@@ -16,7 +16,7 @@ import { statsCommand } from "../../../src/commands/stats.js";
 import { doctorCommand } from "../../../src/commands/doctor.js";
 import { forkCommand } from "../../../src/commands/fork.js";
 import { SessionManager } from "../../../src/core/session-manager.js";
-import { rm } from "node:fs/promises";
+import { rm, mkdir, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 
@@ -104,6 +104,12 @@ describe("Core slash commands", () => {
     const result = await batchCommand.execute("", baseContext);
     expect(result.success).toBe(false);
     expect(result.output).toContain("Usage");
+  });
+
+  it("/batch should require both pattern and operation", async () => {
+    const result = await batchCommand.execute("src/**/*.ts", baseContext);
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("both a glob pattern and an operation");
   });
 
   it("/batch should accept pattern and operation", async () => {
@@ -318,6 +324,22 @@ describe("stats command", () => {
   it("should show session stats", async () => {
     const result = await statsCommand.execute("", baseContext);
     expect(result.success).toBe(true);
+    expect(result.output).toContain("Statistics");
+    expect(result.output).toContain("test-model");
+    expect(result.output).toContain("test-session");
+    expect(result.output).toContain("Tokens");
+    expect(result.output).toContain("Input");
+    expect(result.output).toContain("Output");
+    expect(result.output).toContain("Total");
+  });
+
+  it("should show N/A for missing session", async () => {
+    const result = await statsCommand.execute("", {
+      ...baseContext,
+      sessionId: undefined,
+    });
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("N/A");
   });
 });
 
@@ -326,6 +348,29 @@ describe("doctor command", () => {
     const result = await doctorCommand.execute("", baseContext);
     expect(result.success).toBe(true);
     expect(result.output).toContain("Doctor");
+    expect(result.output).toContain("[OK]");
+    expect(result.output).toContain("Node.js");
+    expect(result.output).toContain("Git");
+  });
+
+  it("should handle non-git-repo working directory", async () => {
+    const result = await doctorCommand.execute("", {
+      ...baseContext,
+      workingDirectory: tmpdir(),
+    });
+    // Should still succeed overall, but with a warning for git repo
+    expect(result.output).toContain("Doctor");
+    expect(result.output).toContain("Git");
+  });
+
+  it("should handle missing model", async () => {
+    const result = await doctorCommand.execute("", {
+      ...baseContext,
+      model: "",
+    });
+    expect(result.output).toContain("[FAIL]");
+    expect(result.output).toContain("No model configured");
+    expect(result.success).toBe(false);
   });
 });
 
@@ -372,5 +417,16 @@ describe("fork command", () => {
     expect(forkCommand.name).toBe("fork");
     expect(forkCommand.description).toContain("Fork");
     expect(forkCommand.usage).toContain("/fork");
+  });
+
+  it("should fork with custom name arg", async () => {
+    // Test the fork command with a name argument — it will fail since session
+    // doesn't exist in default dir, but exercises the name-parsing path
+    const result = await forkCommand.execute("my-custom-fork-name", {
+      ...baseContext,
+      sessionId: "nonexistent-fork-target",
+    });
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("Fork failed");
   });
 });
