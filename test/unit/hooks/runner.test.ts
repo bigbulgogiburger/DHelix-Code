@@ -255,6 +255,128 @@ describe("HookRunner", () => {
     expect(result.results[0].stdout).toBe("test-value");
   });
 
+  it("should execute HTTP hook handler with mocked fetch", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      text: async () => JSON.stringify({ blocked: false, message: "webhook received" }),
+    })) as unknown as typeof fetch;
+
+    try {
+      const config: HookConfig = {
+        PostToolUse: [
+          {
+            hooks: [{ type: "http", url: "https://example.com/hook" }],
+          },
+        ],
+      };
+      const runner = new HookRunner(config);
+      const result = await runner.run("PostToolUse", { event: "PostToolUse" });
+      expect(result.blocked).toBe(false);
+      expect(result.results).toHaveLength(1);
+      expect(result.results[0].handlerType).toBe("http");
+      expect(result.results[0].stdout).toBe("webhook received");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("should handle blocking HTTP hook", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      text: async () => JSON.stringify({ blocked: true, message: "blocked by webhook" }),
+    })) as unknown as typeof fetch;
+
+    try {
+      const config: HookConfig = {
+        PreToolUse: [
+          {
+            hooks: [{ type: "http", url: "https://example.com/block" }],
+          },
+        ],
+      };
+      const runner = new HookRunner(config);
+      const result = await runner.run("PreToolUse", { event: "PreToolUse" });
+      expect(result.blocked).toBe(true);
+      expect(result.results[0].blocked).toBe(true);
+      expect(result.results[0].exitCode).toBe(2);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("should handle HTTP hook fetch error", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => {
+      throw new Error("Connection refused");
+    }) as unknown as typeof fetch;
+
+    try {
+      const config: HookConfig = {
+        PostToolUse: [
+          {
+            hooks: [{ type: "http", url: "https://example.com/fail" }],
+          },
+        ],
+      };
+      const runner = new HookRunner(config);
+      const result = await runner.run("PostToolUse", { event: "PostToolUse" });
+      expect(result.blocked).toBe(false);
+      expect(result.results[0].exitCode).toBe(1);
+      expect(result.results[0].stderr).toContain("Connection refused");
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("should handle HTTP hook with non-JSON response", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: true,
+      text: async () => "plain text response",
+    })) as unknown as typeof fetch;
+
+    try {
+      const config: HookConfig = {
+        PostToolUse: [
+          {
+            hooks: [{ type: "http", url: "https://example.com/text" }],
+          },
+        ],
+      };
+      const runner = new HookRunner(config);
+      const result = await runner.run("PostToolUse", { event: "PostToolUse" });
+      expect(result.results[0].stdout).toBe("plain text response");
+      expect(result.results[0].blocked).toBe(false);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
+  it("should handle HTTP hook with failed HTTP status", async () => {
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = (async () => ({
+      ok: false,
+      text: async () => "Server Error",
+    })) as unknown as typeof fetch;
+
+    try {
+      const config: HookConfig = {
+        PostToolUse: [
+          {
+            hooks: [{ type: "http", url: "https://example.com/error" }],
+          },
+        ],
+      };
+      const runner = new HookRunner(config);
+      const result = await runner.run("PostToolUse", { event: "PostToolUse" });
+      expect(result.results[0].exitCode).toBe(1);
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
+  });
+
   it("should interpolate FILE_PATH and SESSION_ID", async () => {
     const config: HookConfig = {
       PostToolUse: [

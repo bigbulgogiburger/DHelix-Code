@@ -105,4 +105,47 @@ describe("TokenManager", () => {
     // May be empty or from file
     expect(typeof headers).toBe("object");
   });
+
+  it("should build api-key auth headers", async () => {
+    process.env.DBCODE_API_KEY = "test-api-key";
+    const manager = new TokenManager();
+    manager.clearCache();
+
+    // We need to force the method to api-key — use setToken
+    await manager.setToken({ method: "api-key", token: "my-api-key" });
+    const headers = await manager.getAuthHeaders();
+    expect(headers["X-API-Key"]).toBe("my-api-key");
+  });
+
+  it("should build custom-header auth headers", async () => {
+    const manager = new TokenManager();
+    manager.clearCache();
+
+    await manager.setToken({
+      method: "custom-header",
+      token: "custom-val",
+      headerName: "X-Custom",
+    });
+    const headers = await manager.getAuthHeaders();
+    expect(headers["X-Custom"]).toBe("custom-val");
+  });
+
+  it("should build custom-header with default header name", async () => {
+    const manager = new TokenManager();
+    manager.clearCache();
+
+    await manager.setToken({ method: "custom-header", token: "custom-val" });
+    const headers = await manager.getAuthHeaders();
+    expect(headers["Authorization"]).toBe("custom-val");
+  });
+
+  it("should use cached token after setToken", async () => {
+    const manager = new TokenManager();
+    manager.clearCache();
+
+    await manager.setToken({ method: "bearer", token: "stored-token" });
+    const token = await manager.getToken();
+    expect(token!.config.token).toBe("stored-token");
+    expect(token!.source).toBe("file");
+  });
 });

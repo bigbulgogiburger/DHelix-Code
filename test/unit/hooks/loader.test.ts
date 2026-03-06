@@ -1,5 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { parseHookConfig } from "../../../src/hooks/loader.js";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { parseHookConfig, loadHookConfig } from "../../../src/hooks/loader.js";
+import { mkdir, writeFile, rm } from "node:fs/promises";
+import { join } from "node:path";
 
 describe("parseHookConfig", () => {
   it("should return empty config for null/undefined", () => {
@@ -84,5 +86,100 @@ describe("parseHookConfig", () => {
 
     const handler = config.PreToolUse![0].hooks[0];
     expect(handler.type).toBe("command");
+  });
+
+  it("should parse prompt hook handler", () => {
+    const config = parseHookConfig({
+      PreToolUse: [
+        {
+          hooks: [{ type: "prompt", prompt: "Are you sure?" }],
+        },
+      ],
+    });
+    expect(config.PreToolUse![0].hooks[0].type).toBe("prompt");
+  });
+
+  it("should parse agent hook handler", () => {
+    const config = parseHookConfig({
+      PreToolUse: [
+        {
+          hooks: [{ type: "agent", prompt: "Check security" }],
+        },
+      ],
+    });
+    expect(config.PreToolUse![0].hooks[0].type).toBe("agent");
+  });
+
+  it("should throw for invalid handler schema", () => {
+    expect(() =>
+      parseHookConfig({
+        PreToolUse: [{ hooks: [{ type: "command" }] }],
+      }),
+    ).toThrow();
+  });
+});
+
+const loaderTmpDir = join(process.cwd(), "test", "tmp", "hook-loader");
+
+describe("loadHookConfig", () => {
+  beforeEach(async () => {
+    await mkdir(loaderTmpDir, { recursive: true });
+  });
+
+  afterEach(async () => {
+    try {
+      await rm(loaderTmpDir, { recursive: true, force: true });
+    } catch {
+      /* ignore */
+    }
+  });
+
+  it("should return empty config when settings.json does not exist", async () => {
+    const config = await loadHookConfig(loaderTmpDir);
+    expect(config).toEqual({});
+  });
+
+  it("should return empty config when no hooks key in settings", async () => {
+    await writeFile(
+      join(loaderTmpDir, "settings.json"),
+      JSON.stringify({ theme: "dark" }),
+      "utf-8",
+    );
+    const config = await loadHookConfig(loaderTmpDir);
+    expect(config).toEqual({});
+  });
+
+  it("should load hooks from settings.json", async () => {
+    const settings = {
+      hooks: {
+        PreToolUse: [
+          {
+            matcher: "file_edit",
+            hooks: [{ type: "command", command: "echo test" }],
+          },
+        ],
+      },
+    };
+    await writeFile(join(loaderTmpDir, "settings.json"), JSON.stringify(settings), "utf-8");
+
+    const config = await loadHookConfig(loaderTmpDir);
+    expect(config.PreToolUse).toHaveLength(1);
+  });
+
+  it("should throw HookLoadError for invalid hook event names", async () => {
+    const settings = {
+      hooks: {
+        InvalidEvent: [{ hooks: [{ type: "command", command: "echo" }] }],
+      },
+    };
+    await writeFile(join(loaderTmpDir, "settings.json"), JSON.stringify(settings), "utf-8");
+
+    await expect(loadHookConfig(loaderTmpDir)).rejects.toThrow("Unknown hook event");
+  });
+
+  it("should throw HookLoadError for invalid JSON in settings file", async () => {
+    await writeFile(join(loaderTmpDir, "settings.json"), "not valid json {{{", "utf-8");
+
+    await expect(loadHookConfig(loaderTmpDir)).rejects.toThrow("Failed to load hook configuration");
   });
 });

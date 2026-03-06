@@ -108,4 +108,131 @@ describe("CheckpointManager", () => {
     const list = await manager.listCheckpoints();
     expect(list).toHaveLength(0);
   });
+
+  it("should get a specific checkpoint by ID", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await manager.createCheckpoint({
+      sessionId: "test",
+      description: "Get by ID",
+      messageIndex: 5,
+      workingDirectory: workDir,
+      trackedFiles: ["test.txt"],
+    });
+
+    const cp = await manager.getCheckpoint("cp-001");
+    expect(cp.id).toBe("cp-001");
+    expect(cp.description).toBe("Get by ID");
+    expect(cp.messageIndex).toBe(5);
+  });
+
+  it("should throw for non-existent checkpoint ID", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await expect(manager.getCheckpoint("cp-999")).rejects.toThrow("Checkpoint not found");
+  });
+
+  it("should diff unchanged files from checkpoint", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await manager.createCheckpoint({
+      sessionId: "test",
+      description: "Diff test",
+      messageIndex: 0,
+      workingDirectory: workDir,
+      trackedFiles: ["test.txt", "other.txt"],
+    });
+
+    const diff = await manager.diffFromCheckpoint("cp-001", workDir);
+    expect(diff).toHaveLength(2);
+    expect(diff.every((d) => d.status === "unchanged")).toBe(true);
+  });
+
+  it("should diff modified files from checkpoint", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await manager.createCheckpoint({
+      sessionId: "test",
+      description: "Diff modified",
+      messageIndex: 0,
+      workingDirectory: workDir,
+      trackedFiles: ["test.txt"],
+    });
+
+    await writeFile(join(workDir, "test.txt"), "changed content", "utf-8");
+
+    const diff = await manager.diffFromCheckpoint("cp-001", workDir);
+    expect(diff).toHaveLength(1);
+    expect(diff[0].status).toBe("modified");
+  });
+
+  it("should diff deleted files from checkpoint", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await manager.createCheckpoint({
+      sessionId: "test",
+      description: "Diff deleted",
+      messageIndex: 0,
+      workingDirectory: workDir,
+      trackedFiles: ["test.txt"],
+    });
+
+    await rm(join(workDir, "test.txt"));
+
+    const diff = await manager.diffFromCheckpoint("cp-001", workDir);
+    expect(diff).toHaveLength(1);
+    expect(diff[0].status).toBe("deleted");
+  });
+
+  it("should diff file that was non-existent at checkpoint time but now exists", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await manager.createCheckpoint({
+      sessionId: "test",
+      description: "Diff new",
+      messageIndex: 0,
+      workingDirectory: workDir,
+      trackedFiles: ["future.txt"],
+    });
+
+    // future.txt didn't exist at checkpoint time — create it now
+    await writeFile(join(workDir, "future.txt"), "new file", "utf-8");
+
+    const diff = await manager.diffFromCheckpoint("cp-001", workDir);
+    const futureEntry = diff.find((d) => d.path.includes("future"));
+    expect(futureEntry).toBeDefined();
+    expect(futureEntry!.status).toBe("new");
+  });
+
+  it("should handle restore with skipped files (non-existent snapshot)", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await manager.createCheckpoint({
+      sessionId: "test",
+      description: "Skip test",
+      messageIndex: 0,
+      workingDirectory: workDir,
+      trackedFiles: ["test.txt", "ghost.txt"],
+    });
+
+    const result = await manager.restoreCheckpoint("cp-001", workDir);
+    expect(result.restoredFiles.length).toBeGreaterThan(0);
+    expect(result.skippedFiles.length).toBeGreaterThan(0);
+  });
+
+  it("should auto-increment checkpoint IDs across instances", async () => {
+    const manager1 = new CheckpointManager(tmpDir);
+    await manager1.createCheckpoint({
+      sessionId: "test",
+      description: "First",
+      messageIndex: 0,
+      workingDirectory: workDir,
+      trackedFiles: ["test.txt"],
+    });
+
+    // New manager instance should pick up where the last one left off
+    const manager2 = new CheckpointManager(tmpDir);
+    const cp2 = await manager2.createCheckpoint({
+      sessionId: "test",
+      description: "Second",
+      messageIndex: 1,
+      workingDirectory: workDir,
+      trackedFiles: ["test.txt"],
+    });
+
+    expect(cp2.id).toBe("cp-002");
+  });
 });
