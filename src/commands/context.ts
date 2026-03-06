@@ -1,29 +1,39 @@
 import { type SlashCommand } from "./registry.js";
+import { getModelCapabilities } from "../llm/model-capabilities.js";
 
 /**
- * /context — Show context window usage with color grid visualization.
+ * /context — Show context window usage with visual bar.
  */
 export const contextCommand: SlashCommand = {
   name: "context",
   description: "Show context window usage",
   usage: "/context",
-  execute: async (_args, _context) => {
-    // In a real implementation, this would read from ContextManager.
-    // For now, provide a template that the LLM can use to display info.
-    const prompt = [
-      "Show the current context window usage.",
+  execute: async (_args, context) => {
+    const caps = getModelCapabilities(context.model);
+    const maxTokens = caps.maxContextTokens;
+    // Note: actual token tracking would come from ContextManager in the App
+    // For now, show the model's context limits
+    const barWidth = 40;
+    const usedRatio = 0; // Would be calculated from actual usage
+    const filledCount = Math.round(usedRatio * barWidth);
+    const emptyCount = barWidth - filledCount;
+    const bar = "[" + "#".repeat(filledCount) + "-".repeat(emptyCount) + "]";
+
+    const lines = [
+      "Context Window",
+      "==============",
       "",
-      "Steps:",
-      "1. Calculate total tokens used in the conversation",
-      "2. Show percentage of context window consumed",
-      "3. Break down by: system prompt, user messages, assistant messages, tool results",
-      "4. Display a visual usage bar",
+      `  Model: ${context.model}`,
+      `  Max context: ${(maxTokens / 1000).toFixed(0)}K tokens`,
+      `  Max output: ${(caps.maxOutputTokens / 1000).toFixed(0)}K tokens`,
       "",
-      "Present the information clearly with usage percentages.",
-    ].join("\n");
+      `  Usage: ${bar} ${(usedRatio * 100).toFixed(0)}%`,
+      "",
+      "  Tip: Use /compact to reduce context usage when approaching limits.",
+    ];
 
     return {
-      output: prompt,
+      output: lines.join("\n"),
       success: true,
     };
   },

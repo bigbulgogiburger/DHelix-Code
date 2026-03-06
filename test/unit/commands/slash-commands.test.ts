@@ -47,7 +47,7 @@ describe("Phase 6 slash commands", () => {
 
   it("/context should show context info", async () => {
     const result = await contextCommand.execute("", baseContext);
-    expect(result.output).toContain("context window");
+    expect(result.output).toContain("Context Window");
     expect(result.success).toBe(true);
   });
 
