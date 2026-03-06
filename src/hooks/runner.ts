@@ -104,7 +104,11 @@ async function executeCommandHandler(
     );
 
     // Send payload as JSON on stdin
+    // Handle EPIPE gracefully — child may exit before stdin write completes
     if (child.stdin) {
+      child.stdin.on("error", () => {
+        // Ignore EPIPE — the child process already exited
+      });
       child.stdin.write(JSON.stringify(payload));
       child.stdin.end();
     }
