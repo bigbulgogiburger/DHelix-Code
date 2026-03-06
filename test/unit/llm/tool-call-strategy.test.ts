@@ -12,13 +12,23 @@ describe("selectStrategy", () => {
     expect(strategy.name).toBe("native");
   });
 
-  it("should return text-parsing strategy for unknown models", () => {
+  it("should return native strategy for unknown models (safe default)", () => {
     const strategy = selectStrategy("local-llama");
+    expect(strategy.name).toBe("native");
+  });
+
+  it("should return native strategy for llama3.1+ (supports tools)", () => {
+    const strategy = selectStrategy("llama3.1");
+    expect(strategy.name).toBe("native");
+  });
+
+  it("should return text-parsing strategy for llama3 base (no tool support)", () => {
+    const strategy = selectStrategy("llama3");
     expect(strategy.name).toBe("text-parsing");
   });
 
-  it("should return text-parsing strategy for Ollama models", () => {
-    const strategy = selectStrategy("llama3.1");
+  it("should return text-parsing strategy for deepseek-coder (no tool support)", () => {
+    const strategy = selectStrategy("deepseek-coder");
     expect(strategy.name).toBe("text-parsing");
   });
 
