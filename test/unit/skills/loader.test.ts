@@ -63,6 +63,28 @@ describe("loadSkill", () => {
     expect(skill.frontmatter.allowedTools).toEqual(["file_read", "grep_search"]);
   });
 
+  it("should throw for non-existent file path", async () => {
+    await expect(loadSkill(join(testDir, "nonexistent.md"))).rejects.toThrow(
+      "Failed to load skill",
+    );
+  });
+
+  it("should throw SkillLoadError for invalid frontmatter schema", async () => {
+    const skillPath = join(testDir, "bad-schema.md");
+    await writeFile(
+      skillPath,
+      [
+        "---",
+        "name: bad",
+        // Missing required "description" field
+        "---",
+        "body",
+      ].join("\n"),
+    );
+
+    await expect(loadSkill(skillPath)).rejects.toThrow("Failed to load skill");
+  });
+
   it("should parse context and agent fields", async () => {
     const skillPath = join(testDir, "forked.md");
     await writeFile(
@@ -125,5 +147,15 @@ describe("loadSkillsFromDirectory", () => {
     const skills = await loadSkillsFromDirectory(dir);
     expect(skills).toHaveLength(1);
     expect(skills[0].frontmatter.name).toBe("valid");
+  });
+
+  it("should throw for non-ENOENT directory errors", async () => {
+    // Use a file path (not a directory) — readdir will throw ENOTDIR
+    const filePath = join(testDir, "not-a-dir.txt");
+    await writeFile(filePath, "I am a file, not a directory");
+
+    await expect(loadSkillsFromDirectory(filePath)).rejects.toThrow(
+      "Failed to read skills directory",
+    );
   });
 });

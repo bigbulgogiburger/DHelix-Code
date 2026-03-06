@@ -213,6 +213,23 @@ describe("CheckpointManager", () => {
     expect(result.skippedFiles.length).toBeGreaterThan(0);
   });
 
+  it("should diff file that was non-existent at checkpoint time and still does not exist", async () => {
+    const manager = new CheckpointManager(tmpDir);
+    await manager.createCheckpoint({
+      sessionId: "test",
+      description: "Both missing",
+      messageIndex: 0,
+      workingDirectory: workDir,
+      trackedFiles: ["never-existed.txt"],
+    });
+
+    // never-existed.txt didn't exist then and doesn't now — should be "unchanged"
+    const diff = await manager.diffFromCheckpoint("cp-001", workDir);
+    const entry = diff.find((d) => d.path.includes("never-existed"));
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe("unchanged");
+  });
+
   it("should auto-increment checkpoint IDs across instances", async () => {
     const manager1 = new CheckpointManager(tmpDir);
     await manager1.createCheckpoint({
