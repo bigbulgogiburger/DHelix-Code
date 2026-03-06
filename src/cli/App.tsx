@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text, Static } from "ink";
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { MessageList } from "./components/MessageList.js";
 import { StreamingMessage } from "./components/StreamingMessage.js";
@@ -370,17 +370,21 @@ export function App({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box marginBottom={1}>
-        <Logo />
-        <Box flexDirection="column" justifyContent="center" marginLeft={2}>
-          <Text color="cyan" bold>
-            dbcode
-          </Text>
-          <Text color="gray">
-            v{VERSION} ({activeModel})
-          </Text>
-        </Box>
-      </Box>
+      <Static items={["logo"]}>
+        {() => (
+          <Box key="logo" marginBottom={1}>
+            <Logo />
+            <Box flexDirection="column" justifyContent="center" marginLeft={2}>
+              <Text color="cyan" bold>
+                dbcode
+              </Text>
+              <Text color="gray">
+                v{VERSION} ({activeModel})
+              </Text>
+            </Box>
+          </Box>
+        )}
+      </Static>
 
       <MessageList messages={completedMessages} />
 
@@ -427,7 +431,7 @@ export function App({
         <StatusBar
           model={activeModel}
           tokenCount={tokenCount}
-          maxTokens={128_000}
+          maxTokens={getModelCapabilities(activeModel).maxContextTokens}
           isStreaming={isProcessing}
         />
       ) : null}
