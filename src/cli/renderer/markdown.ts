@@ -1,5 +1,5 @@
 import { Marked } from "marked";
-import markedTerminal from "marked-terminal";
+import * as markedTerminalModule from "marked-terminal";
 
 let markedInstance: Marked | undefined;
 
@@ -9,8 +9,13 @@ let markedInstance: Marked | undefined;
 function getMarked(): Marked {
   if (!markedInstance) {
     markedInstance = new Marked();
+    // Use the named export (not default) — the default export is the raw
+    // Renderer constructor which crashes when called without `new` in ESM.
+    const markedTerminal =
+      (markedTerminalModule as Record<string, unknown>).markedTerminal ??
+      markedTerminalModule.default;
     markedInstance.use(
-      markedTerminal({
+      (markedTerminal as (...args: unknown[]) => Record<string, unknown>)({
         reflowText: true,
         width: process.stdout.columns || 80,
         showSectionPrefix: false,
