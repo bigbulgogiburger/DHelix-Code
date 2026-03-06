@@ -1,9 +1,13 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 import {
   buildLintFeedback,
   extractMutatedFiles,
+  registerAutoLint,
+  DEFAULT_AUTO_LINT_CONFIG,
   type AutoLintResult,
 } from "../../../src/hooks/auto-lint.js";
+import { createEventEmitter } from "../../../src/utils/events.js";
+import { HookRunner } from "../../../src/hooks/runner.js";
 
 describe("auto-lint", () => {
   describe("buildLintFeedback", () => {
@@ -100,6 +104,99 @@ describe("auto-lint", () => {
         isError: true,
       };
       expect(extractMutatedFiles("file_write", result)).toBeNull();
+    });
+
+    it("should fallback to file path pattern when no action verb", () => {
+      const result = {
+        id: "5",
+        name: "file_write",
+        output: "src/utils/helper.ts",
+        isError: false,
+      };
+      expect(extractMutatedFiles("file_write", result)).toBe("src/utils/helper.ts");
+    });
+
+    it("should return null when no path extractable", () => {
+      const result = {
+        id: "6",
+        name: "file_write",
+        output: "ok",
+        isError: false,
+      };
+      expect(extractMutatedFiles("file_write", result)).toBeNull();
+    });
+  });
+
+  describe("registerAutoLint", () => {
+    it("should emit lint:request on file_write tool:complete", () => {
+      const events = createEventEmitter();
+      const hookRunner = new HookRunner({});
+      const lintRequests: unknown[] = [];
+
+      events.on("lint:request", (data) => lintRequests.push(data));
+      registerAutoLint(events, hookRunner);
+
+      events.emit("tool:complete", { name: "file_write", id: "tc_1", isError: false });
+
+      expect(lintRequests).toHaveLength(1);
+      expect(lintRequests[0]).toEqual({
+        toolName: "file_write",
+        toolId: "tc_1",
+        lintCommand: DEFAULT_AUTO_LINT_CONFIG.lintCommand,
+        testCommand: undefined,
+      });
+    });
+
+    it("should emit lint:request on file_edit tool:complete", () => {
+      const events = createEventEmitter();
+      const hookRunner = new HookRunner({});
+      const lintRequests: unknown[] = [];
+
+      events.on("lint:request", (data) => lintRequests.push(data));
+      registerAutoLint(events, hookRunner);
+
+      events.emit("tool:complete", { name: "file_edit", id: "tc_2", isError: false });
+
+      expect(lintRequests).toHaveLength(1);
+    });
+
+    it("should not emit for non-file-mutating tools", () => {
+      const events = createEventEmitter();
+      const hookRunner = new HookRunner({});
+      const lintRequests: unknown[] = [];
+
+      events.on("lint:request", (data) => lintRequests.push(data));
+      registerAutoLint(events, hookRunner);
+
+      events.emit("tool:complete", { name: "file_read", id: "tc_3", isError: false });
+
+      expect(lintRequests).toHaveLength(0);
+    });
+
+    it("should not emit for errored tool calls", () => {
+      const events = createEventEmitter();
+      const hookRunner = new HookRunner({});
+      const lintRequests: unknown[] = [];
+
+      events.on("lint:request", (data) => lintRequests.push(data));
+      registerAutoLint(events, hookRunner);
+
+      events.emit("tool:complete", { name: "file_write", id: "tc_4", isError: true });
+
+      expect(lintRequests).toHaveLength(0);
+    });
+
+    it("should not register when disabled", () => {
+      const events = createEventEmitter();
+      const hookRunner = new HookRunner({});
+      const lintRequests: unknown[] = [];
+
+      events.on("lint:request", (data) => lintRequests.push(data));
+      registerAutoLint(events, hookRunner, { ...DEFAULT_AUTO_LINT_CONFIG, enabled: false });
+
+      events.emit("tool:complete", { name: "file_write", id: "tc_5", isError: false });
+
+      expect(lintRequests).toHaveLength(0);
     });
   });
 });

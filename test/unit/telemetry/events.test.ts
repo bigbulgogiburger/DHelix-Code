@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { EventBuffer } from "../../../src/telemetry/events.js";
+import { EventBuffer, createEvent } from "../../../src/telemetry/events.js";
 
 describe("EventBuffer", () => {
   let buffer: EventBuffer;
@@ -68,5 +68,29 @@ describe("EventBuffer", () => {
     buffer.peek();
     buffer.peek();
     expect(buffer.flush()).toHaveLength(1);
+  });
+
+  it("should report size correctly", () => {
+    expect(buffer.size).toBe(0);
+    buffer.record({ type: "error", timestamp: Date.now(), data: {} });
+    expect(buffer.size).toBe(1);
+    buffer.record({ type: "error", timestamp: Date.now(), data: {} });
+    expect(buffer.size).toBe(2);
+    buffer.flush();
+    expect(buffer.size).toBe(0);
+  });
+});
+
+describe("createEvent", () => {
+  it("should add timestamp when not provided", () => {
+    const event = createEvent({ type: "tool_decision", data: { tool: "test" } });
+    expect(event.timestamp).toBeDefined();
+    expect(typeof event.timestamp).toBe("string");
+  });
+
+  it("should preserve timestamp when provided", () => {
+    const ts = "2026-01-01T00:00:00.000Z";
+    const event = createEvent({ type: "error", data: {}, timestamp: ts });
+    expect(event.timestamp).toBe(ts);
   });
 });
