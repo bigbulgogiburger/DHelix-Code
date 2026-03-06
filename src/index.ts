@@ -49,6 +49,18 @@ program
       // Load dotenv only when running the action (not for --help / --version)
       await import("dotenv/config");
 
+      // First-run setup wizard: prompt for model + API key if not configured
+      if (!opts.print && !opts.apiKey) {
+        const { needsSetup, runSetupWizard } = await import("./cli/setup-wizard.js");
+        if (await needsSetup()) {
+          const wizardResult = await runSetupWizard();
+          // Apply wizard results as defaults for this session
+          if (!opts.model && wizardResult.llm.model) opts.model = wizardResult.llm.model;
+          if (!opts.baseUrl && wizardResult.llm.baseUrl) opts.baseUrl = wizardResult.llm.baseUrl;
+          if (wizardResult.llm.apiKey) opts.apiKey = wizardResult.llm.apiKey;
+        }
+      }
+
       // Dynamic imports — keep startup fast for --help / --version
       const { join } = await import("node:path");
       const [
