@@ -10,11 +10,15 @@ import {
 } from "./provider.js";
 import { countTokens } from "./token-counter.js";
 import { LLMError } from "../utils/error.js";
+import { getModelCapabilities, type ModelCapabilities } from "./model-capabilities.js";
 
 /**
- * Convert our ChatMessage to OpenAI format.
+ * Convert our ChatMessage to OpenAI format, adapting for model capabilities.
  */
-function toOpenAIMessages(messages: readonly ChatMessage[]): OpenAI.ChatCompletionMessageParam[] {
+function toOpenAIMessages(
+  messages: readonly ChatMessage[],
+  capabilities: ModelCapabilities,
+): OpenAI.ChatCompletionMessageParam[] {
   return messages.map((msg) => {
     if (msg.role === "tool") {
       return {
@@ -32,6 +36,24 @@ function toOpenAIMessages(messages: readonly ChatMessage[]): OpenAI.ChatCompleti
           type: "function" as const,
           function: { name: tc.name, arguments: tc.arguments },
         })),
+      };
+    }
+    // o1/o3 models: convert system messages to developer role
+    if (msg.role === "system" && capabilities.useDeveloperRole) {
+      return {
+        role: "developer" as const,
+        content: msg.content,
+      } as OpenAI.ChatCompletionMessageParam;
+    }
+    // Models that don't support system messages: convert to user messages
+    if (
+      msg.role === "system" &&
+      !capabilities.supportsSystemMessage &&
+      !capabilities.useDeveloperRole
+    ) {
+      return {
+        role: "user" as const,
+        content: `[System instructions]\n${msg.content}`,
       };
     }
     return {
@@ -78,14 +100,22 @@ export class OpenAICompatibleClient implements LLMProvider {
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     try {
+      const caps = getModelCapabilities(request.model);
+      const params: Record<string, unknown> = {
+        model: request.model,
+        messages: toOpenAIMessages(request.messages, caps),
+        max_tokens: request.maxTokens,
+      };
+      // Only include temperature for models that support it
+      if (caps.supportsTemperature && request.temperature !== undefined) {
+        params.temperature = request.temperature;
+      }
+      // Only include tools for models that support them
+      if (caps.supportsTools && request.tools) {
+        params.tools = toOpenAITools(request.tools);
+      }
       const response = await this.client.chat.completions.create(
-        {
-          model: request.model,
-          messages: toOpenAIMessages(request.messages),
-          tools: request.tools ? toOpenAITools(request.tools) : undefined,
-          temperature: request.temperature,
-          max_tokens: request.maxTokens,
-        },
+        params as unknown as OpenAI.ChatCompletionCreateParamsNonStreaming,
         { signal: request.signal },
       );
 
@@ -122,15 +152,21 @@ export class OpenAICompatibleClient implements LLMProvider {
 
   async *stream(request: ChatRequest): AsyncIterable<ChatChunk> {
     try {
+      const caps = getModelCapabilities(request.model);
+      const params: Record<string, unknown> = {
+        model: request.model,
+        messages: toOpenAIMessages(request.messages, caps),
+        max_tokens: request.maxTokens,
+        stream: true,
+      };
+      if (caps.supportsTemperature && request.temperature !== undefined) {
+        params.temperature = request.temperature;
+      }
+      if (caps.supportsTools && request.tools) {
+        params.tools = toOpenAITools(request.tools);
+      }
       const stream = await this.client.chat.completions.create(
-        {
-          model: request.model,
-          messages: toOpenAIMessages(request.messages),
-          tools: request.tools ? toOpenAITools(request.tools) : undefined,
-          temperature: request.temperature,
-          max_tokens: request.maxTokens,
-          stream: true,
-        },
+        params as unknown as OpenAI.ChatCompletionCreateParamsStreaming,
         { signal: request.signal },
       );
 
