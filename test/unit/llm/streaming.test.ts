@@ -77,4 +77,57 @@ describe("consumeStream", () => {
 
     expect(deltas).toEqual(["Hello", " world"]);
   });
+
+  it("should call onToolCallDelta and onComplete callbacks", async () => {
+    const toolDeltas: unknown[] = [];
+    let completedAcc: unknown = null;
+
+    async function* generateChunks(): AsyncIterable<ChatChunk> {
+      yield {
+        type: "tool-call-delta",
+        toolCall: { id: "tc-1", name: "read_file", arguments: '{"path":"x"}' },
+      };
+      yield { type: "done" };
+    }
+
+    await consumeStream(generateChunks(), {
+      onToolCallDelta: (tc) => toolDeltas.push(tc),
+      onComplete: (acc) => {
+        completedAcc = acc;
+      },
+    });
+
+    expect(toolDeltas).toHaveLength(1);
+    expect(completedAcc).not.toBeNull();
+  });
+});
+
+describe("accumulateChunk edge cases", () => {
+  it("should ignore tool-call-delta without toolCall", () => {
+    let acc = createStreamAccumulator();
+    acc = accumulateChunk(acc, { type: "tool-call-delta" });
+    expect(acc.toolCalls).toEqual([]);
+  });
+
+  it("should ignore tool-call-delta without id or name for new call", () => {
+    let acc = createStreamAccumulator();
+    acc = accumulateChunk(acc, {
+      type: "tool-call-delta",
+      toolCall: { arguments: "partial" },
+    });
+    expect(acc.toolCalls).toEqual([]);
+  });
+
+  it("should handle unknown chunk types gracefully", () => {
+    let acc = createStreamAccumulator();
+    acc = accumulateChunk(acc, { type: "unknown-type" as ChatChunk["type"] });
+    expect(acc.text).toBe("");
+    expect(acc.isComplete).toBe(false);
+  });
+
+  it("should handle text-delta with undefined text", () => {
+    let acc = createStreamAccumulator();
+    acc = accumulateChunk(acc, { type: "text-delta" });
+    expect(acc.text).toBe("");
+  });
 });
