@@ -100,6 +100,21 @@ describe("Phase 6 slash commands", () => {
     expect(result.output).toContain("name");
   });
 
+  it("/rename should fail without active session", async () => {
+    const result = await renameCommand.execute("new-name", {
+      ...baseContext,
+      sessionId: undefined,
+    });
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("No active session");
+  });
+
+  it("/rename should fail with nonexistent session", async () => {
+    const result = await renameCommand.execute("new-name", baseContext);
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("Rename failed");
+  });
+
   it("/cost should show token cost info", async () => {
     const result = await costCommand.execute("", baseContext);
     expect(result.output).toContain("Cost");

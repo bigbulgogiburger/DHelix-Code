@@ -1,3 +1,4 @@
+import { SessionManager } from "../core/session-manager.js";
 import { type SlashCommand } from "./registry.js";
 
 /**
@@ -16,9 +17,27 @@ export const renameCommand: SlashCommand = {
       };
     }
 
-    return {
-      output: `Session "${context.sessionId ?? "current"}" renamed to: "${name}"`,
-      success: true,
-    };
+    if (!context.sessionId) {
+      return {
+        output: "No active session to rename.",
+        success: false,
+      };
+    }
+
+    try {
+      const sessionManager = new SessionManager();
+      await sessionManager.renameSession(context.sessionId, name);
+
+      return {
+        output: `Session renamed to: "${name}"`,
+        success: true,
+      };
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      return {
+        output: `Rename failed: ${msg}`,
+        success: false,
+      };
+    }
   },
 };
