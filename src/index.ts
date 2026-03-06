@@ -3,6 +3,20 @@ import { VERSION, APP_NAME, LLM_DEFAULTS } from "./constants.js";
 
 const program = new Command();
 
+// Subcommand: dbcode init
+program
+  .command("init")
+  .description("Initialize a dbcode project in the current directory")
+  .action(async () => {
+    const { initProject } = await import("./commands/init.js");
+    const result = await initProject(process.cwd());
+    if (result.created) {
+      process.stdout.write(`Initialized ${APP_NAME} project at ${result.path}\n`);
+    } else {
+      process.stdout.write(`${APP_NAME} project already initialized at ${result.path}\n`);
+    }
+  });
+
 program
   .name(APP_NAME)
   .description("AI coding assistant for local/external LLMs")
