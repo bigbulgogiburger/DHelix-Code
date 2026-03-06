@@ -171,4 +171,46 @@ describe("SessionManager", () => {
   it("should throw when getting metadata for nonexistent session", async () => {
     await expect(manager.getMetadata("nonexistent-id")).rejects.toThrow("Session not found");
   });
+
+  it("should fork a session with all messages", async () => {
+    const id = await manager.createSession({
+      workingDirectory: "/test",
+      model: "test-model",
+      name: "Original",
+    });
+    await manager.appendMessage(id, { role: "user", content: "Hello" });
+    await manager.appendMessage(id, { role: "assistant", content: "Hi!" });
+
+    const forkedId = await manager.forkSession(id, { name: "My Fork" });
+
+    expect(forkedId).not.toBe(id);
+
+    const forkedMeta = await manager.getMetadata(forkedId);
+    expect(forkedMeta.name).toBe("My Fork");
+    expect(forkedMeta.model).toBe("test-model");
+    expect(forkedMeta.workingDirectory).toBe("/test");
+    expect(forkedMeta.messageCount).toBe(2);
+
+    const forkedMessages = await manager.loadMessages(forkedId);
+    expect(forkedMessages).toHaveLength(2);
+    expect(forkedMessages[0].content).toBe("Hello");
+    expect(forkedMessages[1].content).toBe("Hi!");
+  });
+
+  it("should fork with auto-generated name when none provided", async () => {
+    const id = await manager.createSession({
+      workingDirectory: "/test",
+      model: "m",
+      name: "Source Session",
+    });
+
+    const forkedId = await manager.forkSession(id);
+
+    const meta = await manager.getMetadata(forkedId);
+    expect(meta.name).toContain("Fork of Source Session");
+  });
+
+  it("should throw when forking nonexistent session", async () => {
+    await expect(manager.forkSession("nonexistent")).rejects.toThrow("Session not found");
+  });
 });

@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import { buildSystemPrompt } from "../../../src/core/system-prompt-builder.js";
 import { ToolRegistry } from "../../../src/tools/registry.js";
 import { z } from "zod";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 describe("buildSystemPrompt", () => {
   it("should build a prompt with identity section", () => {
@@ -67,5 +69,29 @@ describe("buildSystemPrompt", () => {
     const lowPos = prompt.indexOf("LOW_PRIORITY_MARKER");
     expect(identityPos).toBeLessThan(projectPos);
     expect(projectPos).toBeLessThan(lowPos);
+  });
+
+  it("should detect git context in a git repo", () => {
+    // dbcode project root is a git repo
+    const prompt = buildSystemPrompt({ workingDirectory: process.cwd() });
+    expect(prompt).toContain("Git branch:");
+  });
+
+  it("should not include git context for non-repo directory", () => {
+    const prompt = buildSystemPrompt({ workingDirectory: tmpdir() });
+    expect(prompt).not.toContain("Git branch:");
+  });
+
+  it("should detect Node.js project type", () => {
+    // dbcode project root has package.json
+    const prompt = buildSystemPrompt({ workingDirectory: process.cwd() });
+    expect(prompt).toContain("Project type: Node.js");
+  });
+
+  it("should not include project type for bare directory", () => {
+    const prompt = buildSystemPrompt({
+      workingDirectory: join(tmpdir(), `no-project-${Date.now()}`),
+    });
+    expect(prompt).not.toContain("Project type:");
   });
 });

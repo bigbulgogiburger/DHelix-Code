@@ -1,3 +1,6 @@
+import { execSync } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { getPlatform } from "../utils/platform.js";
 import { APP_NAME, VERSION } from "../constants.js";
 import { type ToolRegistry } from "../tools/registry.js";
@@ -75,12 +78,67 @@ function buildEnvironmentSection(workingDirectory?: string): string {
   const platform = getPlatform();
   const cwd = workingDirectory ?? process.cwd();
 
-  return `# Environment
+  const lines = [
+    `# Environment`,
+    ``,
+    `- Platform: ${platform}`,
+    `- Working directory: ${cwd}`,
+    `- Shell: ${platform === "win32" ? "cmd.exe / PowerShell" : "bash"}`,
+    `- Date: ${new Date().toISOString().split("T")[0]}`,
+  ];
 
-- Platform: ${platform}
-- Working directory: ${cwd}
-- Shell: ${platform === "win32" ? "cmd.exe / PowerShell" : "bash"}
-- Date: ${new Date().toISOString().split("T")[0]}`;
+  const git = detectGitContext(cwd);
+  if (git) {
+    lines.push(`- Git branch: ${git.branch}`);
+    if (git.dirty) {
+      lines.push(`- Git status: uncommitted changes`);
+    }
+  }
+
+  const projectType = detectProjectType(cwd);
+  if (projectType) {
+    lines.push(`- Project type: ${projectType}`);
+  }
+
+  return lines.join("\n");
+}
+
+/** Safely detect git context — returns null if not a git repo. */
+function detectGitContext(
+  cwd: string,
+): { readonly branch: string; readonly dirty: boolean } | null {
+  try {
+    const branch = execSync("git rev-parse --abbrev-ref HEAD", {
+      cwd,
+      encoding: "utf-8",
+      timeout: 3000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+
+    if (!branch) return null;
+
+    const status = execSync("git status --porcelain", {
+      cwd,
+      encoding: "utf-8",
+      timeout: 3000,
+      stdio: ["pipe", "pipe", "pipe"],
+    }).trim();
+
+    return { branch, dirty: status.length > 0 };
+  } catch {
+    return null;
+  }
+}
+
+/** Detect project type from files in cwd. */
+function detectProjectType(cwd: string): string | null {
+  if (existsSync(join(cwd, "package.json"))) return "Node.js";
+  if (existsSync(join(cwd, "Cargo.toml"))) return "Rust";
+  if (existsSync(join(cwd, "go.mod"))) return "Go";
+  if (existsSync(join(cwd, "pyproject.toml")) || existsSync(join(cwd, "setup.py"))) return "Python";
+  if (existsSync(join(cwd, "pom.xml")) || existsSync(join(cwd, "build.gradle"))) return "Java";
+  if (existsSync(join(cwd, "Gemfile"))) return "Ruby";
+  return null;
 }
 
 function buildToolsSection(registry: ToolRegistry): string {

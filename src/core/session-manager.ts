@@ -277,6 +277,40 @@ export class SessionManager {
   }
 
   /**
+   * Fork a session — creates a new session with a copy of the transcript up to now.
+   * Returns the new session ID.
+   */
+  async forkSession(
+    sourceSessionId: string,
+    options?: { readonly name?: string },
+  ): Promise<string> {
+    const sourceMeta = await this.getMetadata(sourceSessionId);
+    const sourceTranscript = await this.safeReadFile(this.transcriptPath(sourceSessionId));
+
+    const id = randomUUID();
+    const now = new Date().toISOString();
+    const name = options?.name ?? `Fork of ${sourceMeta.name}`;
+
+    const metadata: SessionMetadata = {
+      id,
+      name,
+      createdAt: now,
+      lastUsedAt: now,
+      workingDirectory: sourceMeta.workingDirectory,
+      model: sourceMeta.model,
+      messageCount: sourceMeta.messageCount,
+    };
+
+    const dir = this.sessionDir(id);
+    await mkdir(dir, { recursive: true });
+    await writeFile(this.metadataPath(id), JSON.stringify(metadata, null, 2), "utf-8");
+    await writeFile(this.transcriptPath(id), sourceTranscript, "utf-8");
+    await this.updateIndex(id, metadata);
+
+    return id;
+  }
+
+  /**
    * Delete a session and its files.
    */
   async deleteSession(sessionId: string): Promise<void> {

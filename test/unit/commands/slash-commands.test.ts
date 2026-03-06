@@ -77,16 +77,16 @@ describe("Phase 6 slash commands", () => {
     expect(result.output).toContain("dbcode-conversation");
   });
 
-  it("/fork should create fork", async () => {
-    const result = await forkCommand.execute("my-fork", baseContext);
-    expect(result.success).toBe(true);
-    expect(result.output).toContain("my-fork");
+  it("/fork should fail without active session", async () => {
+    const result = await forkCommand.execute("", { ...baseContext, sessionId: undefined });
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("No active session");
   });
 
-  it("/fork should use default name", async () => {
-    const result = await forkCommand.execute("", baseContext);
-    expect(result.success).toBe(true);
-    expect(result.output).toContain("fork-");
+  it("/fork should fail with nonexistent session", async () => {
+    const result = await forkCommand.execute("my-fork", baseContext);
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("Fork failed");
   });
 
   it("/output-style should list available styles", async () => {

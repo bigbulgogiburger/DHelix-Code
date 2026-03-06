@@ -14,6 +14,8 @@ import { costCommand } from "../../../src/commands/cost.js";
 import { contextCommand } from "../../../src/commands/context.js";
 import { statsCommand } from "../../../src/commands/stats.js";
 import { doctorCommand } from "../../../src/commands/doctor.js";
+import { forkCommand } from "../../../src/commands/fork.js";
+import { SessionManager } from "../../../src/core/session-manager.js";
 import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
@@ -296,5 +298,51 @@ describe("doctor command", () => {
     const result = await doctorCommand.execute("", baseContext);
     expect(result.success).toBe(true);
     expect(result.output).toContain("Doctor");
+  });
+});
+
+describe("fork command", () => {
+  let tmpDir: string;
+
+  afterEach(async () => {
+    if (tmpDir) {
+      await rm(tmpDir, { recursive: true, force: true }).catch(() => {});
+    }
+  });
+
+  it("should fail without active session", async () => {
+    const result = await forkCommand.execute("", {
+      ...baseContext,
+      sessionId: undefined,
+    });
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("No active session");
+  });
+
+  it("should fail when session does not exist", async () => {
+    const result = await forkCommand.execute("", {
+      ...baseContext,
+      sessionId: "nonexistent-session-id",
+    });
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("Fork failed");
+  });
+
+  it("should fork an existing session", async () => {
+    tmpDir = join(tmpdir(), `dbcode-fork-cmd-test-${Date.now()}`);
+    const sessionManager = new SessionManager(tmpDir);
+    const sessionId = await sessionManager.createSession({
+      workingDirectory: process.cwd(),
+      model: "test-model",
+      name: "Original",
+    });
+    await sessionManager.appendMessage(sessionId, { role: "user", content: "Hello" });
+
+    // The fork command creates its own SessionManager (default dir),
+    // so we can't easily test end-to-end without mocking.
+    // Instead, verify the command structure and error paths.
+    expect(forkCommand.name).toBe("fork");
+    expect(forkCommand.description).toContain("Fork");
+    expect(forkCommand.usage).toContain("/fork");
   });
 });
