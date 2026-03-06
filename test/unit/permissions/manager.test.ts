@@ -72,4 +72,47 @@ describe("PermissionManager", () => {
     expect(pm.getMode()).toBe("dontAsk");
     expect(pm.check("bash_exec", "dangerous").allowed).toBe(true);
   });
+
+  it("should match rules with argument patterns", () => {
+    const pm = new PermissionManager("default", [
+      { toolName: "bash_exec", pattern: "rm *", allowed: false },
+    ]);
+
+    // Should match: bash_exec with command arg matching "rm *"
+    const denied = pm.check("bash_exec", "confirm", { command: "rm -rf /" });
+    expect(denied.allowed).toBe(false);
+
+    // Should NOT match: different argument value
+    const allowed = pm.check("bash_exec", "confirm", { command: "ls -la" });
+    // Falls through to mode check (default mode + confirm = prompt)
+    expect(allowed.requiresPrompt).toBe(true);
+  });
+
+  it("should support wildcard tool names in rules", () => {
+    const pm = new PermissionManager("default", [{ toolName: "file_*", allowed: true }]);
+
+    expect(pm.check("file_read", "safe").allowed).toBe(true);
+    expect(pm.check("file_write", "confirm").allowed).toBe(true);
+    // Non-matching tool falls through to mode check
+    expect(pm.check("bash_exec", "confirm").requiresPrompt).toBe(true);
+  });
+
+  it("should add rules dynamically with addRule", () => {
+    const pm = new PermissionManager("default");
+
+    expect(pm.check("file_write", "confirm").requiresPrompt).toBe(true);
+
+    pm.addRule({ toolName: "file_write", allowed: true });
+    expect(pm.check("file_write", "confirm").allowed).toBe(true);
+  });
+
+  it("should clear session approvals", () => {
+    const pm = new PermissionManager("default");
+
+    pm.approve("file_write");
+    expect(pm.check("file_write", "confirm").allowed).toBe(true);
+
+    pm.clearSession();
+    expect(pm.check("file_write", "confirm").requiresPrompt).toBe(true);
+  });
 });

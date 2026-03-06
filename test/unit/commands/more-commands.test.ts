@@ -3,8 +3,8 @@ import { clearCommand } from "../../../src/commands/clear.js";
 import { compactCommand } from "../../../src/commands/compact.js";
 import { helpCommand, setHelpCommands } from "../../../src/commands/help.js";
 import { modelCommand } from "../../../src/commands/model.js";
-import { effortCommand } from "../../../src/commands/effort.js";
-import { fastCommand } from "../../../src/commands/fast.js";
+import { effortCommand, getEffortLevel, getEffortConfig } from "../../../src/commands/effort.js";
+import { fastCommand, isFastMode } from "../../../src/commands/fast.js";
 import { simplifyCommand } from "../../../src/commands/simplify.js";
 import { batchCommand } from "../../../src/commands/batch.js";
 import { debugCommand } from "../../../src/commands/debug.js";
@@ -57,14 +57,42 @@ describe("Core slash commands", () => {
     expect(result.newModel).toBe("gpt-4");
   });
 
-  it("/effort should show instructions", async () => {
+  it("/effort should show current level without args", async () => {
     const result = await effortCommand.execute("", baseContext);
     expect(result.success).toBe(true);
+    expect(result.output).toContain(getEffortLevel());
+  });
+
+  it("/effort should set valid level", async () => {
+    const result = await effortCommand.execute("low", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("low");
+    expect(getEffortLevel()).toBe("low");
+    // Reset
+    await effortCommand.execute("high", baseContext);
+  });
+
+  it("/effort should reject invalid level", async () => {
+    const result = await effortCommand.execute("turbo", baseContext);
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("Invalid");
+  });
+
+  it("getEffortConfig should return config for all levels", () => {
+    expect(getEffortConfig("low").maxTokens).toBe(1024);
+    expect(getEffortConfig("medium").maxTokens).toBe(2048);
+    expect(getEffortConfig("high").maxTokens).toBe(4096);
+    expect(getEffortConfig("max").maxTokens).toBe(8192);
   });
 
   it("/fast should toggle fast mode", async () => {
+    const before = isFastMode();
     const result = await fastCommand.execute("", baseContext);
     expect(result.success).toBe(true);
+    expect(isFastMode()).toBe(!before);
+    // Toggle back
+    await fastCommand.execute("", baseContext);
+    expect(isFastMode()).toBe(before);
   });
 
   it("/simplify should provide instructions", async () => {
