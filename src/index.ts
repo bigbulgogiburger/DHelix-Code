@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { Command } from "commander";
 import { render } from "ink";
 import { join } from "node:path";

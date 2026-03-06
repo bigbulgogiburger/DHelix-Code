@@ -31,6 +31,13 @@ function loadEnvConfig(): Partial<AppConfig> {
   }
   if (process.env.DBCODE_API_KEY) {
     llm.apiKey = process.env.DBCODE_API_KEY;
+  } else if (process.env.OPENAI_API_KEY) {
+    llm.apiKey = process.env.OPENAI_API_KEY;
+    // Auto-set OpenAI base URL if not explicitly configured
+    if (!process.env.DBCODE_BASE_URL) {
+      llm.baseUrl = "https://api.openai.com/v1";
+      llm.model = process.env.DBCODE_MODEL ?? "gpt-4o";
+    }
   }
   if (process.env.DBCODE_MODEL) {
     llm.model = process.env.DBCODE_MODEL;
