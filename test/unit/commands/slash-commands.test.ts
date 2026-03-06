@@ -28,10 +28,16 @@ describe("Phase 6 slash commands", () => {
     expect(configCommand.execute).toBeTypeOf("function");
   });
 
-  it("/diff should execute successfully", async () => {
+  it("/diff should execute successfully without args", async () => {
     const result = await diffCommand.execute("", baseContext);
-    expect(result.success).toBeDefined();
-    expect(result.output).toBeTypeOf("string");
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("Show all changes");
+  });
+
+  it("/diff should focus on a specific file when provided", async () => {
+    const result = await diffCommand.execute("src/index.ts", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("Focus on: src/index.ts");
   });
 
   it("/doctor should run diagnostics", async () => {

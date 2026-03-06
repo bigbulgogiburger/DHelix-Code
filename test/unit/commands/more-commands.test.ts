@@ -54,6 +54,13 @@ describe("Core slash commands", () => {
     expect(result.output).toContain("clear");
   });
 
+  it("/help should fall back to showing itself when no commands set", async () => {
+    setHelpCommands([]);
+    const result = await helpCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("help");
+  });
+
   it("/model should show current model without args", async () => {
     const result = await modelCommand.execute("", baseContext);
     expect(result.output).toContain("test-model");
@@ -71,6 +78,34 @@ describe("Core slash commands", () => {
     });
     expect(result.output).toContain("developer role");
     expect(result.success).toBe(true);
+  });
+
+  it("/model should show 'no (text-parsing fallback)' for model without tool support", async () => {
+    // llama3 has supportsTools: false in model-capabilities
+    const result = await modelCommand.execute("", {
+      ...baseContext,
+      model: "llama3",
+    });
+    expect(result.output).toContain("no (text-parsing fallback)");
+    expect(result.success).toBe(true);
+  });
+
+  it("/model switch should include notes for model without tool support", async () => {
+    const result = await modelCommand.execute("llama3", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("text-parsing fallback");
+  });
+
+  it("/model switch should include notes for o1 model", async () => {
+    const result = await modelCommand.execute("o1", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("developer role");
+  });
+
+  it("/model switch should include notes for model without temperature", async () => {
+    const result = await modelCommand.execute("o1-mini", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("temperature not supported");
   });
 
   it("/effort should show current level without args", async () => {

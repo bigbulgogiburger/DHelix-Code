@@ -85,6 +85,34 @@ describe("loadSkill", () => {
     await expect(loadSkill(skillPath)).rejects.toThrow("Failed to load skill");
   });
 
+  it("should parse quoted items in inline arrays", async () => {
+    const skillPath = join(testDir, "quoted-array.md");
+    await writeFile(
+      skillPath,
+      [
+        "---",
+        "name: quoted-arr",
+        "description: has quoted items",
+        `allowed-tools: ["file_read", 'grep_search']`,
+        "---",
+        "body",
+      ].join("\n"),
+    );
+
+    const skill = await loadSkill(skillPath);
+    expect(skill.frontmatter.allowedTools).toEqual(["file_read", "grep_search"]);
+  });
+
+  it("should handle unclosed frontmatter delimiter", async () => {
+    const skillPath = join(testDir, "unclosed-fm.md");
+    await writeFile(
+      skillPath,
+      ["---", "name: unclosed", "description: no end delimiter", "body text"].join("\n"),
+    );
+
+    await expect(loadSkill(skillPath)).rejects.toThrow("missing frontmatter");
+  });
+
   it("should parse context and agent fields", async () => {
     const skillPath = join(testDir, "forked.md");
     await writeFile(
