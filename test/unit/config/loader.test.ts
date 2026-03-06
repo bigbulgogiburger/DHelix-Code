@@ -78,4 +78,23 @@ describe("loadConfig", () => {
     const resolved = await loadConfig({}, "/nonexistent/project/dir");
     expect(resolved.config).toBeDefined();
   });
+
+  it("should fallback to OPENAI_API_KEY when DBCODE_API_KEY not set", async () => {
+    delete process.env.DBCODE_API_KEY;
+    process.env.OPENAI_API_KEY = "sk-test-openai-key";
+    const resolved = await loadConfig();
+    expect(resolved.config.llm.apiKey).toBe("sk-test-openai-key");
+    expect(resolved.config.llm.baseUrl).toBe("https://api.openai.com/v1");
+    expect(resolved.config.llm.model).toBe("gpt-4o");
+    delete process.env.OPENAI_API_KEY;
+  });
+
+  it("should prefer DBCODE_API_KEY over OPENAI_API_KEY", async () => {
+    process.env.DBCODE_API_KEY = "dbcode-key";
+    process.env.OPENAI_API_KEY = "openai-key";
+    const resolved = await loadConfig();
+    expect(resolved.config.llm.apiKey).toBe("dbcode-key");
+    delete process.env.DBCODE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+  });
 });
