@@ -1,4 +1,4 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { clearCommand } from "../../../src/commands/clear.js";
 import { compactCommand } from "../../../src/commands/compact.js";
 import { helpCommand, setHelpCommands } from "../../../src/commands/help.js";
@@ -8,6 +8,15 @@ import { fastCommand } from "../../../src/commands/fast.js";
 import { simplifyCommand } from "../../../src/commands/simplify.js";
 import { batchCommand } from "../../../src/commands/batch.js";
 import { debugCommand } from "../../../src/commands/debug.js";
+import { exportCommand } from "../../../src/commands/export.js";
+import { copyCommand } from "../../../src/commands/copy.js";
+import { costCommand } from "../../../src/commands/cost.js";
+import { contextCommand } from "../../../src/commands/context.js";
+import { statsCommand } from "../../../src/commands/stats.js";
+import { doctorCommand } from "../../../src/commands/doctor.js";
+import { rm } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 
 const baseContext = {
   workingDirectory: process.cwd(),
@@ -102,5 +111,145 @@ describe("Core slash commands", () => {
       expect(cmd.description).toBeTypeOf("string");
       expect(cmd.execute).toBeTypeOf("function");
     }
+  });
+});
+
+describe("export command", () => {
+  const exportDir = join(tmpdir(), `dbcode-export-test-${Date.now()}`);
+
+  afterEach(async () => {
+    await rm(exportDir, { recursive: true, force: true }).catch(() => {});
+  });
+
+  it("should export conversation with messages", async () => {
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(exportDir, { recursive: true });
+
+    const result = await exportCommand.execute("test-export.md", {
+      ...baseContext,
+      workingDirectory: exportDir,
+      messages: [
+        { role: "user", content: "Hello there" },
+        { role: "assistant", content: "Hi! How can I help?" },
+      ],
+    });
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("test-export.md");
+
+    // Verify file was written with conversation content
+    const { readFile } = await import("node:fs/promises");
+    const content = await readFile(join(exportDir, "test-export.md"), "utf-8");
+    expect(content).toContain("Hello there");
+    expect(content).toContain("How can I help");
+    expect(content).toContain("**User**");
+    expect(content).toContain("**Assistant**");
+  });
+
+  it("should export with empty messages", async () => {
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(exportDir, { recursive: true });
+
+    const result = await exportCommand.execute("empty.md", {
+      ...baseContext,
+      workingDirectory: exportDir,
+      messages: [],
+    });
+    expect(result.success).toBe(true);
+
+    const { readFile } = await import("node:fs/promises");
+    const content = await readFile(join(exportDir, "empty.md"), "utf-8");
+    expect(content).toContain("No messages");
+  });
+
+  it("should generate filename when not provided", async () => {
+    const { mkdir } = await import("node:fs/promises");
+    await mkdir(exportDir, { recursive: true });
+
+    const result = await exportCommand.execute("", {
+      ...baseContext,
+      workingDirectory: exportDir,
+    });
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("dbcode-conversation-");
+  });
+
+  it("should handle write errors gracefully", async () => {
+    const result = await exportCommand.execute("test.md", {
+      ...baseContext,
+      workingDirectory: "/nonexistent/path/that/does/not/exist",
+    });
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("Export failed");
+  });
+
+  it("should skip system messages in export", async () => {
+    const { mkdir, readFile } = await import("node:fs/promises");
+    await mkdir(exportDir, { recursive: true });
+
+    const result = await exportCommand.execute("skip-sys.md", {
+      ...baseContext,
+      workingDirectory: exportDir,
+      messages: [
+        { role: "system", content: "You are a helpful assistant" },
+        { role: "user", content: "Question" },
+        { role: "assistant", content: "Answer" },
+      ],
+    });
+    expect(result.success).toBe(true);
+
+    const content = await readFile(join(exportDir, "skip-sys.md"), "utf-8");
+    expect(content).not.toContain("You are a helpful assistant");
+    expect(content).toContain("Question");
+    expect(content).toContain("Answer");
+  });
+});
+
+describe("copy command", () => {
+  it("should handle no arguments", async () => {
+    const result = await copyCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("Last code block");
+  });
+
+  it("should handle block number", async () => {
+    const result = await copyCommand.execute("2", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("#2");
+  });
+
+  it("should reject invalid block number", async () => {
+    const result = await copyCommand.execute("abc", baseContext);
+    expect(result.success).toBe(false);
+    expect(result.output).toContain("Usage");
+  });
+});
+
+describe("cost command", () => {
+  it("should show cost information", async () => {
+    const result = await costCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("test-model");
+  });
+});
+
+describe("context command", () => {
+  it("should show context usage", async () => {
+    const result = await contextCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("stats command", () => {
+  it("should show session stats", async () => {
+    const result = await statsCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+  });
+});
+
+describe("doctor command", () => {
+  it("should run diagnostics", async () => {
+    const result = await doctorCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("Doctor");
   });
 });

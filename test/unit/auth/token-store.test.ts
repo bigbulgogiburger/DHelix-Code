@@ -1,6 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { resolveToken } from "../../../src/auth/token-store.js";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { resolveToken, saveToken } from "../../../src/auth/token-store.js";
 import { TokenManager } from "../../../src/auth/token-manager.js";
+import { writeFile, mkdir, readFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 describe("token-store", () => {
   const originalEnv = { ...process.env };
@@ -74,18 +77,13 @@ describe("TokenManager", () => {
   });
 
   it("should throw on requireToken with no token", async () => {
-    delete process.env.DBCODE_API_KEY;
-    delete process.env.OPENAI_API_KEY;
     const manager = new TokenManager();
     manager.clearCache();
 
-    // This may or may not throw depending on whether credentials.json exists
-    // Just verify it doesn't crash
-    try {
-      await manager.requireToken();
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
+    // Force getToken to return undefined
+    vi.spyOn(manager, "getToken").mockResolvedValueOnce(undefined);
+
+    await expect(manager.requireToken()).rejects.toThrow("No API token configured");
   });
 
   it("should build bearer auth headers", async () => {
@@ -147,5 +145,47 @@ describe("TokenManager", () => {
     const token = await manager.getToken();
     expect(token!.config.token).toBe("stored-token");
     expect(token!.source).toBe("file");
+  });
+});
+
+describe("saveToken", () => {
+  it("should save bearer token to file", async () => {
+    // saveToken writes to CONFIG_DIR/credentials.json
+    // We just verify it doesn't throw for a valid config
+    await expect(saveToken({ method: "bearer", token: "test-save-token" })).resolves.not.toThrow();
+  });
+
+  it("should save api-key token", async () => {
+    await expect(saveToken({ method: "api-key", token: "api-key-save" })).resolves.not.toThrow();
+  });
+
+  it("should save custom-header token with header name", async () => {
+    await expect(
+      saveToken({ method: "custom-header", token: "custom-val", headerName: "X-Custom" }),
+    ).resolves.not.toThrow();
+  });
+});
+
+describe("resolveToken - file fallback", () => {
+  it("should fall back to credentials file when no env vars", async () => {
+    const originalDbcode = process.env.DBCODE_API_KEY;
+    const originalOpenai = process.env.OPENAI_API_KEY;
+    delete process.env.DBCODE_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+
+    // First save a token to the file
+    await saveToken({ method: "bearer", token: "file-fallback-token" });
+
+    const token = await resolveToken();
+    // Should find the file token since no env vars
+    expect(token).toBeDefined();
+    if (token && token.source === "file") {
+      expect(token.config.token).toBe("file-fallback-token");
+      expect(token.config.method).toBe("bearer");
+    }
+
+    // Restore env
+    if (originalDbcode) process.env.DBCODE_API_KEY = originalDbcode;
+    if (originalOpenai) process.env.OPENAI_API_KEY = originalOpenai;
   });
 });

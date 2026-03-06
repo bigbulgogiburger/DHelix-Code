@@ -15,7 +15,7 @@ export const exportCommand: SlashCommand = {
     const filePath = join(context.workingDirectory, filename);
 
     try {
-      const content = [
+      const lines: string[] = [
         `# dbcode Conversation Export`,
         ``,
         `- **Date**: ${new Date().toISOString()}`,
@@ -24,8 +24,22 @@ export const exportCommand: SlashCommand = {
         ``,
         `---`,
         ``,
-        `(Conversation content would be exported here)`,
-      ].join("\n");
+      ];
+
+      const messages = context.messages ?? [];
+      if (messages.length === 0) {
+        lines.push("(No messages in conversation)");
+      } else {
+        for (const msg of messages) {
+          if (msg.role === "system") continue;
+          const label = msg.role === "user" ? "**User**" : "**Assistant**";
+          lines.push(`### ${label}\n`);
+          lines.push(msg.content);
+          lines.push("");
+        }
+      }
+
+      const content = lines.join("\n");
 
       await writeFile(filePath, content, "utf-8");
       return {

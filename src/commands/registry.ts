@@ -17,6 +17,8 @@ export interface CommandContext {
   readonly model: string;
   /** Emit an event */
   readonly emit: (event: string, data?: unknown) => void;
+  /** Current conversation messages (for export, etc.) */
+  readonly messages?: readonly { readonly role: string; readonly content: string }[];
 }
 
 /** Result from executing a slash command */

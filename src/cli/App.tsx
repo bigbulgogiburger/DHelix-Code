@@ -282,6 +282,10 @@ export function App({
           sessionId,
           model: activeModel,
           emit: events.emit as (event: string, data?: unknown) => void,
+          messages: conversation.messages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
         });
 
         if (result) {
