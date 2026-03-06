@@ -218,6 +218,107 @@ describe("Agent Loop Integration", () => {
     expect(result.iterations).toBe(2);
   });
 
+  it("should retry transient errors and succeed", async () => {
+    let callCount = 0;
+    const provider: LLMProvider = {
+      name: "mock",
+      chat: vi.fn(async () => {
+        callCount++;
+        if (callCount === 1) {
+          throw new Error("500 internal server error");
+        }
+        return {
+          content: "Recovered!",
+          toolCalls: [],
+          usage: { inputTokens: 100, outputTokens: 50, totalTokens: 150 },
+        };
+      }),
+      stream: vi.fn(),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const events = createEventEmitter();
+    const errorEvents: unknown[] = [];
+    events.on("llm:error", (data) => errorEvents.push(data));
+
+    const result = await runAgentLoop(
+      {
+        client: provider,
+        model: "test",
+        toolRegistry: new ToolRegistry(),
+        strategy: createMockStrategy(),
+        events,
+        maxRetries: 2,
+      },
+      [{ role: "user", content: "test" }],
+    );
+
+    expect(result.iterations).toBe(1);
+    expect(result.aborted).toBe(false);
+    expect(callCount).toBe(2);
+    expect(errorEvents.length).toBe(1);
+  });
+
+  it("should throw after transient retries exhausted", async () => {
+    const provider: LLMProvider = {
+      name: "mock",
+      chat: vi.fn(async () => {
+        throw new Error("502 bad gateway");
+      }),
+      stream: vi.fn(),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const events = createEventEmitter();
+
+    await expect(
+      runAgentLoop(
+        {
+          client: provider,
+          model: "test",
+          toolRegistry: new ToolRegistry(),
+          strategy: createMockStrategy(),
+          events,
+          maxRetries: 1,
+        },
+        [{ role: "user", content: "test" }],
+      ),
+    ).rejects.toThrow("LLM call failed after retries");
+
+    // Should have been called maxRetries + 1 times
+    expect(provider.chat).toHaveBeenCalledTimes(2);
+  });
+
+  it("should throw immediately on permanent errors", async () => {
+    const provider: LLMProvider = {
+      name: "mock",
+      chat: vi.fn(async () => {
+        throw new Error("invalid model configuration");
+      }),
+      stream: vi.fn(),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const events = createEventEmitter();
+
+    await expect(
+      runAgentLoop(
+        {
+          client: provider,
+          model: "test",
+          toolRegistry: new ToolRegistry(),
+          strategy: createMockStrategy(),
+          events,
+          maxRetries: 3,
+        },
+        [{ role: "user", content: "test" }],
+      ),
+    ).rejects.toThrow("invalid model configuration");
+
+    // Should only be called once — permanent errors don't retry
+    expect(provider.chat).toHaveBeenCalledTimes(1);
+  });
+
   it("should emit events during execution", async () => {
     const provider = createMockProvider([{ content: "Done." }]);
     const events = createEventEmitter();

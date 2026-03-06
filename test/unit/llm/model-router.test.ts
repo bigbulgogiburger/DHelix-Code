@@ -125,4 +125,204 @@ describe("ModelRouter", () => {
     router.countTokens("hello world");
     expect(primary.countTokens).toHaveBeenCalledWith("hello world");
   });
+
+  it("should fallback after transient retries exhausted", async () => {
+    const primary = mockProvider("primary", "500 internal server error");
+    const fallback = mockProvider("fallback");
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      fallback,
+      fallbackModel: "gpt-3.5-turbo",
+      maxRetries: 1,
+      retryDelayMs: 1, // fast retries for test
+    });
+
+    const response = await router.chat({
+      model: "gpt-4",
+      messages: [{ role: "user", content: "test" }],
+      tools: [],
+      temperature: 0,
+      maxTokens: 100,
+    });
+
+    expect(response.content).toContain("fallback");
+    expect(router.isUsingFallback).toBe(true);
+    // Primary should have been called maxRetries+1 times
+    expect(primary.chat).toHaveBeenCalledTimes(2);
+  });
+
+  it("should throw combined error when both primary and fallback fail", async () => {
+    const primary = mockProvider("primary", "timeout error");
+    const fallback = mockProvider("fallback", "fallback also failed");
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      fallback,
+      fallbackModel: "gpt-3.5-turbo",
+      maxRetries: 0,
+      retryDelayMs: 1,
+    });
+
+    await expect(
+      router.chat({
+        model: "gpt-4",
+        messages: [{ role: "user", content: "test" }],
+        tools: [],
+        temperature: 0,
+        maxTokens: 100,
+      }),
+    ).rejects.toThrow("Both primary and fallback models failed");
+  });
+
+  it("should throw LLMError after retries without fallback", async () => {
+    const primary = mockProvider("primary", "502 bad gateway");
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      maxRetries: 1,
+      retryDelayMs: 1,
+    });
+
+    await expect(
+      router.chat({
+        model: "gpt-4",
+        messages: [{ role: "user", content: "test" }],
+        tools: [],
+        temperature: 0,
+        maxTokens: 100,
+      }),
+    ).rejects.toThrow("LLM request failed after retries");
+  });
+
+  it("should not retry auth errors", async () => {
+    const primary = mockProvider("primary", "401 unauthorized");
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      maxRetries: 3,
+      retryDelayMs: 1,
+    });
+
+    await expect(
+      router.chat({
+        model: "gpt-4",
+        messages: [{ role: "user", content: "test" }],
+        tools: [],
+        temperature: 0,
+        maxTokens: 100,
+      }),
+    ).rejects.toThrow();
+
+    // Should only be called once — no retries for auth errors
+    expect(primary.chat).toHaveBeenCalledTimes(1);
+  });
+
+  it("should stream from fallback on overload error", async () => {
+    const primary = mockProvider("primary", "503 overloaded");
+    const fallback: LLMProvider = {
+      name: "fallback",
+      chat: vi.fn(async () => ({
+        content: "fallback",
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      })),
+      stream: vi.fn(async function* () {
+        yield { type: "text-delta" as const, text: "fallback-chunk" };
+        yield {
+          type: "done" as const,
+          usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+        };
+      }),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+      fallback,
+      fallbackModel: "gpt-3.5-turbo",
+    });
+
+    const chunks: string[] = [];
+    for await (const chunk of router.stream({
+      model: "gpt-4",
+      messages: [{ role: "user", content: "test" }],
+      tools: [],
+      temperature: 0,
+      maxTokens: 100,
+    })) {
+      if (chunk.type === "text-delta") {
+        chunks.push(chunk.text);
+      }
+    }
+
+    expect(chunks).toContain("fallback-chunk");
+    expect(router.isUsingFallback).toBe(true);
+  });
+
+  it("should rethrow stream error when no fallback available", async () => {
+    const primary = mockProvider("primary", "403 forbidden");
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+    });
+
+    const streamIt = async () => {
+      const chunks: unknown[] = [];
+      for await (const chunk of router.stream({
+        model: "gpt-4",
+        messages: [{ role: "user", content: "test" }],
+        tools: [],
+        temperature: 0,
+        maxTokens: 100,
+      })) {
+        chunks.push(chunk);
+      }
+      return chunks;
+    };
+
+    await expect(streamIt()).rejects.toThrow("403 forbidden");
+  });
+
+  it("should stream successfully from primary", async () => {
+    const primary: LLMProvider = {
+      name: "primary",
+      chat: vi.fn(async () => ({
+        content: "ok",
+        toolCalls: [],
+        usage: { inputTokens: 10, outputTokens: 5, totalTokens: 15 },
+      })),
+      stream: vi.fn(async function* () {
+        yield { type: "text-delta" as const, text: "hello" };
+        yield { type: "text-delta" as const, text: " world" };
+      }),
+      countTokens: vi.fn(() => 10),
+    };
+
+    const router = new ModelRouter({
+      primary,
+      primaryModel: "gpt-4",
+    });
+
+    const chunks: string[] = [];
+    for await (const chunk of router.stream({
+      model: "gpt-4",
+      messages: [{ role: "user", content: "test" }],
+      tools: [],
+      temperature: 0,
+      maxTokens: 100,
+    })) {
+      if (chunk.type === "text-delta") {
+        chunks.push(chunk.text);
+      }
+    }
+
+    expect(chunks).toEqual(["hello", " world"]);
+  });
 });
