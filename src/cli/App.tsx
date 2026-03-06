@@ -14,6 +14,7 @@ import { useKeybindings, type Keybinding } from "./hooks/useKeybindings.js";
 import { TaskListView } from "./components/TaskListView.js";
 import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
 import { buildSystemPrompt } from "../core/system-prompt-builder.js";
+import { loadInstructions } from "../instructions/loader.js";
 import { runAgentLoop, type PermissionResult } from "../core/agent-loop.js";
 import { type AnyMessage, MessageRole } from "../core/message-types.js";
 import { type ToolRegistry } from "../tools/registry.js";
@@ -86,6 +87,22 @@ export function App({
   const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(initialModel);
+
+  // Project instructions loaded from DBCODE.md and .dbcode/rules/
+  const [projectInstructions, setProjectInstructions] = useState<string | undefined>(undefined);
+
+  // Load instructions on mount
+  useEffect(() => {
+    loadInstructions(process.cwd())
+      .then((result) => {
+        if (result.combined) {
+          setProjectInstructions(result.combined);
+        }
+      })
+      .catch(() => {
+        // Silently ignore — instructions are optional
+      });
+  }, []);
 
   // Message queue — allows typing while LLM is responding (FIFO)
   const messageQueueRef = useRef<string[]>([]);
@@ -161,6 +178,8 @@ export function App({
 
       const systemPrompt = buildSystemPrompt({
         toolRegistry,
+        workingDirectory: process.cwd(),
+        projectInstructions,
       });
 
       let messages: ChatMessage[] = [

@@ -3,6 +3,7 @@ import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { runAgentLoop } from "../core/agent-loop.js";
 import { buildSystemPrompt } from "../core/system-prompt-builder.js";
+import { loadInstructions } from "../instructions/loader.js";
 import { createEventEmitter } from "../utils/events.js";
 
 /** Output format for headless mode */
@@ -54,7 +55,12 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
   } = options;
 
   const events = createEventEmitter();
-  const systemPrompt = buildSystemPrompt({ toolRegistry });
+  const instructions = await loadInstructions(workingDirectory ?? process.cwd()).catch(() => null);
+  const systemPrompt = buildSystemPrompt({
+    toolRegistry,
+    workingDirectory,
+    projectInstructions: instructions?.combined,
+  });
 
   const initialMessages: ChatMessage[] = [
     { role: "system", content: systemPrompt },
