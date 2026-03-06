@@ -277,34 +277,43 @@ program
     },
   );
 
-// Global error handler — user-friendly messages, zero stack traces
-program.parseAsync().catch((error: unknown) => {
+/**
+ * User-friendly error handler — zero stack traces, actionable guidance.
+ */
+function handleError(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
   const cause =
     error && typeof error === "object" && "context" in error
       ? (error as { context: Record<string, unknown> }).context
       : undefined;
 
-  // Classify and provide actionable guidance
   const lowerMsg = message.toLowerCase();
   const causeStr = cause ? JSON.stringify(cause).toLowerCase() : "";
+  const combined = lowerMsg + " " + causeStr;
+
   if (
-    lowerMsg.includes("connection") ||
-    lowerMsg.includes("econnrefused") ||
-    causeStr.includes("connection")
+    combined.includes("econnrefused") ||
+    (combined.includes("connection") && !combined.includes("401"))
   ) {
     const url = cause?.model ?? "the configured endpoint";
     process.stderr.write(
       `Error: Cannot connect to ${url}.\nIs the server running? Check with: dbcode --base-url <url>\n`,
     );
-  } else if (lowerMsg.includes("401") || lowerMsg.includes("unauthorized")) {
+  } else if (
+    combined.includes("401") ||
+    combined.includes("unauthorized") ||
+    combined.includes("incorrect api key")
+  ) {
     process.stderr.write(
       `Error: Invalid API key.\nSet with: dbcode --api-key <key> or OPENAI_API_KEY env var\n`,
     );
-  } else if (lowerMsg.includes("404") || lowerMsg.includes("not found")) {
+  } else if (
+    combined.includes("404") ||
+    (combined.includes("not found") && combined.includes("model"))
+  ) {
     const model = cause?.model ?? "unknown";
     process.stderr.write(`Error: Model '${model}' not found.\nTry: dbcode --model gpt-4o\n`);
-  } else if (lowerMsg.includes("rate limit") || lowerMsg.includes("429")) {
+  } else if (combined.includes("rate limit") || combined.includes("429")) {
     process.stderr.write(`Error: Rate limited. Please wait a moment and try again.\n`);
   } else {
     process.stderr.write(`Error: ${message}\n`);
@@ -313,4 +322,7 @@ program.parseAsync().catch((error: unknown) => {
     }
   }
   process.exit(1);
-});
+}
+
+// Global error handler
+program.parseAsync().catch(handleError);
