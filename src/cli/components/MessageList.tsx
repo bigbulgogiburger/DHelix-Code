@@ -1,3 +1,4 @@
+import React from "react";
 import { Box, Text, Static } from "ink";
 import { type AnyMessage, MessageRole } from "../../core/message-types.js";
 import { renderMarkdown } from "../renderer/markdown.js";
@@ -8,7 +9,7 @@ interface MessageListProps {
 }
 
 /** Display completed conversation messages */
-export function MessageList({ messages, enableMarkdown = true }: MessageListProps) {
+export const MessageList = React.memo(function MessageList({ messages, enableMarkdown = true }: MessageListProps) {
   return (
     <Static items={messages.map((msg, i) => ({ ...msg, key: `msg-${i}` }))}>
       {(msg) => (
@@ -18,14 +19,14 @@ export function MessageList({ messages, enableMarkdown = true }: MessageListProp
       )}
     </Static>
   );
-}
+});
 
 interface MessageItemProps {
   readonly message: AnyMessage;
   readonly enableMarkdown: boolean;
 }
 
-function MessageItem({ message, enableMarkdown }: MessageItemProps) {
+const MessageItem = React.memo(function MessageItem({ message, enableMarkdown }: MessageItemProps) {
   const roleColor = getRoleColor(message.role);
 
   const content =
@@ -41,7 +42,7 @@ function MessageItem({ message, enableMarkdown }: MessageItemProps) {
       <Text>{content}</Text>
     </>
   );
-}
+});
 
 function getRoleColor(role: string): string {
   switch (role) {

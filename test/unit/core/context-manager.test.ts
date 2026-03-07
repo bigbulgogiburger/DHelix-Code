@@ -166,7 +166,7 @@ describe("ContextManager", () => {
     const toolMsg = compacted.find((m) => m.role === "tool");
     if (toolMsg) {
       expect(toolMsg.content.length).toBeLessThan(largeToolResult.length);
-      expect(toolMsg.content).toContain("truncated");
+      expect(toolMsg.content).toContain("omitted");
     }
   });
 

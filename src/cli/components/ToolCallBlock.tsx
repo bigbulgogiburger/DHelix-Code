@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 
 import {
   getToolDisplayText,
   getToolStatusIcon,
   SPINNER_FRAMES,
-  SPINNER_INTERVAL_MS,
 } from "../renderer/tool-display.js";
+
+const TOOL_SPINNER_INTERVAL_MS = 200;
 
 interface ToolCallBlockProps {
   readonly name: string;
@@ -14,6 +15,7 @@ interface ToolCallBlockProps {
   readonly args?: Record<string, unknown>;
   readonly output?: string;
   readonly isExpanded?: boolean;
+  readonly startTime?: number;
 }
 
 function useSpinner(active: boolean): string {
@@ -23,7 +25,7 @@ function useSpinner(active: boolean): string {
     if (!active) return;
     const timer = setInterval(() => {
       setFrame((prev) => (prev + 1) % SPINNER_FRAMES.length);
-    }, SPINNER_INTERVAL_MS);
+    }, TOOL_SPINNER_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [active]);
 
@@ -31,16 +33,18 @@ function useSpinner(active: boolean): string {
 }
 
 /** Display a tool call with status indicator */
-export function ToolCallBlock({
+export const ToolCallBlock = React.memo(function ToolCallBlock({
   name,
   status,
   args,
   output,
   isExpanded = false,
+  startTime,
 }: ToolCallBlockProps) {
   const spinnerChar = useSpinner(status === "running");
   const icon = status === "running" ? spinnerChar : getToolStatusIcon(status);
-  const displayText = getToolDisplayText(name, status, args, output);
+  const duration = startTime && status !== "running" ? Date.now() - startTime : undefined;
+  const displayText = getToolDisplayText(name, status, args, output, duration);
 
   const statusColor = {
     running: "yellow",
@@ -65,4 +69,4 @@ export function ToolCallBlock({
       ) : null}
     </Box>
   );
-}
+});

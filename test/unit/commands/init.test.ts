@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { initProject } from "../../../src/commands/init.js";
+import { initProject, initCommand } from "../../../src/commands/init.js";
+import { CommandRegistry } from "../../../src/commands/registry.js";
 import { APP_NAME } from "../../../src/constants.js";
 
 describe("initProject", () => {
@@ -58,5 +59,81 @@ describe("initProject", () => {
     // Content should be unchanged
     const afterReInit = await readFile(mdPath, "utf-8");
     expect(afterReInit).toBe(original);
+  });
+});
+
+describe("initCommand", () => {
+  let tempDir: string;
+
+  const makeContext = (cwd: string) => ({
+    workingDirectory: cwd,
+    model: "test-model",
+    sessionId: "test-session",
+    emit: () => {},
+  });
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "dbcode-init-cmd-"));
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("should have name 'init' and a description", () => {
+    expect(initCommand.name).toBe("init");
+    expect(initCommand.description).toBeTypeOf("string");
+    expect(initCommand.description.length).toBeGreaterThan(0);
+  });
+
+  it("should have usage and execute", () => {
+    expect(initCommand.usage).toBe("/init");
+    expect(initCommand.execute).toBeTypeOf("function");
+  });
+
+  it("should create project and return success on first run", async () => {
+    const result = await initCommand.execute("", makeContext(tempDir));
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("initialized");
+    expect(result.output).toContain(`.${APP_NAME}`);
+
+    // Verify directory was actually created
+    const projectPath = join(tempDir, `.${APP_NAME}`);
+    await expect(access(projectPath)).resolves.toBeUndefined();
+  });
+
+  it("should return already-initialized message on second run", async () => {
+    const first = await initCommand.execute("", makeContext(tempDir));
+    expect(first.success).toBe(true);
+    expect(first.output).toContain("initialized");
+
+    const second = await initCommand.execute("", makeContext(tempDir));
+    expect(second.success).toBe(true);
+    expect(second.output).toContain("Already initialized");
+  });
+
+  it("should return refreshInstructions: true on successful creation", async () => {
+    const result = await initCommand.execute("", makeContext(tempDir));
+    expect(result.success).toBe(true);
+    expect(result.refreshInstructions).toBe(true);
+  });
+
+  it("should not return refreshInstructions when already initialized", async () => {
+    // First init — creates the project
+    await initCommand.execute("", makeContext(tempDir));
+
+    // Second init — already exists
+    const second = await initCommand.execute("", makeContext(tempDir));
+    expect(second.success).toBe(true);
+    expect(second.output).toContain("Already initialized");
+    // refreshInstructions should be undefined (not set) when nothing was created
+    expect(second.refreshInstructions).toBeUndefined();
+  });
+
+  it("should be registerable in CommandRegistry", () => {
+    const registry = new CommandRegistry();
+    registry.register(initCommand);
+    expect(registry.has("init")).toBe(true);
+    expect(registry.get("init")).toBe(initCommand);
   });
 });

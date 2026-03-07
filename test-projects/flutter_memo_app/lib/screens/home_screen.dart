@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/memo_provider.dart';
 import '../widgets/memo_card.dart';
-import 'editor_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   @override
@@ -18,10 +17,9 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: _isSearching
             ? TextField(
-                autofocus: true,
                 decoration: InputDecoration(hintText: 'Search...'),
-                onChanged: (query) {
-                  Provider.of<MemoProvider>(context, listen: false).setSearchQuery(query);
+                onChanged: (value) {
+                  Provider.of<MemoProvider>(context, listen: false).setSearchQuery(value);
                 },
               )
             : Text('Memos'),
@@ -71,10 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => EditorScreen()),
-          );
+          Navigator.pushNamed(context, '/editor');
         },
         child: Icon(Icons.add),
       ),

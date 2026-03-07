@@ -1,43 +1,30 @@
 # AcmeDB Installation Guide
 
 ## System Requirements
-
-To install and run AcmeDB, ensure your system meets the following requirements:
-
-- **Operating System**: Linux or macOS
+- **Operating Systems**: Linux, macOS
 - **Memory**: Minimum 4GB RAM
 - **Node.js**: Version 18 or higher
 
 ## Installation via npm
-
-To install AcmeDB globally using npm, run the following command:
-
+To install AcmeDB globally on your system, use the following command:
 ```bash
 npm install -g acmedb
 ```
 
 ## Configuration File
-
-After installation, the configuration file can be found at:
-
-```
-~/.acmedb/config.yml
-```
-
-This file contains default settings that you can customize according to your needs.
+The configuration file for AcmeDB is located at `~/.acmedb/config.yml`. Ensure this file is properly set up before starting the server.
 
 ## First-Time Setup
-
-1. Open the configuration file located at `~/.acmedb/config.yml`.
-2. Set your desired configurations such as `port`, `data_directory`, and `log_level`.
-3. Save the changes and close the file.
+1. Install AcmeDB using npm.
+2. Configure your settings in `~/.acmedb/config.yml`.
+3. Initialize the database with the following command:
+   ```bash
+   acmedb init
+   ```
 
 ## Starting the Server
-
-To start the AcmeDB server, use the following command:
-
+To start the AcmeDB server, run:
 ```bash
 acmedb start --port 5432
 ```
-
-This will start the server on port 5432. You can change the port number by modifying the command accordingly.
+This will start the server on port 5432. You can change the port by modifying the command.

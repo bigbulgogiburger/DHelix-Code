@@ -3,27 +3,23 @@ import { dotProduct, magnitude, cosineSimilarity } from '../similarity.js';
 
 describe('dotProduct', () => {
   it('calculates the dot product of two vectors', () => {
-    const result = dotProduct([1, 2, 3], [4, 5, 6]);
-    expect(result).toBe(32);
+    expect(dotProduct([1, 2, 3], [4, 5, 6])).toBe(32);
   });
 });
 
 describe('magnitude', () => {
   it('calculates the magnitude of a vector', () => {
-    const result = magnitude([3, 4]);
-    expect(result).toBe(5);
+    expect(magnitude([3, 4])).toBe(5);
   });
 });
 
 describe('cosineSimilarity', () => {
   it('returns 1 for identical vectors', () => {
-    const result = cosineSimilarity([1, 0], [1, 0]);
-    expect(result).toBe(1);
+    expect(cosineSimilarity([1, 0], [1, 0])).toBe(1);
   });
 
   it('returns 0 for orthogonal vectors', () => {
-    const result = cosineSimilarity([1, 0], [0, 1]);
-    expect(result).toBe(0);
+    expect(cosineSimilarity([1, 0], [0, 1])).toBe(0);
   });
 
   it('throws an error for vectors of different lengths', () => {
@@ -31,7 +27,6 @@ describe('cosineSimilarity', () => {
   });
 
   it('returns 0 for zero vector', () => {
-    const result = cosineSimilarity([0, 0], [0, 0]);
-    expect(result).toBe(0);
+    expect(cosineSimilarity([0, 0], [1, 1])).toBe(0);
   });
 });

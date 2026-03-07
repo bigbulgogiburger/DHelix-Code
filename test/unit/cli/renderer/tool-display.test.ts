@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getToolDisplayText,
   getToolStatusIcon,
+  formatDuration,
   SPINNER_FRAMES,
   SPINNER_INTERVAL_MS,
 } from "../../../../src/cli/renderer/tool-display.js";
@@ -29,6 +30,13 @@ describe("tool-display", () => {
       it("should show verb only when no args", () => {
         expect(getToolDisplayText("file_read", "running")).toBe("Reading");
       });
+
+      it("should show line count when complete with output", () => {
+        const output = "line1\nline2\nline3\n";
+        expect(
+          getToolDisplayText("file_read", "complete", { file_path: "/src/index.ts" }, output),
+        ).toBe("Read /src/index.ts (3 lines)");
+      });
     });
 
     describe("file_write", () => {
@@ -42,6 +50,19 @@ describe("tool-display", () => {
         expect(
           getToolDisplayText("file_write", "complete", { file_path: "/out.ts" }),
         ).toBe("Wrote /out.ts");
+      });
+
+      it("should show byte size when content is provided", () => {
+        expect(
+          getToolDisplayText("file_write", "complete", { file_path: "/out.ts", content: "hello" }),
+        ).toBe("Wrote /out.ts (5 B)");
+      });
+
+      it("should show KB for larger content", () => {
+        const content = "x".repeat(2048);
+        expect(
+          getToolDisplayText("file_write", "complete", { file_path: "/out.ts", content }),
+        ).toBe("Wrote /out.ts (2.0 KB)");
       });
     });
 
@@ -182,8 +203,58 @@ describe("tool-display", () => {
   });
 
   describe("SPINNER_INTERVAL_MS", () => {
-    it("should be 80ms", () => {
-      expect(SPINNER_INTERVAL_MS).toBe(80);
+    it("should be 200ms", () => {
+      expect(SPINNER_INTERVAL_MS).toBe(200);
+    });
+  });
+
+  describe("formatDuration", () => {
+    it("should format sub-second durations in ms", () => {
+      expect(formatDuration(50)).toBe("50ms");
+      expect(formatDuration(999)).toBe("999ms");
+    });
+
+    it("should format seconds with one decimal", () => {
+      expect(formatDuration(1000)).toBe("1.0s");
+      expect(formatDuration(1500)).toBe("1.5s");
+      expect(formatDuration(59999)).toBe("60.0s");
+    });
+
+    it("should format minutes and seconds", () => {
+      expect(formatDuration(60_000)).toBe("1m 0s");
+      expect(formatDuration(90_000)).toBe("1m 30s");
+      expect(formatDuration(125_000)).toBe("2m 5s");
+    });
+
+    it("should round ms values", () => {
+      expect(formatDuration(0.7)).toBe("1ms");
+      expect(formatDuration(0)).toBe("0ms");
+    });
+  });
+
+  describe("getToolDisplayText with duration", () => {
+    it("should append duration for completed known tools", () => {
+      expect(
+        getToolDisplayText("file_read", "complete", { file_path: "/a.ts" }, undefined, 1500),
+      ).toBe("Read /a.ts (1.5s)");
+    });
+
+    it("should append duration for completed unknown tools", () => {
+      expect(
+        getToolDisplayText("custom_tool", "complete", undefined, undefined, 250),
+      ).toBe("Completed custom_tool (250ms)");
+    });
+
+    it("should not append duration when running", () => {
+      expect(
+        getToolDisplayText("file_read", "running", { file_path: "/a.ts" }, undefined, 1500),
+      ).toBe("Reading /a.ts");
+    });
+
+    it("should not append duration when undefined", () => {
+      expect(
+        getToolDisplayText("file_read", "complete", { file_path: "/a.ts" }),
+      ).toBe("Read /a.ts");
     });
   });
 });

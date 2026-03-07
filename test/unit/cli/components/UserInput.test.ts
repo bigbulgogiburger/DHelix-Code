@@ -10,6 +10,15 @@ function resetState() {
   stateIndex = 0;
 }
 
+// Track history calls
+const historyMock = {
+  addToHistory: vi.fn(),
+  navigateUp: vi.fn<[], string | undefined>(),
+  navigateDown: vi.fn<[], string | undefined>(),
+  reset: vi.fn(),
+  history: [] as readonly string[],
+};
+
 // Mock react hooks
 vi.mock("react", () => {
   return {
@@ -26,6 +35,13 @@ vi.mock("react", () => {
       return [stateStore.get(idx), setState];
     },
     useCallback: (fn: unknown) => fn,
+    useRef: (initial: unknown) => {
+      const idx = stateIndex++;
+      if (!stateStore.has(idx)) {
+        stateStore.set(idx, { current: initial });
+      }
+      return stateStore.get(idx);
+    },
   };
 });
 
@@ -42,18 +58,27 @@ vi.mock("ink", () => ({
   },
 }));
 
+// Mock useInputHistory hook
+vi.mock("../../../../src/cli/hooks/useInput.js", () => ({
+  useInputHistory: () => historyMock,
+}));
+
 async function getComponent() {
   const mod = await import("../../../../src/cli/components/UserInput.js");
   return mod.UserInput;
 }
 
-// State indices: 0 = value (string), 1 = cursorOffset (number)
+// State indices: 0 = value (string), 1 = cursorOffset (number), 2 = savedInputRef
 function getValue(): string {
   return stateStore.get(0) as string;
 }
 
 function getCursor(): number {
   return stateStore.get(1) as number;
+}
+
+function getSavedInputRef(): { current: string | null } {
+  return stateStore.get(2) as { current: string | null };
 }
 
 function key(overrides: Partial<Record<string, boolean>> = {}): Record<string, boolean> {
@@ -63,8 +88,11 @@ function key(overrides: Partial<Record<string, boolean>> = {}): Record<string, b
     delete: false,
     ctrl: false,
     meta: false,
+    shift: false,
     leftArrow: false,
     rightArrow: false,
+    upArrow: false,
+    downArrow: false,
     ...overrides,
   };
 }
@@ -75,9 +103,14 @@ describe("UserInput", () => {
   let UserInput: Awaited<ReturnType<typeof getComponent>>;
 
   // Re-render the component so useInput picks up fresh closures over current state
-  function rerender(props?: { isDisabled?: boolean }) {
+  function rerender(props?: { isDisabled?: boolean; slashMenuVisible?: boolean }) {
     stateIndex = 0;
-    UserInput({ onSubmit, onChange, isDisabled: props?.isDisabled ?? false });
+    UserInput({
+      onSubmit,
+      onChange,
+      isDisabled: props?.isDisabled ?? false,
+      slashMenuVisible: props?.slashMenuVisible ?? false,
+    });
   }
 
   // Simulate a key press, then re-render to refresh closures
@@ -92,6 +125,10 @@ describe("UserInput", () => {
     resetState();
     onSubmit = vi.fn();
     onChange = vi.fn();
+    historyMock.addToHistory.mockClear();
+    historyMock.navigateUp.mockClear();
+    historyMock.navigateDown.mockClear();
+    historyMock.reset.mockClear();
     UserInput = await getComponent();
     rerender();
   });
@@ -261,6 +298,28 @@ describe("UserInput", () => {
       expect(onSubmit).toHaveBeenCalledWith("hi");
     });
 
+    it("should submit when terminal sends \\n (linefeed) instead of key.return", () => {
+      press("h");
+      press("i");
+      press("\n");
+      expect(onSubmit).toHaveBeenCalledWith("hi");
+    });
+
+    it("should submit when terminal sends \\r (carriage return) as input", () => {
+      press("h");
+      press("i");
+      press("\r");
+      expect(onSubmit).toHaveBeenCalledWith("hi");
+    });
+
+    it("should not insert \\n or \\r as text characters", () => {
+      press("a");
+      press("\n");
+      // \n should trigger submit, not insert a newline
+      expect(getValue()).toBe("");
+      expect(onSubmit).toHaveBeenCalledWith("a");
+    });
+
     it("should not submit empty input", () => {
       press("", { return: true });
       expect(onSubmit).not.toHaveBeenCalled();
@@ -272,6 +331,193 @@ describe("UserInput", () => {
       press("", { return: true });
       expect(getValue()).toBe("");
       expect(getCursor()).toBe(0);
+    });
+
+    it("should add to history on submit", () => {
+      press("h");
+      press("i");
+      press("", { return: true });
+      expect(historyMock.addToHistory).toHaveBeenCalledWith("hi");
+    });
+  });
+
+  describe("input history navigation", () => {
+    it("should navigate up through history", () => {
+      historyMock.navigateUp.mockReturnValue("previous command");
+      press("current");
+      press("", { upArrow: true });
+      expect(historyMock.navigateUp).toHaveBeenCalled();
+      expect(getValue()).toBe("previous command");
+      expect(getCursor()).toBe("previous command".length);
+    });
+
+    it("should save current input when starting history navigation", () => {
+      press("c");
+      press("u");
+      press("r");
+      historyMock.navigateUp.mockReturnValue("old");
+      press("", { upArrow: true });
+      expect(getSavedInputRef().current).toBe("cur");
+    });
+
+    it("should restore saved input when navigating down past latest", () => {
+      // Type something and navigate up
+      press("m");
+      press("y");
+      historyMock.navigateUp.mockReturnValue("old");
+      press("", { upArrow: true });
+      expect(getSavedInputRef().current).toBe("my");
+
+      // Navigate down returns empty string (past latest)
+      historyMock.navigateDown.mockReturnValue("");
+      press("", { downArrow: true });
+      expect(getValue()).toBe("my");
+      expect(getSavedInputRef().current).toBeNull();
+    });
+
+    it("should navigate down through history", () => {
+      historyMock.navigateDown.mockReturnValue("next command");
+      press("", { downArrow: true });
+      expect(historyMock.navigateDown).toHaveBeenCalled();
+      expect(getValue()).toBe("next command");
+      expect(getCursor()).toBe("next command".length);
+    });
+
+    it("should do nothing when navigateUp returns undefined", () => {
+      historyMock.navigateUp.mockReturnValue(undefined);
+      press("a");
+      press("b");
+      press("", { upArrow: true });
+      expect(getValue()).toBe("ab");
+    });
+
+    it("should do nothing when navigateDown returns undefined", () => {
+      historyMock.navigateDown.mockReturnValue(undefined);
+      press("a");
+      press("b");
+      press("", { downArrow: true });
+      expect(getValue()).toBe("ab");
+    });
+  });
+
+  describe("multiline input", () => {
+    it("should insert newline on Shift+Enter", () => {
+      press("a");
+      press("b");
+      press("", { return: true, shift: true });
+      expect(getValue()).toBe("ab\n");
+      expect(getCursor()).toBe(3);
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it("should insert newline on Ctrl+J", () => {
+      press("h");
+      press("i");
+      press("j", { ctrl: true });
+      expect(getValue()).toBe("hi\n");
+      expect(getCursor()).toBe(3);
+    });
+
+    it("should insert newline at cursor position", () => {
+      press("a");
+      press("b");
+      press("", { leftArrow: true }); // cursor at 1
+      press("", { return: true, shift: true }); // newline between a and b
+      expect(getValue()).toBe("a\nb");
+      expect(getCursor()).toBe(2);
+    });
+
+    it("should submit multiline input with Enter (no shift)", () => {
+      press("l");
+      press("1");
+      press("", { return: true, shift: true }); // newline
+      press("l");
+      press("2");
+      press("", { return: true }); // submit
+      expect(onSubmit).toHaveBeenCalledWith("l1\nl2");
+    });
+  });
+
+  describe("slashMenuVisible behavior", () => {
+    function rerenderWithMenu() {
+      rerender({ slashMenuVisible: true });
+    }
+
+    function pressWithMenu(input: string, k: Partial<Record<string, boolean>> = {}) {
+      if (useInputCallback) {
+        useInputCallback(input, key(k));
+      }
+      rerenderWithMenu();
+    }
+
+    it("should ignore upArrow when slashMenuVisible is true", () => {
+      rerenderWithMenu();
+      pressWithMenu("a");
+      pressWithMenu("b");
+      historyMock.navigateUp.mockReturnValue("old command");
+      pressWithMenu("", { upArrow: true });
+      // Should NOT navigate history — value unchanged
+      expect(getValue()).toBe("ab");
+      expect(historyMock.navigateUp).not.toHaveBeenCalled();
+    });
+
+    it("should ignore downArrow when slashMenuVisible is true", () => {
+      rerenderWithMenu();
+      historyMock.navigateDown.mockReturnValue("next command");
+      pressWithMenu("", { downArrow: true });
+      // Should NOT navigate history
+      expect(historyMock.navigateDown).not.toHaveBeenCalled();
+    });
+
+    it("should ignore tab when slashMenuVisible is true", () => {
+      rerenderWithMenu();
+      pressWithMenu("h");
+      const valueBefore = getValue();
+      pressWithMenu("", { tab: true });
+      // Tab should be ignored, value unchanged
+      expect(getValue()).toBe(valueBefore);
+    });
+
+    it("should still accept character input when slashMenuVisible is true", () => {
+      rerenderWithMenu();
+      pressWithMenu("h");
+      pressWithMenu("e");
+      pressWithMenu("l");
+      pressWithMenu("p");
+      expect(getValue()).toBe("help");
+    });
+
+    it("should still handle backspace when slashMenuVisible is true", () => {
+      rerenderWithMenu();
+      pressWithMenu("a");
+      pressWithMenu("b");
+      pressWithMenu("", { backspace: true });
+      expect(getValue()).toBe("a");
+    });
+
+    it("should still handle Ctrl+U when slashMenuVisible is true", () => {
+      rerenderWithMenu();
+      pressWithMenu("a");
+      pressWithMenu("b");
+      pressWithMenu("u", { ctrl: true });
+      expect(getValue()).toBe("");
+    });
+
+    it("should still submit on Enter when slashMenuVisible is true", () => {
+      rerenderWithMenu();
+      pressWithMenu("h");
+      pressWithMenu("i");
+      pressWithMenu("", { return: true });
+      expect(onSubmit).toHaveBeenCalledWith("hi");
+    });
+
+    it("should handle upArrow normally when slashMenuVisible is false", () => {
+      rerender({ slashMenuVisible: false });
+      press("a");
+      historyMock.navigateUp.mockReturnValue("old");
+      press("", { upArrow: true });
+      expect(historyMock.navigateUp).toHaveBeenCalled();
+      expect(getValue()).toBe("old");
     });
   });
 

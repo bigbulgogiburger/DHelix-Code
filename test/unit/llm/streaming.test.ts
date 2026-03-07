@@ -157,3 +157,93 @@ describe("accumulateChunk edge cases", () => {
     expect(acc.toolCalls[0].arguments).toBe('{"a":');
   });
 });
+
+describe("consumeStream partial recovery", () => {
+  it("should return partial results when stream errors after accumulating text content", async () => {
+    async function* errorMidStream(): AsyncIterable<ChatChunk> {
+      yield { type: "text-delta", text: "Hello " };
+      yield { type: "text-delta", text: "world" };
+      throw new Error("Stream connection lost");
+    }
+
+    const result = await consumeStream(errorMidStream());
+
+    expect(result.text).toBe("Hello world");
+    expect(result.partial).toBe(true);
+    expect(result.isComplete).toBe(false);
+  });
+
+  it("should return partial results when stream errors after accumulating tool calls", async () => {
+    async function* errorMidToolStream(): AsyncIterable<ChatChunk> {
+      yield {
+        type: "tool-call-delta",
+        toolCall: { id: "tc-1", name: "file_read", arguments: '{"path":"test.ts"}' },
+      };
+      throw new Error("Stream disconnected");
+    }
+
+    const result = await consumeStream(errorMidToolStream());
+
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.toolCalls[0].name).toBe("file_read");
+    expect(result.partial).toBe(true);
+    expect(result.isComplete).toBe(false);
+  });
+
+  it("should rethrow error when stream fails with no accumulated content", async () => {
+    async function* immediateError(): AsyncIterable<ChatChunk> {
+      throw new Error("Connection refused");
+    }
+
+    await expect(consumeStream(immediateError())).rejects.toThrow("Connection refused");
+  });
+
+  it("should set partial flag correctly when stream completes normally", async () => {
+    async function* normalStream(): AsyncIterable<ChatChunk> {
+      yield { type: "text-delta", text: "Complete response" };
+      yield { type: "done" };
+    }
+
+    const result = await consumeStream(normalStream());
+
+    expect(result.text).toBe("Complete response");
+    expect(result.isComplete).toBe(true);
+    // partial should be undefined (not set) on normal completion
+    expect(result.partial).toBeUndefined();
+  });
+
+  it("should return partial with both text and tool calls on mid-stream error", async () => {
+    async function* mixedErrorStream(): AsyncIterable<ChatChunk> {
+      yield { type: "text-delta", text: "I will read the file" };
+      yield {
+        type: "tool-call-delta",
+        toolCall: { id: "tc-1", name: "file_read", arguments: '{"path":' },
+      };
+      throw new Error("Network timeout");
+    }
+
+    const result = await consumeStream(mixedErrorStream());
+
+    expect(result.text).toBe("I will read the file");
+    expect(result.toolCalls).toHaveLength(1);
+    expect(result.partial).toBe(true);
+  });
+
+  it("should still call onTextDelta callbacks before error occurs", async () => {
+    const deltas: string[] = [];
+
+    async function* errorAfterChunks(): AsyncIterable<ChatChunk> {
+      yield { type: "text-delta", text: "first" };
+      yield { type: "text-delta", text: " second" };
+      throw new Error("Stream lost");
+    }
+
+    const result = await consumeStream(errorAfterChunks(), {
+      onTextDelta: (text) => deltas.push(text),
+    });
+
+    expect(deltas).toEqual(["first", " second"]);
+    expect(result.partial).toBe(true);
+    expect(result.text).toBe("first second");
+  });
+});

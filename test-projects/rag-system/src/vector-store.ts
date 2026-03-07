@@ -28,8 +28,7 @@ export class VectorStore {
     });
     return results
       .sort((a, b) => b.score - a.score)
-      .slice(0, topK)
-      .map(({ text, source, score, metadata }) => ({ text, source, score, metadata }));
+      .slice(0, topK);
   }
 
   size(): number {

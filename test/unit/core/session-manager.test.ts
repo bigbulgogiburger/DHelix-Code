@@ -1,8 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, rm } from "node:fs/promises";
+import { mkdtemp, rm, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { SessionManager } from "../../../src/core/session-manager.js";
+import {
+  SessionManager,
+  atomicWrite,
+  withFileLock,
+} from "../../../src/core/session-manager.js";
 
 describe("SessionManager", () => {
   let tempDir: string;
@@ -212,5 +216,177 @@ describe("SessionManager", () => {
 
   it("should throw when forking nonexistent session", async () => {
     await expect(manager.forkSession("nonexistent")).rejects.toThrow("Session not found");
+  });
+
+  describe("concurrent access", () => {
+    it("should handle concurrent appendMessage calls without data loss", async () => {
+      const id = await manager.createSession({
+        workingDirectory: "/test",
+        model: "test-model",
+      });
+
+      // Fire 10 concurrent appends
+      const promises = Array.from({ length: 10 }, (_, i) =>
+        manager.appendMessage(id, { role: "user", content: `msg-${i}` }),
+      );
+      await Promise.all(promises);
+
+      const messages = await manager.loadMessages(id);
+      expect(messages).toHaveLength(10);
+
+      const metadata = await manager.getMetadata(id);
+      expect(metadata.messageCount).toBe(10);
+    });
+
+    it("should handle concurrent createSession calls", async () => {
+      const promises = Array.from({ length: 5 }, (_, i) =>
+        manager.createSession({
+          workingDirectory: `/test/${i}`,
+          model: "test-model",
+          name: `Session ${i}`,
+        }),
+      );
+      const ids = await Promise.all(promises);
+
+      expect(new Set(ids).size).toBe(5); // All unique
+      const sessions = await manager.listSessions();
+      expect(sessions).toHaveLength(5);
+    });
+
+    it("should handle concurrent appendMessages (batch) calls", async () => {
+      const id = await manager.createSession({
+        workingDirectory: "/test",
+        model: "test-model",
+      });
+
+      const promises = Array.from({ length: 5 }, (_, i) =>
+        manager.appendMessages(id, [
+          { role: "user", content: `batch-${i}-a` },
+          { role: "assistant", content: `batch-${i}-b` },
+        ]),
+      );
+      await Promise.all(promises);
+
+      const messages = await manager.loadMessages(id);
+      expect(messages).toHaveLength(10);
+
+      const metadata = await manager.getMetadata(id);
+      expect(metadata.messageCount).toBe(10);
+    });
+  });
+});
+
+describe("atomicWrite", () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "dbcode-atomic-test-"));
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("should write file content atomically", async () => {
+    const filePath = join(tempDir, "test.json");
+    await atomicWrite(filePath, '{"key": "value"}');
+
+    const content = await readFile(filePath, "utf-8");
+    expect(content).toBe('{"key": "value"}');
+  });
+
+  it("should overwrite existing file atomically", async () => {
+    const filePath = join(tempDir, "test.json");
+    await atomicWrite(filePath, "original");
+    await atomicWrite(filePath, "updated");
+
+    const content = await readFile(filePath, "utf-8");
+    expect(content).toBe("updated");
+  });
+});
+
+describe("withFileLock", () => {
+  let tempDir: string;
+
+  beforeEach(async () => {
+    tempDir = await mkdtemp(join(tmpdir(), "dbcode-lock-test-"));
+  });
+
+  afterEach(async () => {
+    await rm(tempDir, { recursive: true, force: true });
+  });
+
+  it("should execute function exclusively", async () => {
+    const lockDir = join(tempDir, "test.lock");
+    const order: number[] = [];
+
+    const task = (id: number, delayMs: number) =>
+      withFileLock(lockDir, async () => {
+        order.push(id);
+        await new Promise((r) => setTimeout(r, delayMs));
+        order.push(id);
+      });
+
+    // Two tasks with overlapping timing
+    await Promise.all([task(1, 50), task(2, 50)]);
+
+    // Each task should push its id twice consecutively (not interleaved)
+    // Either [1,1,2,2] or [2,2,1,1]
+    expect(order).toHaveLength(4);
+    expect(order[0]).toBe(order[1]);
+    expect(order[2]).toBe(order[3]);
+  });
+
+  it("should release lock after function completes", async () => {
+    const lockDir = join(tempDir, "test.lock");
+
+    await withFileLock(lockDir, async () => {
+      // do nothing
+    });
+
+    // Lock directory should be cleaned up
+    await expect(readFile(join(lockDir, "pid"), "utf-8")).rejects.toThrow();
+  });
+
+  it("should release lock even if function throws", async () => {
+    const lockDir = join(tempDir, "test.lock");
+
+    await expect(
+      withFileLock(lockDir, async () => {
+        throw new Error("test error");
+      }),
+    ).rejects.toThrow("test error");
+
+    // Should be able to acquire lock again
+    const result = await withFileLock(lockDir, async () => "success");
+    expect(result).toBe("success");
+  });
+
+  it("should timeout when lock cannot be acquired", async () => {
+    const lockDir = join(tempDir, "test.lock");
+
+    // Manually create lock dir to simulate held lock
+    await mkdir(lockDir);
+
+    await expect(withFileLock(lockDir, async () => "never", 200)).rejects.toThrow(
+      "Lock acquisition timeout",
+    );
+
+    // Clean up manual lock
+    await rm(lockDir, { recursive: true, force: true });
+  });
+
+  it("should detect and recover from stale locks", async () => {
+    const lockDir = join(tempDir, "stale.lock");
+
+    // Create a stale lock with old timestamp
+    await mkdir(lockDir);
+    const staleTime = Date.now() - 60_000; // 60 seconds ago
+    const { writeFile: wf } = await import("node:fs/promises");
+    await wf(join(lockDir, "pid"), `99999\n${staleTime}`, "utf-8");
+
+    // Should recover from stale lock
+    const result = await withFileLock(lockDir, async () => "recovered");
+    expect(result).toBe("recovered");
   });
 });

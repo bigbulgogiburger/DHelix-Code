@@ -1,23 +1,21 @@
-import { Box, Text, Static } from "ink";
+import { Box, Text } from "ink";
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
-import { MessageList } from "./components/MessageList.js";
-import { StreamingMessage } from "./components/StreamingMessage.js";
 import { UserInput } from "./components/UserInput.js";
 import { Spinner } from "./components/Spinner.js";
 import { StatusBar } from "./components/StatusBar.js";
 import { Logo } from "./components/Logo.js";
 import { ErrorBanner } from "./components/ErrorBanner.js";
-import { ToolCallBlock } from "./components/ToolCallBlock.js";
 import { PermissionPrompt } from "./components/PermissionPrompt.js";
 import { SlashCommandMenu } from "./components/SlashCommandMenu.js";
+import { ActivityFeed } from "./components/ActivityFeed.js";
 import { useConversation } from "./hooks/useConversation.js";
+import { useTextBuffering } from "./hooks/useTextBuffering.js";
 import { useKeybindings, type Keybinding } from "./hooks/useKeybindings.js";
 import { TaskListView } from "./components/TaskListView.js";
 import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
 import { buildSystemPrompt } from "../core/system-prompt-builder.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { runAgentLoop, type PermissionResult } from "../core/agent-loop.js";
-import { type AnyMessage, MessageRole } from "../core/message-types.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type PermissionManager } from "../permissions/manager.js";
@@ -29,7 +27,7 @@ import { type HookRunner } from "../hooks/runner.js";
 import { type Task } from "../core/task-manager.js";
 import { type SessionManager } from "../core/session-manager.js";
 import { createEventEmitter } from "../utils/events.js";
-// VERSION is now used inside Logo component directly
+import { ActivityCollector, type TurnActivity } from "../core/activity.js";
 
 interface AppProps {
   readonly client: LLMProvider;
@@ -44,15 +42,6 @@ interface AppProps {
   readonly tasks?: readonly Task[];
   readonly sessionId?: string;
   readonly showStatusBar?: boolean;
-}
-
-/** Active tool call display state */
-interface ToolCallDisplay {
-  readonly id: string;
-  readonly name: string;
-  readonly status: "running" | "complete" | "error" | "denied";
-  readonly args?: Record<string, unknown>;
-  readonly output?: string;
 }
 
 /** Pending permission request */
@@ -80,16 +69,21 @@ export function App({
     conversation,
     addUserMessage,
     addAssistantMessage,
+    addToolResults,
     reset: clearConversation,
   } = useConversation("main");
   const [isProcessing, setIsProcessing] = useState(false);
-  const [streamingText, setStreamingText] = useState("");
+  const { text: streamingText, appendText, flush: flushText, reset: resetText } = useTextBuffering(50);
   const [error, setError] = useState<string | null>(null);
   const [tokenCount, setTokenCount] = useState(0);
-  const [toolCalls, setToolCalls] = useState<readonly ToolCallDisplay[]>([]);
   const [pendingPermission, setPendingPermission] = useState<PendingPermission | null>(null);
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(initialModel);
+
+  // Activity tracking — collects turn-by-turn events for the ActivityFeed
+  const activityRef = useRef(new ActivityCollector());
+  const [completedTurns, setCompletedTurns] = useState<readonly TurnActivity[]>([]);
+  const [currentTurn, setCurrentTurn] = useState<TurnActivity | null>(null);
 
   // Project instructions loaded from DBCODE.md and .dbcode/rules/
   const [projectInstructions, setProjectInstructions] = useState<string | undefined>(undefined);
@@ -116,19 +110,24 @@ export function App({
   const [inputValue, setInputValue] = useState("");
   const slashMenuVisible = !isProcessing && !pendingPermission && inputValue.startsWith("/") && !inputValue.includes(" ");
 
-  // Wire up event listeners for live tool call display
+  /** Sync current turn snapshot from ActivityCollector to React state */
+  const syncCurrentTurn = useCallback(() => {
+    setCurrentTurn(activityRef.current.getCurrentTurn());
+  }, []);
+
+  // Wire up event listeners for activity tracking + text buffering
   useEffect(() => {
     const onToolStart = ({ name, id, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
-      setToolCalls((prev) => [...prev, { id, name, status: "running", args }]);
+      activityRef.current.addEntry("tool-start", { name, id, args, startTime: Date.now() });
+      syncCurrentTurn();
     };
-    const onToolComplete = ({ id, isError, output }: { name: string; id: string; isError: boolean; output?: string }) => {
-      setToolCalls((prev) =>
-        prev.map((tc) => (tc.id === id ? { ...tc, status: isError ? "error" : "complete", output } : tc)),
-      );
+    const onToolComplete = ({ id, name, isError, output }: { name: string; id: string; isError: boolean; output?: string }) => {
+      activityRef.current.addEntry("tool-complete", { name, id, isError, output });
+      syncCurrentTurn();
     };
 
     const onTextDelta = ({ text }: { text: string }) => {
-      setStreamingText((prev) => prev + text);
+      appendText(text);
     };
 
     events.on("tool:start", onToolStart);
@@ -139,7 +138,7 @@ export function App({
       events.off("tool:complete", onToolComplete);
       events.off("llm:text-delta", onTextDelta);
     };
-  }, [events]);
+  }, [events, appendText, syncCurrentTurn]);
 
   // Register keybindings
   const keybindings = useMemo<Keybinding[]>(
@@ -163,10 +162,14 @@ export function App({
     async (input: string) => {
       addUserMessage(input);
       setIsProcessing(true);
-      setStreamingText("");
+      resetText();
       setError(null);
-      setToolCalls([]);
       setCommandOutput(null);
+
+      // Start a new turn and record the user message
+      activityRef.current.startTurn();
+      activityRef.current.addEntry("user-message", { content: input });
+      syncCurrentTurn();
 
       // Run UserPromptSubmit hooks
       if (hookRunner) {
@@ -241,21 +244,51 @@ export function App({
           messages,
         );
 
-        // Extract the final assistant message
+        // Flush remaining buffered text
+        flushText();
+
+        // Record assistant text in activity feed
         const lastMessage = result.messages[result.messages.length - 1];
         if (lastMessage && lastMessage.role === "assistant") {
-          addAssistantMessage(lastMessage.content);
+          activityRef.current.addEntry("assistant-text", {
+            content: lastMessage.content,
+            isComplete: true,
+          });
+
+          // Store in conversation WITH tool calls preserved
+          addAssistantMessage(lastMessage.content, lastMessage.toolCalls ?? []);
           setTokenCount((prev) => prev + client.countTokens(lastMessage.content));
+
+          // Also store tool result messages in conversation
+          const toolMessages = result.messages.filter((m) => m.role === "tool");
+          if (toolMessages.length > 0) {
+            addToolResults(
+              toolMessages.map((m) => ({
+                id: m.toolCallId ?? "",
+                output: m.content,
+                isError: m.content.startsWith("Error:"),
+              })),
+            );
+          }
         }
 
-        // Persist to session
+        // Persist full message history to session (including tool calls)
         if (sessionManager && sessionId) {
-          void sessionManager.appendMessages(sessionId, [
+          const sessionMessages: ChatMessage[] = [
             { role: "user", content: input },
-            ...(lastMessage && lastMessage.role === "assistant"
-              ? [{ role: "assistant" as const, content: lastMessage.content }]
-              : []),
-          ]);
+          ];
+          // Include all assistant and tool messages from the agent loop
+          for (const msg of result.messages) {
+            if (msg.role === "assistant" || msg.role === "tool") {
+              sessionMessages.push({
+                role: msg.role as ChatMessage["role"],
+                content: msg.content,
+                toolCallId: msg.toolCallId,
+                toolCalls: msg.toolCalls,
+              });
+            }
+          }
+          void sessionManager.appendMessages(sessionId, sessionMessages);
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
@@ -275,7 +308,12 @@ export function App({
         }
 
         setIsProcessing(false);
-        setStreamingText("");
+        resetText();
+
+        // Complete the current turn and update feed
+        activityRef.current.completeTurn();
+        setCompletedTurns(activityRef.current.getCompletedTurns());
+        setCurrentTurn(null);
 
         // Process queued messages
         const nextMessage = messageQueueRef.current.shift();
@@ -288,6 +326,7 @@ export function App({
       conversation,
       addUserMessage,
       addAssistantMessage,
+      addToolResults,
       client,
       activeModel,
       toolRegistry,
@@ -299,6 +338,9 @@ export function App({
       sessionId,
       events,
       projectInstructions,
+      flushText,
+      resetText,
+      syncCurrentTurn,
     ],
   );
 
@@ -325,6 +367,15 @@ export function App({
           }
           if (result.newModel) {
             setActiveModel(result.newModel);
+          }
+          if (result.refreshInstructions) {
+            loadInstructions(process.cwd())
+              .then((instrResult) => {
+                if (instrResult.combined) {
+                  setProjectInstructions(instrResult.combined);
+                }
+              })
+              .catch(() => {});
           }
         }
         return;
@@ -369,30 +420,32 @@ export function App({
     [pendingPermission, permissionManager],
   );
 
-  // Filter completed messages (exclude system)
-  const completedMessages = conversation.messages.filter(
-    (msg): msg is AnyMessage => msg.role !== MessageRole.System,
-  );
+  // Build current turn snapshot including live streaming text
+  const liveTurn = useMemo((): TurnActivity | null => {
+    if (!currentTurn) return null;
+    // Append live streaming text as a transient entry
+    if (streamingText) {
+      return {
+        ...currentTurn,
+        entries: [
+          ...currentTurn.entries,
+          { type: "assistant-text" as const, timestamp: new Date(), data: { content: streamingText, isComplete: false } },
+        ],
+      };
+    }
+    return currentTurn;
+  }, [currentTurn, streamingText]);
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Static items={["logo"]}>
-        {() => (
-          <Box key="logo" marginBottom={1}>
-            <Logo modelName={activeModel} />
-          </Box>
-        )}
-      </Static>
+      <Box marginBottom={1}>
+        <Logo modelName={activeModel} />
+      </Box>
 
-      <MessageList messages={completedMessages} />
+      <ActivityFeed completedTurns={completedTurns} currentTurn={liveTurn} />
 
-      {toolCalls.map((tc) => (
-        <ToolCallBlock key={tc.id} name={tc.name} status={tc.status} args={tc.args} output={tc.output} />
-      ))}
-
-      {isProcessing ? (
-        <Box flexDirection="column" marginY={1}>
-          {streamingText ? <StreamingMessage text={streamingText} isComplete={false} /> : null}
+      {isProcessing && !streamingText && !currentTurn?.entries.some((e) => e.type === "tool-start") ? (
+        <Box marginY={1}>
           <Spinner label="Thinking..." />
         </Box>
       ) : null}
@@ -415,6 +468,14 @@ export function App({
 
       {tasks && tasks.length > 0 ? <TaskListView tasks={tasks} title="Tasks" /> : null}
 
+      <Box marginTop={1}>
+        <UserInput
+          onSubmit={handleSubmit}
+          onChange={setInputValue}
+          slashMenuVisible={slashMenuVisible}
+        />
+      </Box>
+
       {slashMenuVisible && commandRegistry ? (
         <SlashCommandMenu
           commands={commandRegistry.getAll()}
@@ -428,14 +489,6 @@ export function App({
         />
       ) : null}
 
-      <Box marginTop={1}>
-        <UserInput
-          onSubmit={handleSubmit}
-          onChange={setInputValue}
-          isDisabled={slashMenuVisible}
-        />
-      </Box>
-
       {messageQueueRef.current.length > 0 ? (
         <Box>
           <Text color="gray">({messageQueueRef.current.length} message(s) queued)</Text>
@@ -445,6 +498,7 @@ export function App({
       {showStatusBar ? (
         <StatusBar
           model={activeModel}
+          modelName={activeModel}
           tokenCount={tokenCount}
           maxTokens={getModelCapabilities(activeModel).maxContextTokens}
           isStreaming={isProcessing}

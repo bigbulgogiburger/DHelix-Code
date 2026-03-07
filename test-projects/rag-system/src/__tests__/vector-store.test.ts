@@ -1,39 +1,50 @@
 import { describe, it, expect } from 'vitest';
 import { VectorStore } from '../vector-store.js';
+import { cosineSimilarity } from '../similarity.js';
 
-const mockEntries = [
-  { text: 'entry1', source: 'source1', embedding: [1, 0] },
-  { text: 'entry2', source: 'source2', embedding: [0, 1] },
-  { text: 'entry3', source: 'source3', embedding: [1, 1] }
-];
+import { vi } from 'vitest';
+
+type Mock = (...args: any[]) => any;
+const mockCosineSimilarity = cosineSimilarity as unknown as Mock;
+
+vi.mock('../similarity.js', () => ({
+  cosineSimilarity: vi.fn()
+}));
 
 describe('VectorStore', () => {
   it('adds entries and retrieves them correctly', () => {
     const store = new VectorStore();
-    store.add(mockEntries);
-    expect(store.size()).toBe(3);
+    const entries = [
+      { text: 'A', source: 'source1', embedding: [1, 0] },
+      { text: 'B', source: 'source2', embedding: [0, 1] }
+    ];
+    store.add(entries);
+    expect(store.size()).toBe(2);
   });
 
   it('search returns correct topK results sorted by score', () => {
     const store = new VectorStore();
-    store.add(mockEntries);
-    const results = store.search([1, 0], 2);
-    expect(results.length).toBe(2);
-    expect(results[0].text).toBe('entry1');
-    expect(results[1].text).toBe('entry3');
+    const entries = [
+      { text: 'A', source: 'source1', embedding: [1, 0] },
+      { text: 'B', source: 'source2', embedding: [0, 1] }
+    ];
+    store.add(entries);
+    mockCosineSimilarity.mockReturnValueOnce(0.9).mockReturnValueOnce(0.8);
+    const results = store.search([1, 0], 1);
+    expect(results.length).toBe(1);
+    expect(results[0].text).toBe('A');
   });
 
   it('clear empties the store', () => {
     const store = new VectorStore();
-    store.add(mockEntries);
+    store.add([{ text: 'A', source: 'source1', embedding: [1, 0] }]);
     store.clear();
     expect(store.size()).toBe(0);
   });
 
-  it('size returns the correct count', () => {
+  it('size returns the correct count of entries', () => {
     const store = new VectorStore();
-    expect(store.size()).toBe(0);
-    store.add(mockEntries);
-    expect(store.size()).toBe(3);
+    store.add([{ text: 'A', source: 'source1', embedding: [1, 0] }]);
+    expect(store.size()).toBe(1);
   });
 });

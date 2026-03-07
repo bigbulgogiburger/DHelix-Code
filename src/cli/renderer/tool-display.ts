@@ -10,12 +10,31 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   file_read: {
     running: "Reading",
     complete: "Read",
-    extractDetail: (args) => typeof args?.file_path === "string" ? args.file_path : undefined,
+    extractDetail: (args, output) => {
+      const filePath = typeof args?.file_path === "string" ? args.file_path : undefined;
+      if (!filePath) return undefined;
+      if (output) {
+        const lines = output.trim().split("\n");
+        const lineCount = lines.filter((l) => l.length > 0).length;
+        if (lineCount > 0) return `${filePath} (${lineCount} lines)`;
+      }
+      return filePath;
+    },
   },
   file_write: {
     running: "Writing",
     complete: "Wrote",
-    extractDetail: (args) => typeof args?.file_path === "string" ? args.file_path : undefined,
+    extractDetail: (args) => {
+      const filePath = typeof args?.file_path === "string" ? args.file_path : undefined;
+      if (!filePath) return undefined;
+      const content = typeof args?.content === "string" ? args.content : undefined;
+      if (content) {
+        const bytes = new TextEncoder().encode(content).byteLength;
+        if (bytes < 1024) return `${filePath} (${bytes} B)`;
+        return `${filePath} (${(bytes / 1024).toFixed(1)} KB)`;
+      }
+      return filePath;
+    },
   },
   file_edit: {
     running: "Editing",
@@ -57,21 +76,33 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   },
 };
 
+/** Format duration in ms to human-readable string */
+export function formatDuration(ms: number): string {
+  if (ms < 1000) return `${Math.round(ms)}ms`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  const minutes = Math.floor(ms / 60_000);
+  const seconds = Math.round((ms % 60_000) / 1000);
+  return `${minutes}m ${seconds}s`;
+}
+
 export function getToolDisplayText(
   name: string,
   status: ToolStatus,
   args?: Record<string, unknown>,
   output?: string,
+  duration?: number,
 ): string {
   const config = toolDisplayMap[name];
   if (!config) {
-    return status === "running" ? `Running ${name}` : `Completed ${name}`;
+    const base = status === "running" ? `Running ${name}` : `Completed ${name}`;
+    return duration && status !== "running" ? `${base} (${formatDuration(duration)})` : base;
   }
 
   const verb = status === "running" ? config.running : config.complete;
   const detail = config.extractDetail?.(args, output);
+  const base = detail ? `${verb} ${detail}` : verb;
 
-  return detail ? `${verb} ${detail}` : verb;
+  return duration && status !== "running" ? `${base} (${formatDuration(duration)})` : base;
 }
 
 export function getToolStatusIcon(status: ToolStatus): string {
@@ -100,4 +131,4 @@ export const SPINNER_FRAMES = [
   "\u280F",
 ] as const;
 
-export const SPINNER_INTERVAL_MS = 80;
+export const SPINNER_INTERVAL_MS = 200;

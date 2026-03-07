@@ -1,5 +1,3 @@
-import { promises as fs } from 'fs';
-
 export interface ChunkOptions {
   chunkSize: number;
   overlap: number;
@@ -17,15 +15,14 @@ export function chunkText(text: string, source: string, options: ChunkOptions = 
   if (text.length <= chunkSize) return [{ text, source, index: 0 }];
 
   const chunks: Chunk[] = [];
-  let index = 0;
-  for (let start = 0; start < text.length; start += chunkSize - overlap) {
-    const end = Math.min(start + chunkSize, text.length);
-    const chunkText = text.slice(start, end);
-    chunks.push({ text: chunkText, source, index: index++ });
-    if (end === text.length) break;
+  for (let i = 0; i < text.length; i += chunkSize - overlap) {
+    const chunkText = text.slice(i, i + chunkSize);
+    chunks.push({ text: chunkText, source, index: chunks.length });
   }
   return chunks;
 }
+
+import { promises as fs } from 'fs';
 
 export async function chunkFile(filePath: string, options?: ChunkOptions): Promise<Chunk[]> {
   const text = await fs.readFile(filePath, 'utf-8');

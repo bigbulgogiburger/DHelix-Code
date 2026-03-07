@@ -531,6 +531,150 @@ describe("OpenAICompatibleClient", () => {
     }, 15000);
   });
 
+  describe("retry consolidation", () => {
+    it("should use longer backoff (5s base) for rate limit errors", async () => {
+      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const err = new RLE("Rate limit exceeded", { "retry-after": "0" });
+
+      // Succeed on second attempt
+      mockCreate
+        .mockRejectedValueOnce(err)
+        .mockResolvedValueOnce({
+          choices: [
+            {
+              message: { content: "OK", tool_calls: undefined },
+              finish_reason: "stop",
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        });
+
+      const start = Date.now();
+      const response = await client.chat({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: "Hi" }],
+        maxTokens: 100,
+      });
+
+      const elapsed = Date.now() - start;
+      expect(response.content).toBe("OK");
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+      // Rate limit base delay is 5s, first attempt uses 5s * 2^0 = 5000ms
+      // Allow some tolerance for timing
+      expect(elapsed).toBeGreaterThanOrEqual(4500);
+    }, 30000);
+
+    it("should respect Retry-After header and propagate retryAfterMs in LLMError", async () => {
+      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      // Server says retry after 10 seconds
+      const err = new RLE("Rate limit exceeded", { "retry-after": "10" });
+      mockCreate
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err);
+
+      try {
+        await client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        });
+        expect.fail("Should have thrown");
+      } catch (error: unknown) {
+        expect(error).toBeInstanceOf(Error);
+        const llmErr = error as Error & { context?: Record<string, unknown> };
+        expect(llmErr.message).toContain("Rate limit");
+        // The error should include retryAfterMs derived from Retry-After header
+        if (llmErr.context) {
+          expect(llmErr.context.retryAfterMs).toBe(10_000);
+        }
+      }
+    }, 120000);
+
+    it("should use short backoff (1s, 2s, 4s) for transient errors", async () => {
+      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error }).InternalServerError;
+      const err = new ISE("Internal server error");
+
+      // Fail 3 times (1s + 2s + 4s = ~7s total), then succeed
+      mockCreate
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockRejectedValueOnce(err)
+        .mockResolvedValueOnce({
+          choices: [
+            {
+              message: { content: "Recovered", tool_calls: undefined },
+              finish_reason: "stop",
+            },
+          ],
+          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+        });
+
+      const start = Date.now();
+      const response = await client.chat({
+        model: "gpt-4o",
+        messages: [{ role: "user", content: "Hi" }],
+        maxTokens: 100,
+      });
+
+      const elapsed = Date.now() - start;
+      expect(response.content).toBe("Recovered");
+      expect(mockCreate).toHaveBeenCalledTimes(4);
+      // 1s + 2s + 4s = 7s total backoff, but should be much less than rate limit's 5s base
+      expect(elapsed).toBeGreaterThanOrEqual(6500);
+      expect(elapsed).toBeLessThan(15000); // Should not use rate limit's longer delays
+    }, 30000);
+
+    it("should retry rate limits up to MAX_RETRIES_RATE_LIMIT (5) times", async () => {
+      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const err = new RLE("Rate limit exceeded", { "retry-after": "0" });
+
+      // Reject 6 times (1 initial + 5 retries)
+      for (let i = 0; i < 6; i++) {
+        mockCreate.mockRejectedValueOnce(err);
+      }
+
+      await expect(
+        client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        }),
+      ).rejects.toThrow("Rate limit");
+
+      // 1 initial + 5 retries = 6 calls
+      expect(mockCreate).toHaveBeenCalledTimes(6);
+    }, 30000);
+
+    it("should include retryAfterMs in LLMError after exhausting rate limit retries", async () => {
+      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const err = new RLE("Rate limit exceeded", { "retry-after": "30" });
+
+      for (let i = 0; i < 6; i++) {
+        mockCreate.mockRejectedValueOnce(err);
+      }
+
+      try {
+        await client.chat({
+          model: "gpt-4o",
+          messages: [{ role: "user", content: "Hi" }],
+          maxTokens: 100,
+        });
+        expect.fail("Should have thrown");
+      } catch (error: unknown) {
+        const llmErr = error as Error & { context?: Record<string, unknown> };
+        expect(llmErr.message).toContain("Rate limit");
+        // Error should propagate the retryAfterMs from Retry-After header
+        if (llmErr.context) {
+          expect(llmErr.context.retryAfterMs).toBe(30_000);
+        }
+      }
+    }, 120000);
+  });
+
   describe("countTokens", () => {
     it("should count tokens", () => {
       const count = client.countTokens("Hello world");

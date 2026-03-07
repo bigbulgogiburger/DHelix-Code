@@ -1,13 +1,6 @@
 package com.example.bookapi.entity;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.Table;
-import jakarta.persistence.Id;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.JoinColumn;
+import jakarta.persistence.*;
 import java.util.Set;
 
 @Entity
@@ -20,16 +13,10 @@ public class Author {
     private String name;
     private String email;
 
-    @ManyToMany
-    @JoinTable(
-        name = "book_authors",
-        joinColumns = @JoinColumn(name = "author_id"),
-        inverseJoinColumns = @JoinColumn(name = "book_id")
-    )
+    @ManyToMany(mappedBy = "authors")
     private Set<Book> books;
 
-    public Author() {
-    }
+    public Author() {}
 
     public Long getId() {
         return id;

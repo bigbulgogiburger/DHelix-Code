@@ -16,7 +16,7 @@ export class Retriever {
   constructor(config: RetrieverConfig) {
     this.embedder = config.embedder;
     this.vectorStore = config.vectorStore;
-    this.topK = config.topK ?? 3;
+    this.topK = config.topK || 3;
   }
 
   async ingest(chunks: Chunk[]): Promise<void> {

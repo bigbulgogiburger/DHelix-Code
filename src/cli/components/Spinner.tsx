@@ -1,15 +1,15 @@
 import { Text } from "ink";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 
 const SPINNER_FRAMES = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
-const FRAME_INTERVAL = 80;
+const FRAME_INTERVAL = 200;
 
 interface SpinnerProps {
   readonly label?: string;
 }
 
 /** Animated spinner component for loading states */
-export function Spinner({ label }: SpinnerProps) {
+export const Spinner = React.memo(function Spinner({ label }: SpinnerProps) {
   const [frameIndex, setFrameIndex] = useState(0);
 
   useEffect(() => {
@@ -27,4 +27,4 @@ export function Spinner({ label }: SpinnerProps) {
       {label ? <Text> {label}</Text> : null}
     </Text>
   );
-}
+});

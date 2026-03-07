@@ -1,4 +1,5 @@
 import { Text, Box } from "ink";
+import React from "react";
 import { renderMarkdown, hasMarkdown } from "../renderer/markdown.js";
 
 interface StreamingMessageProps {
@@ -8,7 +9,7 @@ interface StreamingMessageProps {
 }
 
 /** Streaming assistant message with progressive markdown rendering */
-export function StreamingMessage({
+export const StreamingMessage = React.memo(function StreamingMessage({
   text,
   isComplete,
   enableMarkdown = true,
@@ -17,8 +18,8 @@ export function StreamingMessage({
     return null;
   }
 
-  const displayText =
-    isComplete && enableMarkdown && hasMarkdown(text) ? renderMarkdown(text) : text;
+  const shouldRenderMarkdown = isComplete && enableMarkdown && hasMarkdown(text);
+  const displayText = shouldRenderMarkdown ? renderMarkdown(text) : text;
 
   return (
     <Box flexDirection="column">
@@ -29,4 +30,4 @@ export function StreamingMessage({
       {!isComplete ? <Text color="gray">{"▌"}</Text> : null}
     </Box>
   );
-}
+});

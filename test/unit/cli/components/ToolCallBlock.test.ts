@@ -13,6 +13,9 @@ function resetState() {
 // Mock react
 vi.mock("react", () => {
   return {
+    default: {
+      memo: (component: unknown) => component,
+    },
     useState: (initial: unknown) => {
       const idx = stateIndex++;
       if (!stateStore.has(idx)) {

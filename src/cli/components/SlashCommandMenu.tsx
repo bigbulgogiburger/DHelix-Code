@@ -19,6 +19,8 @@ export interface SlashCommandMenuProps {
  * Autocomplete menu for slash commands with keyboard navigation.
  * Displays matching commands when the user types `/`.
  */
+const MAX_VISIBLE = 6;
+
 export function SlashCommandMenu({
   commands,
   prefix,
@@ -28,18 +30,28 @@ export function SlashCommandMenu({
 }: SlashCommandMenuProps) {
   const filtered = getMatchingCommands(prefix, commands);
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [scrollOffset, setScrollOffset] = useState(0);
 
-  // Reset selection when filtered list changes
+  // Reset selection and scroll when filtered list changes
   useEffect(() => {
     setSelectedIndex(0);
+    setScrollOffset(0);
   }, [filtered.length]);
 
   useInput(
     (_input, key) => {
       if (key.upArrow) {
-        setSelectedIndex((prev) => Math.max(0, prev - 1));
+        setSelectedIndex((prev) => {
+          const next = Math.max(0, prev - 1);
+          setScrollOffset((so) => Math.min(so, next));
+          return next;
+        });
       } else if (key.downArrow) {
-        setSelectedIndex((prev) => Math.min(filtered.length - 1, prev + 1));
+        setSelectedIndex((prev) => {
+          const next = Math.min(filtered.length - 1, prev + 1);
+          setScrollOffset((so) => Math.max(so, next - MAX_VISIBLE + 1));
+          return next;
+        });
       } else if (key.tab || key.return) {
         if (filtered.length > 0) {
           onSelect(filtered[selectedIndex]!.name);
@@ -55,10 +67,16 @@ export function SlashCommandMenu({
     return null;
   }
 
+  const visibleItems = filtered.slice(scrollOffset, scrollOffset + MAX_VISIBLE);
+  const hasMoreAbove = scrollOffset > 0;
+  const hasMoreBelow = scrollOffset + MAX_VISIBLE < filtered.length;
+
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1}>
-      {filtered.map((cmd, idx) => {
-        const isSelected = idx === selectedIndex;
+      {hasMoreAbove && <Text color="gray" dimColor>{"  ↑ more"}</Text>}
+      {visibleItems.map((cmd, idx) => {
+        const actualIndex = scrollOffset + idx;
+        const isSelected = actualIndex === selectedIndex;
         return (
           <Box key={cmd.name}>
             <Text color={isSelected ? "cyan" : "gray"} bold={isSelected} dimColor={!isSelected}>
@@ -72,6 +90,7 @@ export function SlashCommandMenu({
           </Box>
         );
       })}
+      {hasMoreBelow && <Text color="gray" dimColor>{"  ↓ more"}</Text>}
     </Box>
   );
 }

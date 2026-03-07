@@ -1,22 +1,27 @@
 import { Box, Text, useInput } from "ink";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
+import { useInputHistory } from "../hooks/useInput.js";
 
 export interface UserInputProps {
   readonly onSubmit: (text: string) => void;
   readonly onChange?: (value: string) => void;
   readonly isDisabled?: boolean;
+  readonly slashMenuVisible?: boolean;
   readonly placeholder?: string;
 }
 
-/** User input component with cursor movement and readline shortcuts */
+/** User input component with cursor movement, input history, and multiline support */
 export function UserInput({
   onSubmit,
   onChange,
   isDisabled = false,
+  slashMenuVisible = false,
   placeholder = "Type a message...",
 }: UserInputProps) {
   const [value, setValue] = useState("");
   const [cursorOffset, setCursorOffset] = useState(0);
+  const savedInputRef = useRef<string | null>(null);
+  const { addToHistory, navigateUp, navigateDown } = useInputHistory();
 
   const updateValue = useCallback(
     (next: string, nextCursor: number) => {
@@ -30,18 +35,40 @@ export function UserInput({
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
     if (trimmed.length > 0) {
+      addToHistory(trimmed);
       onSubmit(trimmed);
       setValue("");
       setCursorOffset(0);
+      savedInputRef.current = null;
     }
-  }, [value, onSubmit]);
+  }, [value, onSubmit, addToHistory]);
 
   useInput(
     (input, key) => {
       if (isDisabled) return;
 
-      if (key.return) {
-        handleSubmit();
+      // Enter handling: Enter submits, Shift+Enter inserts newline.
+      // Ink's parseKeypress maps \r → name='return' and \n → name='enter'.
+      // Most terminals send \r in raw mode, but some may send \n.
+      // We treat both as "Enter pressed".
+      const isEnter = key.return || input === "\n" || input === "\r";
+      if (isEnter) {
+        // Shift+Enter → newline (only works in terminals that send distinct
+        // escape sequences for Shift+Enter, e.g. Kitty, WezTerm).
+        // For other terminals, use Ctrl+J as the newline shortcut.
+        if (key.shift) {
+          const next = value.slice(0, cursorOffset) + "\n" + value.slice(cursorOffset);
+          updateValue(next, cursorOffset + 1);
+        } else {
+          handleSubmit();
+        }
+        return;
+      }
+
+      // Ctrl+J — newline insertion (works in all terminals)
+      if (key.ctrl && input === "j") {
+        const next = value.slice(0, cursorOffset) + "\n" + value.slice(cursorOffset);
+        updateValue(next, cursorOffset + 1);
         return;
       }
 
@@ -71,6 +98,78 @@ export function UserInput({
       // Ctrl+U — kill entire line
       if (key.ctrl && input === "u") {
         updateValue("", 0);
+        return;
+      }
+
+      // Ctrl+W — delete word backward
+      if (key.ctrl && input === "w") {
+        let pos = cursorOffset;
+        while (pos > 0 && value[pos - 1] === " ") pos--;
+        while (pos > 0 && value[pos - 1] !== " ") pos--;
+        const next = value.slice(0, pos) + value.slice(cursorOffset);
+        updateValue(next, pos);
+        return;
+      }
+
+      // Ctrl+D — delete forward / exit when empty
+      if (key.ctrl && input === "d") {
+        if (value.length === 0) {
+          process.exit(0);
+        }
+        if (cursorOffset < value.length) {
+          const next = value.slice(0, cursorOffset) + value.slice(cursorOffset + 1);
+          updateValue(next, cursorOffset);
+        }
+        return;
+      }
+
+      // When slash menu is visible, delegate navigation keys to SlashCommandMenu
+      if (slashMenuVisible && (key.upArrow || key.downArrow || key.tab)) {
+        return;
+      }
+
+      // Up arrow — navigate history
+      if (key.upArrow) {
+        if (savedInputRef.current === null) {
+          savedInputRef.current = value;
+        }
+        const prev = navigateUp();
+        if (prev !== undefined) {
+          updateValue(prev, prev.length);
+        }
+        return;
+      }
+
+      // Down arrow — navigate history
+      if (key.downArrow) {
+        const next = navigateDown();
+        if (next !== undefined) {
+          if (next === "") {
+            const restored = savedInputRef.current ?? "";
+            savedInputRef.current = null;
+            updateValue(restored, restored.length);
+          } else {
+            updateValue(next, next.length);
+          }
+        }
+        return;
+      }
+
+      // Alt+Left — move cursor one word backward
+      if (key.meta && key.leftArrow) {
+        let pos = cursorOffset;
+        while (pos > 0 && value[pos - 1] === " ") pos--;
+        while (pos > 0 && value[pos - 1] !== " ") pos--;
+        setCursorOffset(pos);
+        return;
+      }
+
+      // Alt+Right — move cursor one word forward
+      if (key.meta && key.rightArrow) {
+        let pos = cursorOffset;
+        while (pos < value.length && value[pos] === " ") pos++;
+        while (pos < value.length && value[pos] !== " ") pos++;
+        setCursorOffset(pos);
         return;
       }
 
@@ -119,20 +218,54 @@ export function UserInput({
       return <Text color="gray">{placeholder}</Text>;
     }
 
-    const before = value.slice(0, cursorOffset);
-    const cursorChar = value[cursorOffset];
-    const after = value.slice(cursorOffset + 1);
-
     if (isDisabled) {
       return <Text>{value}</Text>;
     }
 
+    // Multiline rendering: split by newlines and render each line
+    const lines = value.split("\n");
+    let charIndex = 0;
+
     return (
-      <>
-        {before.length > 0 && <Text>{before}</Text>}
-        <Text inverse>{cursorChar ?? " "}</Text>
-        {after.length > 0 && <Text>{after}</Text>}
-      </>
+      <Box flexDirection="column">
+        {lines.map((line, lineIdx) => {
+          const lineStart = charIndex;
+          charIndex += line.length + (lineIdx < lines.length - 1 ? 1 : 0); // +1 for '\n'
+
+          const cursorInLine = cursorOffset >= lineStart && cursorOffset <= lineStart + line.length;
+
+          if (!cursorInLine) {
+            return (
+              <Box key={lineIdx}>
+                {lineIdx > 0 && (
+                  <Text color="blue" bold>
+                    {"  "}
+                  </Text>
+                )}
+                <Text>{line}</Text>
+              </Box>
+            );
+          }
+
+          const localCursor = cursorOffset - lineStart;
+          const before = line.slice(0, localCursor);
+          const cursorChar = line[localCursor];
+          const after = line.slice(localCursor + 1);
+
+          return (
+            <Box key={lineIdx}>
+              {lineIdx > 0 && (
+                <Text color="blue" bold>
+                  {"  "}
+                </Text>
+              )}
+              {before.length > 0 && <Text>{before}</Text>}
+              <Text inverse>{cursorChar ?? " "}</Text>
+              {after.length > 0 && <Text>{after}</Text>}
+            </Box>
+          );
+        })}
+      </Box>
     );
   };
 

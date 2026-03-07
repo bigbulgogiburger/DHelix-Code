@@ -205,7 +205,7 @@ describe("SPINNER_FRAMES", () => {
 });
 
 describe("SPINNER_INTERVAL_MS", () => {
-  it("should be 80ms", () => {
-    expect(SPINNER_INTERVAL_MS).toBe(80);
+  it("should be 200ms", () => {
+    expect(SPINNER_INTERVAL_MS).toBe(200);
   });
 });
