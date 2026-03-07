@@ -9,3 +9,10 @@ coverage/
 Thumbs.db
 *.log
 .claude/ralph-loop.local.md
+
+# 테스트 생성 파일
+test/tmp/
+test-projects/
+testJava/
+.e2e-progress.json
+.gradle/
