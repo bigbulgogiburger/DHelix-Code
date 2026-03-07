@@ -24,6 +24,9 @@
     "lint": "eslint src/ --ext .ts,.tsx",
     "format": "prettier --write \"src/**/*.{ts,tsx}\"",
     "typecheck": "tsc --noEmit",
+    "test:coverage": "vitest run --coverage",
+    "ci": "npm run typecheck && npm run lint && npm run test:coverage && npm run build",
+    "prepublishOnly": "npm run ci",
     "check": "npm run typecheck && npm run lint && npm test && npm run build"
   },
   "dependencies": {

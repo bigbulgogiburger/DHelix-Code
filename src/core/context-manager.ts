@@ -1,4 +1,4 @@
-import { type ChatMessage } from "../llm/provider.js";
+import { type ChatMessage, type LLMProvider } from "../llm/provider.js";
 import { countTokens, countMessageTokens } from "../llm/token-counter.js";
 import { AGENT_LOOP, TOKEN_DEFAULTS } from "../constants.js";
 import { loadInstructions } from "../instructions/loader.js";
@@ -24,6 +24,10 @@ export interface ContextManagerConfig {
   readonly responseReserveRatio?: number;
   /** Working directory for reloading instructions on compaction */
   readonly workingDirectory?: string;
+  /** LLM provider for intelligent summarization */
+  readonly client?: LLMProvider;
+  /** Model to use for summaries (default: same as main) */
+  readonly summaryModel?: string;
 }
 
 /** Result of a compaction operation */
@@ -51,6 +55,8 @@ export class ContextManager {
   private readonly preserveRecentTurns: number;
   private readonly responseReserveRatio: number;
   private readonly workingDirectory: string;
+  private readonly client?: LLMProvider;
+  private readonly summaryModel?: string;
 
   constructor(config?: ContextManagerConfig) {
     this.maxContextTokens = config?.maxContextTokens ?? TOKEN_DEFAULTS.maxContextWindow;
@@ -58,6 +64,8 @@ export class ContextManager {
     this.preserveRecentTurns = config?.preserveRecentTurns ?? 5;
     this.responseReserveRatio = config?.responseReserveRatio ?? AGENT_LOOP.responseReserveRatio;
     this.workingDirectory = config?.workingDirectory ?? process.cwd();
+    this.client = config?.client;
+    this.summaryModel = config?.summaryModel;
   }
 
   /** Get the effective token budget (accounting for response reserve) */
@@ -142,8 +150,8 @@ export class ContextManager {
     const middleTurns = turns.slice(0, recentStartIdx);
     const recentTurns = turns.slice(recentStartIdx);
 
-    // Summarize middle turns into a single message
-    const summary = this.summarizeTurns(middleTurns, focusTopic);
+    // Summarize middle turns: use LLM if available, fall back to local extraction
+    const summary = await this.summarizeWithFallback(middleTurns, focusTopic);
     const summaryMessage: ChatMessage = {
       role: "system",
       content: `[Conversation summary]\n${summary}`,
@@ -219,6 +227,71 @@ export class ContextManager {
     }
 
     return turns;
+  }
+
+  /**
+   * Attempt LLM summarization with fallback to local extraction.
+   */
+  private async summarizeWithFallback(
+    turns: readonly { readonly messages: readonly ChatMessage[] }[],
+    focusTopic?: string,
+  ): Promise<string> {
+    if (this.client) {
+      try {
+        return await this.summarizeWithLLM(turns, focusTopic);
+      } catch {
+        // LLM summarization failed — fall back to local extraction
+      }
+    }
+    return this.summarizeTurns(turns, focusTopic);
+  }
+
+  /**
+   * Summarize conversation turns using an LLM for intelligent context preservation.
+   * Extracts key decisions, file paths, progress, and discovered issues.
+   */
+  private async summarizeWithLLM(
+    turns: readonly { readonly messages: readonly ChatMessage[] }[],
+    focusTopic?: string,
+  ): Promise<string> {
+    const turnTexts = turns.map((turn, i) => {
+      const parts: string[] = [`--- Turn ${i + 1} ---`];
+      for (const msg of turn.messages) {
+        const label = msg.role.charAt(0).toUpperCase() + msg.role.slice(1);
+        const truncated = this.truncateText(msg.content, 1000);
+        parts.push(`[${label}]: ${truncated}`);
+      }
+      return parts.join("\n");
+    });
+
+    const focusInstruction = focusTopic
+      ? `\nPay special attention to anything related to: "${focusTopic}".`
+      : "";
+
+    const systemPrompt = [
+      "You are a conversation summarizer for a coding assistant session.",
+      "Summarize the following conversation turns concisely (200-500 tokens).",
+      "You MUST preserve:",
+      "1. File paths that were read, created, or modified",
+      "2. Key decisions made and their reasoning",
+      "3. Current progress and status of the task",
+      "4. Bugs, errors, or issues discovered",
+      "5. Important code patterns or architectural choices",
+      focusInstruction,
+      "",
+      "Output ONLY the summary, no preamble.",
+    ].join("\n");
+
+    const response = await this.client!.chat({
+      model: this.summaryModel ?? "default",
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: turnTexts.join("\n\n") },
+      ],
+      maxTokens: 1024,
+    });
+
+    return response.content;
   }
 
   /**

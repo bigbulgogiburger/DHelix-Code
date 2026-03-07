@@ -81,6 +81,9 @@ program
         { grepSearchTool },
         { askUserTool },
         { mkdirTool },
+        { webFetchTool },
+        { listDirTool },
+        { notebookEditTool },
         { CommandRegistry },
         { clearCommand },
         { compactCommand },
@@ -128,6 +131,9 @@ program
         import("./tools/definitions/grep-search.js"),
         import("./tools/definitions/ask-user.js"),
         import("./tools/definitions/mkdir.js"),
+        import("./tools/definitions/web-fetch.js"),
+        import("./tools/definitions/list-dir.js"),
+        import("./tools/definitions/notebook-edit.js"),
         import("./commands/registry.js"),
         import("./commands/clear.js"),
         import("./commands/compact.js"),
@@ -194,6 +200,9 @@ program
         grepSearchTool,
         askUserTool,
         mkdirTool,
+        webFetchTool,
+        listDirTool,
+        notebookEditTool,
       ]);
 
       // Select tool call strategy

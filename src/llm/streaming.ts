@@ -1,4 +1,4 @@
-import { type ChatChunk, type ToolCallRequest } from "./provider.js";
+import { type ChatChunk, type TokenUsage, type ToolCallRequest } from "./provider.js";
 
 /** Accumulated streaming state */
 export interface StreamAccumulator {
@@ -7,6 +7,8 @@ export interface StreamAccumulator {
   readonly isComplete: boolean;
   /** True when the stream disconnected mid-response and only partial content was recovered */
   readonly partial?: boolean;
+  /** Token usage reported by the API (available when stream_options.include_usage is enabled) */
+  readonly usage?: TokenUsage;
 }
 
 /**
@@ -55,7 +57,7 @@ export function accumulateChunk(state: StreamAccumulator, chunk: ChatChunk): Str
     }
 
     case "done":
-      return { ...state, isComplete: true };
+      return { ...state, isComplete: true, usage: chunk.usage ?? state.usage };
 
     default:
       return state;

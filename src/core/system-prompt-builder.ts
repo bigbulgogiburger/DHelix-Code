@@ -20,6 +20,7 @@ export function buildSystemPrompt(options?: {
   projectInstructions?: string;
   workingDirectory?: string;
   toolRegistry?: ToolRegistry;
+  mcpServers?: readonly { name: string; tools: readonly string[] }[];
   customSections?: readonly PromptSection[];
 }): string {
   const cwd = options?.workingDirectory ?? process.cwd();
@@ -47,6 +48,14 @@ export function buildSystemPrompt(options?: {
       id: "tools",
       content: buildToolsSection(options.toolRegistry),
       priority: 85,
+    });
+  }
+
+  if (options?.mcpServers && options.mcpServers.length > 0) {
+    sections.push({
+      id: "mcp",
+      content: buildMCPSection(options.mcpServers),
+      priority: 82,
     });
   }
 
@@ -214,6 +223,21 @@ function loadProjectInstructions(cwd: string): string | null {
   return null;
 }
 
+function buildMCPSection(
+  servers: readonly { name: string; tools: readonly string[] }[],
+): string {
+  const serverLines = servers.map((server) => {
+    const toolList = server.tools.map((t) => `  - \`mcp__${server.name}__${t}\``).join("\n");
+    return `### ${server.name}\n${toolList}`;
+  });
+
+  return `# MCP Servers
+
+The following MCP servers are available. MCP tools are called using the \`mcp__{server}__{tool}\` format.
+
+${serverLines.join("\n\n")}`;
+}
+
 function buildToolsSection(registry: ToolRegistry): string {
   const defs = registry.getDefinitionsForLLM();
   const lines = defs.map((d) => `- **${d.function.name}**: ${d.function.description}`);
@@ -226,14 +250,15 @@ ${lines.join("\n")}
 
 ## Tool usage guidelines
 
-- Use **file_read** to read files before modifying them. Always read first.
-- Use **file_edit** for targeted changes to existing files (search/replace).
-- Use **file_write** only for creating new files or complete rewrites.
-- Use **glob_search** to find files by name pattern (e.g., \`**/*.ts\`).
-- Use **grep_search** to find content inside files by regex pattern.
-- Use **bash_exec** for running commands (build, test, git, etc.).
-- Use **ask_user** when you need clarification from the user.
-- You can call multiple tools in parallel when they are independent.`;
+- Use **file_read** before modifying any file. Always read first.
+- Use **file_edit** for targeted changes (search/replace). old_string must be unique.
+- Use **file_write** only for new files or complete rewrites.
+- Use **glob_search** to find files by pattern (e.g., \`**/*.ts\`).
+- Use **grep_search** to find content by regex pattern.
+- Use **bash_exec** for commands (build, test, git). Avoid destructive commands.
+- Use **list_dir** to see directory structure before searching.
+- You can call multiple independent tools in parallel for efficiency.
+- For large outputs, prefer targeted searches over reading entire files.`;
 }
 
 function buildConventionsSection(): string {
@@ -244,5 +269,11 @@ function buildConventionsSection(): string {
 - Follow the project's existing code style and conventions.
 - When fixing bugs, understand the root cause before applying a fix.
 - When adding features, integrate naturally with existing architecture.
-- Test your changes when a test framework is available.`;
+- Test your changes when a test framework is available.
+
+## Git conventions
+
+- Before committing, review changes with git diff.
+- Never force push, reset --hard, or use destructive git operations without user confirmation.
+- Use conventional commit format: feat(scope): description.`;
 }

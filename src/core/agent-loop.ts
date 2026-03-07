@@ -8,6 +8,7 @@ import { type AppEventEmitter } from "../utils/events.js";
 import { AGENT_LOOP } from "../constants.js";
 import { LLMError } from "../utils/error.js";
 import { ContextManager } from "./context-manager.js";
+import { applyInputGuardrails, applyOutputGuardrails } from "../guardrails/index.js";
 
 /** Configuration for the agent loop */
 export interface AgentLoopConfig {
@@ -30,6 +31,8 @@ export interface AgentLoopConfig {
   readonly maxContextTokens?: number;
   /** Maximum characters per individual tool result (default: 12000) */
   readonly maxToolResultChars?: number;
+  /** Enable security guardrails for tool calls (default: true) */
+  readonly enableGuardrails?: boolean;
 }
 
 /** Result of a permission check */
@@ -264,11 +267,44 @@ export async function runAgentLoop(
         }
       }
 
+      // Apply input guardrails
+      if (config.enableGuardrails !== false) {
+        const guardrailCheck = applyInputGuardrails(call.name, call.arguments as Record<string, unknown>);
+        if (guardrailCheck.severity === "block") {
+          results.push({
+            id: call.id,
+            name: call.name,
+            output: `Blocked by guardrail: ${guardrailCheck.reason ?? "Security policy violation"}`,
+            isError: true,
+          });
+          config.events.emit("tool:complete", {
+            name: call.name,
+            id: call.id,
+            isError: true,
+            output: `Blocked: ${guardrailCheck.reason}`,
+          });
+          continue;
+        }
+        if (guardrailCheck.severity === "warn") {
+          config.events.emit("llm:error", {
+            error: new Error(`Guardrail warning: ${guardrailCheck.reason}`),
+          });
+        }
+      }
+
       // Execute
-      const result = await executeToolCall(config.toolRegistry, call, {
+      let result = await executeToolCall(config.toolRegistry, call, {
         workingDirectory: config.workingDirectory ?? process.cwd(),
         signal: config.signal,
       });
+
+      // Apply output guardrails
+      if (config.enableGuardrails !== false) {
+        const outputCheck = applyOutputGuardrails(result.output);
+        if (outputCheck.modified) {
+          result = { ...result, output: outputCheck.modified };
+        }
+      }
 
       results.push(result);
       config.events.emit("tool:complete", {

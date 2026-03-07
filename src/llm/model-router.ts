@@ -5,6 +5,8 @@ import {
   type ChatChunk,
 } from "./provider.js";
 import { LLMError } from "../utils/error.js";
+import { AnthropicProvider } from "./providers/anthropic.js";
+import { OpenAICompatibleClient } from "./client.js";
 
 /** Model routing configuration */
 export interface ModelRouterConfig {
@@ -245,4 +247,44 @@ export class ModelRouter implements LLMProvider {
   private canSwitchToFallback(): boolean {
     return !!this.fallback && !!this.fallbackModel && !this.usingFallback;
   }
+}
+
+/** Options for provider resolution */
+export interface ResolveProviderOptions {
+  readonly baseUrl?: string;
+  readonly apiKey?: string;
+}
+
+/**
+ * Resolve the appropriate LLM provider based on model name.
+ *
+ * Routing rules:
+ * - "claude-*" → AnthropicProvider (direct Anthropic API)
+ * - "gpt-*", "o1-*", "o3-*" → OpenAICompatibleClient (OpenAI API)
+ * - Everything else → OpenAICompatibleClient with custom baseURL
+ */
+export function resolveProvider(modelName: string, opts: ResolveProviderOptions = {}): LLMProvider {
+  if (modelName.startsWith("claude-")) {
+    return new AnthropicProvider({
+      apiKey: opts.apiKey,
+      baseURL: opts.baseUrl,
+    });
+  }
+
+  if (
+    modelName.startsWith("gpt-") ||
+    modelName.startsWith("o1-") ||
+    modelName.startsWith("o3-")
+  ) {
+    return new OpenAICompatibleClient({
+      baseURL: opts.baseUrl ?? "https://api.openai.com/v1",
+      apiKey: opts.apiKey ?? process.env.OPENAI_API_KEY,
+    });
+  }
+
+  // Default: OpenAI-compatible with custom base URL (Ollama, vLLM, etc.)
+  return new OpenAICompatibleClient({
+    baseURL: opts.baseUrl ?? "http://localhost:11434/v1",
+    apiKey: opts.apiKey,
+  });
 }

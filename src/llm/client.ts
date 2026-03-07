@@ -310,6 +310,7 @@ export class OpenAICompatibleClient implements LLMProvider {
       messages: toOpenAIMessages(request.messages, caps),
       max_tokens: request.maxTokens,
       stream: true,
+      stream_options: { include_usage: true },
     };
     if (caps.supportsTemperature && request.temperature !== undefined) {
       params.temperature = request.temperature;
@@ -327,7 +328,18 @@ export class OpenAICompatibleClient implements LLMProvider {
       { id: string; name: string; arguments: string }
     >();
 
+    let streamUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+
     for await (const chunk of stream) {
+      // OpenAI sends usage on the final chunk when stream_options.include_usage is true
+      if (chunk.usage) {
+        streamUsage = {
+          promptTokens: chunk.usage.prompt_tokens ?? 0,
+          completionTokens: chunk.usage.completion_tokens ?? 0,
+          totalTokens: chunk.usage.total_tokens ?? 0,
+        };
+      }
+
       const delta = chunk.choices[0]?.delta;
       if (!delta) continue;
 
@@ -363,7 +375,7 @@ export class OpenAICompatibleClient implements LLMProvider {
 
     yield {
       type: "done",
-      usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+      usage: streamUsage,
     };
   }
 
