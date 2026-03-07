@@ -11,10 +11,7 @@ class MemoProvider extends ChangeNotifier {
     if (_searchQuery.isEmpty) {
       return _memos;
     } else {
-      return _memos.where((memo) =>
-        memo.title.contains(_searchQuery) ||
-        memo.content.contains(_searchQuery)
-      ).toList();
+      return _memos.where((memo) => memo.title.contains(_searchQuery) || memo.content.contains(_searchQuery)).toList();
     }
   }
 

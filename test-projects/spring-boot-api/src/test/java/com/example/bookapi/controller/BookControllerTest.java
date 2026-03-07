@@ -1,6 +1,5 @@
 package com.example.bookapi.controller;
 
-import com.example.bookapi.dto.CreateBookDTO;
 import com.example.bookapi.entity.Book;
 import com.example.bookapi.repository.BookRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -11,7 +10,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
+
+import javax.transaction.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,15 +30,6 @@ public class BookControllerTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private CreateBookDTO createDto() {
-        CreateBookDTO dto = new CreateBookDTO();
-        dto.setTitle("Test Book");
-        dto.setIsbn("1234567890");
-        dto.setPublishedYear(2021);
-        dto.setDescription("A test book description.");
-        return dto;
-    }
-
     @BeforeEach
     public void setup() {
         bookRepository.deleteAll();
@@ -49,15 +40,20 @@ public class BookControllerTest {
         mockMvc.perform(get("/api/books"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$").isArray())
-                .andExpect(jsonPath("$").isEmpty());
+                .andExpect(jsonPath("$", org.hamcrest.Matchers.hasSize(0)));
     }
 
     @Test
     public void testCreateBook() throws Exception {
+        Book book = new Book();
+        book.setTitle("Test Book");
+        book.setIsbn("1234567890");
+        book.setPublishedYear(2023);
+        book.setDescription("A test book description.");
+
         mockMvc.perform(post("/api/books")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(createDto())))
+                .content(objectMapper.writeValueAsString(book)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Test Book"));
     }
@@ -67,9 +63,9 @@ public class BookControllerTest {
         Book book = new Book();
         book.setTitle("Test Book");
         book.setIsbn("1234567890");
-        book.setPublishedYear(2021);
+        book.setPublishedYear(2023);
         book.setDescription("A test book description.");
-        book = bookRepository.saveAndFlush(book);
+        book = bookRepository.save(book);
 
         mockMvc.perform(get("/api/books/" + book.getId()))
                 .andExpect(status().isOk())
@@ -87,18 +83,17 @@ public class BookControllerTest {
         Book book = new Book();
         book.setTitle("Test Book");
         book.setIsbn("1234567890");
-        book.setPublishedYear(2021);
+        book.setPublishedYear(2023);
         book.setDescription("A test book description.");
-        book = bookRepository.saveAndFlush(book);
+        book = bookRepository.save(book);
 
-        CreateBookDTO updateDto = createDto();
-        updateDto.setTitle("Updated Test Book");
+        book.setTitle("Updated Title");
 
         mockMvc.perform(put("/api/books/" + book.getId())
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(updateDto)))
+                .content(objectMapper.writeValueAsString(book)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.title").value("Updated Test Book"));
+                .andExpect(jsonPath("$.title").value("Updated Title"));
     }
 
     @Test
@@ -106,9 +101,9 @@ public class BookControllerTest {
         Book book = new Book();
         book.setTitle("Test Book");
         book.setIsbn("1234567890");
-        book.setPublishedYear(2021);
+        book.setPublishedYear(2023);
         book.setDescription("A test book description.");
-        book = bookRepository.saveAndFlush(book);
+        book = bookRepository.save(book);
 
         mockMvc.perform(delete("/api/books/" + book.getId()))
                 .andExpect(status().isNoContent());

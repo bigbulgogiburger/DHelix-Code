@@ -6,11 +6,13 @@ import jakarta.persistence.Id;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.ManyToMany;
-import java.util.Set;
-
-@Entity
+import java.util.Set;import jakarta.persistence.JoinTable;
+import jakarta.persistence.JoinColumn;
 @Table(name = "books")
 public class Book {
+
+    @ManyToMany(mappedBy = "books")
+    private Set<Author> authors;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,9 +21,6 @@ public class Book {
     private String isbn;
     private Integer publishedYear;
     private String description;
-
-    @ManyToMany(mappedBy = "books")
-    private Set<Author> authors;
 
     public Book() {
     }
@@ -32,6 +31,14 @@ public class Book {
         this.isbn = isbn;
         this.publishedYear = publishedYear;
         this.description = description;
+    }
+
+    public Set<Author> getAuthors() {
+        return authors;
+    }
+
+    public void setAuthors(Set<Author> authors) {
+        this.authors = authors;
     }
 
     public Long getId() {
@@ -72,13 +79,5 @@ public class Book {
 
     public void setDescription(String description) {
         this.description = description;
-    }
-
-    public Set<Author> getAuthors() {
-        return authors;
-    }
-
-    public void setAuthors(Set<Author> authors) {
-        this.authors = authors;
     }
 }

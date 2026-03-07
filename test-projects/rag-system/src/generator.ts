@@ -18,8 +18,8 @@ export class Generator {
 
   constructor(config: GeneratorConfig) {
     this.apiKey = config.apiKey;
-    this.model = config.model || 'gpt-4o-mini';
-    this.baseURL = config.baseURL || 'https://api.openai.com/v1';
+    this.model = config.model ?? 'gpt-4o-mini';
+    this.baseURL = config.baseURL ?? 'https://api.openai.com/v1';
   }
 
   async generate(query: string, contexts: SearchResult[]): Promise<GeneratedAnswer> {
@@ -42,8 +42,7 @@ export class Generator {
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(`Error ${response.status}: ${errorData.message}`);
+      throw new Error(`API error: ${response.status} ${response.statusText}`);
     }
 
     const data = await response.json();

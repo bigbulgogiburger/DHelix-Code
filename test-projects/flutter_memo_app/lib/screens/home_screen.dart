@@ -1,15 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/memo_provider.dart';
-
 import '../widgets/memo_card.dart';
+import 'editor_screen.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
-  @override
-  @override
-  @override
-  @override
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -19,47 +14,41 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<MemoProvider>(
-      builder: (context, memoProvider, child) {
-        return Scaffold(
-          appBar: AppBar(
-            title: _isSearching
-                ? TextField(
-                    autofocus: true,
-                    decoration: InputDecoration(hintText: 'Search...'),
-                    onChanged: (query) {
-                      memoProvider.setSearchQuery(query);
-                    },
-                  )
-                : Text('Memos'),
-            actions: [
-              IconButton(
-                icon: Icon(_isSearching ? Icons.close : Icons.search),
-                onPressed: () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) {
-                      memoProvider.setSearchQuery('');
-                    }
-                  });
+    return Scaffold(
+      appBar: AppBar(
+        title: _isSearching
+            ? TextField(
+                autofocus: true,
+                decoration: InputDecoration(hintText: 'Search...'),
+                onChanged: (query) {
+                  Provider.of<MemoProvider>(context, listen: false).setSearchQuery(query);
                 },
-              ),
-            ],
+              )
+            : Text('Memos'),
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.close : Icons.search),
+            onPressed: () {
+              setState(() {
+                _isSearching = !_isSearching;
+                if (!_isSearching) {
+                  Provider.of<MemoProvider>(context, listen: false).setSearchQuery('');
+                }
+              });
+            },
           ),
-          body: GridView.builder(
-            padding: EdgeInsets.all(8.0),
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 2,
-              childAspectRatio: 3 / 2,
-              crossAxisSpacing: 8.0,
-              mainAxisSpacing: 8.0,
-            ),
+        ],
+      ),
+      body: Consumer<MemoProvider>(
+        builder: (context, memoProvider, child) {
+          return GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(crossAxisCount: 2),
             itemCount: memoProvider.memos.length,
             itemBuilder: (context, index) {
               final memo = memoProvider.memos[index];
               return Dismissible(
                 key: Key(memo.id.toString()),
-                direction: DismissDirection.endToStart,
+                background: Container(color: Colors.red),
                 onDismissed: (direction) {
                   memoProvider.deleteMemo(memo.id!);
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -74,19 +63,21 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   );
                 },
-                background: Container(color: Colors.red),
                 child: MemoCard(memo: memo),
               );
             },
-          ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              // Navigate to create memo screen
-            },
-            child: Icon(Icons.add),
-          ),
-        );
-      },
+          );
+        },
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => EditorScreen()),
+          );
+        },
+        child: Icon(Icons.add),
+      ),
     );
   }
 }

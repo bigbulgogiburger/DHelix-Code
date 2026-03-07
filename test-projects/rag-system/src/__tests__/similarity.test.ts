@@ -26,7 +26,7 @@ describe('cosineSimilarity', () => {
     expect(result).toBe(0);
   });
 
-  it('throws an error for mismatched vector lengths', () => {
+  it('throws an error for vectors of different lengths', () => {
     expect(() => cosineSimilarity([1, 2], [1])).toThrow();
   });
 

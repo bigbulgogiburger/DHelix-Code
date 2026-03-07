@@ -9,9 +9,6 @@ class EditorScreen extends StatefulWidget {
   const EditorScreen({Key? key, this.memo}) : super(key: key);
 
   @override
-  @override
-  @override
-  @override
   _EditorScreenState createState() => _EditorScreenState();
 }
 
@@ -33,28 +30,6 @@ class _EditorScreenState extends State<EditorScreen> {
     super.dispose();
   }
 
-  void _saveMemo() {
-    if (_titleController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Title cannot be empty')),
-      );
-      return;
-    }
-
-    final memoProvider = Provider.of<MemoProvider>(context, listen: false);
-    if (widget.memo == null) {
-      memoProvider.addMemo(_titleController.text, _contentController.text);
-    } else {
-      final updatedMemo = widget.memo!.copyWith(
-        title: _titleController.text,
-        content: _contentController.text,
-        updatedAt: DateTime.now(),
-      );
-      memoProvider.updateMemo(updatedMemo);
-    }
-    Navigator.pop(context);
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -63,24 +38,44 @@ class _EditorScreenState extends State<EditorScreen> {
         actions: [
           IconButton(
             icon: Icon(Icons.save),
-            onPressed: _saveMemo,
+            onPressed: () {
+              if (_titleController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Title cannot be empty')),
+                );
+                return;
+              }
+              if (widget.memo == null) {
+                Provider.of<MemoProvider>(context, listen: false).addMemo(
+                  _titleController.text,
+                  _contentController.text,
+                );
+              } else {
+                final updatedMemo = widget.memo!.copyWith(
+                  title: _titleController.text,
+                  content: _contentController.text,
+                  updatedAt: DateTime.now(),
+                );
+                Provider.of<MemoProvider>(context, listen: false).updateMemo(updatedMemo);
+              }
+              Navigator.pop(context);
+            },
           ),
         ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: _titleController,
-              style: TextStyle(fontSize: 24.0, fontWeight: FontWeight.bold),
-              decoration: const InputDecoration(hintText: 'Title', border: InputBorder.none),
+              style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(hintText: 'Title', border: InputBorder.none),
             ),
             Expanded(
               child: TextField(
                 controller: _contentController,
-                decoration: const InputDecoration(hintText: 'Content', border: InputBorder.none),
+                decoration: InputDecoration(hintText: 'Content', border: InputBorder.none),
                 maxLines: null,
                 expands: true,
               ),

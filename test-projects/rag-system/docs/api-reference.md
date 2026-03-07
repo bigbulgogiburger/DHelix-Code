@@ -5,62 +5,58 @@
 To connect to an AcmeDB instance, use the following method:
 
 ```javascript
-acmedb.connect({
-  host: 'localhost',
-  port: 5432,
-  auth: { user: 'admin', password: 'secret' }
-});
+acmedb.connect({ host: 'localhost', port: 5432, auth: { user: 'admin', password: 'secret' } });
 ```
 
 ## Creating Collections
 
-Collections in AcmeDB are akin to tables in traditional databases. Create a collection with:
+To create a new collection in the database, use:
 
 ```javascript
-db.createCollection('users', {
-  name: 'string',
-  age: 'number',
-  email: 'string'
-});
+db.createCollection('users', { name: 'string', age: 'number' });
 ```
 
 ## CRUD Operations
 
-- **Insert**:
-  ```javascript
-  db.users.insert({ name: 'John Doe', age: 30, email: 'john@example.com' });
-  ```
+### Insert
 
-- **Find**:
-  ```javascript
-  db.users.find({ age: { $gt: 25 } });
-  ```
+```javascript
+db.collection('users').insert({ name: 'John Doe', age: 30 });
+```
 
-- **Update**:
-  ```javascript
-  db.users.update({ name: 'John Doe' }, { $set: { age: 31 } });
-  ```
+### Find
 
-- **Delete**:
-  ```javascript
-  db.users.delete({ age: { $lt: 20 } });
-  ```
+```javascript
+db.collection('users').find({ age: { $gt: 25 } });
+```
+
+### Update
+
+```javascript
+db.collection('users').update({ name: 'John Doe' }, { $set: { age: 31 } });
+```
+
+### Delete
+
+```javascript
+db.collection('users').delete({ name: 'John Doe' });
+```
 
 ## Indexing
 
-Improve query performance by creating indexes:
+To create an index on a collection:
 
 ```javascript
-db.createIndex('users', ['email']);
+db.createIndex('users', { age: 1 });
 ```
 
 ## Transactions
 
-AcmeDB supports transactions for atomic operations:
+AcmeDB supports transactions. Here's an example:
 
 ```javascript
 db.transaction(async (tx) => {
-  await tx.users.insert({ name: 'Alice' });
-  await tx.users.update({ name: 'Alice' }, { $set: { age: 28 } });
+  await tx.collection('users').insert({ name: 'Jane Doe', age: 28 });
+  await tx.collection('users').update({ name: 'Jane Doe' }, { $set: { age: 29 } });
 });
 ```

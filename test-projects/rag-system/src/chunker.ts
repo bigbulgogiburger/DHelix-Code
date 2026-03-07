@@ -9,7 +9,6 @@ export interface Chunk {
   text: string;
   source: string;
   index: number;
-  metadata?: Record<string, unknown>;
 }
 
 export function chunkText(text: string, source: string, options: ChunkOptions = { chunkSize: 500, overlap: 100 }): Chunk[] {

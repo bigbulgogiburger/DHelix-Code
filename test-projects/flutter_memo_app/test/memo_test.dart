@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_memo_app/models/memo.dart';
+import 'package:flutter_memo_app/providers/memo_provider.dart';
 
 void main() {
   group('Memo Model Tests', () {
@@ -72,12 +73,18 @@ void main() {
       expect(modifiedMemo.createdAt, DateTime.parse('2023-01-01'));
       expect(modifiedMemo.updatedAt, DateTime.parse('2023-01-02'));
     });
+  });
 
-    test('MemoProvider initial state has empty list', () {
-      // MemoProvider requires DatabaseService which needs path_provider plugin.
-      // In pure Dart test env, path_provider is not available.
-      // We verify model correctness above, which is the core unit test scope.
-      expect(true, isTrue);
+  group('MemoProvider Basic Tests', () {
+    test('Initial state has empty list', () {
+      final provider = MemoProvider();
+      expect(provider.memos, isEmpty);
+    });
+
+    test('searchQuery filtering works', () {
+      final provider = MemoProvider();
+      provider.setSearchQuery('Test');
+      expect(provider.searchQuery, 'Test');
     });
   });
 }

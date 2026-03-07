@@ -10,7 +10,8 @@ class UserResponse(BaseModel):
     id: int
     username: str
 
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 class Token(BaseModel):
     access_token: str
@@ -32,7 +33,8 @@ class TodoResponse(BaseModel):
     completed: bool
     created_at: datetime
 
-    model_config = {"from_attributes": True}
+    class Config:
+        orm_mode = True
 
 class PaginatedTodos(BaseModel):
     items: List[TodoResponse]

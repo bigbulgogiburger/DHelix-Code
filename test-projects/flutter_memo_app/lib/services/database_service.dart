@@ -1,18 +1,15 @@
-import 'dart:async';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import 'package:flutter/foundation.dart';
-
 import 'package:path_provider/path_provider.dart';
-import '../models/memo.dart';
 import 'dart:io';
+import '../models/memo.dart';
 
 class DatabaseService {
   static final DatabaseService _instance = DatabaseService._internal();
   factory DatabaseService() => _instance;
-  static Database? _database;
-
   DatabaseService._internal();
+
+  static Database? _database;
 
   Future<Database> get database async {
     if (_database != null) return _database!;
@@ -41,19 +38,14 @@ class DatabaseService {
 
   Future<List<Memo>> getAllMemos() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('memos', orderBy: 'updatedAt DESC');
-    return List.generate(maps.length, (i) {
-      return Memo.fromMap(maps[i]);
-    });
+    var res = await db.query('memos', orderBy: 'updatedAt DESC');
+    return res.isNotEmpty ? res.map((c) => Memo.fromMap(c)).toList() : [];
   }
 
   Future<Memo?> getMemoById(int id) async {
     final db = await database;
-    List<Map<String, dynamic>> maps = await db.query('memos', where: 'id = ?', whereArgs: [id]);
-    if (maps.isNotEmpty) {
-      return Memo.fromMap(maps.first);
-    }
-    return null;
+    var res = await db.query('memos', where: 'id = ?', whereArgs: [id]);
+    return res.isNotEmpty ? Memo.fromMap(res.first) : null;
   }
 
   Future<int> updateMemo(Memo memo) async {
@@ -68,13 +60,7 @@ class DatabaseService {
 
   Future<List<Memo>> searchMemos(String query) async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'memos',
-      where: 'title LIKE ? OR content LIKE ?',
-      whereArgs: ['%$query%', '%$query%'],
-    );
-    return List.generate(maps.length, (i) {
-      return Memo.fromMap(maps[i]);
-    });
+    var res = await db.query('memos', where: 'title LIKE ? OR content LIKE ?', whereArgs: ['%$query%', '%$query%']);
+    return res.isNotEmpty ? res.map((c) => Memo.fromMap(c)).toList() : [];
   }
 }

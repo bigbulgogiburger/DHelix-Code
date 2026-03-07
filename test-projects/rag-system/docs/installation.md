@@ -10,7 +10,7 @@ To install and run AcmeDB, ensure your system meets the following requirements:
 
 ## Installation via npm
 
-To install AcmeDB globally on your system, use the following npm command:
+To install AcmeDB globally using npm, run the following command:
 
 ```bash
 npm install -g acmedb
@@ -18,34 +18,26 @@ npm install -g acmedb
 
 ## Configuration File
 
-After installation, the configuration file for AcmeDB is located at:
+After installation, the configuration file can be found at:
 
 ```
 ~/.acmedb/config.yml
 ```
 
-You can modify this file to adjust settings such as database paths, cache sizes, and more.
+This file contains default settings that you can customize according to your needs.
 
 ## First-Time Setup
 
-1. **Initialize the Database**: Run the following command to set up the initial database structure:
-   ```bash
-   acmedb init
-   ```
-
-2. **Configure Settings**: Edit the `config.yml` file to suit your environment and performance needs.
-
-3. **Create Admin User**: Set up an admin user for managing your database:
-   ```bash
-   acmedb create-user --admin
-   ```
+1. Open the configuration file located at `~/.acmedb/config.yml`.
+2. Set your desired configurations such as `port`, `data_directory`, and `log_level`.
+3. Save the changes and close the file.
 
 ## Starting the Server
 
-To start the AcmeDB server, execute the following command:
+To start the AcmeDB server, use the following command:
 
 ```bash
 acmedb start --port 5432
 ```
 
-This will start the server on port 5432, ready to accept connections.
+This will start the server on port 5432. You can change the port number by modifying the command accordingly.
