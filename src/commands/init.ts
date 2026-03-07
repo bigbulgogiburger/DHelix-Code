@@ -1,6 +1,7 @@
 import { mkdir, writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { APP_NAME } from "../constants.js";
+import { type SlashCommand } from "./registry.js";
 
 /** Project initialization directory name */
 const PROJECT_DIR = `.${APP_NAME}`;
@@ -167,3 +168,17 @@ export async function initProject(cwd: string): Promise<InitResult> {
 
   return { created: true, path: projectPath };
 }
+
+/** Slash command wrapper for /init */
+export const initCommand: SlashCommand = {
+  name: "init",
+  description: "Initialize project (creates .dbcode/ directory with DBCODE.md)",
+  usage: "/init",
+  execute: async (_args, context) => {
+    const result = await initProject(context.workingDirectory);
+    if (result.created) {
+      return { output: `Project initialized at ${result.path}`, success: true, refreshInstructions: true };
+    }
+    return { output: `Already initialized at ${result.path}`, success: true };
+  },
+};

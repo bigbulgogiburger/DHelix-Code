@@ -167,11 +167,24 @@ export async function runAgentLoop(
               config.events.emit("llm:text-delta", { text });
             },
           });
+
+          if (accumulated.partial) {
+            // Stream disconnected mid-response but we recovered partial content.
+            // If we have text or tool calls, use them (better than losing everything).
+            // If we have nothing meaningful, throw to trigger retry.
+            if (accumulated.text.length === 0 && accumulated.toolCalls.length === 0) {
+              throw new LLMError("Stream disconnected with no recoverable content");
+            }
+            config.events.emit("llm:error", {
+              error: new Error("Stream disconnected mid-response; using partial content"),
+            });
+          }
+
           response = {
             content: accumulated.text,
             toolCalls: accumulated.toolCalls,
             usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-            finishReason: "stop",
+            finishReason: accumulated.partial ? "length" : "stop",
           };
         } else {
           response = await config.client.chat(chatRequest);
@@ -181,11 +194,12 @@ export async function runAgentLoop(
         lastError = error;
         const errorClass = classifyLLMError(error);
 
-        if (errorClass === "permanent") {
+        // Overload: client already retried with Retry-After — don't retry again
+        if (errorClass === "overload" || errorClass === "permanent") {
           throw error;
         }
 
-        // Retry with exponential backoff for transient/overload errors
+        // Transient only: retry with backoff
         if (attempt < maxRetries) {
           const delay = 1000 * Math.pow(2, attempt);
           config.events.emit("llm:error", {

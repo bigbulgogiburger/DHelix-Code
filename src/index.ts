@@ -98,6 +98,7 @@ program
         { diffCommand },
         { doctorCommand },
         { statsCommand },
+        { statusCommand },
         { contextCommand },
         { copyCommand },
         { exportCommand },
@@ -106,6 +107,9 @@ program
         { renameCommand },
         { costCommand },
         { updateCommand },
+        { initCommand },
+        { planCommand },
+        { undoCommand },
       ] = await Promise.all([
         import("./config/loader.js"),
         import("./llm/client.js"),
@@ -141,6 +145,7 @@ program
         import("./commands/diff.js"),
         import("./commands/doctor.js"),
         import("./commands/stats.js"),
+        import("./commands/status.js"),
         import("./commands/context.js"),
         import("./commands/copy.js"),
         import("./commands/export.js"),
@@ -149,6 +154,9 @@ program
         import("./commands/rename.js"),
         import("./commands/cost.js"),
         import("./commands/update.js"),
+        import("./commands/init.js"),
+        import("./commands/plan.js"),
+        import("./commands/undo.js"),
       ]);
 
       // Only pass explicitly-set CLI options as overrides
@@ -236,6 +244,7 @@ program
         diffCommand,
         doctorCommand,
         statsCommand,
+        statusCommand,
         contextCommand,
         copyCommand,
         exportCommand,
@@ -244,6 +253,9 @@ program
         renameCommand,
         costCommand,
         updateCommand,
+        initCommand,
+        planCommand,
+        undoCommand,
       ];
       for (const cmd of commands) {
         commandRegistry.register(cmd);

@@ -1,9 +1,119 @@
-import { mkdir, readFile, writeFile, readdir, stat } from "node:fs/promises";
+import { mkdir, readFile, writeFile, readdir, stat, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { randomUUID } from "node:crypto";
 import { type ChatMessage } from "../llm/provider.js";
 import { SESSIONS_DIR } from "../constants.js";
 import { BaseError } from "../utils/error.js";
+
+/** Default lock acquisition timeout (ms) */
+const LOCK_TIMEOUT_MS = 5000;
+
+/** Retry interval for lock acquisition (ms) */
+const LOCK_RETRY_MS = 50;
+
+/** Stale lock threshold — if a lock is older than this, it is considered stale (ms) */
+const STALE_LOCK_MS = 30_000;
+
+/**
+ * Write file content atomically using write-to-temp + rename.
+ * rename() is atomic on the same filesystem on both macOS and Windows.
+ */
+export async function atomicWrite(filePath: string, content: string): Promise<void> {
+  const tmpPath = `${filePath}.tmp.${process.pid}.${Date.now()}`;
+  try {
+    await writeFile(tmpPath, content, "utf-8");
+    await rename(tmpPath, filePath);
+  } catch (err) {
+    // Clean up temp file on failure
+    try {
+      const { unlink } = await import("node:fs/promises");
+      await unlink(tmpPath);
+    } catch {
+      // Ignore cleanup errors
+    }
+    throw err;
+  }
+}
+
+/**
+ * Execute a function while holding a directory-based file lock.
+ * Uses mkdir() which is atomic on all platforms.
+ * Includes stale lock detection for crash recovery.
+ */
+export async function withFileLock<T>(
+  lockDir: string,
+  fn: () => Promise<T>,
+  timeoutMs: number = LOCK_TIMEOUT_MS,
+): Promise<T> {
+  const deadline = Date.now() + timeoutMs;
+  const pidFile = join(lockDir, "pid");
+
+  while (true) {
+    try {
+      await mkdir(lockDir, { recursive: false });
+      // Write PID for stale lock detection
+      try {
+        await writeFile(pidFile, `${process.pid}\n${Date.now()}`, "utf-8");
+      } catch {
+        // Non-critical — lock is still held
+      }
+      try {
+        return await fn();
+      } finally {
+        try {
+          const { rm } = await import("node:fs/promises");
+          await rm(lockDir, { recursive: true, force: true });
+        } catch {
+          // Ignore cleanup errors
+        }
+      }
+    } catch (err: unknown) {
+      const error = err as NodeJS.ErrnoException;
+      if (error.code !== "EEXIST") {
+        throw err;
+      }
+
+      // Check for stale lock
+      try {
+        const pidContent = await readFile(pidFile, "utf-8");
+        const [, timestampStr] = pidContent.split("\n");
+        const lockTime = parseInt(timestampStr, 10);
+        if (!isNaN(lockTime) && Date.now() - lockTime > STALE_LOCK_MS) {
+          // Stale lock — remove and retry immediately
+          try {
+            const { rm } = await import("node:fs/promises");
+            await rm(lockDir, { recursive: true, force: true });
+          } catch {
+            // Another process may have cleaned it up
+          }
+          continue;
+        }
+      } catch {
+        // Can't read PID file — check directory age via stat
+        try {
+          const lockStat = await stat(lockDir);
+          if (Date.now() - lockStat.mtimeMs > STALE_LOCK_MS) {
+            try {
+              const { rm } = await import("node:fs/promises");
+              await rm(lockDir, { recursive: true, force: true });
+            } catch {
+              // Another process may have cleaned it up
+            }
+            continue;
+          }
+        } catch {
+          // Lock dir gone — retry
+          continue;
+        }
+      }
+
+      if (Date.now() > deadline) {
+        throw new SessionError("Lock acquisition timeout", { lockDir, timeoutMs });
+      }
+      await new Promise((r) => setTimeout(r, LOCK_RETRY_MS));
+    }
+  }
+}
 
 /** Session management error */
 export class SessionError extends BaseError {
@@ -77,6 +187,16 @@ export class SessionManager {
     await mkdir(this.sessionsDir, { recursive: true });
   }
 
+  /** Get the lock directory for a session */
+  private sessionLockDir(sessionId: string): string {
+    return join(this.sessionDir(sessionId), ".lock");
+  }
+
+  /** Get the lock directory for the index file */
+  private indexLockDir(): string {
+    return join(this.sessionsDir, ".index.lock");
+  }
+
   /** Get the directory path for a session */
   private sessionDir(sessionId: string): string {
     return join(this.sessionsDir, sessionId);
@@ -121,7 +241,7 @@ export class SessionManager {
 
     const dir = this.sessionDir(id);
     await mkdir(dir, { recursive: true });
-    await writeFile(this.metadataPath(id), JSON.stringify(metadata, null, 2), "utf-8");
+    await atomicWrite(this.metadataPath(id), JSON.stringify(metadata, null, 2));
     await writeFile(this.transcriptPath(id), "", "utf-8");
 
     await this.updateIndex(id, metadata);
@@ -143,18 +263,18 @@ export class SessionManager {
     };
 
     const line = JSON.stringify(jsonlLine) + "\n";
-    const transcriptFile = this.transcriptPath(sessionId);
 
-    // Append to transcript
-    const existing = await this.safeReadFile(transcriptFile);
-    await writeFile(transcriptFile, existing + line, "utf-8");
+    await withFileLock(this.sessionLockDir(sessionId), async () => {
+      const transcriptFile = this.transcriptPath(sessionId);
+      const existing = await this.safeReadFile(transcriptFile);
+      await atomicWrite(transcriptFile, existing + line);
 
-    // Update metadata
-    await this.updateMetadata(sessionId, (meta) => ({
-      ...meta,
-      lastUsedAt: new Date().toISOString(),
-      messageCount: meta.messageCount + 1,
-    }));
+      await this.updateMetadataUnsafe(sessionId, (meta) => ({
+        ...meta,
+        lastUsedAt: new Date().toISOString(),
+        messageCount: meta.messageCount + 1,
+      }));
+    });
   }
 
   /**
@@ -174,15 +294,17 @@ export class SessionManager {
       return JSON.stringify(jsonlLine);
     });
 
-    const transcriptFile = this.transcriptPath(sessionId);
-    const existing = await this.safeReadFile(transcriptFile);
-    await writeFile(transcriptFile, existing + lines.join("\n") + "\n", "utf-8");
+    await withFileLock(this.sessionLockDir(sessionId), async () => {
+      const transcriptFile = this.transcriptPath(sessionId);
+      const existing = await this.safeReadFile(transcriptFile);
+      await atomicWrite(transcriptFile, existing + lines.join("\n") + "\n");
 
-    await this.updateMetadata(sessionId, (meta) => ({
-      ...meta,
-      lastUsedAt: new Date().toISOString(),
-      messageCount: meta.messageCount + messages.length,
-    }));
+      await this.updateMetadataUnsafe(sessionId, (meta) => ({
+        ...meta,
+        lastUsedAt: new Date().toISOString(),
+        messageCount: meta.messageCount + messages.length,
+      }));
+    });
   }
 
   /**
@@ -262,10 +384,12 @@ export class SessionManager {
    * Rename a session.
    */
   async renameSession(sessionId: string, name: string): Promise<void> {
-    await this.updateMetadata(sessionId, (meta) => ({
-      ...meta,
-      name,
-    }));
+    await withFileLock(this.sessionLockDir(sessionId), async () => {
+      await this.updateMetadataUnsafe(sessionId, (meta) => ({
+        ...meta,
+        name,
+      }));
+    });
   }
 
   /**
@@ -303,8 +427,8 @@ export class SessionManager {
 
     const dir = this.sessionDir(id);
     await mkdir(dir, { recursive: true });
-    await writeFile(this.metadataPath(id), JSON.stringify(metadata, null, 2), "utf-8");
-    await writeFile(this.transcriptPath(id), sourceTranscript, "utf-8");
+    await atomicWrite(this.metadataPath(id), JSON.stringify(metadata, null, 2));
+    await atomicWrite(this.transcriptPath(id), sourceTranscript);
     await this.updateIndex(id, metadata);
 
     return id;
@@ -346,42 +470,49 @@ export class SessionManager {
     }
   }
 
-  /** Update session metadata using an updater function */
-  private async updateMetadata(
+  /**
+   * Update session metadata using an updater function (without acquiring session lock).
+   * Must be called from within a session lock context.
+   */
+  private async updateMetadataUnsafe(
     sessionId: string,
     updater: (meta: SessionMetadata) => SessionMetadata,
   ): Promise<void> {
     const meta = await this.getMetadata(sessionId);
     const updated = updater(meta);
-    await writeFile(this.metadataPath(sessionId), JSON.stringify(updated, null, 2), "utf-8");
+    await atomicWrite(this.metadataPath(sessionId), JSON.stringify(updated, null, 2));
     await this.updateIndex(sessionId, updated);
   }
 
-  /** Update the session index with an entry */
+  /** Update the session index with an entry (acquires index lock) */
   private async updateIndex(sessionId: string, metadata: SessionMetadata): Promise<void> {
-    const entries = await this.loadIndex();
-    const entry: SessionIndexEntry = {
-      id: sessionId,
-      name: metadata.name,
-      createdAt: metadata.createdAt,
-      lastUsedAt: metadata.lastUsedAt,
-      messageCount: metadata.messageCount,
-    };
+    await withFileLock(this.indexLockDir(), async () => {
+      const entries = await this.loadIndex();
+      const entry: SessionIndexEntry = {
+        id: sessionId,
+        name: metadata.name,
+        createdAt: metadata.createdAt,
+        lastUsedAt: metadata.lastUsedAt,
+        messageCount: metadata.messageCount,
+      };
 
-    const existingIdx = entries.findIndex((e) => e.id === sessionId);
-    const updated =
-      existingIdx >= 0
-        ? entries.map((e, i) => (i === existingIdx ? entry : e))
-        : [...entries, entry];
+      const existingIdx = entries.findIndex((e) => e.id === sessionId);
+      const updated =
+        existingIdx >= 0
+          ? entries.map((e, i) => (i === existingIdx ? entry : e))
+          : [...entries, entry];
 
-    await writeFile(this.indexPath(), JSON.stringify(updated, null, 2), "utf-8");
+      await atomicWrite(this.indexPath(), JSON.stringify(updated, null, 2));
+    });
   }
 
-  /** Remove a session from the index */
+  /** Remove a session from the index (acquires index lock) */
   private async removeFromIndex(sessionId: string): Promise<void> {
-    const entries = await this.loadIndex();
-    const filtered = entries.filter((e) => e.id !== sessionId);
-    await writeFile(this.indexPath(), JSON.stringify(filtered, null, 2), "utf-8");
+    await withFileLock(this.indexLockDir(), async () => {
+      const entries = await this.loadIndex();
+      const filtered = entries.filter((e) => e.id !== sessionId);
+      await atomicWrite(this.indexPath(), JSON.stringify(filtered, null, 2));
+    });
   }
 
   /** Load the session index */

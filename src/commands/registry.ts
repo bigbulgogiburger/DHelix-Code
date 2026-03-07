@@ -33,6 +33,8 @@ export interface CommandResult {
   readonly shouldExit?: boolean;
   /** Updated model name (if changed) */
   readonly newModel?: string;
+  /** If true, should reload project instructions from disk */
+  readonly refreshInstructions?: boolean;
 }
 
 /** Definition of a slash command */

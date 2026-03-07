@@ -12,11 +12,20 @@ import { countTokens } from "./token-counter.js";
 import { LLMError } from "../utils/error.js";
 import { getModelCapabilities, type ModelCapabilities } from "./model-capabilities.js";
 
-/** Maximum number of retries for transient errors */
-const MAX_RETRIES = 3;
+/** Maximum number of retries for transient errors (500, 502, 503) */
+const MAX_RETRIES_TRANSIENT = 3;
 
-/** Base delay between retries in ms */
+/** Maximum number of retries for rate limit errors (429) */
+const MAX_RETRIES_RATE_LIMIT = 5;
+
+/** Base delay between retries for transient errors in ms */
 const BASE_RETRY_DELAY_MS = 1_000;
+
+/** Base delay between retries for rate limit errors in ms */
+const BASE_RATE_LIMIT_DELAY_MS = 5_000;
+
+/** Maximum delay cap for rate limit backoff in ms (60s) */
+const MAX_RATE_LIMIT_DELAY_MS = 60_000;
 
 /**
  * Convert our ChatMessage to OpenAI format, adapting for model capabilities.
@@ -95,6 +104,13 @@ function isRetryableError(error: unknown): boolean {
   return false;
 }
 
+/** Check if an error is a rate limit error */
+function isRateLimitError(error: unknown): boolean {
+  if (error instanceof OpenAI.RateLimitError) return true;
+  if (error instanceof OpenAI.APIError && error.status === 429) return true;
+  return false;
+}
+
 /** Get retry delay in ms, respecting Retry-After header if available */
 function getRetryDelay(error: unknown, attempt: number): number {
   // Check for Retry-After header on rate limit errors
@@ -107,7 +123,11 @@ function getRetryDelay(error: unknown, attempt: number): number {
       }
     }
   }
-  // Exponential backoff: 1s, 2s, 4s
+  // Rate limit: longer backoff (5s, 10s, 20s, 40s, 60s capped)
+  if (isRateLimitError(error)) {
+    return Math.min(BASE_RATE_LIMIT_DELAY_MS * Math.pow(2, attempt), MAX_RATE_LIMIT_DELAY_MS);
+  }
+  // Transient: standard backoff (1s, 2s, 4s)
   return BASE_RETRY_DELAY_MS * Math.pow(2, attempt);
 }
 
@@ -128,9 +148,10 @@ function classifyError(error: unknown, operation: string, model: string): LLMErr
     );
   }
   if (error instanceof OpenAI.RateLimitError) {
+    const retryAfterMs = getRetryDelay(error, 0);
     return new LLMError(
       "Rate limit exceeded. Please wait before retrying.",
-      { model, cause: error.message, status: 429 },
+      { model, cause: error.message, status: 429, retryAfterMs },
     );
   }
   if (error instanceof OpenAI.APIConnectionTimeoutError) {
@@ -191,15 +212,19 @@ export class OpenAICompatibleClient implements LLMProvider {
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
     let lastError: unknown;
+    const maxRetries = MAX_RETRIES_TRANSIENT;
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; ; attempt++) {
       try {
         return await this._chatOnce(request);
       } catch (error) {
         lastError = error;
 
         if (error instanceof LLMError) throw error;
-        if (!isRetryableError(error) || attempt === MAX_RETRIES) break;
+        if (!isRetryableError(error)) break;
+
+        const limit = isRateLimitError(error) ? MAX_RETRIES_RATE_LIMIT : maxRetries;
+        if (attempt >= limit) break;
 
         const delay = getRetryDelay(error, attempt);
         await sleep(delay);
@@ -255,8 +280,9 @@ export class OpenAICompatibleClient implements LLMProvider {
 
   async *stream(request: ChatRequest): AsyncIterable<ChatChunk> {
     let lastError: unknown;
+    const maxRetries = MAX_RETRIES_TRANSIENT;
 
-    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    for (let attempt = 0; ; attempt++) {
       try {
         yield* this._streamOnce(request);
         return;
@@ -264,7 +290,10 @@ export class OpenAICompatibleClient implements LLMProvider {
         lastError = error;
 
         if (error instanceof LLMError) throw error;
-        if (!isRetryableError(error) || attempt === MAX_RETRIES) break;
+        if (!isRetryableError(error)) break;
+
+        const limit = isRateLimitError(error) ? MAX_RETRIES_RATE_LIMIT : maxRetries;
+        if (attempt >= limit) break;
 
         const delay = getRetryDelay(error, attempt);
         await sleep(delay);

@@ -5,6 +5,8 @@ export interface StreamAccumulator {
   readonly text: string;
   readonly toolCalls: readonly ToolCallRequest[];
   readonly isComplete: boolean;
+  /** True when the stream disconnected mid-response and only partial content was recovered */
+  readonly partial?: boolean;
 }
 
 /**
@@ -73,18 +75,28 @@ export async function consumeStream(
 ): Promise<StreamAccumulator> {
   let state = createStreamAccumulator();
 
-  for await (const chunk of stream) {
-    state = accumulateChunk(state, chunk);
+  try {
+    for await (const chunk of stream) {
+      state = accumulateChunk(state, chunk);
 
-    if (chunk.type === "text-delta" && chunk.text && callbacks?.onTextDelta) {
-      callbacks.onTextDelta(chunk.text);
+      if (chunk.type === "text-delta" && chunk.text && callbacks?.onTextDelta) {
+        callbacks.onTextDelta(chunk.text);
+      }
+      if (chunk.type === "tool-call-delta" && chunk.toolCall && callbacks?.onToolCallDelta) {
+        callbacks.onToolCallDelta(chunk.toolCall);
+      }
+      if (chunk.type === "done" && callbacks?.onComplete) {
+        callbacks.onComplete(state);
+      }
     }
-    if (chunk.type === "tool-call-delta" && chunk.toolCall && callbacks?.onToolCallDelta) {
-      callbacks.onToolCallDelta(chunk.toolCall);
+  } catch (error) {
+    // If we accumulated meaningful content before the error,
+    // return what we have rather than losing everything
+    if (state.text.length > 0 || state.toolCalls.length > 0) {
+      return { ...state, partial: true };
     }
-    if (chunk.type === "done" && callbacks?.onComplete) {
-      callbacks.onComplete(state);
-    }
+    // No content accumulated — rethrow so client retry kicks in
+    throw error;
   }
 
   return state;

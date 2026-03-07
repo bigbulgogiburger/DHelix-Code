@@ -230,6 +230,7 @@ export class ContextManager {
     focusTopic?: string,
   ): string {
     const parts: string[] = [];
+    const modifiedFiles = new Set<string>();
 
     if (focusTopic) {
       parts.push(`Focus: ${focusTopic}`);
@@ -243,17 +244,36 @@ export class ContextManager {
       const toolMsgs = turn.messages.filter((m) => m.role === "tool");
 
       if (userMsg) {
-        const userSummary = this.truncateText(userMsg.content, 100);
+        const userSummary = this.truncateText(userMsg.content, 200);
         parts.push(`- User: ${userSummary}`);
       }
 
       if (assistantMsg) {
-        const assistantSummary = this.truncateText(assistantMsg.content, 100);
+        const assistantSummary = this.truncateText(assistantMsg.content, 300);
         parts.push(`  Assistant: ${assistantSummary}`);
       }
 
       if (toolMsgs.length > 0) {
         parts.push(`  (${toolMsgs.length} tool calls executed)`);
+        // Extract file paths from tool messages
+        for (const tm of toolMsgs) {
+          const fileMatches = tm.content.match(/(?:file_path|path)['":\s]+([^\s'"}\]]+)/g);
+          if (fileMatches) {
+            for (const match of fileMatches) {
+              const path = match.replace(/.*['":\s]+/, "").trim();
+              if (path && path.includes("/")) modifiedFiles.add(path);
+            }
+          }
+        }
+      }
+    }
+
+    // Add key files section
+    if (modifiedFiles.size > 0) {
+      parts.push("");
+      parts.push("Key files touched in summarized turns:");
+      for (const f of [...modifiedFiles].slice(0, 20)) {
+        parts.push(`  - ${f}`);
       }
     }
 
@@ -262,23 +282,30 @@ export class ContextManager {
 
   /**
    * Truncate large tool results to reduce token count.
-   * Tool results over 500 tokens are truncated with a note.
+   * Error results get 1000 token limit; others get 500.
+   * Uses head+tail truncation to preserve both beginning and end context.
    */
   private truncateToolResults(messages: readonly ChatMessage[]): readonly ChatMessage[] {
-    const maxToolTokens = 500;
-
     return messages.map((msg) => {
       if (msg.role !== "tool") return msg;
 
       const tokens = countTokens(msg.content);
+      const isError = msg.content.startsWith("Error:") || msg.content.includes("STDERR:");
+      const maxToolTokens = isError ? 1000 : 500;
+
       if (tokens <= maxToolTokens) return msg;
 
-      // Truncate to approximately maxToolTokens worth of chars
+      // Head + tail truncation: keep beginning and end for better context
       const approxChars = maxToolTokens * 4;
-      const truncated = msg.content.slice(0, approxChars);
+      const headChars = Math.floor(approxChars * 0.6);
+      const tailChars = Math.floor(approxChars * 0.4);
+      const head = msg.content.slice(0, headChars);
+      const tail = msg.content.slice(-tailChars);
+      const removedTokens = tokens - maxToolTokens;
+
       return {
         ...msg,
-        content: truncated + `\n\n[... truncated ${tokens - maxToolTokens} tokens]`,
+        content: `${head}\n\n[... ${removedTokens} tokens omitted ...]\n\n${tail}`,
       };
     });
   }
