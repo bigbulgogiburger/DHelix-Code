@@ -17,9 +17,9 @@ export type AppEvents = {
   "agent:iteration": { iteration: number };
 
   /** Tool execution started */
-  "tool:start": { name: string; id: string };
+  "tool:start": { name: string; id: string; args?: Record<string, unknown> };
   /** Tool execution completed */
-  "tool:complete": { name: string; id: string; isError: boolean };
+  "tool:complete": { name: string; id: string; isError: boolean; output?: string };
 
   /** Conversation message added */
   "conversation:message": { role: string };

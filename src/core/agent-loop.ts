@@ -136,7 +136,7 @@ export async function runAgentLoop(
     config.events.emit("agent:iteration", { iteration: iterations });
 
     // Apply context compaction if messages exceed token budget
-    const managedMessages = [...contextManager.prepare(messages)];
+    const managedMessages = [...(await contextManager.prepare(messages))];
 
     // Prepare request with tool definitions
     const toolDefs = config.toolRegistry.getDefinitionsForLLM();
@@ -228,7 +228,7 @@ export async function runAgentLoop(
     const results: ToolCallResult[] = [];
 
     for (const call of extractedCalls) {
-      config.events.emit("tool:start", { name: call.name, id: call.id });
+      config.events.emit("tool:start", { name: call.name, id: call.id, args: call.arguments });
 
       // Check permission
       if (config.checkPermission) {
@@ -244,6 +244,7 @@ export async function runAgentLoop(
             name: call.name,
             id: call.id,
             isError: true,
+            output: `Permission denied: ${permission.reason ?? "User rejected"}`,
           });
           continue;
         }
@@ -260,6 +261,7 @@ export async function runAgentLoop(
         name: call.name,
         id: call.id,
         isError: result.isError,
+        output: result.output,
       });
     }
 

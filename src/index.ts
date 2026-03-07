@@ -80,6 +80,7 @@ program
         { globSearchTool },
         { grepSearchTool },
         { askUserTool },
+        { mkdirTool },
         { CommandRegistry },
         { clearCommand },
         { compactCommand },
@@ -122,6 +123,7 @@ program
         import("./tools/definitions/glob-search.js"),
         import("./tools/definitions/grep-search.js"),
         import("./tools/definitions/ask-user.js"),
+        import("./tools/definitions/mkdir.js"),
         import("./commands/registry.js"),
         import("./commands/clear.js"),
         import("./commands/compact.js"),
@@ -183,6 +185,7 @@ program
         globSearchTool,
         grepSearchTool,
         askUserTool,
+        mkdirTool,
       ]);
 
       // Select tool call strategy

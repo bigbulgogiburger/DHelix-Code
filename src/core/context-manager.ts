@@ -1,6 +1,8 @@
 import { type ChatMessage } from "../llm/provider.js";
 import { countTokens, countMessageTokens } from "../llm/token-counter.js";
 import { AGENT_LOOP, TOKEN_DEFAULTS } from "../constants.js";
+import { loadInstructions } from "../instructions/loader.js";
+import { buildSystemPrompt } from "./system-prompt-builder.js";
 
 /** Context window usage statistics */
 export interface ContextUsage {
@@ -20,6 +22,8 @@ export interface ContextManagerConfig {
   readonly preserveRecentTurns?: number;
   /** Reserve ratio for LLM response tokens (0-1) */
   readonly responseReserveRatio?: number;
+  /** Working directory for reloading instructions on compaction */
+  readonly workingDirectory?: string;
 }
 
 /** Result of a compaction operation */
@@ -46,12 +50,14 @@ export class ContextManager {
   private readonly compactionThreshold: number;
   private readonly preserveRecentTurns: number;
   private readonly responseReserveRatio: number;
+  private readonly workingDirectory: string;
 
   constructor(config?: ContextManagerConfig) {
     this.maxContextTokens = config?.maxContextTokens ?? TOKEN_DEFAULTS.maxContextWindow;
     this.compactionThreshold = config?.compactionThreshold ?? AGENT_LOOP.compactionThreshold;
     this.preserveRecentTurns = config?.preserveRecentTurns ?? 5;
     this.responseReserveRatio = config?.responseReserveRatio ?? AGENT_LOOP.responseReserveRatio;
+    this.workingDirectory = config?.workingDirectory ?? process.cwd();
   }
 
   /** Get the effective token budget (accounting for response reserve) */
@@ -85,26 +91,33 @@ export class ContextManager {
    * If usage exceeds the compaction threshold, compacts the middle messages.
    * Returns a new message array (never mutates input).
    */
-  prepare(messages: readonly ChatMessage[]): readonly ChatMessage[] {
+  async prepare(messages: readonly ChatMessage[]): Promise<readonly ChatMessage[]> {
     if (!this.needsCompaction(messages)) {
       return messages;
     }
-    return this.compact(messages).messages;
+    const { messages: compacted } = await this.compact(messages);
+    return compacted;
   }
 
   /**
    * Compact messages by summarizing middle turns.
    * Preserves system prompts and recent turns.
+   * Re-reads DBCODE.md from disk to pick up any changes made during the session.
    * Returns compacted messages and a summary of what was removed.
    */
-  compact(
+  async compact(
     messages: readonly ChatMessage[],
     focusTopic?: string,
-  ): { readonly messages: readonly ChatMessage[]; readonly result: CompactionResult } {
+  ): Promise<{ readonly messages: readonly ChatMessage[]; readonly result: CompactionResult }> {
     const originalTokens = countMessageTokens(messages);
 
+    // Re-read DBCODE.md from disk to pick up changes made during session
+    const freshSystemMessage = await this.reloadSystemPrompt();
+
     // Separate system messages from conversation messages
-    const systemMessages = messages.filter((m) => m.role === "system");
+    const systemMessages = freshSystemMessage
+      ? [freshSystemMessage]
+      : messages.filter((m) => m.role === "system");
     const conversationMessages = messages.filter((m) => m.role !== "system");
 
     // Identify conversation turns (user + assistant + tool results = 1 turn)
@@ -112,7 +125,7 @@ export class ContextManager {
 
     // If few enough turns, just truncate tool results
     if (turns.length <= this.preserveRecentTurns) {
-      const truncated = this.truncateToolResults(messages);
+      const truncated = this.truncateToolResults([...systemMessages, ...conversationMessages]);
       return {
         messages: truncated,
         result: {
@@ -159,11 +172,28 @@ export class ContextManager {
    * Manual compaction with an optional focus topic.
    * Like /compact [focus] — user-triggered targeted summarization.
    */
-  manualCompact(
+  async manualCompact(
     messages: readonly ChatMessage[],
     focusTopic?: string,
-  ): { readonly messages: readonly ChatMessage[]; readonly result: CompactionResult } {
+  ): Promise<{ readonly messages: readonly ChatMessage[]; readonly result: CompactionResult }> {
     return this.compact(messages, focusTopic);
+  }
+
+  /**
+   * Reload instructions from disk and rebuild the system prompt.
+   * Returns a fresh system message, or null if reloading fails.
+   */
+  private async reloadSystemPrompt(): Promise<ChatMessage | null> {
+    try {
+      const freshInstructions = await loadInstructions(this.workingDirectory);
+      const freshPrompt = buildSystemPrompt({
+        projectInstructions: freshInstructions.combined,
+        workingDirectory: this.workingDirectory,
+      });
+      return { role: "system", content: freshPrompt };
+    } catch {
+      return null;
+    }
   }
 
   /**

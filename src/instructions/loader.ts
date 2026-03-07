@@ -1,5 +1,6 @@
 import { readFile, readdir, stat } from "node:fs/promises";
 import { join, dirname } from "node:path";
+import { homedir } from "node:os";
 import { PROJECT_CONFIG_FILE, APP_NAME } from "../constants.js";
 import { parseInstructions } from "./parser.js";
 import { type PathRule, collectMatchingContent } from "./path-matcher.js";
@@ -14,10 +15,16 @@ export class InstructionLoadError extends BaseError {
 
 /** Loaded instruction result */
 export interface LoadedInstructions {
+  /** Global user instructions (from ~/.dbcode/DBCODE.md) */
+  readonly globalInstructions: string;
+  /** Global user rules (from ~/.dbcode/rules/*.md) */
+  readonly globalRules: string;
   /** The project-level instruction content (from DBCODE.md) */
   readonly projectInstructions: string;
   /** Path-conditional rules content */
   readonly pathRules: string;
+  /** Local override instructions (from DBCODE.local.md, gitignored) */
+  readonly localInstructions: string;
   /** The combined instruction text for the system prompt */
   readonly combined: string;
 }
@@ -91,20 +98,32 @@ async function loadPathRules(rulesDir: string): Promise<readonly PathRule[]> {
 }
 
 /**
- * Instruction loader — loads project instructions from DBCODE.md and .dbcode/rules/.
+ * Instruction loader — loads instructions from multiple layers.
  *
- * Loading order:
- * 1. Find project root (search upward for DBCODE.md)
- * 2. Load DBCODE.md content (resolve @import directives)
- * 3. Load .dbcode/rules/*.md path-conditional rules
- * 4. Filter rules by current working directory
- * 5. Combine into final instruction text
+ * Merge order (lowest → highest priority):
+ * 1. Global user instructions (~/.dbcode/DBCODE.md)
+ * 2. Global user rules (~/.dbcode/rules/*.md)
+ * 3. Project instructions (DBCODE.md found by searching upward)
+ * 4. Project path-conditional rules (.dbcode/rules/*.md)
+ * 5. Local override instructions (DBCODE.local.md in project root)
+ *
+ * Layers are joined with '\n\n---\n\n'.
  */
 export async function loadInstructions(workingDirectory: string): Promise<LoadedInstructions> {
-  // Find project root
-  const projectRoot = await findProjectRoot(workingDirectory);
+  const globalDir = join(homedir(), `.${APP_NAME}`);
 
-  // Load project-level instructions (DBCODE.md)
+  // 1. Global user instructions (~/.dbcode/DBCODE.md)
+  const globalConfigPath = join(globalDir, PROJECT_CONFIG_FILE);
+  const globalRaw = await safeReadFile(globalConfigPath);
+  const globalInstructions = globalRaw ? await parseInstructions(globalRaw, globalDir) : "";
+
+  // 2. Global user rules (~/.dbcode/rules/*.md)
+  const globalRulesDir = join(globalDir, "rules");
+  const globalPathRules = await loadPathRules(globalRulesDir);
+  const globalRules = collectMatchingContent(globalPathRules, workingDirectory);
+
+  // 3. Project-level instructions (DBCODE.md)
+  const projectRoot = await findProjectRoot(workingDirectory);
   let projectInstructions = "";
   if (projectRoot) {
     const configPath = join(projectRoot, PROJECT_CONFIG_FILE);
@@ -114,35 +133,44 @@ export async function loadInstructions(workingDirectory: string): Promise<Loaded
     }
   }
 
-  // Load path-conditional rules
+  // 4. Project path-conditional rules
   const configDir = join(workingDirectory, `.${APP_NAME}`);
   const rulesDir = join(configDir, "rules");
   const pathRules = await loadPathRules(rulesDir);
-  const pathRulesContent = collectMatchingContent(pathRules, workingDirectory);
+  let pathRulesContent = collectMatchingContent(pathRules, workingDirectory);
 
-  // Also check project-level rules
-  let projectPathRulesContent = "";
   if (projectRoot) {
     const projectRulesDir = join(projectRoot, `.${APP_NAME}`, "rules");
     const projectRules = await loadPathRules(projectRulesDir);
-    projectPathRulesContent = collectMatchingContent(projectRules, workingDirectory);
+    const projectPathRulesContent = collectMatchingContent(projectRules, workingDirectory);
+    pathRulesContent = [pathRulesContent, projectPathRulesContent].filter(Boolean).join("\n\n");
   }
 
-  // Combine all rules content
-  const allPathRules = [pathRulesContent, projectPathRulesContent].filter(Boolean).join("\n\n");
+  // 5. Local override instructions (DBCODE.local.md)
+  let localInstructions = "";
+  if (projectRoot) {
+    const localPath = join(projectRoot, `${APP_NAME.toUpperCase()}.local.md`);
+    const localRaw = await safeReadFile(localPath);
+    if (localRaw) {
+      localInstructions = await parseInstructions(localRaw, projectRoot);
+    }
+  }
 
-  // Build combined instructions
-  const parts: string[] = [];
-  if (projectInstructions) {
-    parts.push(projectInstructions);
-  }
-  if (allPathRules) {
-    parts.push(allPathRules);
-  }
+  // Build combined instructions in merge order
+  const parts = [
+    globalInstructions,
+    globalRules,
+    projectInstructions,
+    pathRulesContent,
+    localInstructions,
+  ].filter(Boolean);
 
   return {
+    globalInstructions,
+    globalRules,
     projectInstructions,
-    pathRules: allPathRules,
+    pathRules: pathRulesContent,
+    localInstructions,
     combined: parts.join("\n\n---\n\n"),
   };
 }

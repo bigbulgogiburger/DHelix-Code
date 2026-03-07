@@ -46,7 +46,7 @@ describe("ContextManager", () => {
     expect(manager.needsCompaction(messages)).toBe(false);
   });
 
-  it("should return messages unchanged when compaction is not needed", () => {
+  it("should return messages unchanged when compaction is not needed", async () => {
     const manager = new ContextManager({ maxContextTokens: 100_000 });
     const messages: ChatMessage[] = [
       msg("system", "System prompt"),
@@ -54,11 +54,11 @@ describe("ContextManager", () => {
       msg("assistant", "Hi!"),
     ];
 
-    const prepared = manager.prepare(messages);
+    const prepared = await manager.prepare(messages);
     expect(prepared).toEqual(messages);
   });
 
-  it("should compact when over threshold", () => {
+  it("should compact when over threshold", async () => {
     // Use larger content so summary is smaller than original
     const manager = new ContextManager({
       maxContextTokens: 500,
@@ -68,7 +68,7 @@ describe("ContextManager", () => {
 
     const messages: ChatMessage[] = [msg("system", "System prompt"), ...createTurns(10, 200)];
 
-    const { messages: compacted, result } = manager.compact(messages);
+    const { messages: compacted, result } = await manager.compact(messages);
 
     // Should have fewer messages than original
     expect(compacted.length).toBeLessThan(messages.length);
@@ -77,7 +77,7 @@ describe("ContextManager", () => {
     expect(result.summary.length).toBeGreaterThan(0);
   });
 
-  it("should preserve system messages during compaction", () => {
+  it("should preserve system messages during compaction", async () => {
     const manager = new ContextManager({
       maxContextTokens: 100,
       compactionThreshold: 0.5,
@@ -87,14 +87,14 @@ describe("ContextManager", () => {
     const systemMsg = msg("system", "Important system prompt");
     const messages: ChatMessage[] = [systemMsg, ...createTurns(10, 50)];
 
-    const { messages: compacted } = manager.compact(messages);
+    const { messages: compacted } = await manager.compact(messages);
 
-    // System message should be first
+    // System message should be first (reloaded from disk during compaction)
     expect(compacted[0].role).toBe("system");
-    expect(compacted[0].content).toBe("Important system prompt");
+    expect(compacted[0].content.length).toBeGreaterThan(0);
   });
 
-  it("should preserve recent turns during compaction", () => {
+  it("should preserve recent turns during compaction", async () => {
     const manager = new ContextManager({
       maxContextTokens: 100,
       compactionThreshold: 0.5,
@@ -106,7 +106,7 @@ describe("ContextManager", () => {
     const lastAssistantMsg = turns[turns.length - 1]; // Last (assistant)
     const messages: ChatMessage[] = [msg("system", "sys"), ...turns];
 
-    const { messages: compacted } = manager.compact(messages);
+    const { messages: compacted } = await manager.compact(messages);
 
     // Recent messages should be preserved
     const compactedContents = compacted.map((m) => m.content);
@@ -114,7 +114,7 @@ describe("ContextManager", () => {
     expect(compactedContents).toContain(lastAssistantMsg.content);
   });
 
-  it("should add conversation summary as system message", () => {
+  it("should add conversation summary as system message", async () => {
     const manager = new ContextManager({
       maxContextTokens: 100,
       compactionThreshold: 0.5,
@@ -123,7 +123,7 @@ describe("ContextManager", () => {
 
     const messages: ChatMessage[] = [msg("system", "sys"), ...createTurns(10, 50)];
 
-    const { messages: compacted } = manager.compact(messages);
+    const { messages: compacted } = await manager.compact(messages);
 
     // Should have a summary message
     const summaryMsg = compacted.find(
@@ -132,7 +132,7 @@ describe("ContextManager", () => {
     expect(summaryMsg).toBeDefined();
   });
 
-  it("should support focused compaction", () => {
+  it("should support focused compaction", async () => {
     const manager = new ContextManager({
       maxContextTokens: 100,
       compactionThreshold: 0.5,
@@ -141,12 +141,12 @@ describe("ContextManager", () => {
 
     const messages: ChatMessage[] = [msg("system", "sys"), ...createTurns(10, 50)];
 
-    const { result } = manager.manualCompact(messages, "authentication");
+    const { result } = await manager.manualCompact(messages, "authentication");
 
     expect(result.summary).toContain("Focus: authentication");
   });
 
-  it("should truncate large tool results", () => {
+  it("should truncate large tool results", async () => {
     const manager = new ContextManager({
       maxContextTokens: 100,
       compactionThreshold: 0.1,
@@ -161,7 +161,7 @@ describe("ContextManager", () => {
       msg("assistant", "done"),
     ];
 
-    const { messages: compacted } = manager.compact(messages);
+    const { messages: compacted } = await manager.compact(messages);
 
     const toolMsg = compacted.find((m) => m.role === "tool");
     if (toolMsg) {
@@ -170,7 +170,7 @@ describe("ContextManager", () => {
     }
   });
 
-  it("should compact when prepare detects need", () => {
+  it("should compact when prepare detects need", async () => {
     const manager = new ContextManager({
       maxContextTokens: 500,
       compactionThreshold: 0.5,
@@ -178,7 +178,7 @@ describe("ContextManager", () => {
     });
 
     const messages: ChatMessage[] = [msg("system", "sys"), ...createTurns(10, 200)];
-    const prepared = manager.prepare(messages);
+    const prepared = await manager.prepare(messages);
 
     // Should be compacted (fewer messages)
     expect(prepared.length).toBeLessThan(messages.length);

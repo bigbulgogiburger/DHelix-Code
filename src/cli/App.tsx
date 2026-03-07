@@ -9,6 +9,7 @@ import { Logo } from "./components/Logo.js";
 import { ErrorBanner } from "./components/ErrorBanner.js";
 import { ToolCallBlock } from "./components/ToolCallBlock.js";
 import { PermissionPrompt } from "./components/PermissionPrompt.js";
+import { SlashCommandMenu } from "./components/SlashCommandMenu.js";
 import { useConversation } from "./hooks/useConversation.js";
 import { useKeybindings, type Keybinding } from "./hooks/useKeybindings.js";
 import { TaskListView } from "./components/TaskListView.js";
@@ -28,7 +29,7 @@ import { type HookRunner } from "../hooks/runner.js";
 import { type Task } from "../core/task-manager.js";
 import { type SessionManager } from "../core/session-manager.js";
 import { createEventEmitter } from "../utils/events.js";
-import { VERSION } from "../constants.js";
+// VERSION is now used inside Logo component directly
 
 interface AppProps {
   readonly client: LLMProvider;
@@ -50,6 +51,7 @@ interface ToolCallDisplay {
   readonly id: string;
   readonly name: string;
   readonly status: "running" | "complete" | "error" | "denied";
+  readonly args?: Record<string, unknown>;
   readonly output?: string;
 }
 
@@ -110,14 +112,18 @@ export function App({
 
   const events = useMemo(() => createEventEmitter(), []);
 
+  // Track current input value for slash command menu
+  const [inputValue, setInputValue] = useState("");
+  const slashMenuVisible = !isProcessing && !pendingPermission && inputValue.startsWith("/") && !inputValue.includes(" ");
+
   // Wire up event listeners for live tool call display
   useEffect(() => {
-    const onToolStart = ({ name, id }: { name: string; id: string }) => {
-      setToolCalls((prev) => [...prev, { id, name, status: "running" }]);
+    const onToolStart = ({ name, id, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
+      setToolCalls((prev) => [...prev, { id, name, status: "running", args }]);
     };
-    const onToolComplete = ({ id, isError }: { name: string; id: string; isError: boolean }) => {
+    const onToolComplete = ({ id, isError, output }: { name: string; id: string; isError: boolean; output?: string }) => {
       setToolCalls((prev) =>
-        prev.map((tc) => (tc.id === id ? { ...tc, status: isError ? "error" : "complete" } : tc)),
+        prev.map((tc) => (tc.id === id ? { ...tc, status: isError ? "error" : "complete", output } : tc)),
       );
     };
 
@@ -194,7 +200,7 @@ export function App({
 
       // Apply context management if available
       if (contextManager) {
-        messages = [...contextManager.prepare(messages)];
+        messages = [...(await contextManager.prepare(messages))];
       }
 
       try {
@@ -373,15 +379,7 @@ export function App({
       <Static items={["logo"]}>
         {() => (
           <Box key="logo" marginBottom={1}>
-            <Logo />
-            <Box flexDirection="column" justifyContent="center" marginLeft={2}>
-              <Text color="cyan" bold>
-                dbcode
-              </Text>
-              <Text color="gray">
-                v{VERSION} ({activeModel})
-              </Text>
-            </Box>
+            <Logo modelName={activeModel} />
           </Box>
         )}
       </Static>
@@ -389,7 +387,7 @@ export function App({
       <MessageList messages={completedMessages} />
 
       {toolCalls.map((tc) => (
-        <ToolCallBlock key={tc.id} name={tc.name} status={tc.status} output={tc.output} />
+        <ToolCallBlock key={tc.id} name={tc.name} status={tc.status} args={tc.args} output={tc.output} />
       ))}
 
       {isProcessing ? (
@@ -417,8 +415,25 @@ export function App({
 
       {tasks && tasks.length > 0 ? <TaskListView tasks={tasks} title="Tasks" /> : null}
 
+      {slashMenuVisible && commandRegistry ? (
+        <SlashCommandMenu
+          commands={commandRegistry.getAll()}
+          prefix={inputValue}
+          visible={slashMenuVisible}
+          onSelect={(name) => {
+            setInputValue("");
+            void handleSubmit("/" + name);
+          }}
+          onClose={() => setInputValue("")}
+        />
+      ) : null}
+
       <Box marginTop={1}>
-        <UserInput onSubmit={handleSubmit} isDisabled={false} />
+        <UserInput
+          onSubmit={handleSubmit}
+          onChange={setInputValue}
+          isDisabled={slashMenuVisible}
+        />
       </Box>
 
       {messageQueueRef.current.length > 0 ? (
