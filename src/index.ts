@@ -307,11 +307,21 @@ program
         });
       }
 
-      const [{ render }, React, { App }] = await Promise.all([
+      const [{ render }, React, { App }, { printStartupLogo }, { patchInkRendering }] = await Promise.all([
         import("ink"),
         import("react"),
         import("./cli/App.js"),
+        import("./cli/components/Logo.js"),
+        import("./cli/renderer/synchronized-output.js"),
       ]);
+
+      // Print logo to stdout BEFORE Ink render — prevents flickering
+      printStartupLogo(config.llm.model);
+
+      // Patch Ink rendering with DEC Mode 2026 synchronized output
+      // Terminals that support it (Ghostty, iTerm2, WezTerm, VSCode) will
+      // display each frame atomically, eliminating flickering entirely.
+      patchInkRendering();
 
       render(
         React.createElement(App, {

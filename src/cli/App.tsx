@@ -1,9 +1,9 @@
-import { Box, Text, Static } from "ink";
+import { Box, Text } from "ink";
 import { useState, useMemo } from "react";
 import { UserInput } from "./components/UserInput.js";
 import { Spinner } from "./components/Spinner.js";
 import { StatusBar } from "./components/StatusBar.js";
-import { Logo } from "./components/Logo.js";
+// Logo is now printed to stdout before Ink render (see src/index.ts)
 import { ErrorBanner } from "./components/ErrorBanner.js";
 import { PermissionPrompt } from "./components/PermissionPrompt.js";
 import { SlashCommandMenu } from "./components/SlashCommandMenu.js";
@@ -105,14 +105,6 @@ export function App({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Static items={[{ key: "logo" }]}>
-        {() => (
-          <Box marginBottom={1}>
-            <Logo modelName={activeModel} />
-          </Box>
-        )}
-      </Static>
-
       <ActivityFeed completedTurns={completedTurns} currentTurn={liveTurn} />
 
       {isProcessing && !streamingText && !currentTurn?.entries.some((e) => e.type === "tool-start") ? (

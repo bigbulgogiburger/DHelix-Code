@@ -25,15 +25,32 @@ CLI (Ink/React)  →  Core  →  LLM / Tools / Permissions / Hooks  →  Utils
 
 ```
 src/
-├── index.ts              # CLI bootstrap (commander)
+├── index.ts              # CLI bootstrap (commander), logo stdout, Ink render
 ├── constants.ts          # Version, paths, limits
 ├── cli/                  # Layer 1: Terminal UI
-│   ├── App.tsx           # Root Ink component
+│   ├── App.tsx           # Root Ink component (no Logo — printed before render)
 │   ├── components/       # UI components (.tsx)
-│   ├── hooks/            # React hooks (useConversation, useStreaming, etc.)
-│   └── renderer/         # markdown.ts, syntax.ts
+│   │   ├── ActivityFeed  # Progressive Static flushing (anti-flicker)
+│   │   ├── TurnBlock     # Single turn: user msg + assistant + tool calls
+│   │   ├── ToolCallBlock # Tool status with diff preview
+│   │   ├── StreamingMessage # Partial markdown rendering
+│   │   ├── ThinkingBlock # Extended thinking UI (collapsible)
+│   │   ├── StatusBar     # Model, tokens, cost, context %
+│   │   ├── UserInput     # Tab autocomplete, @mentions
+│   │   ├── Logo          # DB brand logo + printStartupLogo()
+│   │   └── ...           # ErrorBanner, PermissionPrompt, SlashCommandMenu, Spinner
+│   ├── hooks/            # React hooks
+│   │   ├── useAgentLoop  # Orchestrates agent loop ↔ React state
+│   │   ├── useConversation # Immutable conversation state management
+│   │   ├── useTextBuffering # 100ms batched text streaming
+│   │   └── ...           # useKeybindings, usePermissionPrompt, useStreaming
+│   └── renderer/         # Terminal rendering
+│       ├── markdown.ts   # Markdown → terminal
+│       ├── tool-display.ts # Tool output formatting, diff display
+│       └── synchronized-output.ts # DEC Mode 2026 atomic frame rendering
 ├── core/                 # Layer 2: Business logic (ZERO UI imports)
-│   ├── agent-loop.ts     # ReAct agentic loop
+│   ├── agent-loop.ts     # ReAct loop with parallel tool execution
+│   ├── activity.ts       # ActivityCollector — turn/entry tracking
 │   ├── conversation.ts   # Immutable conversation state
 │   ├── context-manager.ts
 │   ├── session-manager.ts
@@ -42,33 +59,43 @@ src/
 │   ├── system-prompt-builder.ts
 │   └── task-manager.ts
 ├── llm/                  # Layer 3: LLM client
-│   ├── provider.ts       # LLMProvider interface
+│   ├── provider.ts       # LLMProvider interface + ThinkingConfig
 │   ├── client.ts         # OpenAI SDK wrapper (baseURL configurable)
-│   ├── streaming.ts      # SSE stream consumer + chunk assembly
-│   ├── token-counter.ts  # js-tiktoken (accurate) + tokenx (realtime)
+│   ├── streaming.ts      # SSE stream consumer + backpressure (1MB limit)
+│   ├── token-counter.ts  # js-tiktoken + LRU cache (100 entries)
 │   ├── model-router.ts   # Hybrid mode routing
+│   ├── model-capabilities.ts # Per-model context limits
 │   ├── tool-call-strategy.ts
-│   └── strategies/       # native-function-calling.ts, text-parsing.ts
+│   ├── strategies/       # native-function-calling.ts, text-parsing.ts
+│   └── providers/        # anthropic.ts (Extended Thinking support)
 ├── tools/                # Layer 4: Tool system
 │   ├── registry.ts       # Tool registration, lazy loading
 │   ├── types.ts          # ToolDefinition, ToolResult, PermissionLevel
-│   ├── executor.ts       # Timeout, AbortController wrapper
+│   ├── executor.ts       # Timeout, AbortController, BackgroundProcessManager
 │   ├── validation.ts     # Zod → JSON Schema conversion
-│   └── definitions/      # file-read/write/edit, bash-exec, glob, grep, ask-user
-├── permissions/          # Layer 5: Permission system
+│   └── definitions/      # 12 built-in tools (see Tools section)
+├── commands/             # Slash commands (/clear, /model, /help, /undo, etc.)
+│   ├── registry.ts       # Command registration and dispatch
+│   └── *.ts              # 27 commands
+├── instructions/         # DBCODE.md / CLAUDE.md loader
+├── permissions/          # Permission system
 │   ├── manager.ts        # Check + approve/deny
 │   ├── rules.ts          # Glob pattern matching
 │   ├── modes.ts          # default/acceptEdits/plan/dontAsk/bypassPermissions
 │   └── session-store.ts  # Session approval cache
-├── guardrails/           # Layer 6: Security
-│   ├── input-filter.ts, output-filter.ts, secret-scanner.ts
-│   ├── rate-limiter.ts, token-budget.ts, audit-logger.ts
-│   └── content-policy.ts
-├── sandbox/              # OS-level: macOS Seatbelt, Windows AppContainer
+├── guardrails/           # Security (input/output filters, secret scanner)
+├── sandbox/              # OS-level: macOS Seatbelt (sandbox-exec profiles)
+├── hooks/                # Pre/post tool-use hooks (loader + runner)
+├── subagents/            # Agent spawning with worktree isolation
 ├── auth/                 # Token-based auth (Bearer/API-Key/Custom)
 ├── config/               # 5-level hierarchical config (Zod schema)
-├── utils/                # logger(pino), events(mitt), error, path, platform
-└── [future: hooks/, skills/, mcp/, tasks/, plugins/, telemetry/, subagents/, mentions/, commands/]
+├── mcp/                  # Model Context Protocol integration
+├── skills/               # Skill system
+├── telemetry/            # Usage telemetry
+├── indexing/             # Codebase indexing
+├── mentions/             # @mention resolution
+├── types/                # Shared type definitions
+└── utils/                # logger(pino), events(mitt), error, path, platform
 ```
 
 ## Key Interfaces
@@ -100,6 +127,61 @@ interface ToolCallStrategy {
 }
 ```
 
+## Tools (12 built-in)
+
+| Tool          | Permission | Description                                             |
+| ------------- | ---------- | ------------------------------------------------------- |
+| file_read     | safe       | Read with line numbers, offset/limit, image/PDF support |
+| file_write    | confirm    | Create/overwrite (must read first if exists)            |
+| file_edit     | confirm    | Search/Replace with uniqueness validation, diff preview |
+| bash_exec     | confirm    | Shell execution with timeout, background support        |
+| glob_search   | safe       | File pattern matching, sorted by mtime                  |
+| grep_search   | safe       | Regex content search (ripgrep wrapper)                  |
+| list_dir      | safe       | Directory listing with metadata                         |
+| web_fetch     | confirm    | HTTP fetch with content extraction                      |
+| web_search    | confirm    | Brave Search + DuckDuckGo fallback                      |
+| notebook_edit | confirm    | Jupyter notebook cell editing                           |
+| mkdir         | confirm    | Create directories recursively                          |
+| ask_user      | safe       | Ask user questions with choices                         |
+
+## Rendering Architecture (Anti-Flicker)
+
+Logo is printed to stdout BEFORE Ink's `render()` call — it's never part of the dynamic area.
+
+**Progressive Static Flushing** (ActivityFeed):
+- Completed entries (finished tool calls, complete text) are immediately moved to `<Static>`
+- Only in-progress entries (running tools, streaming text) stay in the dynamic area
+- This keeps the dynamic area small regardless of conversation length
+
+**DEC Mode 2026** (synchronized-output.ts):
+- Wraps Ink render cycles with BEGIN/END markers for atomic frame display
+- Supported by Ghostty, iTerm2, WezTerm, VSCode terminal, kitty, tmux 3.4+
+- Unsupported terminals safely ignore the escape sequences
+
+**Timing**: Text buffer 100ms, spinner animation 500ms
+
+## Multi-Turn Message Pairing
+
+Agent loop results must be stored with proper assistant(toolCalls) → tool pairing:
+```
+assistant(toolCalls=[tc1,tc2]) → tool(tc1 result) → tool(tc2 result) → assistant("done")
+```
+Never store tool messages without a preceding assistant message containing matching `toolCalls`.
+The `useAgentLoop` hook extracts new messages via `result.messages.slice(initialMessageCount)` and saves them in order.
+
+## Agent Loop (ReAct pattern)
+
+```
+User Input → Context Prepare → Input Filter → LLM Stream → Output Filter
+  → Extract Tool Calls → (none? → done) → Permission Check → Execute
+  → Append Results → Audit Log → Loop Back
+```
+
+- maxIterations: 50 (infinite loop protection)
+- Tool timeout: bash 120s, file ops 30s
+- Auto-compaction at 95% context usage
+- Parallel tool execution: read-only tools always parallel, file writes conflict on same path
+
 ## Coding Conventions
 
 - Named exports only (no default exports)
@@ -123,30 +205,6 @@ interface ToolCallStrategy {
 - target: ES2022, module: ESNext, moduleResolution: bundler
 - jsx: react-jsx, jsxImportSource: ink
 - strict: true, noImplicitAny: true, noUnusedLocals: true
-
-## P0 Tools (MVP required)
-
-| Tool        | Permission | Description                                             |
-| ----------- | ---------- | ------------------------------------------------------- |
-| file_read   | safe       | Read with line numbers, offset/limit, image/PDF support |
-| file_write  | confirm    | Create/overwrite (must read first if exists)            |
-| file_edit   | confirm    | Search/Replace with uniqueness validation               |
-| bash_exec   | confirm    | Shell execution with timeout, background support        |
-| glob_search | safe       | File pattern matching, sorted by mtime                  |
-| grep_search | safe       | Regex content search (ripgrep wrapper)                  |
-| ask_user    | safe       | Ask user questions with choices                         |
-
-## Agent Loop (ReAct pattern)
-
-```
-User Input → Context Prepare → Input Filter → LLM Stream → Output Filter
-  → Extract Tool Calls → (none? → done) → Permission Check → Execute
-  → Append Results → Audit Log → Loop Back
-```
-
-- maxIterations: 50 (infinite loop protection)
-- Tool timeout: bash 120s, file ops 30s
-- Auto-compaction at 95% context usage
 
 ## Commit Style
 

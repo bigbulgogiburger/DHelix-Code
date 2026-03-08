@@ -24,9 +24,10 @@ function useSpinner(active: boolean): string {
 
   useEffect(() => {
     if (!active) return;
+    // 500ms interval to reduce re-render frequency (was 200ms)
     const timer = setInterval(() => {
       setFrame((prev) => (prev + 1) % SPINNER_FRAMES.length);
-    }, TOOL_SPINNER_INTERVAL_MS);
+    }, 500);
     return () => clearInterval(timer);
   }, [active]);
 

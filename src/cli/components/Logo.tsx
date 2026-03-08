@@ -1,4 +1,5 @@
 import { Box, Text } from "ink";
+import chalk from "chalk";
 import { VERSION, APP_NAME } from "../../constants.js";
 
 interface Segment {
@@ -59,4 +60,35 @@ export function Logo({
       <Text dimColor>AI Coding Assistant</Text>
     </Box>
   );
+}
+
+/**
+ * Print the startup logo directly to stdout BEFORE Ink render starts.
+ * This prevents flickering since the logo won't be part of Ink's dynamic area.
+ */
+export function printStartupLogo(modelName?: string, version: string = VERSION): void {
+  // Render each row of DB_LOGO using chalk
+  for (const segments of DB_LOGO) {
+    let line = "";
+    for (const seg of segments) {
+      let styled = seg.text;
+      if (seg.color && seg.bgColor) {
+        styled = chalk.hex(seg.color).bgHex(seg.bgColor)(seg.text);
+      } else if (seg.color) {
+        styled = chalk.hex(seg.color)(seg.text);
+      } else if (seg.bgColor) {
+        styled = chalk.bgHex(seg.bgColor)(seg.text);
+      }
+      line += styled;
+    }
+    process.stdout.write(line + "\n");
+  }
+
+  // Version line
+  const versionLine = chalk.bold.cyan(`${APP_NAME} v${version}`) +
+    (modelName ? " " + chalk.gray(`Model: ${modelName}`) : "");
+  process.stdout.write("\n" + versionLine + "\n");
+
+  // Subtitle
+  process.stdout.write(chalk.gray("AI Coding Assistant") + "\n\n");
 }
