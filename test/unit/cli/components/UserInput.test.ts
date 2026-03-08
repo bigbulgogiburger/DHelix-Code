@@ -401,13 +401,12 @@ describe("UserInput", () => {
   });
 
   describe("multiline input", () => {
-    it("should insert newline on Shift+Enter", () => {
+    it("should submit on Shift+Enter (IME compatibility — Enter always submits)", () => {
       press("a");
       press("b");
       press("", { return: true, shift: true });
-      expect(getValue()).toBe("ab\n");
-      expect(getCursor()).toBe(3);
-      expect(onSubmit).not.toHaveBeenCalled();
+      // Enter always submits regardless of shift state (Korean IME sets shift=true)
+      expect(onSubmit).toHaveBeenCalledWith("ab");
     });
 
     it("should insert newline on Ctrl+J", () => {
@@ -418,19 +417,19 @@ describe("UserInput", () => {
       expect(getCursor()).toBe(3);
     });
 
-    it("should insert newline at cursor position", () => {
+    it("should insert newline at cursor position with Ctrl+J", () => {
       press("a");
       press("b");
       press("", { leftArrow: true }); // cursor at 1
-      press("", { return: true, shift: true }); // newline between a and b
+      press("j", { ctrl: true }); // newline between a and b
       expect(getValue()).toBe("a\nb");
       expect(getCursor()).toBe(2);
     });
 
-    it("should submit multiline input with Enter (no shift)", () => {
+    it("should submit multiline input with Enter", () => {
       press("l");
       press("1");
-      press("", { return: true, shift: true }); // newline
+      press("j", { ctrl: true }); // newline via Ctrl+J
       press("l");
       press("2");
       press("", { return: true }); // submit

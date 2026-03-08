@@ -47,11 +47,10 @@ export function UserInput({
     (input, key) => {
       if (isDisabled) return;
 
-      // Enter handling: Enter submits, Shift+Enter inserts newline.
-      // Ink's parseKeypress maps \r → name='return' and \n → name='enter'.
-      // Most terminals send \r in raw mode, but some may send \n.
-      // Korean/CJK IME may send Enter differently after character composition.
-      // We check multiple conditions to catch all terminal/IME variations.
+      // Enter handling: Enter ALWAYS submits.
+      // Korean/CJK IME on macOS sets shift=true during character composition,
+      // and this leaks into the Enter key event. So we cannot use key.shift
+      // to distinguish Enter vs Shift+Enter. Use Ctrl+J for newlines instead.
       const isEnter =
         key.return ||
         input === "\n" ||
@@ -59,15 +58,7 @@ export function UserInput({
         input === "\r\n" ||
         (input.length === 1 && (input.charCodeAt(0) === 13 || input.charCodeAt(0) === 10));
       if (isEnter) {
-        // Shift+Enter → newline (only works in terminals that send distinct
-        // escape sequences for Shift+Enter, e.g. Kitty, WezTerm).
-        // For other terminals, use Ctrl+J as the newline shortcut.
-        if (key.shift) {
-          const next = value.slice(0, cursorOffset) + "\n" + value.slice(cursorOffset);
-          updateValue(next, cursorOffset + 1);
-        } else {
-          handleSubmit();
-        }
+        handleSubmit();
         return;
       }
 
