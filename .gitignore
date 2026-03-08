@@ -16,3 +16,5 @@ test-projects/
 testJava/
 .e2e-progress.json
 .gradle/
+DBCODE.local.md
+.claude/settings.local.json
