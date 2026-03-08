@@ -94,7 +94,7 @@ describe("initCommand", () => {
   it("should create project and return success on first run", async () => {
     const result = await initCommand.execute("", makeContext(tempDir));
     expect(result.success).toBe(true);
-    expect(result.output).toContain("initialized");
+    expect(result.output).toContain("초기화 완료");
     expect(result.output).toContain(`.${APP_NAME}`);
 
     // Verify directory was actually created
@@ -105,11 +105,11 @@ describe("initCommand", () => {
   it("should return already-initialized message on second run", async () => {
     const first = await initCommand.execute("", makeContext(tempDir));
     expect(first.success).toBe(true);
-    expect(first.output).toContain("initialized");
+    expect(first.output).toContain("초기화 완료");
 
     const second = await initCommand.execute("", makeContext(tempDir));
     expect(second.success).toBe(true);
-    expect(second.output).toContain("Already initialized");
+    expect(second.output).toContain("이미 초기화됨");
   });
 
   it("should return refreshInstructions: true on successful creation", async () => {
@@ -125,7 +125,7 @@ describe("initCommand", () => {
     // Second init — already exists
     const second = await initCommand.execute("", makeContext(tempDir));
     expect(second.success).toBe(true);
-    expect(second.output).toContain("Already initialized");
+    expect(second.output).toContain("이미 초기화됨");
     // refreshInstructions should be undefined (not set) when nothing was created
     expect(second.refreshInstructions).toBeUndefined();
   });

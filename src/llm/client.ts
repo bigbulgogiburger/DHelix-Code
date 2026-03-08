@@ -15,8 +15,8 @@ import { getModelCapabilities, type ModelCapabilities } from "./model-capabiliti
 /** Maximum number of retries for transient errors (500, 502, 503) */
 const MAX_RETRIES_TRANSIENT = 3;
 
-/** Maximum number of retries for rate limit errors (429) */
-const MAX_RETRIES_RATE_LIMIT = 5;
+/** Rate limit (429): do not retry — fail immediately with clear error */
+const MAX_RETRIES_RATE_LIMIT = 0;
 
 /** Base delay between retries for transient errors in ms */
 const BASE_RETRY_DELAY_MS = 1_000;

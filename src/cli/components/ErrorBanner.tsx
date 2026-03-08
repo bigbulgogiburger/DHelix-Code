@@ -18,7 +18,7 @@ function classifyError(message: string): ErrorClassification {
     return {
       type: "rate_limit",
       icon: "\u23F3",
-      guide: "\uC18D\uB3C4 \uC81C\uD55C. \uC7A0\uC2DC \uD6C4 \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uB429\uB2C8\uB2E4.",
+      guide: "API \uC0AC\uC6A9\uB7C9\uC774 \uCD08\uACFC\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.",
     };
   }
 
