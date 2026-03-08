@@ -26,37 +26,38 @@ CLI (Ink/React)  →  Core  →  LLM / Tools / Permissions / Hooks  →  Utils
 ```
 src/
 ├── index.ts              # CLI bootstrap (commander), logo stdout, Ink render
-├── constants.ts          # Version, paths, limits
+├── constants.ts          # Version, paths, limits, getProjectConfigPaths()
 ├── cli/                  # Layer 1: Terminal UI
-│   ├── App.tsx           # Root Ink component (no Logo — printed before render)
+│   ├── App.tsx           # Root Ink component (keyboard shortcuts, permission cycling)
 │   ├── components/       # UI components (.tsx)
 │   │   ├── ActivityFeed  # Progressive Static flushing (anti-flicker)
 │   │   ├── TurnBlock     # Single turn: user msg + assistant + tool calls
 │   │   ├── ToolCallBlock # Tool status with diff preview
 │   │   ├── StreamingMessage # Partial markdown rendering
 │   │   ├── ThinkingBlock # Extended thinking UI (collapsible)
-│   │   ├── StatusBar     # Model, tokens, cost, context %
+│   │   ├── StatusBar     # Model, tokens, cost, context %, permission mode, verbose, thinking
 │   │   ├── UserInput     # Tab autocomplete, @mentions
 │   │   ├── Logo          # DB brand logo + printStartupLogo()
 │   │   └── ...           # ErrorBanner, PermissionPrompt, SlashCommandMenu, Spinner
 │   ├── hooks/            # React hooks
-│   │   ├── useAgentLoop  # Orchestrates agent loop ↔ React state
+│   │   ├── useAgentLoop  # Orchestrates agent loop ↔ React state + CheckpointManager
 │   │   ├── useConversation # Immutable conversation state management
 │   │   ├── useTextBuffering # 100ms batched text streaming
-│   │   └── ...           # useKeybindings, usePermissionPrompt, useStreaming
+│   │   ├── useKeybindings # Keyboard shortcut registry + ~/.dbcode/keybindings.json
+│   │   └── ...           # usePermissionPrompt, useStreaming
 │   └── renderer/         # Terminal rendering
 │       ├── markdown.ts   # Markdown → terminal
-│       ├── tool-display.ts # Tool output formatting, diff display
+│       ├── tool-display.ts # Tool output formatting, tense switching (Reading→Read)
 │       └── synchronized-output.ts # DEC Mode 2026 atomic frame rendering
 ├── core/                 # Layer 2: Business logic (ZERO UI imports)
-│   ├── agent-loop.ts     # ReAct loop with parallel tool execution
-│   ├── activity.ts       # ActivityCollector — turn/entry tracking
+│   ├── agent-loop.ts     # ReAct loop with parallel tool execution + auto-checkpointing
+│   ├── activity.ts       # ActivityCollector — turn/entry tracking + intermediate messages
 │   ├── conversation.ts   # Immutable conversation state
-│   ├── context-manager.ts
+│   ├── context-manager.ts # 3-layer compaction (micro → structured summary → rehydration)
 │   ├── session-manager.ts
-│   ├── checkpoint-manager.ts
+│   ├── checkpoint-manager.ts # File state checkpointing and rewind
 │   ├── message-types.ts
-│   ├── system-prompt-builder.ts
+│   ├── system-prompt-builder.ts # Dynamic conditional prompt assembly + system reminders
 │   └── task-manager.ts
 ├── llm/                  # Layer 3: LLM client
 │   ├── provider.ts       # LLMProvider interface + ThinkingConfig
@@ -73,11 +74,14 @@ src/
 │   ├── types.ts          # ToolDefinition, ToolResult, PermissionLevel
 │   ├── executor.ts       # Timeout, AbortController, BackgroundProcessManager
 │   ├── validation.ts     # Zod → JSON Schema conversion
-│   └── definitions/      # 12 built-in tools (see Tools section)
-├── commands/             # Slash commands (/clear, /model, /help, /undo, etc.)
-│   ├── registry.ts       # Command registration and dispatch
-│   └── *.ts              # 27 commands
-├── instructions/         # DBCODE.md / CLAUDE.md loader
+│   └── definitions/      # 14 built-in tools (see Tools section)
+├── commands/             # Slash commands (/clear, /model, /help, /undo, /rewind, etc.)
+│   ├── registry.ts       # Command registration and dispatch (+ skill bridge support)
+│   └── *.ts              # 29 commands (including /memory, /keybindings)
+├── instructions/         # DBCODE.md loader — hierarchical merge from multiple sources
+│   ├── loader.ts         # loadInstructions() with 6-layer merge hierarchy
+│   ├── parser.ts         # Instruction file parsing
+│   └── path-matcher.ts   # Glob-based path-conditional rules
 ├── permissions/          # Permission system
 │   ├── manager.ts        # Check + approve/deny
 │   ├── rules.ts          # Glob pattern matching
@@ -87,16 +91,45 @@ src/
 ├── sandbox/              # OS-level: macOS Seatbelt (sandbox-exec profiles)
 ├── hooks/                # Pre/post tool-use hooks (loader + runner)
 ├── subagents/            # Agent spawning with worktree isolation
+│   ├── spawner.ts        # spawnSubagent(), spawnParallelSubagents(), agent history store
+│   ├── explore.ts        # Explore agent config
+│   ├── plan.ts           # Plan agent config
+│   └── general.ts        # General-purpose agent config
 ├── auth/                 # Token-based auth (Bearer/API-Key/Custom)
 ├── config/               # 5-level hierarchical config (Zod schema)
+│   ├── schema.ts         # Config schema (includes dbcodeMdExcludes)
+│   └── defaults.ts       # Default config values
 ├── mcp/                  # Model Context Protocol integration
-├── skills/               # Skill system
+├── skills/               # Skill system — integrated into agent loop
+│   ├── loader.ts         # loadSkill(), loadSkillsFromDirectory()
+│   ├── types.ts          # SkillDefinition, skillFrontmatterSchema
+│   ├── executor.ts       # Skill execution
+│   ├── manager.ts        # SkillManager — loads from 4 dirs, builds prompt section
+│   └── command-bridge.ts # createSkillCommands() — bridges skills into slash commands
 ├── telemetry/            # Usage telemetry
 ├── indexing/             # Codebase indexing
 ├── mentions/             # @mention resolution
 ├── types/                # Shared type definitions
 └── utils/                # logger(pino), events(mitt), error, path, platform
 ```
+
+## DBCODE.md Location
+
+- **Primary**: `DBCODE.md` at project root (convention, same as CLAUDE.md)
+- **Fallback**: `.dbcode/DBCODE.md` (backward compatible)
+- `/init` creates `DBCODE.md` at project root + `.dbcode/` for settings and rules
+- `DBCODE.md` is optional — dbcode works without it
+- Use `getProjectConfigPaths(cwd)` from `src/constants.ts` to resolve paths consistently
+- **Never hardcode DBCODE.md paths** — always use the centralized helper
+
+### Instruction Loading Hierarchy (lowest → highest priority)
+
+1. `~/.dbcode/DBCODE.md` — global user instructions
+2. `~/.dbcode/rules/*.md` — global user rules
+3. Parent directory `DBCODE.md` files (walking up from cwd)
+4. Project root `DBCODE.md`
+5. `.dbcode/rules/*.md` — project path-conditional rules
+6. `DBCODE.local.md` — local overrides (gitignored)
 
 ## Key Interfaces
 
@@ -127,7 +160,7 @@ interface ToolCallStrategy {
 }
 ```
 
-## Tools (12 built-in)
+## Tools (14 built-in)
 
 | Tool          | Permission | Description                                             |
 | ------------- | ---------- | ------------------------------------------------------- |
@@ -138,11 +171,13 @@ interface ToolCallStrategy {
 | glob_search   | safe       | File pattern matching, sorted by mtime                  |
 | grep_search   | safe       | Regex content search (ripgrep wrapper)                  |
 | list_dir      | safe       | Directory listing with metadata                         |
-| web_fetch     | confirm    | HTTP fetch with content extraction                      |
+| web_fetch     | confirm    | HTTP fetch with 15-min cache, content extraction        |
 | web_search    | confirm    | Brave Search + DuckDuckGo fallback                      |
 | notebook_edit | confirm    | Jupyter notebook cell editing                           |
 | mkdir         | confirm    | Create directories recursively                          |
 | ask_user      | safe       | Ask user questions with choices                         |
+| agent         | confirm    | Spawn subagent (explore/plan/general) via factory pattern |
+| todo_write    | safe       | Task tracking with pending/in_progress/completed states |
 
 ## Rendering Architecture (Anti-Flicker)
 
@@ -173,14 +208,41 @@ The `useAgentLoop` hook extracts new messages via `result.messages.slice(initial
 
 ```
 User Input → Context Prepare → Input Filter → LLM Stream → Output Filter
-  → Extract Tool Calls → (none? → done) → Permission Check → Execute
-  → Append Results → Audit Log → Loop Back
+  → Extract Tool Calls → (none? → done) → Permission Check
+  → Auto-Checkpoint (file_write/file_edit) → Execute
+  → Append Results → Emit assistant-message event → Audit Log → Loop Back
 ```
 
 - maxIterations: 50 (infinite loop protection)
 - Tool timeout: bash 120s, file ops 30s
-- Auto-compaction at 95% context usage
+- Auto-compaction at 83.5% context usage (3-layer: micro → summary → rehydration)
 - Parallel tool execution: read-only tools always parallel, file writes conflict on same path
+- Intermediate assistant messages emitted as `agent:assistant-message` events
+
+## Context Compaction (3-Layer)
+
+- **Layer 1 — Microcompaction**: Bulky tool outputs saved to disk as cold storage; hot tail of 5 recent results kept inline
+- **Layer 2 — Structured summarization**: Triggers at 83.5% context. Preserves: user intent, key decisions, files touched, errors, next steps
+- **Layer 3 — Post-compaction rehydration**: Re-reads 5 most recently accessed files after compaction
+
+## Skills System
+
+- Skills loaded from 4 directories: `.dbcode/commands/`, `.dbcode/skills/`, `~/.dbcode/commands/`, `~/.dbcode/skills/`
+- `SkillManager` builds system prompt section listing available skills
+- User-invocable skills become `/name` slash commands via `command-bridge.ts`
+- String substitutions: `$ARGUMENTS`, `$ARGUMENTS[N]`, `$N`, `${DBCODE_SESSION_ID}`
+
+## Keyboard Shortcuts
+
+| Shortcut   | Action                          |
+|------------|---------------------------------|
+| Esc        | Cancel current agent loop       |
+| Shift+Tab  | Cycle permission modes          |
+| Ctrl+O     | Toggle verbose mode             |
+| Ctrl+D     | Exit application                |
+| Alt+T      | Toggle extended thinking        |
+
+Customizable via `~/.dbcode/keybindings.json`.
 
 ## Coding Conventions
 

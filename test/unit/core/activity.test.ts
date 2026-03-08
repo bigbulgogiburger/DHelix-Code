@@ -166,4 +166,26 @@ describe("ActivityCollector", () => {
 
     expect(id1).not.toBe(id2);
   });
+
+  it("should track assistant-intermediate entries with tool calls and iteration", () => {
+    const collector = new ActivityCollector();
+    collector.startTurn();
+    collector.addEntry("user-message", { content: "Do something" });
+    collector.addEntry("assistant-intermediate", {
+      content: "I'll read the file first.",
+      toolCalls: [{ id: "tc-1", name: "file_read" }],
+      iteration: 1,
+      isComplete: true,
+    });
+    collector.addEntry("tool-start", { name: "file_read", id: "tc-1" });
+    collector.addEntry("tool-complete", { name: "file_read", id: "tc-1", isError: false });
+    collector.addEntry("assistant-text", { content: "Here is the result.", isComplete: true });
+
+    const current = collector.getCurrentTurn();
+    expect(current!.entries).toHaveLength(5);
+    expect(current!.entries[1].type).toBe("assistant-intermediate");
+    expect(current!.entries[1].data.content).toBe("I'll read the file first.");
+    expect(current!.entries[1].data.iteration).toBe(1);
+    expect(current!.entries[1].data.toolCalls).toEqual([{ id: "tc-1", name: "file_read" }]);
+  });
 });

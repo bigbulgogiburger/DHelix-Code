@@ -5,7 +5,7 @@ import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { ToolRegistry } from "../tools/registry.js";
 import { runAgentLoop, type AgentLoopResult } from "../core/agent-loop.js";
-import { buildSystemPrompt } from "../core/system-prompt-builder.js";
+import { buildSystemPrompt, type SessionState } from "../core/system-prompt-builder.js";
 import { createEventEmitter, type AppEventEmitter } from "../utils/events.js";
 import { BaseError } from "../utils/error.js";
 
@@ -112,28 +112,20 @@ function createFilteredRegistry(
 
 /**
  * Build a system prompt tailored to the subagent type.
+ * Uses SessionState-based conditional sections for type-specific instructions.
  */
 function buildSubagentSystemPrompt(type: SubagentType, toolRegistry: ToolRegistry): string {
-  const base = buildSystemPrompt({ toolRegistry });
-
-  const typeInstructions: Record<SubagentType, string> = {
-    explore: [
-      "You are an exploration subagent. Your role is to investigate the codebase",
-      "and gather information. Use file reading, searching, and grep tools",
-      "extensively. Provide a comprehensive summary of your findings.",
-    ].join(" "),
-    plan: [
-      "You are a planning subagent. Your role is to analyze requirements,",
-      "identify dependencies, and create a structured implementation plan.",
-      "Break down the task into clear, ordered steps with estimated complexity.",
-    ].join(" "),
-    general: [
-      "You are a general-purpose subagent. Complete the given task using",
-      "the available tools. Be thorough and report your results clearly.",
-    ].join(" "),
+  const toolNames = toolRegistry.getAll().map((t) => t.name);
+  const sessionState: SessionState = {
+    mode: "normal",
+    isSubagent: true,
+    subagentType: type,
+    availableTools: toolNames,
+    extendedThinkingEnabled: false,
+    features: {},
   };
 
-  return `${base}\n\n${typeInstructions[type]}`;
+  return buildSystemPrompt({ toolRegistry, sessionState });
 }
 
 /**

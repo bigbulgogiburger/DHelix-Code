@@ -1,10 +1,10 @@
 import { mkdir, writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
-import { APP_NAME } from "../constants.js";
+import { APP_NAME, PROJECT_CONFIG_FILE, PROJECT_CONFIG_DIR } from "../constants.js";
 import { type SlashCommand } from "./registry.js";
 
 /** Project initialization directory name */
-const PROJECT_DIR = `.${APP_NAME}`;
+const PROJECT_DIR = PROJECT_CONFIG_DIR;
 
 /** Local instructions filename (should be gitignored) */
 const LOCAL_INSTRUCTIONS_FILE = `${APP_NAME.toUpperCase()}.local.md`;
@@ -134,7 +134,7 @@ export interface InitResult {
 
 /**
  * Initialize a dbcode project in the given directory.
- * Creates .dbcode/ with DBCODE.md template, settings.json, and rules/ subdirectory.
+ * Creates DBCODE.md at project root (convention) and .dbcode/ for settings and rules.
  */
 export async function initProject(cwd: string): Promise<InitResult> {
   const projectPath = join(cwd, PROJECT_DIR);
@@ -153,9 +153,9 @@ export async function initProject(cwd: string): Promise<InitResult> {
   // Add .gitkeep to rules/ so it's tracked even when empty
   await writeFile(join(projectPath, "rules", ".gitkeep"), "", "utf-8");
 
-  // Generate project-aware template
+  // Generate project-aware template — write to project root (not .dbcode/)
   const template = await generateTemplate(cwd);
-  await writeFile(join(projectPath, `${APP_NAME.toUpperCase()}.md`), template, "utf-8");
+  await writeFile(join(cwd, PROJECT_CONFIG_FILE), template, "utf-8");
 
   await writeFile(
     join(projectPath, "settings.json"),
@@ -172,7 +172,7 @@ export async function initProject(cwd: string): Promise<InitResult> {
 /** Slash command wrapper for /init */
 export const initCommand: SlashCommand = {
   name: "init",
-  description: "Initialize project (creates .dbcode/ directory with DBCODE.md)",
+  description: "Initialize project (creates DBCODE.md and .dbcode/ directory)",
   usage: "/init",
   execute: async (_args, context) => {
     const result = await initProject(context.workingDirectory);
@@ -181,18 +181,18 @@ export const initCommand: SlashCommand = {
         `✓ 프로젝트 초기화 완료: ${result.path}`,
         "",
         "생성된 파일:",
-        `  ${PROJECT_DIR}/${APP_NAME.toUpperCase()}.md  — 프로젝트 지침 (AI가 매 세션 시작 시 읽음)`,
+        `  ${PROJECT_CONFIG_FILE}              — 프로젝트 지침 (AI가 매 세션 시작 시 읽음)`,
         `  ${PROJECT_DIR}/settings.json    — 모델/도구 설정`,
         `  ${PROJECT_DIR}/rules/           — 커스텀 규칙 디렉토리`,
         "",
-        `${APP_NAME.toUpperCase()}.md를 편집하여 프로젝트 컨벤션, 빌드/테스트 명령어, 코딩 스타일을 추가하세요.`,
+        `${PROJECT_CONFIG_FILE}를 편집하여 프로젝트 컨벤션, 빌드/테스트 명령어, 코딩 스타일을 추가하세요.`,
       ];
       return { output: lines.join("\n"), success: true, refreshInstructions: true };
     }
     const lines = [
       `이미 초기화됨: ${result.path}`,
       "",
-      `${APP_NAME.toUpperCase()}.md를 편집하려면: 해당 파일을 직접 수정하세요.`,
+      `${PROJECT_CONFIG_FILE}를 편집하려면: 해당 파일을 직접 수정하세요.`,
       `초기화를 다시 하려면: ${PROJECT_DIR}/ 디렉토리를 삭제 후 /init을 실행하세요.`,
     ];
     return { output: lines.join("\n"), success: true };

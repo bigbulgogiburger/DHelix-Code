@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 export type ActivityEntryType =
   | "user-message"
   | "assistant-text"
+  | "assistant-intermediate"
   | "tool-start"
   | "tool-complete"
   | "tool-denied"

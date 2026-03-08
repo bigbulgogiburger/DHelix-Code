@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { UserInput } from "./components/UserInput.js";
 import { Spinner } from "./components/Spinner.js";
 import { StatusBar } from "./components/StatusBar.js";
@@ -11,7 +11,12 @@ import { ActivityFeed } from "./components/ActivityFeed.js";
 import { TaskListView } from "./components/TaskListView.js";
 import { useAgentLoop } from "./hooks/useAgentLoop.js";
 import { usePermissionPrompt } from "./hooks/usePermissionPrompt.js";
-import { useKeybindings, type Keybinding } from "./hooks/useKeybindings.js";
+import {
+  useKeybindings,
+  loadKeybindingConfig,
+  getEffectiveBindings,
+  buildKeybindings,
+} from "./hooks/useKeybindings.js";
 import { type LLMProvider } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
@@ -21,7 +26,27 @@ import { type ContextManager } from "../core/context-manager.js";
 import { type HookRunner } from "../hooks/runner.js";
 import { type Task } from "../core/task-manager.js";
 import { type SessionManager } from "../core/session-manager.js";
+import { type SkillManager } from "../skills/manager.js";
+import { type PermissionMode } from "../permissions/types.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
+
+/** Permission mode cycle order */
+const PERMISSION_MODE_CYCLE: readonly PermissionMode[] = [
+  "default",
+  "acceptEdits",
+  "plan",
+  "dontAsk",
+  "bypassPermissions",
+] as const;
+
+/** Short labels for permission modes shown in status area */
+const MODE_LABELS: Readonly<Record<PermissionMode, string>> = {
+  default: "Default",
+  acceptEdits: "Accept Edits",
+  plan: "Plan",
+  dontAsk: "Don't Ask",
+  bypassPermissions: "Bypass",
+};
 
 interface AppProps {
   readonly client: LLMProvider;
@@ -33,6 +58,7 @@ interface AppProps {
   readonly contextManager?: ContextManager;
   readonly hookRunner?: HookRunner;
   readonly sessionManager?: SessionManager;
+  readonly skillManager?: SkillManager;
   readonly tasks?: readonly Task[];
   readonly sessionId?: string;
   readonly showStatusBar?: boolean;
@@ -49,6 +75,7 @@ export function App({
   contextManager,
   hookRunner,
   sessionManager,
+  skillManager,
   tasks,
   sessionId,
   showStatusBar = true,
@@ -78,6 +105,7 @@ export function App({
     contextManager,
     hookRunner,
     sessionManager,
+    skillManager,
     sessionId,
     checkPermission,
   });
@@ -86,21 +114,72 @@ export function App({
   const [inputValue, setInputValue] = useState("");
   const slashMenuVisible = !isProcessing && !pendingPermission && inputValue.startsWith("/") && !inputValue.includes(" ");
 
-  // Register keybindings
-  const keybindings = useMemo<Keybinding[]>(
-    () => [
-      {
-        key: "c",
-        ctrl: true,
-        handler: () => {
-          if (isProcessing) {
-            events.emit("input:abort", undefined);
-          }
-        },
-      },
-    ],
-    [isProcessing, events],
+  // Verbose mode toggle state
+  const [verboseMode, setVerboseMode] = useState(false);
+
+  // Extended thinking toggle state
+  const [thinkingEnabled, setThinkingEnabled] = useState(false);
+
+  // Permission mode state (mirrors permissionManager but drives UI)
+  const [permissionMode, setPermissionMode] = useState<PermissionMode>(
+    permissionManager.getMode(),
   );
+
+  // Notification banner for shortcut feedback
+  const [notification, setNotification] = useState<string | null>(null);
+
+  const showNotification = useCallback((message: string) => {
+    setNotification(message);
+    setTimeout(() => setNotification(null), 2000);
+  }, []);
+
+  // Action handlers for keybindings
+  const actionHandlers = useMemo(
+    () => ({
+      cancel: () => {
+        if (isProcessing) {
+          events.emit("input:abort", undefined);
+          showNotification("Cancelled current operation");
+        }
+      },
+      // newline is handled directly in UserInput via Ctrl+J
+      newline: () => {},
+      "cycle-mode": () => {
+        const currentIndex = PERMISSION_MODE_CYCLE.indexOf(permissionMode);
+        const nextIndex = (currentIndex + 1) % PERMISSION_MODE_CYCLE.length;
+        const nextMode = PERMISSION_MODE_CYCLE[nextIndex];
+        permissionManager.setMode(nextMode);
+        setPermissionMode(nextMode);
+        showNotification(`Permission mode: ${MODE_LABELS[nextMode]}`);
+      },
+      "toggle-verbose": () => {
+        setVerboseMode((prev) => {
+          const next = !prev;
+          showNotification(`Verbose mode: ${next ? "ON" : "OFF"}`);
+          return next;
+        });
+      },
+      exit: () => {
+        process.exit(0);
+      },
+      "toggle-thinking": () => {
+        setThinkingEnabled((prev) => {
+          const next = !prev;
+          showNotification(`Extended thinking: ${next ? "ON" : "OFF"}`);
+          return next;
+        });
+      },
+    }),
+    [isProcessing, events, permissionMode, permissionManager, showNotification],
+  );
+
+  // Build keybindings from config + defaults
+  const keybindings = useMemo(() => {
+    const userConfig = loadKeybindingConfig();
+    const effective = getEffectiveBindings(userConfig);
+    return buildKeybindings(effective, actionHandlers);
+  }, [actionHandlers]);
+
   useKeybindings(keybindings, !pendingPermission);
 
   return (
@@ -128,6 +207,12 @@ export function App({
       ) : null}
 
       {error ? <ErrorBanner message={error} /> : null}
+
+      {notification ? (
+        <Box marginY={0}>
+          <Text color="yellow">{notification}</Text>
+        </Box>
+      ) : null}
 
       {tasks && tasks.length > 0 ? <TaskListView tasks={tasks} title="Tasks" /> : null}
 
@@ -165,6 +250,9 @@ export function App({
           tokenCount={tokenCount}
           maxTokens={getModelCapabilities(activeModel).maxContextTokens}
           isStreaming={isProcessing}
+          permissionMode={MODE_LABELS[permissionMode]}
+          verboseMode={verboseMode}
+          thinkingEnabled={thinkingEnabled}
         />
       ) : null}
     </Box>

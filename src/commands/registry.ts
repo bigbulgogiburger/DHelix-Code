@@ -35,6 +35,10 @@ export interface CommandResult {
   readonly newModel?: string;
   /** If true, should reload project instructions from disk */
   readonly refreshInstructions?: boolean;
+  /** If true, output is a skill prompt that should be injected as a user message for the LLM */
+  readonly shouldInjectAsUserMessage?: boolean;
+  /** Override the model for processing the injected message */
+  readonly modelOverride?: string;
 }
 
 /** Definition of a slash command */

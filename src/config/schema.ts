@@ -52,4 +52,6 @@ export const configSchema = z.object({
   ui: uiConfigSchema.default({}),
   workingDirectory: z.string().optional(),
   verbose: z.boolean().default(false),
+  /** Glob patterns to exclude specific rule files from loading */
+  dbcodeMdExcludes: z.array(z.string()).default([]),
 });

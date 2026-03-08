@@ -51,6 +51,15 @@ function renderEntry(entry: ActivityEntry, index: number, isLive: boolean, allEn
         />
       );
 
+    case "assistant-intermediate":
+      return (
+        <StreamingMessage
+          key={`entry-${index}`}
+          text={String(entry.data.content ?? "")}
+          isComplete={true}
+        />
+      );
+
     case "tool-start":
     case "tool-complete":
     case "tool-denied": {

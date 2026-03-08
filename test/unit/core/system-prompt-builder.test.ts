@@ -1,5 +1,10 @@
 import { describe, it, expect, afterAll } from "vitest";
-import { buildSystemPrompt } from "../../../src/core/system-prompt-builder.js";
+import {
+  buildSystemPrompt,
+  buildSystemReminder,
+  type SessionState,
+  type PromptSection,
+} from "../../../src/core/system-prompt-builder.js";
 import { ToolRegistry } from "../../../src/tools/registry.js";
 import { z } from "zod";
 import { join } from "node:path";
@@ -162,5 +167,239 @@ describe("buildSystemPrompt", () => {
         expect(prompt).toContain(`Project type: ${type}`);
       });
     }
+  });
+});
+
+describe("conditional sections with SessionState", () => {
+  const baseState: SessionState = {
+    mode: "normal",
+    isSubagent: false,
+    availableTools: [],
+    extendedThinkingEnabled: false,
+    features: {},
+  };
+
+  it("should not include plan mode section when mode is normal", () => {
+    const prompt = buildSystemPrompt({ sessionState: baseState });
+    expect(prompt).not.toContain("Plan Mode");
+  });
+
+  it("should include plan mode section when mode is plan", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: { ...baseState, mode: "plan" },
+    });
+    expect(prompt).toContain("Plan Mode");
+    expect(prompt).toContain("Do NOT make any file modifications");
+  });
+
+  it("should not include subagent section when not a subagent", () => {
+    const prompt = buildSystemPrompt({ sessionState: baseState });
+    expect(prompt).not.toContain("Subagent Context");
+  });
+
+  it("should include subagent section with explore type", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: { ...baseState, isSubagent: true, subagentType: "explore" },
+    });
+    expect(prompt).toContain("Subagent Context");
+    expect(prompt).toContain("Exploration Focus");
+  });
+
+  it("should include subagent section with plan type", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: { ...baseState, isSubagent: true, subagentType: "plan" },
+    });
+    expect(prompt).toContain("Planning Focus");
+  });
+
+  it("should include subagent section with general type", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: { ...baseState, isSubagent: true, subagentType: "general" },
+    });
+    expect(prompt).toContain("General Task");
+  });
+
+  it("should not include extended thinking section when disabled", () => {
+    const prompt = buildSystemPrompt({ sessionState: baseState });
+    expect(prompt).not.toContain("Extended Thinking");
+  });
+
+  it("should include extended thinking section when enabled", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: { ...baseState, extendedThinkingEnabled: true },
+    });
+    expect(prompt).toContain("Extended Thinking");
+  });
+
+  it("should include feature-flag-gated sections when feature enabled", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: { ...baseState, features: { "parallel-tools": true } },
+    });
+    expect(prompt).toContain("Parallel Tool Execution");
+  });
+
+  it("should not include feature sections when feature disabled", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: { ...baseState, features: { "parallel-tools": false } },
+    });
+    expect(prompt).not.toContain("Parallel Tool Execution");
+  });
+
+  it("should support multiple conditional sections simultaneously", () => {
+    const prompt = buildSystemPrompt({
+      sessionState: {
+        mode: "plan",
+        isSubagent: false,
+        availableTools: [],
+        extendedThinkingEnabled: true,
+        features: { "auto-compact": true },
+      },
+    });
+    expect(prompt).toContain("Plan Mode");
+    expect(prompt).toContain("Extended Thinking");
+    expect(prompt).toContain("Auto-Compaction");
+    // Should NOT have subagent section
+    expect(prompt).not.toContain("Subagent Context");
+  });
+});
+
+describe("custom section conditions", () => {
+  it("should include custom section when condition returns true", () => {
+    const sections: PromptSection[] = [
+      {
+        id: "conditional",
+        content: "CONDITIONAL_CONTENT",
+        priority: 50,
+        condition: () => true,
+      },
+    ];
+    const prompt = buildSystemPrompt({ customSections: sections });
+    expect(prompt).toContain("CONDITIONAL_CONTENT");
+  });
+
+  it("should exclude custom section when condition returns false", () => {
+    const sections: PromptSection[] = [
+      {
+        id: "conditional",
+        content: "CONDITIONAL_CONTENT",
+        priority: 50,
+        condition: () => false,
+      },
+    ];
+    const prompt = buildSystemPrompt({ customSections: sections });
+    expect(prompt).not.toContain("CONDITIONAL_CONTENT");
+  });
+
+  it("should include custom section when condition is undefined", () => {
+    const sections: PromptSection[] = [
+      {
+        id: "no-condition",
+        content: "ALWAYS_INCLUDED",
+        priority: 50,
+      },
+    ];
+    const prompt = buildSystemPrompt({ customSections: sections });
+    expect(prompt).toContain("ALWAYS_INCLUDED");
+  });
+});
+
+describe("token budget", () => {
+  it("should trim lowest-priority sections when budget exceeded", () => {
+    const prompt = buildSystemPrompt({
+      customSections: [
+        { id: "big-low", content: "A".repeat(5000), priority: 5 },
+      ],
+      totalTokenBudget: 500,
+    });
+    // The high-priority identity section should be included
+    expect(prompt).toContain("dbcode");
+    // The big low-priority section should be trimmed
+    expect(prompt).not.toContain("A".repeat(5000));
+  });
+
+  it("should keep all sections when under budget", () => {
+    const prompt = buildSystemPrompt({
+      customSections: [
+        { id: "small", content: "SMALL_SECTION", priority: 50 },
+      ],
+    });
+    expect(prompt).toContain("SMALL_SECTION");
+  });
+
+  it("should respect per-section tokenBudget", () => {
+    const longContent = "Line one\n".repeat(500);
+    const prompt = buildSystemPrompt({
+      customSections: [
+        { id: "capped", content: longContent, priority: 50, tokenBudget: 20 },
+      ],
+    });
+    // Should be truncated
+    expect(prompt).toContain("...(truncated)");
+    // Should not contain the full content
+    expect(prompt).not.toContain("Line one\n".repeat(500));
+  });
+});
+
+describe("buildSystemReminder", () => {
+  it("should generate tool-usage reminder", () => {
+    const reminder = buildSystemReminder("tool-usage");
+    expect(reminder).toContain("<system-reminder>");
+    expect(reminder).toContain("file_read");
+    expect(reminder).toContain("parallel");
+    expect(reminder).toContain("</system-reminder>");
+  });
+
+  it("should generate code-quality reminder", () => {
+    const reminder = buildSystemReminder("code-quality");
+    expect(reminder).toContain("minimal and focused");
+    expect(reminder).toContain("code style");
+  });
+
+  it("should generate git-safety reminder", () => {
+    const reminder = buildSystemReminder("git-safety");
+    expect(reminder).toContain("force push");
+    expect(reminder).toContain("conventional commit");
+  });
+
+  it("should generate context-limit reminder with usage percentage", () => {
+    const reminder = buildSystemReminder("context-limit", { usagePercent: 85 });
+    expect(reminder).toContain("85%");
+    expect(reminder).toContain("concise");
+  });
+
+  it("should handle context-limit without context parameter", () => {
+    const reminder = buildSystemReminder("context-limit");
+    expect(reminder).toContain("0%");
+  });
+});
+
+describe("backward compatibility", () => {
+  it("should work with no arguments", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).toBeTruthy();
+    expect(prompt).toContain("dbcode");
+  });
+
+  it("should work with only old-style options", () => {
+    const prompt = buildSystemPrompt({
+      projectInstructions: "Test instructions",
+      workingDirectory: process.cwd(),
+    });
+    expect(prompt).toContain("Test instructions");
+  });
+
+  it("should work with mixed old and new options", () => {
+    const prompt = buildSystemPrompt({
+      projectInstructions: "Test instructions",
+      sessionState: {
+        mode: "plan",
+        isSubagent: false,
+        availableTools: [],
+        extendedThinkingEnabled: false,
+        features: {},
+      },
+    });
+    expect(prompt).toContain("Test instructions");
+    expect(prompt).toContain("Plan Mode");
   });
 });

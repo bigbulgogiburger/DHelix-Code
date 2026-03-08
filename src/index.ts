@@ -85,6 +85,8 @@ program
         { webSearchTool },
         { listDirTool },
         { notebookEditTool },
+        { createAgentTool },
+        { todoWriteTool },
         { CommandRegistry },
         { clearCommand },
         { compactCommand },
@@ -114,6 +116,8 @@ program
         { initCommand },
         { planCommand },
         { undoCommand },
+        { memoryCommand },
+        { keybindingsCommand },
       ] = await Promise.all([
         import("./config/loader.js"),
         import("./llm/client.js"),
@@ -136,6 +140,8 @@ program
         import("./tools/definitions/web-search.js"),
         import("./tools/definitions/list-dir.js"),
         import("./tools/definitions/notebook-edit.js"),
+        import("./tools/definitions/agent.js"),
+        import("./tools/definitions/todo-write.js"),
         import("./commands/registry.js"),
         import("./commands/clear.js"),
         import("./commands/compact.js"),
@@ -165,6 +171,8 @@ program
         import("./commands/init.js"),
         import("./commands/plan.js"),
         import("./commands/undo.js"),
+        import("./commands/memory.js"),
+        import("./commands/keybindings.js"),
       ]);
 
       // Only pass explicitly-set CLI options as overrides
@@ -206,10 +214,21 @@ program
         webSearchTool,
         listDirTool,
         notebookEditTool,
+        todoWriteTool,
       ]);
 
       // Select tool call strategy
       const strategy = selectStrategy(config.llm.model);
+
+      // Register agent tool (requires client, model, strategy, toolRegistry)
+      toolRegistry.register(
+        createAgentTool({
+          client,
+          model: config.llm.model,
+          strategy,
+          toolRegistry,
+        }),
+      );
 
       // Create permission manager
       const permissionManager = new PermissionManager("default");
@@ -237,9 +256,14 @@ program
         }
       }
 
+      // Load skills from .dbcode/commands/, .dbcode/skills/, ~/.dbcode/commands/, ~/.dbcode/skills/
+      const { SkillManager } = await import("./skills/manager.js");
+      const skillManager = new SkillManager();
+      await skillManager.loadAll(process.cwd());
+
       // Register slash commands
       const commandRegistry = new CommandRegistry();
-      const commands = [
+      const commands: import("./commands/registry.js").SlashCommand[] = [
         clearCommand,
         compactCommand,
         helpCommand,
@@ -268,7 +292,14 @@ program
         initCommand,
         planCommand,
         undoCommand,
+        memoryCommand,
+        keybindingsCommand,
       ];
+      // Register skill-based custom commands (user-invocable skills become /commands)
+      const { createSkillCommands } = await import("./skills/command-bridge.js");
+      const skillCommands = createSkillCommands(skillManager);
+      commands.push(...skillCommands);
+
       for (const cmd of commands) {
         commandRegistry.register(cmd);
       }
@@ -335,6 +366,7 @@ program
           sessionManager,
           sessionId,
           showStatusBar: config.ui.statusBar,
+          skillManager,
         }),
       );
     },

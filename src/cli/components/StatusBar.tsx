@@ -12,6 +12,9 @@ interface StatusBarProps {
   readonly modelName?: string;
   readonly inputTokens?: number;
   readonly outputTokens?: number;
+  readonly permissionMode?: string;
+  readonly verboseMode?: boolean;
+  readonly thinkingEnabled?: boolean;
 }
 
 /** Token pricing per 1M tokens (USD) — input / output */
@@ -74,6 +77,9 @@ export const StatusBar = React.memo(function StatusBar({
   modelName,
   inputTokens = 0,
   outputTokens = 0,
+  permissionMode,
+  verboseMode,
+  thinkingEnabled,
 }: StatusBarProps) {
   const usage = maxTokens > 0 ? Math.round((tokenCount / maxTokens) * 100) : 0;
   const ratio = maxTokens > 0 ? tokenCount / maxTokens : 0;
@@ -104,6 +110,9 @@ export const StatusBar = React.memo(function StatusBar({
         {contextWarning && <Text color="red" bold>{"!! Context " + usage + "%"}</Text>}
         {costStr.length > 0 && <Text color="cyan">{costStr}</Text>}
         {effortLevel ? <Text color="magenta">[{effortLevel}]</Text> : null}
+        {permissionMode ? <Text color="green">[{permissionMode}]</Text> : null}
+        {verboseMode ? <Text color="yellow">[Verbose]</Text> : null}
+        {thinkingEnabled ? <Text color="cyan">[Thinking]</Text> : null}
       </Box>
       {isStreaming ? <Text color="yellow">streaming...</Text> : <Text color="gray">ready</Text>}
     </Box>

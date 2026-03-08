@@ -30,4 +30,5 @@ export const DEFAULT_CONFIG: AppConfig = {
     statusBar: true,
   },
   verbose: false,
+  dbcodeMdExcludes: [],
 };

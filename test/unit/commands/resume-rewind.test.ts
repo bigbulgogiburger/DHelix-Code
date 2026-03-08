@@ -180,7 +180,7 @@ describe("rewind command", () => {
     expect(result.output).toContain("Available checkpoints");
     expect(result.output).toContain("cp-001");
     expect(result.output).toContain("Before editing app.ts");
-    expect(result.output).toContain("2 files");
+    expect(result.output).toContain("2 file(s) tracked");
     expect(result.output).toContain("/rewind <checkpoint-id>");
     expect(result.success).toBe(true);
 
@@ -188,6 +188,12 @@ describe("rewind command", () => {
   });
 
   it("should restore checkpoint via command", async () => {
+    const diffMock = vi.spyOn(CheckpointManager.prototype, "diffFromCheckpoint");
+    diffMock.mockResolvedValueOnce([
+      { path: "src/app.ts", status: "modified" },
+      { path: "src/utils.ts", status: "modified" },
+    ]);
+
     const restoreMock = vi.spyOn(CheckpointManager.prototype, "restoreCheckpoint");
     restoreMock.mockResolvedValueOnce({
       restoredFiles: ["src/app.ts", "src/utils.ts"],
@@ -205,13 +211,20 @@ describe("rewind command", () => {
     const { rewindCommand } = await import("../../../src/commands/rewind.js");
     const result = await rewindCommand.execute("cp-001", baseContext);
     expect(result.output).toContain("Restored checkpoint: cp-001");
-    expect(result.output).toContain("Restored: 2 files");
+    expect(result.output).toContain("Restored 2 file(s)");
     expect(result.success).toBe(true);
 
     restoreMock.mockRestore();
+    diffMock.mockRestore();
   });
 
   it("should report skipped files during restore via command", async () => {
+    const diffMock = vi.spyOn(CheckpointManager.prototype, "diffFromCheckpoint");
+    diffMock.mockResolvedValueOnce([
+      { path: "src/app.ts", status: "modified" },
+      { path: "src/missing.ts", status: "deleted" },
+    ]);
+
     const restoreMock = vi.spyOn(CheckpointManager.prototype, "restoreCheckpoint");
     restoreMock.mockResolvedValueOnce({
       restoredFiles: ["src/app.ts"],
@@ -228,11 +241,12 @@ describe("rewind command", () => {
 
     const { rewindCommand } = await import("../../../src/commands/rewind.js");
     const result = await rewindCommand.execute("cp-002", baseContext);
-    expect(result.output).toContain("Restored: 1 files");
-    expect(result.output).toContain("Skipped: 1 files");
+    expect(result.output).toContain("Restored 1 file(s)");
+    expect(result.output).toContain("Skipped 1 file(s)");
     expect(result.success).toBe(true);
 
     restoreMock.mockRestore();
+    diffMock.mockRestore();
   });
 
   it("should handle restore with non-existent checkpoint id", async () => {

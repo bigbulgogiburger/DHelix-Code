@@ -2,28 +2,57 @@ import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { getPlatform } from "../utils/platform.js";
-import { APP_NAME, VERSION } from "../constants.js";
+import { APP_NAME, VERSION, getProjectConfigPaths } from "../constants.js";
 import { type ToolRegistry } from "../tools/registry.js";
+import { estimateTokens } from "../llm/token-counter.js";
 
-/** System prompt section */
-interface PromptSection {
+/** System prompt section with optional condition and token budget */
+export interface PromptSection {
   readonly id: string;
   readonly content: string;
   readonly priority: number;
+  /** Only include this section if condition returns true. Undefined = always include. */
+  readonly condition?: () => boolean;
+  /** Maximum token budget for this section. If content exceeds, it will be truncated. */
+  readonly tokenBudget?: number;
 }
+
+/** Session state for conditional prompt assembly */
+export interface SessionState {
+  readonly mode: "normal" | "plan";
+  readonly isSubagent: boolean;
+  readonly subagentType?: "explore" | "plan" | "general";
+  readonly availableTools: readonly string[];
+  readonly extendedThinkingEnabled: boolean;
+  readonly features: Readonly<Record<string, boolean>>;
+}
+
+/** Options for building the system prompt */
+export interface BuildSystemPromptOptions {
+  readonly projectInstructions?: string;
+  readonly workingDirectory?: string;
+  readonly toolRegistry?: ToolRegistry;
+  readonly mcpServers?: readonly { name: string; tools: readonly string[] }[];
+  readonly customSections?: readonly PromptSection[];
+  readonly skillsPromptSection?: string;
+  /** Session state for conditional section inclusion */
+  readonly sessionState?: SessionState;
+  /** Total token budget for the system prompt. Lowest-priority sections trimmed if exceeded. */
+  readonly totalTokenBudget?: number;
+}
+
+/** Default token budget for system prompts (32k tokens) */
+const DEFAULT_TOTAL_TOKEN_BUDGET = 32_000;
 
 /**
  * Build the system prompt from modular sections.
  * Higher priority sections appear first.
+ * Sections with conditions are only included when their condition returns true.
+ * If total token budget is exceeded, lowest-priority sections are trimmed.
  */
-export function buildSystemPrompt(options?: {
-  projectInstructions?: string;
-  workingDirectory?: string;
-  toolRegistry?: ToolRegistry;
-  mcpServers?: readonly { name: string; tools: readonly string[] }[];
-  customSections?: readonly PromptSection[];
-}): string {
+export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
   const cwd = options?.workingDirectory ?? process.cwd();
+  const state = options?.sessionState;
 
   const sections: PromptSection[] = [
     {
@@ -65,6 +94,50 @@ export function buildSystemPrompt(options?: {
     priority: 80,
   });
 
+  if (options?.skillsPromptSection) {
+    sections.push({
+      id: "skills",
+      content: options.skillsPromptSection,
+      priority: 78,
+    });
+  }
+
+  // Conditional sections based on session state
+  if (state) {
+    sections.push({
+      id: "plan-mode",
+      content: buildPlanModeSection(),
+      priority: 92,
+      condition: () => state.mode === "plan",
+    });
+
+    sections.push({
+      id: "subagent",
+      content: buildSubagentSection(state.subagentType),
+      priority: 88,
+      condition: () => state.isSubagent,
+    });
+
+    sections.push({
+      id: "extended-thinking",
+      content: buildExtendedThinkingSection(),
+      priority: 75,
+      condition: () => state.extendedThinkingEnabled,
+    });
+
+    // Add feature-flag-gated sections
+    for (const [feature, content] of Object.entries(FEATURE_SECTIONS)) {
+      if (feature in state.features) {
+        sections.push({
+          id: `feature-${feature}`,
+          content,
+          priority: 60,
+          condition: () => state.features[feature] === true,
+        });
+      }
+    }
+  }
+
   // Load project-level instructions from .dbcode/DBCODE.md
   const projectInstructions = options?.projectInstructions ?? loadProjectInstructions(cwd);
   if (projectInstructions) {
@@ -79,8 +152,205 @@ export function buildSystemPrompt(options?: {
     sections.push(...options.customSections);
   }
 
-  const sorted = [...sections].sort((a, b) => b.priority - a.priority);
-  return sorted.map((s) => s.content).join("\n\n---\n\n");
+  return assembleSections(sections, options?.totalTokenBudget);
+}
+
+/**
+ * Build a mid-conversation system reminder for contextual guidance.
+ * Use these to inject reminders between messages when patterns are detected.
+ */
+export function buildSystemReminder(
+  type: "tool-usage" | "code-quality" | "git-safety" | "context-limit",
+  context?: Readonly<Record<string, unknown>>,
+): string {
+  switch (type) {
+    case "tool-usage":
+      return [
+        "<system-reminder>",
+        "Remember: Use file_read before modifying files. Use file_edit for targeted changes.",
+        "Call multiple independent tools in parallel for efficiency.",
+        "Prefer grep_search and glob_search over reading entire directories.",
+        "</system-reminder>",
+      ].join("\n");
+
+    case "code-quality":
+      return [
+        "<system-reminder>",
+        "Code quality check: Ensure your changes are minimal and focused.",
+        "Don't refactor surrounding code unless asked. Don't add unnecessary error handling.",
+        "Follow the project's existing code style and conventions.",
+        "</system-reminder>",
+      ].join("\n");
+
+    case "git-safety":
+      return [
+        "<system-reminder>",
+        "Git safety: Never force push, reset --hard, or use destructive git operations without user confirmation.",
+        "Review changes with git diff before committing. Use conventional commit format.",
+        "</system-reminder>",
+      ].join("\n");
+
+    case "context-limit": {
+      const usage = typeof context?.["usagePercent"] === "number" ? context["usagePercent"] : 0;
+      return [
+        "<system-reminder>",
+        `Context window is ${Math.round(usage)}% full.`,
+        "Be more concise. Avoid reading large files unnecessarily.",
+        "Consider summarizing findings rather than quoting full content.",
+        "</system-reminder>",
+      ].join("\n");
+    }
+  }
+}
+
+/**
+ * Assemble sections: filter by condition, sort by priority, enforce token budget.
+ */
+function assembleSections(
+  sections: readonly PromptSection[],
+  totalTokenBudget?: number,
+): string {
+  // Filter sections by condition
+  const active = sections.filter((s) => !s.condition || s.condition());
+
+  // Sort by priority (highest first)
+  const sorted = [...active].sort((a, b) => b.priority - a.priority);
+
+  // Apply per-section token budgets
+  const budgeted = sorted.map((s) => {
+    if (s.tokenBudget) {
+      const tokens = estimateTokens(s.content);
+      if (tokens > s.tokenBudget) {
+        return { ...s, content: truncateToTokenBudget(s.content, s.tokenBudget) };
+      }
+    }
+    return s;
+  });
+
+  // Enforce total token budget by trimming lowest-priority sections
+  const budget = totalTokenBudget ?? DEFAULT_TOTAL_TOKEN_BUDGET;
+  const included: PromptSection[] = [];
+  let totalTokens = 0;
+
+  for (const section of budgeted) {
+    const sectionTokens = estimateTokens(section.content);
+    if (totalTokens + sectionTokens <= budget) {
+      included.push(section);
+      totalTokens += sectionTokens;
+    }
+    // Skip sections that would exceed the budget (they're already sorted by priority,
+    // so we try to fit as many high-priority sections as possible)
+  }
+
+  return included.map((s) => s.content).join("\n\n---\n\n");
+}
+
+/**
+ * Truncate content to approximately fit within a token budget.
+ * Cuts at line boundaries to preserve readability.
+ */
+function truncateToTokenBudget(content: string, budget: number): string {
+  const lines = content.split("\n");
+  const result: string[] = [];
+  let tokens = 0;
+
+  for (const line of lines) {
+    const lineTokens = estimateTokens(line);
+    if (tokens + lineTokens > budget) {
+      result.push("...(truncated)");
+      break;
+    }
+    result.push(line);
+    tokens += lineTokens;
+  }
+
+  return result.join("\n");
+}
+
+/** Feature flag -> prompt section content mapping */
+const FEATURE_SECTIONS: Readonly<Record<string, string>> = {
+  "parallel-tools": [
+    "# Parallel Tool Execution",
+    "",
+    "You can execute multiple tools in parallel when they are independent.",
+    "Read-only tools (file_read, glob_search, grep_search, list_dir) are always safe to parallelize.",
+    "File write operations on different paths can also run in parallel.",
+    "Avoid parallel writes to the same file.",
+  ].join("\n"),
+  "auto-compact": [
+    "# Auto-Compaction",
+    "",
+    "When the context window approaches capacity, the system will automatically compact",
+    "older conversation turns into summaries. Focus on the most recent context.",
+    "If you notice missing context from earlier in the conversation, ask the user.",
+  ].join("\n"),
+};
+
+function buildPlanModeSection(): string {
+  return `# Plan Mode
+
+You are in PLAN mode. In this mode:
+- Analyze the task thoroughly before proposing any changes.
+- Present a structured implementation plan with clear steps.
+- Identify risks, dependencies, and edge cases.
+- Estimate complexity for each step (low/medium/high).
+- Do NOT make any file modifications — only plan and discuss.
+- Wait for user approval before switching to implementation.`;
+}
+
+function buildSubagentSection(subagentType?: "explore" | "plan" | "general"): string {
+  const baseInstructions = [
+    "# Subagent Context",
+    "",
+    "You are running as a subagent spawned by a parent agent.",
+    "Your scope is limited to the specific task assigned to you.",
+    "Report findings concisely — the parent agent will synthesize results.",
+    "Do not ask the user questions directly; return your results to the parent.",
+  ];
+
+  switch (subagentType) {
+    case "explore":
+      baseInstructions.push(
+        "",
+        "## Exploration Focus",
+        "Your role is to investigate the codebase and gather information.",
+        "Use file reading, searching, and grep tools extensively.",
+        "Provide a comprehensive summary of your findings.",
+        "Focus on: file structure, key interfaces, dependencies, and patterns.",
+      );
+      break;
+    case "plan":
+      baseInstructions.push(
+        "",
+        "## Planning Focus",
+        "Your role is to analyze requirements and create an implementation plan.",
+        "Break down the task into clear, ordered steps.",
+        "Identify dependencies between steps and estimate complexity.",
+        "Consider edge cases and potential risks.",
+      );
+      break;
+    case "general":
+      baseInstructions.push(
+        "",
+        "## General Task",
+        "Complete the assigned task using the available tools.",
+        "Be thorough and report your results clearly.",
+      );
+      break;
+  }
+
+  return baseInstructions.join("\n");
+}
+
+function buildExtendedThinkingSection(): string {
+  return `# Extended Thinking
+
+Extended thinking is enabled. Use your internal reasoning to:
+- Break down complex problems step by step.
+- Consider multiple approaches before choosing one.
+- Validate your reasoning against the code you've read.
+- Think through edge cases and potential issues.
+Do not narrate your thinking process — just produce better results.`;
 }
 
 function buildIdentitySection(): string {
@@ -204,12 +474,9 @@ function detectProjectType(cwd: string): string | null {
   return null;
 }
 
-/** Load project instructions from .dbcode/DBCODE.md */
+/** Load project instructions from DBCODE.md (root first, .dbcode/ fallback) */
 function loadProjectInstructions(cwd: string): string | null {
-  const paths = [
-    join(cwd, `.${APP_NAME}`, `${APP_NAME.toUpperCase()}.md`),
-    join(cwd, `${APP_NAME.toUpperCase()}.md`),
-  ];
+  const paths = getProjectConfigPaths(cwd);
 
   for (const p of paths) {
     try {

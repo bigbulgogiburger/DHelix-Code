@@ -338,6 +338,71 @@ describe("runAgentLoop", () => {
     }, 15000);
   });
 
+  it("should emit agent:assistant-message event for each assistant message", async () => {
+    const toolCalls: ExtractedToolCall[] = [
+      { id: "tc-1", name: "file_read", arguments: { file_path: "/a.ts" } },
+    ];
+
+    const toolResponse: ChatResponse = {
+      content: "Let me read that file.",
+      toolCalls: [],
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+      finishReason: "stop",
+    };
+
+    const client = createMockClient([toolResponse, SIMPLE_RESPONSE]);
+
+    let extractCount = 0;
+    (strategy.extractToolCalls as ReturnType<typeof vi.fn>).mockImplementation(() => {
+      extractCount++;
+      return extractCount === 1 ? toolCalls : [];
+    });
+    (strategy.formatToolResults as ReturnType<typeof vi.fn>).mockReturnValue([
+      { role: "tool", content: "file contents" },
+    ]);
+
+    mockExecuteToolCall.mockResolvedValue({
+      id: "tc-1",
+      name: "file_read",
+      output: "file contents",
+      isError: false,
+    });
+
+    const config: AgentLoopConfig = {
+      client,
+      model: "gpt-4o",
+      toolRegistry: registry,
+      strategy,
+      events,
+    };
+
+    await runAgentLoop(config, [{ role: "user", content: "Read file" }]);
+
+    // Should have emitted agent:assistant-message twice:
+    // 1st: intermediate (has tool calls, isFinal=false)
+    // 2nd: final (no tool calls, isFinal=true)
+    const assistantMessageCalls = (events.emit as ReturnType<typeof vi.fn>).mock.calls.filter(
+      ([event]: [string]) => event === "agent:assistant-message",
+    );
+    expect(assistantMessageCalls).toHaveLength(2);
+
+    // First call: intermediate message
+    expect(assistantMessageCalls[0][1]).toEqual({
+      content: "Let me read that file.",
+      toolCalls: [{ id: "tc-1", name: "file_read" }],
+      iteration: 1,
+      isFinal: false,
+    });
+
+    // Second call: final message
+    expect(assistantMessageCalls[1][1]).toEqual({
+      content: "Hello!",
+      toolCalls: [],
+      iteration: 2,
+      isFinal: true,
+    });
+  });
+
   describe("parallel tool execution", () => {
     it("should execute tool calls via parallel groups", async () => {
       const toolCalls: ExtractedToolCall[] = [

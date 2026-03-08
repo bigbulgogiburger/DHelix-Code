@@ -13,6 +13,21 @@ export const CONFIG_DIR = join(homedir(), `.${APP_NAME}`);
 /** Default project configuration file name */
 export const PROJECT_CONFIG_FILE = `${APP_NAME.toUpperCase()}.md`;
 
+/** Project configuration directory name (e.g., ".dbcode") */
+export const PROJECT_CONFIG_DIR = `.${APP_NAME}`;
+
+/**
+ * Get ordered DBCODE.md lookup paths for a given directory.
+ * Primary: project root (convention), Fallback: .dbcode/ directory.
+ * All code should use this to resolve DBCODE.md consistently.
+ */
+export function getProjectConfigPaths(cwd: string): readonly string[] {
+  return [
+    join(cwd, PROJECT_CONFIG_FILE),                     // DBCODE.md (project root — primary)
+    join(cwd, PROJECT_CONFIG_DIR, PROJECT_CONFIG_FILE), // .dbcode/DBCODE.md (fallback)
+  ];
+}
+
 /** Default session storage directory */
 export const SESSIONS_DIR = join(CONFIG_DIR, "sessions");
 
@@ -23,8 +38,8 @@ export const LOG_FILE = join(CONFIG_DIR, "debug.log");
 export const AGENT_LOOP = {
   /** Maximum iterations before force-stop */
   maxIterations: 50,
-  /** Context window usage threshold for auto-compaction */
-  compactionThreshold: 0.95,
+  /** Context window usage threshold for auto-compaction (Layer 2) */
+  compactionThreshold: 0.835,
   /** Reserve ratio for LLM response tokens */
   responseReserveRatio: 0.2,
 } as const;

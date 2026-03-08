@@ -8,6 +8,7 @@ import { type AppEventEmitter } from "../utils/events.js";
 import { AGENT_LOOP } from "../constants.js";
 import { LLMError } from "../utils/error.js";
 import { ContextManager } from "./context-manager.js";
+import { type CheckpointManager } from "./checkpoint-manager.js";
 import { applyInputGuardrails, applyOutputGuardrails } from "../guardrails/index.js";
 import { countTokens } from "../llm/token-counter.js";
 
@@ -36,6 +37,10 @@ export interface AgentLoopConfig {
   readonly maxToolResultTokens?: number;
   /** Enable security guardrails for tool calls (default: true) */
   readonly enableGuardrails?: boolean;
+  /** Checkpoint manager for auto-checkpointing file mutations */
+  readonly checkpointManager?: CheckpointManager;
+  /** Session ID for checkpoint metadata */
+  readonly sessionId?: string;
 }
 
 /** Result of a permission check */
@@ -254,6 +259,11 @@ export async function runAgentLoop(
   // Context manager for auto-compaction when token budget is exceeded
   const contextManager = new ContextManager({
     maxContextTokens: config.maxContextTokens,
+    sessionId: config.sessionId,
+    workingDirectory: config.workingDirectory,
+    onPreCompact: () => {
+      config.events.emit("context:pre-compact", { compactionNumber: 0 });
+    },
   });
 
   while (iterations < maxIterations) {
@@ -363,6 +373,14 @@ export async function runAgentLoop(
     // Extract tool calls
     const extractedCalls = config.strategy.extractToolCalls(response.content, response.toolCalls);
 
+    // Emit assistant message event (intermediate if tool calls follow, final otherwise)
+    config.events.emit("agent:assistant-message", {
+      content: response.content,
+      toolCalls: extractedCalls.map((tc) => ({ id: tc.id, name: tc.name })),
+      iteration: iterations,
+      isFinal: extractedCalls.length === 0,
+    });
+
     if (extractedCalls.length === 0) {
       break; // No tool calls — conversation turn complete
     }
@@ -430,6 +448,39 @@ export async function runAgentLoop(
         executableCalls.push(call);
       }
 
+      // Auto-checkpoint: snapshot files before file-modifying tools execute
+      if (config.checkpointManager) {
+        const fileModifyingCalls = executableCalls.filter(
+          (c) => FILE_WRITE_TOOLS.has(c.name),
+        );
+        if (fileModifyingCalls.length > 0) {
+          const trackedFiles = fileModifyingCalls
+            .map((c) => extractFilePath(c))
+            .filter((p): p is string => p !== undefined);
+
+          if (trackedFiles.length > 0) {
+            try {
+              const workDir = config.workingDirectory ?? process.cwd();
+              const toolNames = fileModifyingCalls.map((c) => c.name).join(", ");
+              const cp = await config.checkpointManager.createCheckpoint({
+                sessionId: config.sessionId ?? "unknown",
+                description: `Before ${toolNames}: ${trackedFiles.map((f) => f.split("/").pop()).join(", ")}`,
+                messageIndex: messages.length,
+                workingDirectory: workDir,
+                trackedFiles,
+              });
+              config.events.emit("checkpoint:created", {
+                checkpointId: cp.id,
+                description: cp.description,
+                fileCount: cp.files.length,
+              });
+            } catch {
+              // Checkpoint failure should not block tool execution
+            }
+          }
+        }
+      }
+
       // Execute all approved calls in the group in parallel
       const settled = await Promise.allSettled(
         executableCalls.map(async (call) => {
@@ -491,6 +542,16 @@ export async function runAgentLoop(
             isError: true,
             output: errorResult.output,
           });
+        }
+      }
+    }
+
+    // Track file accesses for context manager rehydration
+    for (const call of extractedCalls) {
+      if (call.name === "file_read" || call.name === "file_edit" || call.name === "file_write") {
+        const filePath = extractFilePath(call);
+        if (filePath) {
+          contextManager.trackFileAccess(filePath);
         }
       }
     }

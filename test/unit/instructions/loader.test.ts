@@ -102,4 +102,29 @@ describe("instructions/loader", () => {
     expect(err.code).toBe("INSTRUCTION_LOAD_ERROR");
     expect(err.message).toBe("load failed");
   });
+
+  it("should have parentInstructions field", async () => {
+    const result = await loadInstructions(tmpDir);
+    expect(result.parentInstructions).toBe("");
+  });
+
+  it("should exclude rule files matching excludePatterns", async () => {
+    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await mkdir(rulesDir, { recursive: true });
+    await writeFile(join(rulesDir, "style.md"), "Keep included", "utf-8");
+    await writeFile(join(rulesDir, "excluded.md"), "Should be excluded", "utf-8");
+
+    const result = await loadInstructions(tmpDir, {
+      excludePatterns: ["excluded.md"],
+    });
+    expect(result.pathRules).toContain("Keep included");
+    expect(result.pathRules).not.toContain("Should be excluded");
+  });
+
+  it("should accept options parameter without breaking existing behavior", async () => {
+    await writeFile(join(tmpDir, "DBCODE.md"), "base instructions", "utf-8");
+    const result = await loadInstructions(tmpDir, { excludePatterns: [] });
+    expect(result.projectInstructions).toContain("base instructions");
+  });
 });

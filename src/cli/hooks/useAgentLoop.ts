@@ -8,8 +8,12 @@ import { type PermissionResult, runAgentLoop } from "../../core/agent-loop.js";
 import { type ContextManager } from "../../core/context-manager.js";
 import { type HookRunner } from "../../hooks/runner.js";
 import { type SessionManager } from "../../core/session-manager.js";
+import { CheckpointManager } from "../../core/checkpoint-manager.js";
+import { type SkillManager } from "../../skills/manager.js";
 import { type CommandRegistry } from "../../commands/registry.js";
 import { type ExtractedToolCall } from "../../tools/types.js";
+import { SESSIONS_DIR } from "../../constants.js";
+import { join } from "node:path";
 import { buildSystemPrompt } from "../../core/system-prompt-builder.js";
 import { loadInstructions } from "../../instructions/loader.js";
 import { getModelCapabilities } from "../../llm/model-capabilities.js";
@@ -25,6 +29,7 @@ export interface UseAgentLoopOptions {
   readonly contextManager?: ContextManager;
   readonly hookRunner?: HookRunner;
   readonly sessionManager?: SessionManager;
+  readonly skillManager?: SkillManager;
   readonly sessionId?: string;
   readonly checkPermission: (call: ExtractedToolCall) => Promise<PermissionResult>;
 }
@@ -38,6 +43,7 @@ export function useAgentLoop({
   contextManager,
   hookRunner,
   sessionManager,
+  skillManager,
   sessionId,
   checkPermission,
 }: UseAgentLoopOptions) {
@@ -79,6 +85,12 @@ export function useAgentLoop({
 
   const events = useMemo(() => createEventEmitter(), []);
 
+  // Checkpoint manager for auto-checkpointing file mutations
+  const checkpointManager = useMemo(
+    () => (sessionId ? new CheckpointManager(join(SESSIONS_DIR, sessionId)) : undefined),
+    [sessionId],
+  );
+
   /** Sync current turn snapshot from ActivityCollector to React state */
   const syncCurrentTurn = useCallback(() => {
     setCurrentTurn(activityRef.current.getCurrentTurn());
@@ -97,14 +109,39 @@ export function useAgentLoop({
     const onTextDelta = ({ text }: { text: string }) => {
       appendText(text);
     };
+    const onAssistantMessage = ({
+      content,
+      toolCalls,
+      iteration,
+      isFinal,
+    }: {
+      content: string;
+      toolCalls: readonly { readonly id: string; readonly name: string }[];
+      iteration: number;
+      isFinal: boolean;
+    }) => {
+      // Only track intermediate messages (those followed by tool calls).
+      // The final message is already handled after runAgentLoop returns.
+      if (!isFinal && content) {
+        activityRef.current.addEntry("assistant-intermediate", {
+          content,
+          toolCalls: toolCalls.map((tc) => ({ id: tc.id, name: tc.name })),
+          iteration,
+          isComplete: true,
+        });
+        syncCurrentTurn();
+      }
+    };
 
     events.on("tool:start", onToolStart);
     events.on("tool:complete", onToolComplete);
     events.on("llm:text-delta", onTextDelta);
+    events.on("agent:assistant-message", onAssistantMessage);
     return () => {
       events.off("tool:start", onToolStart);
       events.off("tool:complete", onToolComplete);
       events.off("llm:text-delta", onTextDelta);
+      events.off("agent:assistant-message", onAssistantMessage);
     };
   }, [events, appendText, syncCurrentTurn]);
 
@@ -141,6 +178,7 @@ export function useAgentLoop({
         toolRegistry,
         workingDirectory: process.cwd(),
         projectInstructions,
+        skillsPromptSection: skillManager?.buildPromptSection() ?? undefined,
       });
 
       let messages: ChatMessage[] = [
@@ -172,6 +210,8 @@ export function useAgentLoop({
             useStreaming: true,
             maxContextTokens: modelCaps.maxContextTokens,
             checkPermission,
+            checkpointManager,
+            sessionId,
           },
           messages,
         );
@@ -278,6 +318,7 @@ export function useAgentLoop({
       contextManager,
       hookRunner,
       sessionManager,
+      skillManager,
       sessionId,
       events,
       projectInstructions,
@@ -285,6 +326,7 @@ export function useAgentLoop({
       resetText,
       syncCurrentTurn,
       checkPermission,
+      checkpointManager,
     ],
   );
 
@@ -304,6 +346,13 @@ export function useAgentLoop({
         });
 
         if (result) {
+          // Skill commands with shouldInjectAsUserMessage bypass display
+          // and send the expanded prompt through the agent loop
+          if (result.shouldInjectAsUserMessage && result.success) {
+            void processMessage(result.output);
+            return;
+          }
+
           setCommandOutput(result.output);
 
           if (result.shouldClear) {

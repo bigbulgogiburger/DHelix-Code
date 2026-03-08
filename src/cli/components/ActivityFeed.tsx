@@ -36,6 +36,15 @@ function renderEntry(
         />
       );
 
+    case "assistant-intermediate":
+      return (
+        <StreamingMessage
+          key={keyPrefix}
+          text={String(entry.data.content ?? "")}
+          isComplete={true}
+        />
+      );
+
     case "tool-start":
     case "tool-complete":
     case "tool-denied": {
@@ -163,6 +172,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({
       const isComplete =
         entry.type === "user-message" ||
         entry.type === "error" ||
+        entry.type === "assistant-intermediate" ||
         entry.type === "tool-complete" ||
         entry.type === "tool-denied" ||
         (entry.type === "assistant-text" && entry.data.isComplete === true) ||

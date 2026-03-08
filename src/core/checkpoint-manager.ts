@@ -1,5 +1,5 @@
 import { mkdir, readFile, writeFile, readdir, stat, copyFile } from "node:fs/promises";
-import { join, relative, resolve } from "node:path";
+import { dirname, join, relative, resolve } from "node:path";
 import { createHash } from "node:crypto";
 import { BaseError } from "../utils/error.js";
 
@@ -97,12 +97,10 @@ export class CheckpointManager {
         const fileStat = await stat(fullPath);
         if (!fileStat.isFile()) continue;
 
-        // Copy file to checkpoint directory
-        const destPath = join(cpDir, safeFileName);
-        await copyFile(fullPath, destPath);
-
-        // Calculate hash
+        // Read once, hash from buffer, write to checkpoint
         const content = await readFile(fullPath);
+        const destPath = join(cpDir, safeFileName);
+        await writeFile(destPath, content);
         const hash = createHash("sha256").update(content).digest("hex");
 
         snapshots.push({
@@ -198,8 +196,7 @@ export class CheckpointManager {
 
       try {
         // Ensure destination directory exists
-        const destDir = join(destPath, "..");
-        await mkdir(destDir, { recursive: true });
+        await mkdir(dirname(destPath), { recursive: true });
 
         await copyFile(srcPath, destPath);
         restoredFiles.push(snapshot.relativePath);
