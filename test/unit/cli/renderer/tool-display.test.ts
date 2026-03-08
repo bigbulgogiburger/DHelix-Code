@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getToolDisplayText,
   getToolStatusIcon,
+  getToolPreview,
   formatDuration,
   SPINNER_FRAMES,
   SPINNER_INTERVAL_MS,
@@ -46,23 +47,17 @@ describe("tool-display", () => {
         ).toBe("Writing /out.ts");
       });
 
-      it("should show 'Wrote' when complete", () => {
-        expect(
-          getToolDisplayText("file_write", "complete", { file_path: "/out.ts" }),
-        ).toBe("Wrote /out.ts");
-      });
-
-      it("should show byte size when content is provided", () => {
+      it("should show 'Wrote' when complete with line count and size", () => {
         expect(
           getToolDisplayText("file_write", "complete", { file_path: "/out.ts", content: "hello" }),
-        ).toBe("Wrote /out.ts (5 B)");
+        ).toBe("Wrote /out.ts (1 lines, 5 B)");
       });
 
       it("should show KB for larger content", () => {
         const content = "x".repeat(2048);
         expect(
           getToolDisplayText("file_write", "complete", { file_path: "/out.ts", content }),
-        ).toBe("Wrote /out.ts (2.0 KB)");
+        ).toBe("Wrote /out.ts (1 lines, 2.0 KB)");
       });
     });
 
@@ -77,6 +72,12 @@ describe("tool-display", () => {
         expect(
           getToolDisplayText("file_edit", "complete", { file_path: "/a.ts" }),
         ).toBe("Edited /a.ts");
+      });
+
+      it("should show 'replace all' when replace_all is true", () => {
+        expect(
+          getToolDisplayText("file_edit", "complete", { file_path: "/a.ts", replace_all: true }),
+        ).toBe("Edited /a.ts (replace all)");
       });
     });
 
@@ -93,10 +94,16 @@ describe("tool-display", () => {
         ).toBe("Ran npm test");
       });
 
-      it("should truncate commands longer than 50 chars", () => {
-        const longCmd = "a".repeat(60);
+      it("should truncate commands longer than 80 chars", () => {
+        const longCmd = "a".repeat(90);
         const result = getToolDisplayText("bash_exec", "running", { command: longCmd });
-        expect(result).toBe("Running " + "a".repeat(50) + "...");
+        expect(result).toBe("Running " + "a".repeat(77) + "…");
+      });
+
+      it("should show multi-line command count", () => {
+        const cmd = "echo line1\necho line2\necho line3";
+        const result = getToolDisplayText("bash_exec", "running", { command: cmd });
+        expect(result).toBe("Running echo line1 (+2 lines)");
       });
 
       it("should show verb only when no command arg", () => {
@@ -105,72 +112,88 @@ describe("tool-display", () => {
     });
 
     describe("glob_search", () => {
-      it("should show 'Searching for' with pattern when running", () => {
+      it("should show pattern when running", () => {
         expect(
           getToolDisplayText("glob_search", "running", { pattern: "**/*.ts" }),
-        ).toBe("Searching for **/*.ts");
+        ).toBe('Searching files "**/*.ts"');
       });
 
-      it("should show file count when complete with output", () => {
+      it("should show file count with pattern when complete", () => {
         const output = "file1.ts\nfile2.ts\nfile3.ts";
         expect(
-          getToolDisplayText("glob_search", "complete", {}, output),
-        ).toBe("Found 3 files");
+          getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }, output),
+        ).toBe('Found 3 files matching "**/*.ts"');
       });
 
       it("should show singular 'file' for one result", () => {
         expect(
-          getToolDisplayText("glob_search", "complete", {}, "file1.ts"),
-        ).toBe("Found 1 file");
-      });
-
-      it("should fall back to pattern when no output", () => {
-        expect(
-          getToolDisplayText("glob_search", "complete", { pattern: "*.md" }),
-        ).toBe("Found *.md");
+          getToolDisplayText("glob_search", "complete", { pattern: "*.md" }, "file1.ts"),
+        ).toBe('Found 1 file matching "*.md"');
       });
     });
 
     describe("grep_search", () => {
-      it("should show 'Searching for' with quoted pattern when running", () => {
+      it("should show pattern when running", () => {
         expect(
           getToolDisplayText("grep_search", "running", { pattern: "TODO" }),
-        ).toBe('Searching for "TODO"');
+        ).toBe('Searching "TODO"');
       });
 
-      it("should show 'Searched for' with quoted pattern when complete", () => {
+      it("should show result count when complete with output", () => {
         expect(
-          getToolDisplayText("grep_search", "complete", { pattern: "TODO" }),
-        ).toBe('Searched for "TODO"');
+          getToolDisplayText("grep_search", "complete", { pattern: "TODO" }, "line1\nline2"),
+        ).toBe('Searched "TODO" — 2 results');
       });
     });
 
     describe("mkdir", () => {
-      it("should show 'Creating' with path when running", () => {
+      it("should show 'Creating directory' when running", () => {
         expect(
           getToolDisplayText("mkdir", "running", { path: "/src/new" }),
-        ).toBe("Creating /src/new");
+        ).toBe("Creating directory /src/new");
       });
 
-      it("should show 'Created' when complete", () => {
+      it("should show 'Created directory' when complete", () => {
         expect(
           getToolDisplayText("mkdir", "complete", { path: "/src/new" }),
-        ).toBe("Created /src/new");
+        ).toBe("Created directory /src/new");
       });
     });
+  });
 
-    describe("error and denied states use complete verb", () => {
-      it("should use complete verb for error status", () => {
-        expect(
-          getToolDisplayText("file_read", "error", { file_path: "/x.ts" }),
-        ).toBe("Read /x.ts");
+  describe("getToolPreview", () => {
+    it("should return diff preview for file_edit when complete", () => {
+      const preview = getToolPreview("file_edit", "complete", {
+        old_string: "const a = 1;",
+        new_string: "const a = 2;",
       });
+      expect(preview).toContain("- const a = 1;");
+      expect(preview).toContain("+ const a = 2;");
+    });
 
-      it("should use complete verb for denied status", () => {
-        expect(
-          getToolDisplayText("file_write", "denied", { file_path: "/x.ts" }),
-        ).toBe("Wrote /x.ts");
+    it("should return undefined for file_edit when running", () => {
+      const preview = getToolPreview("file_edit", "running", {
+        old_string: "old",
+        new_string: "new",
       });
+      expect(preview).toBeUndefined();
+    });
+
+    it("should return undefined for tools without preview", () => {
+      expect(getToolPreview("file_read", "complete")).toBeUndefined();
+    });
+
+    it("should return bash output preview when complete", () => {
+      const output = "line1\nline2\nline3";
+      const preview = getToolPreview("bash_exec", "complete", {}, output);
+      expect(preview).toContain("line1");
+      expect(preview).toContain("line2");
+    });
+
+    it("should truncate long bash output", () => {
+      const output = Array.from({ length: 20 }, (_, i) => `line${i}`).join("\n");
+      const preview = getToolPreview("bash_exec", "complete", {}, output);
+      expect(preview).toContain("more lines");
     });
   });
 

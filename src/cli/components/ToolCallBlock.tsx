@@ -4,6 +4,7 @@ import { Box, Text } from "ink";
 import {
   getToolDisplayText,
   getToolStatusIcon,
+  getToolPreview,
   SPINNER_FRAMES,
 } from "../renderer/tool-display.js";
 
@@ -32,7 +33,37 @@ function useSpinner(active: boolean): string {
   return SPINNER_FRAMES[frame];
 }
 
-/** Display a tool call with status indicator */
+/** Render a diff-like preview with colored +/- lines */
+function DiffPreview({ preview }: { readonly preview: string }) {
+  const lines = preview.split("\n");
+  return (
+    <Box flexDirection="column" marginLeft={4} marginTop={0}>
+      {lines.map((line, i) => {
+        if (line.startsWith("+ ")) {
+          return (
+            <Text key={i} color="green">
+              {line}
+            </Text>
+          );
+        }
+        if (line.startsWith("- ")) {
+          return (
+            <Text key={i} color="red">
+              {line}
+            </Text>
+          );
+        }
+        return (
+          <Text key={i} color="gray">
+            {line}
+          </Text>
+        );
+      })}
+    </Box>
+  );
+}
+
+/** Display a tool call with status indicator, detail text, and optional diff preview */
 export const ToolCallBlock = React.memo(function ToolCallBlock({
   name,
   status,
@@ -45,6 +76,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   const icon = status === "running" ? spinnerChar : getToolStatusIcon(status);
   const duration = startTime && status !== "running" ? Date.now() - startTime : undefined;
   const displayText = getToolDisplayText(name, status, args, output, duration);
+  const preview = getToolPreview(name, status, args, output);
 
   const statusColor = {
     running: "yellow",
@@ -60,7 +92,8 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         <Text> </Text>
         <Text bold>{displayText}</Text>
       </Box>
-      {isExpanded && output ? (
+      {preview ? <DiffPreview preview={preview} /> : null}
+      {isExpanded && output && !preview ? (
         <Box marginLeft={4} marginTop={0}>
           <Text color="gray" wrap="truncate-end">
             {output.length > 500 ? output.slice(0, 500) + "..." : output}

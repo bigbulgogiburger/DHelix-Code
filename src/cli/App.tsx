@@ -1,4 +1,4 @@
-import { Box, Text } from "ink";
+import { Box, Text, Static } from "ink";
 import { useState, useMemo } from "react";
 import { UserInput } from "./components/UserInput.js";
 import { Spinner } from "./components/Spinner.js";
@@ -105,9 +105,13 @@ export function App({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <Box marginBottom={1}>
-        <Logo modelName={activeModel} />
-      </Box>
+      <Static items={[{ key: "logo" }]}>
+        {() => (
+          <Box marginBottom={1}>
+            <Logo modelName={activeModel} />
+          </Box>
+        )}
+      </Static>
 
       <ActivityFeed completedTurns={completedTurns} currentTurn={liveTurn} />
 

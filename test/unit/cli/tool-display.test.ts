@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   getToolDisplayText,
   getToolStatusIcon,
+  getToolPreview,
   SPINNER_FRAMES,
   SPINNER_INTERVAL_MS,
 } from "../../../src/cli/renderer/tool-display.js";
@@ -70,14 +71,14 @@ describe("getToolDisplayText", () => {
       ).toBe("Ran npm test");
     });
 
-    it("should truncate commands longer than 50 characters", () => {
-      const longCommand = "a".repeat(60);
+    it("should truncate commands longer than 80 characters", () => {
+      const longCommand = "a".repeat(90);
       const result = getToolDisplayText("bash_exec", "running", { command: longCommand });
-      expect(result).toBe(`Running ${"a".repeat(50)}...`);
+      expect(result).toBe(`Running ${"a".repeat(77)}…`);
     });
 
-    it("should not truncate commands exactly 50 characters", () => {
-      const cmd = "a".repeat(50);
+    it("should not truncate commands at 80 characters", () => {
+      const cmd = "a".repeat(80);
       const result = getToolDisplayText("bash_exec", "running", { command: cmd });
       expect(result).toBe(`Running ${cmd}`);
     });
@@ -88,64 +89,70 @@ describe("getToolDisplayText", () => {
   });
 
   describe("glob_search", () => {
-    it("should show 'Searching' with pattern when running", () => {
+    it("should show pattern when running", () => {
       expect(
         getToolDisplayText("glob_search", "running", { pattern: "**/*.ts" }),
-      ).toBe("Searching for **/*.ts");
+      ).toBe('Searching files "**/*.ts"');
     });
 
-    it("should show file count from output when complete", () => {
+    it("should show file count with pattern when complete", () => {
       const output = "/src/a.ts\n/src/b.ts\n/src/c.ts\n";
       expect(
         getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }, output),
-      ).toBe("Found 3 files");
+      ).toBe('Found 3 files matching "**/*.ts"');
     });
 
     it("should show singular 'file' for single result", () => {
       const output = "/src/index.ts\n";
       expect(
         getToolDisplayText("glob_search", "complete", { pattern: "index.ts" }, output),
-      ).toBe("Found 1 file");
+      ).toBe('Found 1 file matching "index.ts"');
     });
 
     it("should fall back to pattern when no output", () => {
       expect(
         getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }),
-      ).toBe("Found **/*.ts");
+      ).toBe('Found "**/*.ts"');
     });
 
     it("should handle empty output by falling back to pattern", () => {
       expect(
         getToolDisplayText("glob_search", "complete", { pattern: "*.xyz" }, ""),
-      ).toBe("Found *.xyz");
+      ).toBe('Found "*.xyz"');
     });
   });
 
   describe("grep_search", () => {
-    it("should show 'Searching' with pattern when running", () => {
+    it("should show pattern when running", () => {
       expect(
         getToolDisplayText("grep_search", "running", { pattern: "TODO" }),
-      ).toBe('Searching for "TODO"');
+      ).toBe('Searching "TODO"');
     });
 
-    it("should show 'Searched for' with quoted pattern when complete", () => {
+    it("should show result count when complete with output", () => {
+      expect(
+        getToolDisplayText("grep_search", "complete", { pattern: "TODO" }, "match1\nmatch2"),
+      ).toBe('Searched "TODO" — 2 results');
+    });
+
+    it("should show pattern only when complete without output", () => {
       expect(
         getToolDisplayText("grep_search", "complete", { pattern: "TODO" }),
-      ).toBe('Searched for "TODO"');
+      ).toBe('Searched "TODO"');
     });
   });
 
   describe("mkdir", () => {
-    it("should show 'Creating' with path when running", () => {
+    it("should show 'Creating directory' with path when running", () => {
       expect(
         getToolDisplayText("mkdir", "running", { path: "/src/utils" }),
-      ).toBe("Creating /src/utils");
+      ).toBe("Creating directory /src/utils");
     });
 
-    it("should show 'Created' with path when complete", () => {
+    it("should show 'Created directory' with path when complete", () => {
       expect(
         getToolDisplayText("mkdir", "complete", { path: "/src/utils" }),
-      ).toBe("Created /src/utils");
+      ).toBe("Created directory /src/utils");
     });
   });
 
@@ -173,6 +180,28 @@ describe("getToolDisplayText", () => {
         getToolDisplayText("file_write", "denied", { file_path: "/secret.ts" }),
       ).toBe("Wrote /secret.ts");
     });
+  });
+});
+
+describe("getToolPreview", () => {
+  it("should return diff preview for file_edit", () => {
+    const preview = getToolPreview("file_edit", "complete", {
+      old_string: "const x = 1;",
+      new_string: "const x = 2;",
+    });
+    expect(preview).toContain("- const x = 1;");
+    expect(preview).toContain("+ const x = 2;");
+  });
+
+  it("should return undefined for file_edit when running", () => {
+    expect(getToolPreview("file_edit", "running", {
+      old_string: "a",
+      new_string: "b",
+    })).toBeUndefined();
+  });
+
+  it("should return undefined for tools without preview", () => {
+    expect(getToolPreview("file_read", "complete")).toBeUndefined();
   });
 });
 

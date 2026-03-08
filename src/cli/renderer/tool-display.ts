@@ -4,6 +4,55 @@ interface ToolDisplayConfig {
   readonly running: string;
   readonly complete: string;
   readonly extractDetail?: (args?: Record<string, unknown>, output?: string) => string | undefined;
+  /** Extract a preview snippet (diff, output preview, etc.) shown below the status line */
+  readonly extractPreview?: (args?: Record<string, unknown>, output?: string, status?: ToolStatus) => string | undefined;
+}
+
+/** Shorten a file path to just filename for display, keep full if short enough */
+function shortenPath(filePath: string, maxLen = 60): string {
+  if (filePath.length <= maxLen) return filePath;
+  const parts = filePath.split("/");
+  const filename = parts[parts.length - 1];
+  if (parts.length <= 2) return filePath;
+  return `…/${parts[parts.length - 2]}/${filename}`;
+}
+
+/** Generate a unified-diff-like preview for file_edit */
+function formatEditDiff(args?: Record<string, unknown>): string | undefined {
+  const oldStr = typeof args?.old_string === "string" ? args.old_string : undefined;
+  const newStr = typeof args?.new_string === "string" ? args.new_string : undefined;
+  if (!oldStr && !newStr) return undefined;
+
+  const lines: string[] = [];
+  const maxPreviewLines = 8;
+  let count = 0;
+
+  if (oldStr) {
+    for (const line of oldStr.split("\n")) {
+      if (count >= maxPreviewLines) { lines.push("  …"); break; }
+      lines.push(`- ${line}`);
+      count++;
+    }
+  }
+  if (newStr) {
+    for (const line of newStr.split("\n")) {
+      if (count >= maxPreviewLines) { lines.push("  …"); break; }
+      lines.push(`+ ${line}`);
+      count++;
+    }
+  }
+  return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+/** Format bash output preview */
+function formatBashPreview(_args?: Record<string, unknown>, output?: string, status?: ToolStatus): string | undefined {
+  if (!output || status === "running") return undefined;
+  const lines = output.trim().split("\n");
+  if (lines.length === 0) return undefined;
+  const maxLines = 5;
+  const preview = lines.slice(0, maxLines);
+  if (lines.length > maxLines) preview.push(`  … (${lines.length - maxLines} more lines)`);
+  return preview.join("\n");
 }
 
 const toolDisplayMap: Record<string, ToolDisplayConfig> = {
@@ -11,7 +60,7 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     running: "Reading",
     complete: "Read",
     extractDetail: (args, output) => {
-      const filePath = typeof args?.file_path === "string" ? args.file_path : undefined;
+      const filePath = typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
       if (!filePath) return undefined;
       if (output) {
         const lines = output.trim().split("\n");
@@ -25,13 +74,14 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     running: "Writing",
     complete: "Wrote",
     extractDetail: (args) => {
-      const filePath = typeof args?.file_path === "string" ? args.file_path : undefined;
+      const filePath = typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
       if (!filePath) return undefined;
       const content = typeof args?.content === "string" ? args.content : undefined;
       if (content) {
+        const lineCount = content.split("\n").length;
         const bytes = new TextEncoder().encode(content).byteLength;
-        if (bytes < 1024) return `${filePath} (${bytes} B)`;
-        return `${filePath} (${(bytes / 1024).toFixed(1)} KB)`;
+        if (bytes < 1024) return `${filePath} (${lineCount} lines, ${bytes} B)`;
+        return `${filePath} (${lineCount} lines, ${(bytes / 1024).toFixed(1)} KB)`;
       }
       return filePath;
     },
@@ -39,7 +89,16 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   file_edit: {
     running: "Editing",
     complete: "Edited",
-    extractDetail: (args) => typeof args?.file_path === "string" ? args.file_path : undefined,
+    extractDetail: (args) => {
+      const filePath = typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+      if (!filePath) return undefined;
+      const replaceAll = args?.replace_all === true;
+      return replaceAll ? `${filePath} (replace all)` : filePath;
+    },
+    extractPreview: (args, _output, status) => {
+      if (status === "running") return undefined;
+      return formatEditDiff(args);
+    },
   },
   bash_exec: {
     running: "Running",
@@ -47,32 +106,68 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     extractDetail: (args) => {
       const cmd = typeof args?.command === "string" ? args.command : undefined;
       if (!cmd) return undefined;
-      return cmd.length > 50 ? cmd.slice(0, 50) + "..." : cmd;
+      // Show first line of multi-line commands, truncate long single-line
+      const firstLine = cmd.split("\n")[0];
+      const display = firstLine.length > 80 ? firstLine.slice(0, 77) + "…" : firstLine;
+      const lineCount = cmd.split("\n").length;
+      return lineCount > 1 ? `${display} (+${lineCount - 1} lines)` : display;
     },
+    extractPreview: formatBashPreview,
   },
   glob_search: {
-    running: "Searching for",
+    running: "Searching files",
     complete: "Found",
     extractDetail: (args, output) => {
+      const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
       if (output) {
         const lines = output.trim().split("\n").filter((l) => l.length > 0);
-        return `${lines.length} file${lines.length === 1 ? "" : "s"}`;
+        const count = `${lines.length} file${lines.length === 1 ? "" : "s"}`;
+        return pattern ? `${count} matching ${pattern}` : count;
       }
-      return typeof args?.pattern === "string" ? args.pattern : undefined;
+      return pattern;
     },
   },
   grep_search: {
-    running: "Searching for",
-    complete: "Searched for",
-    extractDetail: (args) => {
-      const pattern = typeof args?.pattern === "string" ? args.pattern : undefined;
-      return pattern ? `"${pattern}"` : undefined;
+    running: "Searching",
+    complete: "Searched",
+    extractDetail: (args, output) => {
+      const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
+      if (output) {
+        const lines = output.trim().split("\n").filter((l) => l.length > 0);
+        const matchInfo = `${lines.length} result${lines.length === 1 ? "" : "s"}`;
+        return pattern ? `${pattern} — ${matchInfo}` : matchInfo;
+      }
+      return pattern;
     },
   },
   mkdir: {
-    running: "Creating",
-    complete: "Created",
-    extractDetail: (args) => typeof args?.path === "string" ? args.path : undefined,
+    running: "Creating directory",
+    complete: "Created directory",
+    extractDetail: (args) => typeof args?.path === "string" ? shortenPath(args.path) : undefined,
+  },
+  web_fetch: {
+    running: "Fetching",
+    complete: "Fetched",
+    extractDetail: (args) => typeof args?.url === "string" ? args.url : undefined,
+  },
+  list_dir: {
+    running: "Listing",
+    complete: "Listed",
+    extractDetail: (args) => typeof args?.path === "string" ? shortenPath(args.path) : undefined,
+  },
+  notebook_edit: {
+    running: "Editing notebook",
+    complete: "Edited notebook",
+    extractDetail: (args) => typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+  },
+  ask_user: {
+    running: "Asking",
+    complete: "Asked",
+    extractDetail: (args) => {
+      const question = typeof args?.question === "string" ? args.question : undefined;
+      if (!question) return undefined;
+      return question.length > 60 ? question.slice(0, 57) + "…" : question;
+    },
   },
 };
 
@@ -103,6 +198,17 @@ export function getToolDisplayText(
   const base = detail ? `${verb} ${detail}` : verb;
 
   return duration && status !== "running" ? `${base} (${formatDuration(duration)})` : base;
+}
+
+/** Get a preview snippet for display below the tool status line */
+export function getToolPreview(
+  name: string,
+  status: ToolStatus,
+  args?: Record<string, unknown>,
+  output?: string,
+): string | undefined {
+  const config = toolDisplayMap[name];
+  return config?.extractPreview?.(args, output, status);
 }
 
 export function getToolStatusIcon(status: ToolStatus): string {
