@@ -33,23 +33,51 @@ function useSpinner(active: boolean): string {
   return SPINNER_FRAMES[frame];
 }
 
-/** Render a diff-like preview with colored +/- lines */
+/** Parse a diff line into its components: line number, marker (+/-/space), and content */
+function parseDiffLine(line: string): { lineNum: string; marker: "+" | "-" | " "; content: string } {
+  // Match pattern: optional leading spaces + digits + space + marker + space + content
+  // e.g. "  107 - old code" or "  108 + new code" or "  …"
+  const match = line.match(/^(\s*\d+)\s([+-])\s(.*)$/);
+  if (match) {
+    return { lineNum: match[1], marker: match[2] as "+" | "-", content: match[3] };
+  }
+  // Context line with line number: "  109   code"
+  const ctxMatch = line.match(/^(\s*\d+)\s{2}(.*)$/);
+  if (ctxMatch) {
+    return { lineNum: ctxMatch[1], marker: " ", content: ctxMatch[2] };
+  }
+  return { lineNum: "", marker: " ", content: line };
+}
+
+/** Render a diff-like preview with line numbers and colored +/- lines */
 function DiffPreview({ preview }: { readonly preview: string }) {
   const lines = preview.split("\n");
   return (
     <Box flexDirection="column" marginLeft={4} marginTop={0}>
       {lines.map((line, i) => {
-        if (line.startsWith("+ ")) {
+        const { lineNum, marker, content } = parseDiffLine(line);
+        if (marker === "+") {
           return (
-            <Text key={i} color="green">
-              {line}
+            <Text key={i}>
+              <Text dimColor>{lineNum} </Text>
+              <Text color="green">+ {content}</Text>
             </Text>
           );
         }
-        if (line.startsWith("- ")) {
+        if (marker === "-") {
           return (
-            <Text key={i} color="red">
-              {line}
+            <Text key={i}>
+              <Text dimColor>{lineNum} </Text>
+              <Text color="red">- {content}</Text>
+            </Text>
+          );
+        }
+        // Context or overflow line
+        if (lineNum) {
+          return (
+            <Text key={i}>
+              <Text dimColor>{lineNum}   </Text>
+              <Text color="gray">{content}</Text>
             </Text>
           );
         }

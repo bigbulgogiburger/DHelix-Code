@@ -31,6 +31,7 @@ const ENV_PREFIX = "DBCODE_TELEMETRY_";
  * Load telemetry configuration from environment variables.
  *
  * Supported variables:
+ * - DBCODE_TELEMETRY=true (shorthand to enable)
  * - DBCODE_TELEMETRY_ENABLED=true|false
  * - DBCODE_TELEMETRY_OTLP_ENDPOINT=http://localhost:4318
  * - DBCODE_TELEMETRY_PROMETHEUS_PORT=9464
@@ -42,7 +43,7 @@ export function loadTelemetryConfig(): TelemetryConfig {
   const env = process.env;
 
   const raw = {
-    enabled: env[`${ENV_PREFIX}ENABLED`] === "true",
+    enabled: env[`${ENV_PREFIX}ENABLED`] === "true" || env.DBCODE_TELEMETRY === "true",
     otlpEndpoint: env[`${ENV_PREFIX}OTLP_ENDPOINT`] ?? env.OTEL_EXPORTER_OTLP_ENDPOINT ?? undefined,
     prometheusPort: env[`${ENV_PREFIX}PROMETHEUS_PORT`]
       ? Number(env[`${ENV_PREFIX}PROMETHEUS_PORT`])

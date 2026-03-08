@@ -68,10 +68,20 @@ describe("tool-display", () => {
         ).toBe("Editing /a.ts");
       });
 
-      it("should show 'Edited' when complete", () => {
+      it("should show 'Edited' when complete with no old/new_string", () => {
         expect(
           getToolDisplayText("file_edit", "complete", { file_path: "/a.ts" }),
         ).toBe("Edited /a.ts");
+      });
+
+      it("should show change summary when complete with old/new_string", () => {
+        expect(
+          getToolDisplayText("file_edit", "complete", {
+            file_path: "/a.ts",
+            old_string: "const a = 1;",
+            new_string: "const a = 2;\nconst b = 3;\nconst c = 4;",
+          }),
+        ).toBe("Edited /a.ts — Added 3 lines, removed 1 line");
       });
 
       it("should show 'replace all' when replace_all is true", () => {
@@ -162,13 +172,58 @@ describe("tool-display", () => {
   });
 
   describe("getToolPreview", () => {
-    it("should return diff preview for file_edit when complete", () => {
+    it("should return diff preview for file_edit when complete with line numbers", () => {
       const preview = getToolPreview("file_edit", "complete", {
         old_string: "const a = 1;",
         new_string: "const a = 2;",
       });
       expect(preview).toContain("- const a = 1;");
       expect(preview).toContain("+ const a = 2;");
+      // Should contain line numbers
+      expect(preview).toMatch(/\d+\s+-/);
+      expect(preview).toMatch(/\d+\s+\+/);
+    });
+
+    it("should use _lineNumber from args for line numbering", () => {
+      const preview = getToolPreview("file_edit", "complete", {
+        old_string: "const a = 1;",
+        new_string: "const a = 2;",
+        _lineNumber: 42,
+      });
+      expect(preview).toContain("42 - const a = 1;");
+      expect(preview).toContain("42 + const a = 2;");
+    });
+
+    it("should render context lines when _contextLines and _contextStartLine are provided", () => {
+      const preview = getToolPreview("file_edit", "complete", {
+        old_string: "const a = 1;",
+        new_string: "const a = 2;\nconst b = 3;",
+        _lineNumber: 5,
+        _contextLines: [
+          "import foo;",
+          "import bar;",
+          "// setup",
+          "const a = 2;",
+          "const b = 3;",
+          "return a;",
+          "return b;",
+          "}",
+        ],
+        _contextStartLine: 2,
+      });
+      // Before context (lines 2-4)
+      expect(preview).toContain("   2   import foo;");
+      expect(preview).toContain("   3   import bar;");
+      expect(preview).toContain("   4   // setup");
+      // Removed line
+      expect(preview).toContain("   5 - const a = 1;");
+      // Added lines
+      expect(preview).toContain("   5 + const a = 2;");
+      expect(preview).toContain("   6 + const b = 3;");
+      // After context (lines 7-9)
+      expect(preview).toContain("   7   return a;");
+      expect(preview).toContain("   8   return b;");
+      expect(preview).toContain("   9   }");
     });
 
     it("should return undefined for file_edit when running", () => {

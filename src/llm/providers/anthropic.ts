@@ -33,6 +33,11 @@ interface AnthropicTextBlock {
   readonly text: string;
 }
 
+interface AnthropicThinkingBlock {
+  readonly type: "thinking";
+  readonly thinking: string;
+}
+
 interface AnthropicToolUseBlock {
   readonly type: "tool_use";
   readonly id: string;
@@ -40,7 +45,7 @@ interface AnthropicToolUseBlock {
   readonly input: Record<string, unknown>;
 }
 
-type AnthropicContentBlock = AnthropicTextBlock | AnthropicToolUseBlock;
+type AnthropicContentBlock = AnthropicTextBlock | AnthropicThinkingBlock | AnthropicToolUseBlock;
 
 /** Anthropic tool definition */
 interface AnthropicTool {
@@ -79,6 +84,7 @@ interface AnthropicContentBlockDeltaEvent {
   readonly index: number;
   readonly delta:
     | { readonly type: "text_delta"; readonly text: string }
+    | { readonly type: "thinking_delta"; readonly thinking: string }
     | { readonly type: "input_json_delta"; readonly partial_json: string };
 }
 
@@ -355,21 +361,7 @@ export class AnthropicProvider implements LLMProvider {
   private async _chatOnce(request: ChatRequest): Promise<ChatResponse> {
     const { system, messages } = extractSystemAndMessages(request.messages);
 
-    const body: Record<string, unknown> = {
-      model: request.model,
-      messages,
-      max_tokens: request.maxTokens ?? 4096,
-    };
-
-    if (system) {
-      body.system = system;
-    }
-    if (request.temperature !== undefined) {
-      body.temperature = request.temperature;
-    }
-    if (request.tools && request.tools.length > 0) {
-      body.tools = toAnthropicTools(request.tools);
-    }
+    const body = this._buildRequestBody(request, system, messages);
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
@@ -414,11 +406,14 @@ export class AnthropicProvider implements LLMProvider {
 
   private _parseResponse(data: AnthropicResponse): ChatResponse {
     let textContent = "";
+    let thinkingContent = "";
     const toolCalls: ToolCallRequest[] = [];
 
     for (const block of data.content) {
       if (block.type === "text") {
         textContent += block.text;
+      } else if (block.type === "thinking") {
+        thinkingContent += block.thinking;
       } else if (block.type === "tool_use") {
         toolCalls.push({
           id: block.id,
@@ -437,6 +432,7 @@ export class AnthropicProvider implements LLMProvider {
         totalTokens: data.usage.input_tokens + data.usage.output_tokens,
       },
       finishReason: mapStopReason(data.stop_reason),
+      ...(thinkingContent ? { thinking: thinkingContent } : {}),
     };
   }
 
@@ -469,22 +465,8 @@ export class AnthropicProvider implements LLMProvider {
   private async *_streamOnce(request: ChatRequest): AsyncIterable<ChatChunk> {
     const { system, messages } = extractSystemAndMessages(request.messages);
 
-    const body: Record<string, unknown> = {
-      model: request.model,
-      messages,
-      max_tokens: request.maxTokens ?? 4096,
-      stream: true,
-    };
-
-    if (system) {
-      body.system = system;
-    }
-    if (request.temperature !== undefined) {
-      body.temperature = request.temperature;
-    }
-    if (request.tools && request.tools.length > 0) {
-      body.tools = toAnthropicTools(request.tools);
-    }
+    const body = this._buildRequestBody(request, system, messages);
+    body.stream = true;
 
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
@@ -530,11 +512,12 @@ export class AnthropicProvider implements LLMProvider {
       });
     }
 
-    // Track tool calls being assembled during streaming
+    // Track tool calls and thinking blocks being assembled during streaming
     const toolCallsInProgress = new Map<
       number,
       { id: string; name: string; arguments: string }
     >();
+    const thinkingBlocks = new Set<number>();
 
     let inputTokens = 0;
     let outputTokens = 0;
@@ -562,6 +545,8 @@ export class AnthropicProvider implements LLMProvider {
                   arguments: "",
                 },
               };
+            } else if (event.content_block.type === "thinking") {
+              thinkingBlocks.add(event.index);
             }
             break;
           }
@@ -569,6 +554,8 @@ export class AnthropicProvider implements LLMProvider {
           case "content_block_delta": {
             if (event.delta.type === "text_delta") {
               yield { type: "text-delta", text: event.delta.text };
+            } else if (event.delta.type === "thinking_delta") {
+              yield { type: "thinking-delta", thinking_delta: event.delta.thinking };
             } else if (event.delta.type === "input_json_delta") {
               const existing = toolCallsInProgress.get(event.index);
               if (existing) {
@@ -609,6 +596,33 @@ export class AnthropicProvider implements LLMProvider {
         totalTokens: inputTokens + outputTokens,
       },
     };
+  }
+
+  private _buildRequestBody(
+    request: ChatRequest,
+    system: string | undefined,
+    messages: Array<Record<string, unknown>>,
+  ): Record<string, unknown> {
+    const body: Record<string, unknown> = {
+      model: request.model,
+      messages,
+      max_tokens: request.maxTokens ?? 4096,
+    };
+
+    if (system) {
+      body.system = system;
+    }
+    if (request.temperature !== undefined) {
+      body.temperature = request.temperature;
+    }
+    if (request.tools && request.tools.length > 0) {
+      body.tools = toAnthropicTools(request.tools);
+    }
+    if (request.thinking) {
+      body.thinking = request.thinking;
+    }
+
+    return body;
   }
 
   countTokens(text: string): number {

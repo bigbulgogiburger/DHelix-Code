@@ -51,10 +51,20 @@ describe("getToolDisplayText", () => {
       ).toBe("Editing /app.ts");
     });
 
-    it("should show 'Edited' when complete", () => {
+    it("should show 'Edited' when complete without old/new_string", () => {
       expect(
         getToolDisplayText("file_edit", "complete", { file_path: "/app.ts" }),
       ).toBe("Edited /app.ts");
+    });
+
+    it("should show change summary when complete with old/new_string", () => {
+      expect(
+        getToolDisplayText("file_edit", "complete", {
+          file_path: "/app.ts",
+          old_string: "line1\nline2",
+          new_string: "lineA",
+        }),
+      ).toBe("Edited /app.ts — Added 1 line, removed 2 lines");
     });
   });
 
@@ -184,13 +194,72 @@ describe("getToolDisplayText", () => {
 });
 
 describe("getToolPreview", () => {
-  it("should return diff preview for file_edit", () => {
+  it("should return diff preview for file_edit with line numbers", () => {
     const preview = getToolPreview("file_edit", "complete", {
       old_string: "const x = 1;",
       new_string: "const x = 2;",
     });
     expect(preview).toContain("- const x = 1;");
     expect(preview).toContain("+ const x = 2;");
+    expect(preview).toMatch(/\d+\s+-/);
+    expect(preview).toMatch(/\d+\s+\+/);
+  });
+
+  it("should use _lineNumber for line numbering", () => {
+    const preview = getToolPreview("file_edit", "complete", {
+      old_string: "old",
+      new_string: "new",
+      _lineNumber: 10,
+    });
+    expect(preview).toContain("10 - old");
+    expect(preview).toContain("10 + new");
+  });
+
+  it("should handle multi-line diffs with incrementing line numbers", () => {
+    const preview = getToolPreview("file_edit", "complete", {
+      old_string: "line1\nline2\nline3",
+      new_string: "lineA\nlineB",
+      _lineNumber: 5,
+    });
+    expect(preview).toContain("5 - line1");
+    expect(preview).toContain("6 - line2");
+    expect(preview).toContain("7 - line3");
+    expect(preview).toContain("5 + lineA");
+    expect(preview).toContain("6 + lineB");
+  });
+
+  it("should render context diff with before/after context lines", () => {
+    const preview = getToolPreview("file_edit", "complete", {
+      old_string: "<Logo />",
+      new_string: "<Static>\n  <Logo />\n</Static>",
+      _lineNumber: 108,
+      _contextLines: [
+        "<MessageList />",
+        '<Box flexDirection="column">',
+        "  // inner",
+        "<Static>",
+        "  <Logo />",
+        "</Static>",
+        "  <ActivityFeed />",
+        "</Box>",
+        "<Footer />",
+      ],
+      _contextStartLine: 105,
+    });
+    // Before context
+    expect(preview).toContain(" 105   <MessageList />");
+    expect(preview).toContain(" 106   <Box flexDirection=\"column\">");
+    expect(preview).toContain(" 107     // inner");
+    // Removed
+    expect(preview).toContain(" 108 - <Logo />");
+    // Added
+    expect(preview).toContain(" 108 + <Static>");
+    expect(preview).toContain(" 109 +   <Logo />");
+    expect(preview).toContain(" 110 + </Static>");
+    // After context (content includes leading spaces from source)
+    expect(preview).toContain(" 111     <ActivityFeed />");
+    expect(preview).toContain(" 112   </Box>");
+    expect(preview).toContain(" 113   <Footer />");
   });
 
   it("should return undefined for file_edit when running", () => {

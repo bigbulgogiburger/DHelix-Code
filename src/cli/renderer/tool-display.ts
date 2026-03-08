@@ -17,31 +17,124 @@ function shortenPath(filePath: string, maxLen = 60): string {
   return `…/${parts[parts.length - 2]}/${filename}`;
 }
 
-/** Generate a unified-diff-like preview for file_edit */
-function formatEditDiff(args?: Record<string, unknown>): string | undefined {
+/** Build a diff with ±3 context lines, removed lines (-), and added lines (+) */
+function formatContextDiff(
+  contextLines: readonly string[],
+  contextStartLine: number,
+  changeLineNumber: number,
+  oldStr: string | undefined,
+  newStr: string | undefined,
+): string {
+  const addedLines = newStr ? newStr.split("\n") : [];
+  const addedCount = addedLines.length;
+
+  const result: string[] = [];
+  const maxPreviewLines = 16;
+  let count = 0;
+
+  // changeOffset: index in contextLines where the new (added) lines begin
+  const changeOffset = changeLineNumber - contextStartLine;
+  const afterStart = changeOffset + addedCount;
+
+  // Before-context lines
+  for (let i = 0; i < changeOffset && i < contextLines.length; i++) {
+    if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+    const ln = String(contextStartLine + i).padStart(4, " ");
+    result.push(`${ln}   ${contextLines[i]}`);
+    count++;
+  }
+
+  // Removed lines (from old_string)
+  if (oldStr) {
+    const oldLines = oldStr.split("\n");
+    let removedLineNum = changeLineNumber;
+    for (const line of oldLines) {
+      if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+      const ln = String(removedLineNum).padStart(4, " ");
+      result.push(`${ln} - ${line}`);
+      removedLineNum++;
+      count++;
+    }
+  }
+
+  // Added lines (from new_string)
+  let addedLineNum = changeLineNumber;
+  for (const line of addedLines) {
+    if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+    const ln = String(addedLineNum).padStart(4, " ");
+    result.push(`${ln} + ${line}`);
+    addedLineNum++;
+    count++;
+  }
+
+  // After-context lines
+  for (let i = afterStart; i < contextLines.length; i++) {
+    if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+    const ln = String(contextStartLine + i).padStart(4, " ");
+    result.push(`${ln}   ${contextLines[i]}`);
+    count++;
+  }
+
+  return result.join("\n");
+}
+
+/** Generate a unified-diff-like preview for file_edit with line numbers and context */
+function formatEditDiff(args?: Record<string, unknown>, _output?: string): string | undefined {
   const oldStr = typeof args?.old_string === "string" ? args.old_string : undefined;
   const newStr = typeof args?.new_string === "string" ? args.new_string : undefined;
   if (!oldStr && !newStr) return undefined;
 
-  const lines: string[] = [];
-  const maxPreviewLines = 8;
-  let count = 0;
+  const lineNumber = typeof args?._lineNumber === "number" ? args._lineNumber : 1;
+  const contextLines = Array.isArray(args?._contextLines) ? args._contextLines as string[] : undefined;
+  const contextStartLine = typeof args?._contextStartLine === "number" ? args._contextStartLine : undefined;
 
-  if (oldStr) {
-    for (const line of oldStr.split("\n")) {
-      if (count >= maxPreviewLines) { lines.push("  …"); break; }
-      lines.push(`- ${line}`);
-      count++;
-    }
+  // If we have context lines from file-edit metadata, build a rich diff
+  if (contextLines && contextStartLine) {
+    return formatContextDiff(contextLines, contextStartLine, lineNumber, oldStr, newStr);
   }
-  if (newStr) {
-    for (const line of newStr.split("\n")) {
-      if (count >= maxPreviewLines) { lines.push("  …"); break; }
-      lines.push(`+ ${line}`);
-      count++;
-    }
+
+  // Fallback: simple diff without context
+  const lines: string[] = [];
+  const maxPreviewLines = 12;
+  let count = 0;
+  let currentLine = lineNumber;
+
+  const oldLines = oldStr ? oldStr.split("\n") : [];
+  const newLines = newStr ? newStr.split("\n") : [];
+
+  for (const line of oldLines) {
+    if (count >= maxPreviewLines) { lines.push("  …"); break; }
+    const ln = String(currentLine).padStart(4, " ");
+    lines.push(`${ln} - ${line}`);
+    currentLine++;
+    count++;
   }
+
+  currentLine = lineNumber;
+  for (const line of newLines) {
+    if (count >= maxPreviewLines) { lines.push("  …"); break; }
+    const ln = String(currentLine).padStart(4, " ");
+    lines.push(`${ln} + ${line}`);
+    currentLine++;
+    count++;
+  }
+
   return lines.length > 0 ? lines.join("\n") : undefined;
+}
+
+/** Build a change summary like "Added 3 lines, removed 1 line" */
+function formatChangeSummary(args?: Record<string, unknown>): string | undefined {
+  const oldStr = typeof args?.old_string === "string" ? args.old_string : undefined;
+  const newStr = typeof args?.new_string === "string" ? args.new_string : undefined;
+  if (!oldStr && !newStr) return undefined;
+
+  const removed = oldStr ? oldStr.split("\n").length : 0;
+  const added = newStr ? newStr.split("\n").length : 0;
+
+  const parts: string[] = [];
+  if (added > 0) parts.push(`Added ${added} line${added === 1 ? "" : "s"}`);
+  if (removed > 0) parts.push(`removed ${removed} line${removed === 1 ? "" : "s"}`);
+  return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
 /** Format bash output preview */
@@ -93,11 +186,14 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       const filePath = typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
       if (!filePath) return undefined;
       const replaceAll = args?.replace_all === true;
-      return replaceAll ? `${filePath} (replace all)` : filePath;
+      const summary = formatChangeSummary(args);
+      if (replaceAll) return `${filePath} (replace all)`;
+      if (summary) return `${filePath} — ${summary}`;
+      return filePath;
     },
-    extractPreview: (args, _output, status) => {
+    extractPreview: (args, output, status) => {
       if (status === "running") return undefined;
-      return formatEditDiff(args);
+      return formatEditDiff(args, output);
     },
   },
   bash_exec: {

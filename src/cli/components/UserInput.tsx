@@ -1,5 +1,6 @@
 import { Box, Text, useInput } from "ink";
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
+import fg from "fast-glob";
 import { useInputHistory } from "../hooks/useInput.js";
 
 export interface UserInputProps {
@@ -8,6 +9,24 @@ export interface UserInputProps {
   readonly isDisabled?: boolean;
   readonly slashMenuVisible?: boolean;
   readonly placeholder?: string;
+}
+
+/** Extract the token being typed at the cursor for path completion */
+function extractCompletionToken(value: string, cursorOffset: number): string {
+  const beforeCursor = value.slice(0, cursorOffset);
+  const lastSpace = beforeCursor.lastIndexOf(" ");
+  return beforeCursor.slice(lastSpace + 1);
+}
+
+/** Extract the @ mention token being typed at the cursor */
+function extractMentionToken(value: string, cursorOffset: number): { token: string; start: number } | null {
+  const beforeCursor = value.slice(0, cursorOffset);
+  const atIndex = beforeCursor.lastIndexOf("@");
+  if (atIndex === -1) return null;
+  // Ensure no space between @ and cursor
+  const token = beforeCursor.slice(atIndex + 1);
+  if (token.includes(" ")) return null;
+  return { token, start: atIndex };
 }
 
 /** User input component with cursor movement, input history, and multiline support */
@@ -23,6 +42,25 @@ export function UserInput({
   const savedInputRef = useRef<string | null>(null);
   const { addToHistory, navigateUp, navigateDown } = useInputHistory();
 
+  // Tab completion state
+  const [completions, setCompletions] = useState<string[]>([]);
+  const [completionIndex, setCompletionIndex] = useState(0);
+  const [isCompleting, setIsCompleting] = useState(false);
+
+  // @ mention state
+  const [isMentioning, setIsMentioning] = useState(false);
+  const [mentionSuggestions, setMentionSuggestions] = useState<string[]>([]);
+  const [mentionIndex, setMentionIndex] = useState(0);
+
+  const cancelCompletion = useCallback(() => {
+    setIsCompleting(false);
+    setCompletions([]);
+    setCompletionIndex(0);
+    setIsMentioning(false);
+    setMentionSuggestions([]);
+    setMentionIndex(0);
+  }, []);
+
   const updateValue = useCallback(
     (next: string, nextCursor: number) => {
       setValue(next);
@@ -31,6 +69,29 @@ export function UserInput({
     },
     [onChange],
   );
+
+  // Trigger @ mention search when user types after @
+  useEffect(() => {
+    const mention = extractMentionToken(value, cursorOffset);
+    if (mention && mention.token.length > 0) {
+      setIsMentioning(true);
+      const pattern = `**/${mention.token}*`;
+      fg(pattern, { dot: false, onlyFiles: true, cwd: process.cwd(), deep: 3, suppressErrors: true })
+        .then((results) => {
+          setMentionSuggestions(results.slice(0, 10));
+          setMentionIndex(0);
+        })
+        .catch(() => {
+          setMentionSuggestions([]);
+        });
+    } else if (mention === null || (mention && mention.token.length === 0)) {
+      if (isMentioning) {
+        setIsMentioning(false);
+        setMentionSuggestions([]);
+        setMentionIndex(0);
+      }
+    }
+  }, [value, cursorOffset, isMentioning]);
 
   const handleSubmit = useCallback(() => {
     const trimmed = value.trim();
@@ -120,6 +181,87 @@ export function UserInput({
         return;
       }
 
+      // Escape — cancel completion/mention
+      if (key.escape) {
+        if (isCompleting || isMentioning) {
+          cancelCompletion();
+          return;
+        }
+        return;
+      }
+
+      // Tab — file path autocompletion or cycle through suggestions
+      if (key.tab && !slashMenuVisible) {
+        if (isMentioning && mentionSuggestions.length > 0) {
+          // Cycle through mention suggestions
+          setMentionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+          return;
+        }
+
+        if (isCompleting && completions.length > 0) {
+          // Cycle through completions
+          setCompletionIndex((prev) => (prev + 1) % completions.length);
+          return;
+        }
+
+        // Start new tab completion
+        const token = extractCompletionToken(value, cursorOffset);
+        if (token.length > 0) {
+          const pattern = `${token}*`;
+          fg(pattern, { dot: false, cwd: process.cwd(), deep: 3, suppressErrors: true })
+            .then((results) => {
+              if (results.length > 0) {
+                setCompletions(results.slice(0, 10));
+                setCompletionIndex(0);
+                setIsCompleting(true);
+              }
+            })
+            .catch(() => {
+              // ignore glob errors
+            });
+        }
+        return;
+      }
+
+      // When completing/mentioning, Enter or Space confirms selection
+      if ((isCompleting || isMentioning) && (key.return || input === "\n" || input === "\r" || input === " ")) {
+        if (isMentioning && mentionSuggestions.length > 0) {
+          const selected = mentionSuggestions[mentionIndex];
+          const mention = extractMentionToken(value, cursorOffset);
+          if (mention && selected) {
+            const before = value.slice(0, mention.start);
+            const after = value.slice(cursorOffset);
+            const insertion = `@file:${selected}`;
+            const next = before + insertion + after;
+            const nextCursor = before.length + insertion.length;
+            cancelCompletion();
+            updateValue(next, nextCursor);
+            return;
+          }
+        }
+
+        if (isCompleting && completions.length > 0) {
+          const selected = completions[completionIndex];
+          if (selected) {
+            const token = extractCompletionToken(value, cursorOffset);
+            const tokenStart = cursorOffset - token.length;
+            const before = value.slice(0, tokenStart);
+            const after = value.slice(cursorOffset);
+            const next = before + selected + after;
+            const nextCursor = before.length + selected.length;
+            cancelCompletion();
+            updateValue(next, nextCursor);
+            // If Enter was used, don't also submit
+            if (key.return || input === "\n" || input === "\r") {
+              return;
+            }
+          }
+        }
+
+        // If Space triggered completion acceptance, don't fall through to char insertion
+        if (input === " ") return;
+      }
+
       // When slash menu is visible, delegate navigation keys to SlashCommandMenu
       if (slashMenuVisible && (key.upArrow || key.downArrow || key.tab)) {
         return;
@@ -197,6 +339,12 @@ export function UserInput({
       if (input && !key.ctrl && !key.meta) {
         const code = input.charCodeAt(0);
         if (code < 32 && code !== 9) return; // allow Tab (9), block other control chars
+
+        // Cancel tab completion on regular character input (not @ which starts mention)
+        if (isCompleting) {
+          cancelCompletion();
+        }
+
         const next = value.slice(0, cursorOffset) + input + value.slice(cursorOffset);
         updateValue(next, cursorOffset + input.length);
       }
@@ -270,12 +418,31 @@ export function UserInput({
     );
   };
 
+  // Active suggestions: either tab completions or @ mention suggestions
+  const activeSuggestions = isMentioning ? mentionSuggestions : isCompleting ? completions : [];
+  const activeIndex = isMentioning ? mentionIndex : completionIndex;
+
   return (
-    <Box>
-      <Text color="blue" bold>
-        {"> "}
-      </Text>
-      {renderContent()}
+    <Box flexDirection="column">
+      <Box>
+        <Text color="blue" bold>
+          {"> "}
+        </Text>
+        {renderContent()}
+      </Box>
+      {activeSuggestions.length > 0 && (
+        <Box flexDirection="column" marginLeft={2}>
+          {activeSuggestions.map((item, idx) => (
+            <Text key={item} color={idx === activeIndex ? "blue" : "gray"} bold={idx === activeIndex}>
+              {idx === activeIndex ? "> " : "  "}
+              {isMentioning ? `@file:${item}` : item}
+            </Text>
+          ))}
+          <Text color="gray" dimColor>
+            Tab: cycle | Enter/Space: select | Esc: cancel
+          </Text>
+        </Box>
+      )}
     </Box>
   );
 }

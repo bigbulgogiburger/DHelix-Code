@@ -7,8 +7,13 @@ import {
 } from "./types.js";
 import { type ToolRegistry } from "./registry.js";
 import { parseToolArguments } from "./validation.js";
-import { getPlatform } from "../utils/platform.js";
+import { getPlatform, getShellCommand, getShellArgs } from "../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../constants.js";
+import { spawn, type ChildProcess } from "node:child_process";
+import { createWriteStream } from "node:fs";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
+import { randomUUID } from "node:crypto";
 
 /**
  * Execute a single tool call with timeout, validation, and error handling.
@@ -82,3 +87,130 @@ export async function executeToolCall(
     isError: result.isError,
   };
 }
+
+/** Status of a background process */
+export interface BackgroundProcessStatus {
+  readonly pid: number;
+  readonly command: string;
+  readonly running: boolean;
+  readonly exitCode: number | null;
+  readonly outputFile: string;
+}
+
+interface BackgroundProcess {
+  readonly pid: number;
+  readonly command: string;
+  readonly outputFile: string;
+  readonly proc: ChildProcess;
+  running: boolean;
+  exitCode: number | null;
+  completionCallbacks: Array<(exitCode: number) => void>;
+}
+
+/**
+ * Manages background shell processes with detached execution.
+ * Processes run independently and their output is written to temp files.
+ */
+export class BackgroundProcessManager {
+  private readonly processes = new Map<number, BackgroundProcess>();
+
+  start(command: string, cwd: string): { pid: number; outputFile: string } {
+    const id = randomUUID().slice(0, 8);
+    const outputFile = join(tmpdir(), `dbcode-bg-${id}.log`);
+    const shell = getShellCommand();
+    const args = getShellArgs(command);
+
+    const outStream = createWriteStream(outputFile, { flags: "a" });
+
+    const proc = spawn(shell, [...args], {
+      cwd,
+      detached: true,
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    const pid = proc.pid!;
+
+    proc.stdout?.pipe(outStream);
+    proc.stderr?.pipe(outStream);
+
+    const entry: BackgroundProcess = {
+      pid,
+      command,
+      outputFile,
+      proc,
+      running: true,
+      exitCode: null,
+      completionCallbacks: [],
+    };
+
+    proc.on("close", (code) => {
+      entry.running = false;
+      entry.exitCode = code ?? 1;
+      outStream.end();
+      for (const cb of entry.completionCallbacks) {
+        cb(entry.exitCode);
+      }
+    });
+
+    proc.on("error", () => {
+      entry.running = false;
+      entry.exitCode = 1;
+      outStream.end();
+    });
+
+    proc.unref();
+
+    this.processes.set(pid, entry);
+    return { pid, outputFile };
+  }
+
+  getStatus(pid: number): BackgroundProcessStatus | undefined {
+    const entry = this.processes.get(pid);
+    if (!entry) return undefined;
+    return {
+      pid: entry.pid,
+      command: entry.command,
+      running: entry.running,
+      exitCode: entry.exitCode,
+      outputFile: entry.outputFile,
+    };
+  }
+
+  getOutput(pid: number): string {
+    const entry = this.processes.get(pid);
+    if (!entry) return "";
+    try {
+      const { readFileSync } = require("node:fs") as typeof import("node:fs");
+      return readFileSync(entry.outputFile, "utf-8");
+    } catch {
+      return "";
+    }
+  }
+
+  kill(pid: number): void {
+    const entry = this.processes.get(pid);
+    if (!entry || !entry.running) return;
+    try {
+      process.kill(-entry.pid, "SIGTERM");
+    } catch {
+      try {
+        entry.proc.kill("SIGTERM");
+      } catch {
+        // Process already exited
+      }
+    }
+  }
+
+  onComplete(pid: number, callback: (exitCode: number) => void): void {
+    const entry = this.processes.get(pid);
+    if (!entry) return;
+    if (!entry.running) {
+      callback(entry.exitCode ?? 1);
+      return;
+    }
+    entry.completionCallbacks.push(callback);
+  }
+}
+
+/** Singleton background process manager */
+export const backgroundProcessManager = new BackgroundProcessManager();

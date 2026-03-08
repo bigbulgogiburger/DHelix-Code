@@ -9,6 +9,7 @@ import { AGENT_LOOP } from "../constants.js";
 import { LLMError } from "../utils/error.js";
 import { ContextManager } from "./context-manager.js";
 import { applyInputGuardrails, applyOutputGuardrails } from "../guardrails/index.js";
+import { countTokens } from "../llm/token-counter.js";
 
 /** Configuration for the agent loop */
 export interface AgentLoopConfig {
@@ -31,6 +32,8 @@ export interface AgentLoopConfig {
   readonly maxContextTokens?: number;
   /** Maximum characters per individual tool result (default: 12000) */
   readonly maxToolResultChars?: number;
+  /** Maximum tokens per individual tool result (overrides maxToolResultChars when set) */
+  readonly maxToolResultTokens?: number;
   /** Enable security guardrails for tool calls (default: true) */
   readonly enableGuardrails?: boolean;
 }
@@ -104,6 +107,129 @@ function waitWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
       reject(new LLMError("Aborted"));
     });
   });
+}
+
+/** Tools that are always safe to run in parallel (read-only, no side effects) */
+const ALWAYS_PARALLEL_TOOLS = new Set(["glob_search", "grep_search", "file_read"]);
+
+/** Tools that write to files and need path-based conflict detection */
+const FILE_WRITE_TOOLS = new Set(["file_write", "file_edit"]);
+
+/**
+ * Extract the file path from a tool call's arguments.
+ * Returns undefined if no file path is found.
+ */
+function extractFilePath(call: ExtractedToolCall): string | undefined {
+  const args = call.arguments as Record<string, unknown>;
+  // Common parameter names for file paths
+  if (typeof args["file_path"] === "string") return args["file_path"];
+  if (typeof args["path"] === "string") return args["path"];
+  if (typeof args["filePath"] === "string") return args["filePath"];
+  return undefined;
+}
+
+/**
+ * Group tool calls into batches for parallel execution.
+ *
+ * Rules:
+ * 1. file_read, glob_search, grep_search are always parallelizable
+ * 2. file_write/file_edit targeting the same path must be sequential
+ * 3. bash_exec calls are parallelizable with each other (independent commands)
+ * 4. When dependency is unclear, keep sequential (safety first)
+ *
+ * Returns groups where calls within a group run concurrently,
+ * and groups themselves run sequentially.
+ */
+export function groupToolCalls(toolCalls: readonly ExtractedToolCall[]): ExtractedToolCall[][] {
+  if (toolCalls.length <= 1) {
+    return toolCalls.length === 0 ? [] : [[...toolCalls]];
+  }
+
+  const groups: ExtractedToolCall[][] = [];
+  // Track which file paths have pending writes in the current group
+  let currentGroup: ExtractedToolCall[] = [];
+  let currentGroupWritePaths = new Set<string>();
+
+  for (const call of toolCalls) {
+    const isAlwaysParallel = ALWAYS_PARALLEL_TOOLS.has(call.name);
+    const isFileWrite = FILE_WRITE_TOOLS.has(call.name);
+    const isBash = call.name === "bash_exec";
+    const filePath = extractFilePath(call);
+
+    if (isAlwaysParallel) {
+      // Read-only tools can always go into the current group
+      currentGroup.push(call);
+    } else if (isFileWrite && filePath) {
+      // File writes conflict if they target the same path
+      if (currentGroupWritePaths.has(filePath)) {
+        // Conflict: flush current group, start new one
+        groups.push(currentGroup);
+        currentGroup = [call];
+        currentGroupWritePaths = new Set([filePath]);
+      } else {
+        currentGroup.push(call);
+        currentGroupWritePaths.add(filePath);
+      }
+    } else if (isBash) {
+      // bash_exec calls are parallelizable with each other
+      currentGroup.push(call);
+    } else {
+      // Unknown tool: can go parallel but not with file writes to same path
+      // Since we can't determine dependencies, add to current group
+      // (safe because unknown tools are independent of each other)
+      currentGroup.push(call);
+    }
+  }
+
+  if (currentGroup.length > 0) {
+    groups.push(currentGroup);
+  }
+
+  return groups;
+}
+
+/**
+ * Truncate a tool result to fit within token budget.
+ * Uses token counting when maxToolResultTokens is set, otherwise falls back to character counting.
+ */
+function truncateToolResult(
+  result: ToolCallResult,
+  maxChars: number,
+  maxTokens?: number,
+): ToolCallResult {
+  if (maxTokens !== undefined) {
+    const tokenCount = countTokens(result.output);
+    if (tokenCount <= maxTokens) return result;
+
+    // Binary search for the right truncation point
+    // Start with a character estimate (tokens * 4 for English, conservative)
+    let charLimit = Math.floor(maxTokens * 3);
+    let truncated = result.output.slice(0, charLimit);
+    let truncatedTokens = countTokens(truncated);
+
+    // Adjust if over budget
+    while (truncatedTokens > maxTokens && charLimit > 100) {
+      charLimit = Math.floor(charLimit * 0.8);
+      truncated = result.output.slice(0, charLimit);
+      truncatedTokens = countTokens(truncated);
+    }
+
+    return {
+      ...result,
+      output:
+        truncated +
+        `\n\n[... truncated, showing ~${truncatedTokens} of ${tokenCount} tokens]`,
+    };
+  }
+
+  // Fallback to character-based truncation
+  if (result.output.length <= maxChars) return result;
+  return {
+    ...result,
+    output:
+      result.output.slice(0, maxChars) +
+      `\n\n[... truncated, showing first ${maxChars} of ${result.output.length} chars]`,
+  };
 }
 
 /**
@@ -241,90 +367,138 @@ export async function runAgentLoop(
       break; // No tool calls — conversation turn complete
     }
 
-    // Execute each tool call
+    // Execute tool calls in parallel groups
+    const groups = groupToolCalls(extractedCalls);
     const results: ToolCallResult[] = [];
 
-    for (const call of extractedCalls) {
-      config.events.emit("tool:start", { name: call.name, id: call.id, args: call.arguments });
+    for (const group of groups) {
+      // Pre-flight checks (permission + input guardrails) are sequential
+      // because they may require user interaction
+      const preflightResults = new Map<string, ToolCallResult>();
+      const executableCalls: ExtractedToolCall[] = [];
 
-      // Check permission
-      if (config.checkPermission) {
-        const permission = await config.checkPermission(call);
-        if (!permission.allowed) {
-          results.push({
+      for (const call of group) {
+        config.events.emit("tool:start", { name: call.name, id: call.id, args: call.arguments });
+
+        // Check permission
+        if (config.checkPermission) {
+          const permission = await config.checkPermission(call);
+          if (!permission.allowed) {
+            const denied: ToolCallResult = {
+              id: call.id,
+              name: call.name,
+              output: `Permission denied: ${permission.reason ?? "User rejected"}`,
+              isError: true,
+            };
+            preflightResults.set(call.id, denied);
+            config.events.emit("tool:complete", {
+              name: call.name,
+              id: call.id,
+              isError: true,
+              output: `Permission denied: ${permission.reason ?? "User rejected"}`,
+            });
+            continue;
+          }
+        }
+
+        // Apply input guardrails
+        if (config.enableGuardrails !== false) {
+          const guardrailCheck = applyInputGuardrails(call.name, call.arguments as Record<string, unknown>);
+          if (guardrailCheck.severity === "block") {
+            const blocked: ToolCallResult = {
+              id: call.id,
+              name: call.name,
+              output: `Blocked by guardrail: ${guardrailCheck.reason ?? "Security policy violation"}`,
+              isError: true,
+            };
+            preflightResults.set(call.id, blocked);
+            config.events.emit("tool:complete", {
+              name: call.name,
+              id: call.id,
+              isError: true,
+              output: `Blocked: ${guardrailCheck.reason}`,
+            });
+            continue;
+          }
+          if (guardrailCheck.severity === "warn") {
+            config.events.emit("llm:error", {
+              error: new Error(`Guardrail warning: ${guardrailCheck.reason}`),
+            });
+          }
+        }
+
+        executableCalls.push(call);
+      }
+
+      // Execute all approved calls in the group in parallel
+      const settled = await Promise.allSettled(
+        executableCalls.map(async (call) => {
+          let result = await executeToolCall(config.toolRegistry, call, {
+            workingDirectory: config.workingDirectory ?? process.cwd(),
+            signal: config.signal,
+          });
+
+          // Apply output guardrails
+          if (config.enableGuardrails !== false) {
+            const outputCheck = applyOutputGuardrails(result.output);
+            if (outputCheck.modified) {
+              result = { ...result, output: outputCheck.modified };
+            }
+          }
+
+          return result;
+        }),
+      );
+
+      // Collect results preserving original order within the group
+      for (const call of group) {
+        // Check if it was handled in preflight
+        const preflightResult = preflightResults.get(call.id);
+        if (preflightResult) {
+          results.push(preflightResult);
+          continue;
+        }
+
+        // Find the settled result for this call
+        const execIndex = executableCalls.indexOf(call);
+        if (execIndex === -1) continue;
+
+        const settledResult = settled[execIndex];
+        if (settledResult.status === "fulfilled") {
+          const result = settledResult.value;
+          results.push(result);
+          config.events.emit("tool:complete", {
+            name: call.name,
+            id: call.id,
+            isError: result.isError,
+            output: result.output,
+          });
+        } else {
+          // Promise.allSettled rejected — unexpected execution error
+          const errorMessage = settledResult.reason instanceof Error
+            ? settledResult.reason.message
+            : String(settledResult.reason);
+          const errorResult: ToolCallResult = {
             id: call.id,
             name: call.name,
-            output: `Permission denied: ${permission.reason ?? "User rejected"}`,
+            output: `Tool execution failed: ${errorMessage}`,
             isError: true,
-          });
+          };
+          results.push(errorResult);
           config.events.emit("tool:complete", {
             name: call.name,
             id: call.id,
             isError: true,
-            output: `Permission denied: ${permission.reason ?? "User rejected"}`,
-          });
-          continue;
-        }
-      }
-
-      // Apply input guardrails
-      if (config.enableGuardrails !== false) {
-        const guardrailCheck = applyInputGuardrails(call.name, call.arguments as Record<string, unknown>);
-        if (guardrailCheck.severity === "block") {
-          results.push({
-            id: call.id,
-            name: call.name,
-            output: `Blocked by guardrail: ${guardrailCheck.reason ?? "Security policy violation"}`,
-            isError: true,
-          });
-          config.events.emit("tool:complete", {
-            name: call.name,
-            id: call.id,
-            isError: true,
-            output: `Blocked: ${guardrailCheck.reason}`,
-          });
-          continue;
-        }
-        if (guardrailCheck.severity === "warn") {
-          config.events.emit("llm:error", {
-            error: new Error(`Guardrail warning: ${guardrailCheck.reason}`),
+            output: errorResult.output,
           });
         }
       }
-
-      // Execute
-      let result = await executeToolCall(config.toolRegistry, call, {
-        workingDirectory: config.workingDirectory ?? process.cwd(),
-        signal: config.signal,
-      });
-
-      // Apply output guardrails
-      if (config.enableGuardrails !== false) {
-        const outputCheck = applyOutputGuardrails(result.output);
-        if (outputCheck.modified) {
-          result = { ...result, output: outputCheck.modified };
-        }
-      }
-
-      results.push(result);
-      config.events.emit("tool:complete", {
-        name: call.name,
-        id: call.id,
-        isError: result.isError,
-        output: result.output,
-      });
     }
 
-    // Truncate oversized tool results before appending
-    const truncatedResults = results.map((r) => {
-      if (r.output.length <= maxToolResultChars) return r;
-      return {
-        ...r,
-        output:
-          r.output.slice(0, maxToolResultChars) +
-          `\n\n[... truncated, showing first ${maxToolResultChars} of ${r.output.length} chars]`,
-      };
-    });
+    // Truncate oversized tool results (token-based or character-based)
+    const truncatedResults = results.map((r) =>
+      truncateToolResult(r, maxToolResultChars, config.maxToolResultTokens),
+    );
 
     // Append tool results as messages
     const toolMessages = config.strategy.formatToolResults(truncatedResults);

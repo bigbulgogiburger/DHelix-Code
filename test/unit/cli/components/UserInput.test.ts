@@ -4,10 +4,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 let useInputCallback: ((input: string, key: Record<string, boolean>) => void) | null = null;
 let stateStore: Map<number, unknown>;
 let stateIndex: number;
+let effectCallbacks: (() => void)[] = [];
 
 function resetState() {
   stateStore = new Map();
   stateIndex = 0;
+  effectCallbacks = [];
 }
 
 // Track history calls
@@ -18,6 +20,11 @@ const historyMock = {
   reset: vi.fn(),
   history: [] as readonly string[],
 };
+
+// Mock fast-glob
+vi.mock("fast-glob", () => ({
+  default: vi.fn().mockResolvedValue([]),
+}));
 
 // Mock react hooks
 vi.mock("react", () => {
@@ -42,6 +49,10 @@ vi.mock("react", () => {
       }
       return stateStore.get(idx);
     },
+    useEffect: (fn: () => void) => {
+      effectCallbacks.push(fn);
+    },
+    useMemo: (fn: () => unknown) => fn(),
   };
 });
 
@@ -68,7 +79,10 @@ async function getComponent() {
   return mod.UserInput;
 }
 
-// State indices: 0 = value (string), 1 = cursorOffset (number), 2 = savedInputRef
+// State indices:
+// 0 = value (string), 1 = cursorOffset (number), 2 = savedInputRef
+// 3 = completions (string[]), 4 = completionIndex (number), 5 = isCompleting (boolean)
+// 6 = isMentioning (boolean), 7 = mentionSuggestions (string[]), 8 = mentionIndex (number)
 function getValue(): string {
   return stateStore.get(0) as string;
 }
@@ -79,6 +93,22 @@ function getCursor(): number {
 
 function getSavedInputRef(): { current: string | null } {
   return stateStore.get(2) as { current: string | null };
+}
+
+function getCompletions(): string[] {
+  return stateStore.get(3) as string[];
+}
+
+function getIsCompleting(): boolean {
+  return stateStore.get(5) as boolean;
+}
+
+function getIsMentioning(): boolean {
+  return stateStore.get(6) as boolean;
+}
+
+function getMentionSuggestions(): string[] {
+  return stateStore.get(7) as string[];
 }
 
 function key(overrides: Partial<Record<string, boolean>> = {}): Record<string, boolean> {
@@ -93,6 +123,8 @@ function key(overrides: Partial<Record<string, boolean>> = {}): Record<string, b
     rightArrow: false,
     upArrow: false,
     downArrow: false,
+    tab: false,
+    escape: false,
     ...overrides,
   };
 }
@@ -527,6 +559,47 @@ describe("UserInput", () => {
       UserInput({ onSubmit, onChange, isDisabled: true });
       // useInput should have been called with isActive: false, so callback is null
       expect(useInputCallback).toBeNull();
+    });
+  });
+
+  describe("tab completion", () => {
+    it("should start with empty completions", () => {
+      expect(getCompletions()).toEqual([]);
+      expect(getIsCompleting()).toBe(false);
+    });
+
+    it("should cancel completion on Escape", () => {
+      // Manually set completing state
+      stateStore.set(5, true);
+      stateStore.set(3, ["file1.ts", "file2.ts"]);
+      rerender();
+      press("", { escape: true });
+      expect(getIsCompleting()).toBe(false);
+      expect(getCompletions()).toEqual([]);
+    });
+
+    it("should cancel completion on regular character input", () => {
+      stateStore.set(5, true);
+      stateStore.set(3, ["file1.ts"]);
+      rerender();
+      press("x");
+      expect(getIsCompleting()).toBe(false);
+    });
+  });
+
+  describe("@ mention", () => {
+    it("should start with empty mention state", () => {
+      expect(getIsMentioning()).toBe(false);
+      expect(getMentionSuggestions()).toEqual([]);
+    });
+
+    it("should cancel mention on Escape", () => {
+      stateStore.set(6, true);
+      stateStore.set(7, ["src/index.ts"]);
+      rerender();
+      press("", { escape: true });
+      expect(getIsMentioning()).toBe(false);
+      expect(getMentionSuggestions()).toEqual([]);
     });
   });
 

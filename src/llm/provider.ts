@@ -27,6 +27,12 @@ export interface ToolDefinitionForLLM {
   };
 }
 
+/** Extended Thinking configuration */
+export interface ThinkingConfig {
+  readonly type: "enabled";
+  readonly budget_tokens: number;
+}
+
 /** Request to the LLM */
 export interface ChatRequest {
   readonly model: string;
@@ -35,6 +41,7 @@ export interface ChatRequest {
   readonly temperature?: number;
   readonly maxTokens?: number;
   readonly signal?: AbortSignal;
+  readonly thinking?: ThinkingConfig;
 }
 
 /** Full LLM response */
@@ -43,14 +50,16 @@ export interface ChatResponse {
   readonly toolCalls: readonly ToolCallRequest[];
   readonly usage: TokenUsage;
   readonly finishReason: string;
+  readonly thinking?: string;
 }
 
 /** Streaming chunk from LLM */
 export interface ChatChunk {
-  readonly type: "text-delta" | "tool-call-delta" | "done";
+  readonly type: "text-delta" | "tool-call-delta" | "thinking-delta" | "done";
   readonly text?: string;
   readonly toolCall?: Partial<ToolCallRequest>;
   readonly usage?: TokenUsage;
+  readonly thinking_delta?: string;
 }
 
 /** Token usage information */

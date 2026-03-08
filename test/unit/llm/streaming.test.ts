@@ -3,6 +3,7 @@ import {
   createStreamAccumulator,
   accumulateChunk,
   consumeStream,
+  DEFAULT_MAX_BUFFER_BYTES,
 } from "../../../src/llm/streaming.js";
 import { type ChatChunk } from "../../../src/llm/provider.js";
 
@@ -12,6 +13,7 @@ describe("StreamAccumulator", () => {
     expect(acc.text).toBe("");
     expect(acc.toolCalls).toEqual([]);
     expect(acc.isComplete).toBe(false);
+    expect(acc.bufferBytes).toBe(0);
   });
 
   it("should accumulate text deltas", () => {
@@ -245,5 +247,80 @@ describe("consumeStream partial recovery", () => {
     expect(deltas).toEqual(["first", " second"]);
     expect(result.partial).toBe(true);
     expect(result.text).toBe("first second");
+  });
+});
+
+describe("backpressure", () => {
+  it("should export DEFAULT_MAX_BUFFER_BYTES as 1MB", () => {
+    expect(DEFAULT_MAX_BUFFER_BYTES).toBe(1024 * 1024);
+  });
+
+  it("should track bufferBytes as text accumulates", () => {
+    let acc = createStreamAccumulator();
+    acc = accumulateChunk(acc, { type: "text-delta", text: "Hello" });
+    expect(acc.bufferBytes).toBe(5);
+
+    acc = accumulateChunk(acc, { type: "text-delta", text: " world" });
+    expect(acc.bufferBytes).toBe(11);
+  });
+
+  it("should trim text when buffer exceeds configured limit", () => {
+    const smallLimit = { maxBufferBytes: 20 };
+    let acc = createStreamAccumulator();
+
+    // Add text that fits within the limit
+    acc = accumulateChunk(acc, { type: "text-delta", text: "0123456789" }, smallLimit);
+    expect(acc.trimmed).toBeFalsy();
+    expect(acc.text).toBe("0123456789");
+
+    // Add more text that pushes past the limit
+    acc = accumulateChunk(acc, { type: "text-delta", text: "ABCDEFGHIJKLM" }, smallLimit);
+    expect(acc.trimmed).toBe(true);
+    // Text should be trimmed (front half removed)
+    expect(acc.text.length).toBeLessThan(24);
+  });
+
+  it("should keep trimmed flag once set", () => {
+    const smallLimit = { maxBufferBytes: 10 };
+    let acc = createStreamAccumulator();
+
+    acc = accumulateChunk(acc, { type: "text-delta", text: "0123456789ABC" }, smallLimit);
+    expect(acc.trimmed).toBe(true);
+
+    // Even small subsequent chunks preserve the trimmed flag
+    acc = accumulateChunk(acc, { type: "text-delta", text: "x" }, smallLimit);
+    expect(acc.trimmed).toBe(true);
+  });
+
+  it("should not trim when within default 1MB limit", () => {
+    let acc = createStreamAccumulator();
+    // Normal text well within 1MB
+    const text = "a".repeat(1000);
+    acc = accumulateChunk(acc, { type: "text-delta", text });
+    expect(acc.trimmed).toBeFalsy();
+    expect(acc.text).toBe(text);
+    expect(acc.bufferBytes).toBe(1000);
+  });
+
+  it("should pass backpressure config through consumeStream", async () => {
+    const smallLimit = { maxBufferBytes: 30 };
+
+    async function* generateLargeChunks(): AsyncIterable<ChatChunk> {
+      yield { type: "text-delta", text: "A".repeat(20) };
+      yield { type: "text-delta", text: "B".repeat(20) };
+      yield { type: "done" };
+    }
+
+    const result = await consumeStream(generateLargeChunks(), undefined, smallLimit);
+    expect(result.isComplete).toBe(true);
+    expect(result.trimmed).toBe(true);
+    expect(result.text.length).toBeLessThan(40);
+  });
+
+  it("should handle multi-byte characters in byte counting", () => {
+    let acc = createStreamAccumulator();
+    // Korean characters are 3 bytes each in UTF-8
+    acc = accumulateChunk(acc, { type: "text-delta", text: "ㅎ" });
+    expect(acc.bufferBytes).toBe(3);
   });
 });

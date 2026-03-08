@@ -82,6 +82,7 @@ program
         { askUserTool },
         { mkdirTool },
         { webFetchTool },
+        { webSearchTool },
         { listDirTool },
         { notebookEditTool },
         { CommandRegistry },
@@ -132,6 +133,7 @@ program
         import("./tools/definitions/ask-user.js"),
         import("./tools/definitions/mkdir.js"),
         import("./tools/definitions/web-fetch.js"),
+        import("./tools/definitions/web-search.js"),
         import("./tools/definitions/list-dir.js"),
         import("./tools/definitions/notebook-edit.js"),
         import("./commands/registry.js"),
@@ -201,6 +203,7 @@ program
         askUserTool,
         mkdirTool,
         webFetchTool,
+        webSearchTool,
         listDirTool,
         notebookEditTool,
       ]);

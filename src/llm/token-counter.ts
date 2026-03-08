@@ -14,11 +14,111 @@ function getEncoder(): ReturnType<typeof getEncoding> {
 }
 
 /**
+ * Simple string hash for LRU cache keys.
+ * Uses FNV-1a variant for fast, low-collision hashing.
+ */
+function hashString(str: string): string {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    hash ^= str.charCodeAt(i);
+    hash = (hash * 0x01000193) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+/** LRU cache statistics */
+export interface TokenCacheStats {
+  readonly hits: number;
+  readonly misses: number;
+  readonly size: number;
+}
+
+/**
+ * Map-based LRU cache for token counts.
+ * Exploits Map insertion order for LRU eviction.
+ */
+export class TokenCountCache {
+  private readonly cache = new Map<string, number>();
+  private readonly maxSize: number;
+  private hits = 0;
+  private misses = 0;
+
+  constructor(maxSize = 100) {
+    this.maxSize = maxSize;
+  }
+
+  get(key: string): number | undefined {
+    const value = this.cache.get(key);
+    if (value !== undefined) {
+      this.hits++;
+      // Move to end (most recently used) by re-inserting
+      this.cache.delete(key);
+      this.cache.set(key, value);
+      return value;
+    }
+    this.misses++;
+    return undefined;
+  }
+
+  set(key: string, count: number): void {
+    // If key exists, delete first to update insertion order
+    if (this.cache.has(key)) {
+      this.cache.delete(key);
+    } else if (this.cache.size >= this.maxSize) {
+      // Evict oldest entry (first key in Map)
+      const firstKey = this.cache.keys().next().value;
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
+    }
+    this.cache.set(key, count);
+  }
+
+  /** Get cache hit/miss statistics */
+  getStats(): TokenCacheStats {
+    return {
+      hits: this.hits,
+      misses: this.misses,
+      size: this.cache.size,
+    };
+  }
+
+  /** Clear all cached entries and reset stats */
+  clear(): void {
+    this.cache.clear();
+    this.hits = 0;
+    this.misses = 0;
+  }
+}
+
+/** Singleton token count cache */
+const tokenCache = new TokenCountCache(100);
+
+/**
  * Count tokens in a text string using tiktoken (accurate).
+ * Results are cached using an LRU cache for repeated lookups.
  */
 export function countTokens(text: string): number {
+  const key = hashString(text);
+  const cached = tokenCache.get(key);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   const enc = getEncoder();
-  return enc.encode(text).length;
+  const count = enc.encode(text).length;
+  tokenCache.set(key, count);
+  return count;
+}
+
+/** Get the token cache statistics (for diagnostics) */
+export function getTokenCacheStats(): TokenCacheStats {
+  return tokenCache.getStats();
+}
+
+/** Reset the token cache (useful for testing) */
+export function resetTokenCache(): void {
+  tokenCache.clear();
 }
 
 /**
