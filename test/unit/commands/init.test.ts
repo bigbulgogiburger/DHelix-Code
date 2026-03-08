@@ -33,7 +33,7 @@ describe("initProject", () => {
     // Verify settings.json
     const settingsRaw = await readFile(join(result.path, "settings.json"), "utf-8");
     const settings = JSON.parse(settingsRaw);
-    expect(settings.model).toBe("gpt-4o");
+    expect(settings.model).toBe("gpt-4.1-mini");
     expect(settings.allowedTools).toContain("file_read");
   });
 

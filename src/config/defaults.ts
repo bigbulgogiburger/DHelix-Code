@@ -4,10 +4,10 @@ import { type AppConfig } from "./types.js";
 export const DEFAULT_CONFIG: AppConfig = {
   llm: {
     baseUrl: "https://api.openai.com/v1",
-    model: "gpt-4o",
+    model: "gpt-4.1-mini",
     temperature: 0.0,
-    maxTokens: 16384,
-    contextWindow: 128_000,
+    maxTokens: 32768,
+    contextWindow: 1_000_000,
     timeout: 60_000,
   },
   permissionMode: "default",

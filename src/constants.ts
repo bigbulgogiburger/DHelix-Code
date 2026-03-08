@@ -41,7 +41,7 @@ export const TOKEN_DEFAULTS = {
   /** Default model for token counting */
   defaultModel: "gpt-4",
   /** Maximum context window size (tokens) */
-  maxContextWindow: 128_000,
+  maxContextWindow: 1_000_000,
 } as const;
 
 /** LLM defaults */
@@ -49,9 +49,9 @@ export const LLM_DEFAULTS = {
   /** Default API base URL (OpenAI-compatible) */
   baseUrl: "https://api.openai.com/v1",
   /** Default model name */
-  model: "gpt-4o",
+  model: "gpt-4.1-mini",
   /** Default temperature */
   temperature: 0.0,
   /** Default max tokens for response */
-  maxTokens: 16384,
+  maxTokens: 32768,
 } as const;

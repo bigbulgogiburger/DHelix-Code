@@ -8,8 +8,6 @@ import {
   SPINNER_FRAMES,
 } from "../renderer/tool-display.js";
 
-const TOOL_SPINNER_INTERVAL_MS = 200;
-
 interface ToolCallBlockProps {
   readonly name: string;
   readonly status: "running" | "complete" | "error" | "denied";

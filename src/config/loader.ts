@@ -36,7 +36,7 @@ function loadEnvConfig(): Partial<AppConfig> {
     // Auto-set OpenAI base URL if not explicitly configured
     if (!process.env.DBCODE_BASE_URL) {
       llm.baseUrl = "https://api.openai.com/v1";
-      llm.model = process.env.DBCODE_MODEL ?? "gpt-4o";
+      llm.model = process.env.DBCODE_MODEL ?? "gpt-4.1-mini";
     }
   }
   if (process.env.DBCODE_MODEL) {

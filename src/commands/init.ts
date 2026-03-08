@@ -11,7 +11,7 @@ const LOCAL_INSTRUCTIONS_FILE = `${APP_NAME.toUpperCase()}.local.md`;
 
 /** Default settings */
 const DEFAULT_SETTINGS = {
-  model: "gpt-4o",
+  model: "gpt-4.1-mini",
   allowedTools: [
     "file_read",
     "file_write",

@@ -1,125 +1,56 @@
 # dbcode vs Claude Code: Gap Analysis & Improvement Roadmap
 
-> Date: 2026-03-08
+> Date: 2026-03-08 (Updated)
 > Author: Claude Opus 4.6 (Anthropic Claude Code Expert Review)
-> dbcode version: 0.1.0 (145 source files)
-> Claude Code reference: v2.1.x (latest stable)
+> dbcode version: 0.1.0 (145 source files, ~13,000 LOC)
+> Claude Code reference: v2.1.71 (latest stable, March 2026)
 
 ---
 
 ## Executive Summary
 
-dbcode has a solid foundation — ReAct agent loop, 12 tools, multi-turn conversation, Ink-based UI. However, compared to Claude Code's latest, there are significant gaps across **rendering quality, conversation management, tool capabilities, security, and developer experience**. This document categorizes every gap by priority and provides a concrete roadmap.
+dbcode has a solid foundation — ReAct agent loop, 12 tools, multi-turn conversation, Ink-based UI, hooks system. However, compared to Claude Code v2.1.71 (18 tools, 110+ system prompt components, 18 hook events, 6 built-in subagents, skills ecosystem with 334+ community skills), there are significant gaps across **tool system, context management, agent capabilities, and developer experience**. This document provides a detailed gap analysis with concrete implementation recommendations.
 
 ---
 
-## 1. Terminal Rendering (Critical)
+## 1. Tool System (Critical)
 
-### 1.1 Cell-Level Differential Renderer
+### 1.1 Tool Inventory Comparison
 
-| Aspect | Claude Code | dbcode | Gap |
-|--------|-------------|--------|-----|
-| Rendering engine | Custom cell-level diff renderer ("ink2 mode") | Ink default clear-and-redraw | **Critical** |
-| Buffer strategy | Double-buffered packed TypedArrays | None (Ink manages) | Major |
-| Frame budget | ~5ms scene-graph → ANSI | Uncontrolled | Major |
-| Layout engine | Yoga WASM (retained) | Yoga via Ink (same) | Parity |
-| Synchronized output | DEC Mode 2026 (upstream patches to VSCode, tmux) | Implemented (basic) | Minor |
+Claude Code: **18 built-in tools** / dbcode: **12 tools**
 
-**Current state**: dbcode uses Progressive Static Flushing + DEC Mode 2026, which helps but doesn't eliminate flickering. Claude Code rewrote the renderer entirely.
+| # | Tool | Claude Code | dbcode | Gap |
+|---|------|-------------|--------|-----|
+| 1 | Read | `file_path`, `offset`, `limit`, `pages` (PDF, max 20pp). 2000 char line truncation | file_read (implemented) | Parity |
+| 2 | Write | `file_path`, `content`. Must Read first if exists | file_write (implemented) | Parity |
+| 3 | Edit | `file_path`, `old_string`, `new_string`, `replace_all`. Fails if old_string not unique | file_edit (implemented) | Parity |
+| 4 | **MultiEdit** | Multiple edits to single file in one call | Missing | **Medium** |
+| 5 | Bash | `command`, `description`, `timeout` (max 600s), `run_in_background` | bash_exec (implemented) | Parity |
+| 6 | Glob | `pattern`, `path` | glob_search (implemented) | Parity |
+| 7 | Grep | `pattern`, `path`, `glob`, `type`, `output_mode`, `-A/-B/-C/-i/-n`, `multiline`, `head_limit`, `offset` | grep_search (basic) | Minor |
+| 8 | **Agent** | `prompt`, `description`, `subagent_type`, `model`, `run_in_background`, `isolation`, `resume` | spawner.ts exists but not a tool | **Critical** |
+| 9 | **TodoWrite** | `todos[]` with `content`, `status` (pending/in_progress/completed). Exactly ONE must be in_progress | Missing | **High** |
+| 10 | **WebFetch** | `url`, `prompt`. 15-min cache, auto HTTP→HTTPS | Missing | **High** |
+| 11 | **WebSearch** | `query`, `allowed_domains`, `blocked_domains` | web_search (Brave API, no fallback) | Partial |
+| 12 | **NotebookEdit** | `notebook_path`, `new_source`, `cell_id`, `cell_type`, `edit_mode` | Missing | Medium |
+| 13 | **BashOutput** | `bash_id`, `filter`. Returns only new output since last check | Missing | Medium |
+| 14 | **KillShell** | `shell_id` | Missing | Low |
+| 15 | **LS** | Directory listing | Missing (via bash_exec) | Low |
+| 16 | **ExitPlanMode** | `plan` | Missing | Low |
+| 17 | **SlashCommand** | `command` | Missing (commands via registry) | Low |
+| 18 | NotebookRead | Jupyter notebook reading | file_read handles .ipynb | Parity |
 
-**Recommendation**: Phase approach:
-1. Short-term: Optimize current Static flushing (done)
-2. Mid-term: Implement simple cell-level diff on top of Ink
-3. Long-term: Full custom renderer if user base justifies
+### 1.2 Tool Behavior Gaps
 
-### 1.2 Output Formatting
+| Tool | Claude Code Behavior | dbcode Gap |
+|------|---------------------|-----------|
+| Bash | Output truncated > 30,000 chars, `run_in_background` returns task ID | No background task management |
+| Read | Line truncation at 2000 chars, image/PDF support | Image untested in prod |
+| Edit | `replace_all` for bulk replacement | Missing `replace_all` flag |
+| Grep | `multiline` mode for cross-line patterns, `head_limit`/`offset` pagination | Basic grep only |
+| glob_search | .gitignore respect | No .gitignore awareness |
 
-| Feature | Claude Code | dbcode | Gap |
-|---------|-------------|--------|-----|
-| Message markers | `⏺` bullet for assistant | `assistant:` text label | UX |
-| Tool call display | Collapsible with `⎿` result prefix | Static `[✓]` with text | UX |
-| Progressive collapse | Completed tools fold to summary | Always show full | UX |
-| Diff display | Inline colored diff with context | Basic `+/-` lines | Minor |
-| Thinking blocks | Toggle with timing + token count | ThinkingBlock component (exists) | Parity |
-| Subagent transcripts | Collapsible nested display | Not rendered in UI | Major |
-| OSC 8 hyperlinks | File paths are clickable | Plain text | Nice-to-have |
-| Turn separators | Clear visual separation | Spacer text only | UX |
-| Unicode art/emoji | Minimal, clean | DB logo art | Style |
-
-**Key UX fix needed**: Tool call output should show:
-```
-⏺ Reading file src/index.ts
-  ⎿ Read 382 lines (2.4s)
-```
-Instead of current:
-```
-  [✓] Read file: src/index.ts (382 lines, 2.4s)
-```
-
----
-
-## 2. Conversation Management (Critical)
-
-### 2.1 Multi-Turn Message Integrity
-
-| Feature | Claude Code | dbcode | Gap |
-|---------|-------------|--------|-----|
-| Message pairing | assistant(toolCalls) → tool results always paired | **Fixed** (was broken) | Fixed |
-| Field preservation | toolCallId, toolCalls always preserved | **Fixed** (was dropping fields) | Fixed |
-| Intermediate messages | All iterations preserved in history | Only last assistant saved | **Critical** |
-| Context compaction | Sophisticated summary + key info retention | Basic token-based truncation | Major |
-| Message pruning | Intelligent per-turn pruning | None | Major |
-
-### 2.2 Intermediate Assistant Messages
-
-**Bug (still present)**: During a multi-iteration agent loop, intermediate assistant text (e.g., "Let me create the files", "Now let me try building") is NOT stored as activity entries. Only the FINAL assistant message gets an `assistant-text` entry.
-
-In `useAgentLoop.ts`:
-```typescript
-// Current: only adds the LAST assistant message as activity
-const lastMessage = newMessages[newMessages.length - 1];
-if (lastMessage && lastMessage.role === "assistant") {
-  activityRef.current.addEntry("assistant-text", { ... });
-}
-```
-
-**Should be**: Every assistant message during the loop should be an activity entry, so users see the agent's reasoning across iterations.
-
-### 2.3 Context Window Management
-
-| Feature | Claude Code | dbcode | Gap |
-|---------|-------------|--------|-----|
-| Auto-compaction trigger | ~95% context | ContextManager exists but basic | Major |
-| Compaction strategy | Structured summary preserving key context | Simple truncation | Major |
-| `/compact` command | Interactive with custom instructions | Exists but basic | Minor |
-| Token counting | Accurate (tiktoken) | tiktoken + LRU cache | Parity |
-| Context % warning | Persistent status bar warning | StatusBar shows % | Parity |
-
----
-
-## 3. Tool System (Major)
-
-### 3.1 Missing Tools
-
-| Tool | Claude Code | dbcode | Priority |
-|------|-------------|--------|----------|
-| Task/TodoWrite | Create/manage task lists | Missing | High |
-| Agent (subagent) | Spawn specialized sub-agents | spawner.ts exists but not a tool | High |
-| NotebookRead | Read Jupyter notebooks | file_read handles .ipynb | Parity |
-| MultiEdit | Batch file edits | Missing (single edit only) | Medium |
-| ScreenshotCapture | Capture terminal/browser screenshots | Missing | Low |
-
-### 3.2 Tool Quality Gaps
-
-| Tool | Gap | Priority |
-|------|-----|----------|
-| file_edit | No `replace_all` flag for bulk replacements | Medium |
-| bash_exec | No interactive command detection/blocking | Minor |
-| file_read | Image support exists but untested in production | Minor |
-| web_search | Brave API key required, no fallback to free API | Medium |
-| glob_search | No .gitignore respect | Medium |
-
-### 3.3 Parallel Tool Execution
+### 1.3 Parallel Tool Execution
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
@@ -130,216 +61,486 @@ if (lastMessage && lastMessage.role === "assistant") {
 
 ---
 
-## 4. Agent & Sub-Agent System (Major)
+## 2. Context Management (Critical)
+
+### 2.1 Three-Layer Compaction Architecture (Claude Code)
+
+Claude Code uses a **3-layer** context management system:
+
+**Layer 1 — Microcompaction (continuous)**
+- Bulky tool outputs (Read, Bash, Grep, Glob, WebSearch, WebFetch, Edit, Write) are saved to disk with path references
+- A "hot tail" of recent tool results stays inline; older results become "cold storage"
+- Retrievable by path on demand
+
+**Layer 2 — Auto-compaction (threshold-based)**
+- Triggers when free space drops below reserved threshold (~83.5% by default, not 95%)
+- Context buffer: ~33,000 tokens (16.5% of window)
+- Overridable via `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE` env var
+- Structured summarization contract requires: user intent, key technical decisions, files touched, errors + resolutions, pending tasks, next steps
+
+**Layer 3 — Post-compaction rehydration**
+- Re-reads 5 most recently accessed files
+- Restores todo list state, plan state, hook outputs
+- Boundary marker denotes the compaction point
+
+**`PreCompact` hook**: Fires before compaction with matcher for `manual` vs `auto` trigger (observability only)
+
+### 2.2 dbcode Current State
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
-| Agent tool | First-class tool with types, isolation | `spawner.ts` (407 lines) but not registered as tool | Major |
-| Agent types | general, Explore, Plan + custom | explore, general, plan stubs | Major |
+| Microcompaction | Continuous, disk-backed cold storage | None | **Critical** |
+| Auto-compaction trigger | ~83.5% context (overridable) | 95% threshold (too late) | **Major** |
+| Compaction strategy | Structured summary with checklist | Simple token-based truncation | **Major** |
+| Post-compaction rehydration | Re-reads recent files, restores state | None | **Major** |
+| `/compact` command | Interactive with custom instructions | Exists but basic | Minor |
+| Token counting | Accurate (tiktoken) | tiktoken + LRU cache | Parity |
+| Context % warning | Persistent status bar warning | StatusBar shows % | Parity |
+
+---
+
+## 3. System Prompt Architecture (Major)
+
+### 3.1 Claude Code's Dynamic Assembly
+
+Claude Code assembles the system prompt from **110+ conditional strings** totaling ~85,000+ tokens:
+
+- **26 Agent Prompts**: Explore (517 tks), Plan Enhanced (685 tks), Agent Creation Architect (1,110 tks), Security Review (2,607 tks), Conversation Summarization (956 tks), Security Monitor Parts 1+2 (~5,000 tks)
+- **22 Data/Reference Prompts**: SDK patterns for Python/TypeScript, Claude API references in 8 languages
+- **75+ System Prompt Core**: Tool usage policies (11 components), Learning Mode (1,042 tks), Plan Mode Active 5-phase (1,437 tks), Session Memory (756 tks)
+- **40+ System Reminders**: Mid-conversation contextual notifications (18-1,437 tks each)
+
+Assembly is conditional based on: environment variables, feature flags, user configuration, session state, available subagents, and A/B tests.
+
+### 3.2 dbcode Current State
+
+| Feature | Claude Code | dbcode | Gap |
+|---------|-------------|--------|-----|
+| Dynamic assembly | 110+ conditional strings | `buildSystemPrompt()` (basic) | **Major** |
+| Conditional injection | Feature flags, session state, A/B tests | Static template | Major |
+| Mid-conversation reminders | 40+ contextual system reminders | None | Major |
+| Agent-specific prompts | 26 specialized agent prompts | None | Major |
+| SDK/API references | 8 language references loaded on demand | None | Medium |
+
+---
+
+## 4. Agent & Sub-Agent System (Critical)
+
+### 4.1 Claude Code's Agent Architecture
+
+**6 Built-in subagent types:**
+
+| Agent | Model | Tools | Purpose |
+|-------|-------|-------|---------|
+| Explore | Haiku (fast) | Read-only | File discovery, code search. 3 thoroughness levels |
+| Plan | Inherits | Read-only | Research during plan mode. Cannot spawn sub-subagents |
+| General-purpose | Inherits | All tools | Complex multi-step tasks |
+| Bash | Inherits | Bash only | Terminal commands in separate context |
+| statusline-setup | Sonnet | - | Status line configuration |
+| Claude Code Guide | Haiku | - | Self-help about Claude Code |
+
+**Custom subagent schema** (YAML frontmatter):
+- `name`, `description`, `tools`, `disallowedTools`, `model` (sonnet/opus/haiku/inherit)
+- `permissionMode`, `maxTurns`, `skills`, `mcpServers`, `hooks`
+- `memory` (user/project/local), `background`, `isolation` (worktree)
+
+**Key constraint**: Subagents cannot spawn other subagents.
+
+### 4.2 Agent Teams (Feb 2026, Experimental)
+
+- `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` to enable
+- 2-16 agents working on shared codebases
+- One session as **team lead**, others as teammates
+- **Peer-to-peer messaging** via mailbox system (`SendMessage` tool)
+- Each teammate has own context window
+
+### 4.3 dbcode Gap Analysis
+
+| Feature | Claude Code | dbcode | Gap |
+|---------|-------------|--------|-----|
+| Agent tool | First-class tool (renamed from Task in v2.1.63) | spawner.ts (407 lines) but not a tool | **Critical** |
+| Built-in agents | 6 types with model/tool specialization | 3 stubs (explore, general, plan, ~38 lines each) | **Critical** |
+| Custom agents | YAML frontmatter schema with 12+ fields | Not implemented | Major |
 | Worktree isolation | Git worktree per agent | Planned in spawner | Partial |
-| Background agents | `run_in_background` param | Not wired | Major |
-| Agent teams | TeamCreate, SendMessage | Not implemented | Major |
-| Agent display | Collapsible transcript in UI | No UI rendering | Major |
+| Background agents | `run_in_background` param, task notifications | Not wired | Major |
+| Agent teams | 2-16 agents, SendMessage, team lead | Not implemented | Future |
 | Resume/continue | Resume agent by ID | Not implemented | Medium |
-
-**Key gap**: Sub-agents exist as code but are NOT accessible from the agent loop. Need to register as a tool.
+| Agent display | Collapsible transcript in UI (Ctrl+O toggle) | No UI rendering | Major |
 
 ---
 
-## 5. Permission System (Minor gaps)
+## 5. Terminal Rendering (Major)
+
+### 5.1 Cell-Level Differential Renderer
+
+| Aspect | Claude Code | dbcode | Gap |
+|--------|-------------|--------|-----|
+| Rendering engine | Custom cell-level diff renderer (~85% flicker reduction) | Ink + Progressive Static Flushing | Major |
+| Buffer strategy | Double-buffered packed TypedArrays | None (Ink manages) | Major |
+| Frame budget | ~5ms scene-graph → ANSI | Uncontrolled | Major |
+| Synchronized output | DEC Mode 2026 (pushed upstream to VSCode, tmux) | Implemented | Parity |
+| Layout engine | Yoga WASM (retained) | Yoga via Ink (same) | Parity |
+
+### 5.2 Output Formatting
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
-| Permission modes | 5 modes (default, acceptEdits, plan, dontAsk, bypassPermissions) | Modes defined, manager works | Parity |
-| Session store | Remember per-session approvals | session-store.ts exists | Parity |
-| Tool-specific rules | Glob patterns for paths | rules.ts exists | Parity |
-| Permission prompt UI | Interactive with Y/N/always | PermissionPrompt component | Parity |
-| Bulk approval | "Always allow X for this session" | Not fully wired | Minor |
+| Tool progress indicators | "Reading..." → "Read" with tense switching | Static `[✓]` with text | UX |
+| Customizable thinking verbs | "Pondering", "Befuddling", etc. via tweakcc | Fixed text | Nice-to-have |
+| Spinner phases | Multi-phase with speed settings | Single phase, 500ms | Minor |
+| Turn duration | "Cooked for 1m 6s" (hideable via setting) | Not shown | Minor |
+| Verbose toggle | Ctrl+O shows full subagent transcripts | Not implemented | Medium |
+| Diff display | Inline colored diff with context | Basic `+/-` lines | Minor |
+| OSC 8 hyperlinks | File paths are clickable | Plain text | Nice-to-have |
 
 ---
 
-## 6. Slash Commands (Medium)
+## 6. Skills System (Major)
 
-### 6.1 Implemented (27 commands)
+### 6.1 Claude Code's Progressive Disclosure
 
-dbcode has: `/clear`, `/compact`, `/help`, `/model`, `/resume`, `/rewind`, `/effort`, `/fast`, `/simplify`, `/batch`, `/debug`, `/mcp`, `/config`, `/diff`, `/doctor`, `/stats`, `/status`, `/context`, `/copy`, `/export`, `/fork`, `/output-style`, `/rename`, `/cost`, `/update`, `/init`, `/plan`, `/undo`
+Skills use **3-level loading**:
+1. **YAML frontmatter** (always loaded): name + description (~tiny token cost)
+2. **SKILL.md body** (loaded when relevant): full instructions
+3. **Linked files** (on demand): supporting scripts, references, assets
 
-### 6.2 Missing vs Claude Code
+**Token budget**: 2% of context window (dynamically scaled), fallback 16,000 chars. Override via `SLASH_COMMAND_TOOL_CHAR_BUDGET`.
 
-| Command | Claude Code | dbcode | Priority |
-|---------|-------------|--------|----------|
-| `/review` | Review code changes | Missing | High |
-| `/login` / `/logout` | API auth management | Missing | Medium |
-| `/memory` | View/edit project memory | Missing | Medium |
-| `/vim` | Toggle vim keybindings | Missing | Low |
-| `/terminal-setup` | Configure terminal | Missing | Low |
-| `/bug` | Report bugs | Missing | Low |
-| Custom commands | User `.md` files as commands | Missing | High |
+**Frontmatter fields**: `name`, `description`, `argument-hint`, `disable-model-invocation`, `user-invocable`, `allowed-tools`, `model`, `context` (fork), `agent`, `hooks`
 
-### 6.3 Custom Slash Commands
+**String substitutions**: `$ARGUMENTS`, `$ARGUMENTS[N]`, `$N`, `${CLAUDE_SESSION_ID}`, `${CLAUDE_SKILL_DIR}`
 
-**Major gap**: Claude Code allows users to create custom slash commands by placing `.md` files in `.claude/commands/`. dbcode has no equivalent. This is a high-value, low-effort feature.
+**Bundled skills** (ship with Claude Code): `/simplify` (3 parallel review agents), `/batch` (parallel changes in worktrees), `/debug`, `/loop` (recurring prompts), `/claude-api`
 
----
+**Community ecosystem**: 334+ community skills as of March 2026.
 
-## 7. MCP (Model Context Protocol) Integration (Medium)
+### 6.2 Custom Commands → Skills Migration
+
+Claude Code merged custom commands into skills. Files in `.claude/commands/` still work but skills in `.claude/skills/` are recommended.
+
+- **Project-scoped**: `.claude/commands/name.md` or `.claude/skills/name/SKILL.md`
+- **User-scoped**: `~/.claude/commands/name.md` or `~/.claude/skills/name/SKILL.md`
+- Filename → `/name` slash command
+- `!`command`` syntax for shell command preprocessing
+- `@` for file references
+
+### 6.3 dbcode Gap
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
-| MCP client | Full client with tool/resource discovery | client.ts (319 lines) | Partial |
-| MCP manager | Auto-start/stop servers from config | manager.ts (151 lines) | Partial |
-| Tool bridge | MCP tools → agent loop tools | tool-bridge.ts (172 lines) | Implemented |
-| MCP config | `~/.claude/mcp.json` | Not standardized | Minor |
-| Built-in servers | None required, user-configured | Same approach | Parity |
-| `/mcp` command | List/manage servers | Implemented | Parity |
-
-**Status**: MCP is fairly well implemented. Main gap is production hardening and config standardization.
+| Skill loading | Progressive 3-level disclosure | loader.ts (178 lines) | Partial |
+| SKILL.md parsing | Full frontmatter schema (12+ fields) | types.ts (basic) | Major |
+| Skill triggering | Description-based, 2% context budget | Not wired to agent loop | **Critical** |
+| Bundled skills | 5 built-in skills | None | Major |
+| Community skills | 334+ published | None | Future |
+| Custom commands | Merged into skills system | Missing entirely | **Critical** |
+| String substitutions | `$ARGUMENTS`, `$N`, `${CLAUDE_SESSION_ID}` | Not implemented | Major |
+| Bundled resources | scripts/, references/, assets/ | Not implemented | Medium |
 
 ---
 
-## 8. Skills System (Medium)
+## 7. Hooks System (Medium)
+
+### 7.1 Lifecycle Events (Full List)
+
+Claude Code: **18 lifecycle events** / dbcode: **~6 events**
+
+| # | Event | Fires When | Can Block? | dbcode |
+|---|-------|-----------|-----------|--------|
+| 1 | `SessionStart` | Session begins/resumes | No | Partial |
+| 2 | `InstructionsLoaded` | CLAUDE.md loaded | No | Missing |
+| 3 | `UserPromptSubmit` | User submits prompt | Yes | **Implemented** |
+| 4 | `PreToolUse` | Before tool executes | Yes (+ modify inputs) | Block only |
+| 5 | `PermissionRequest` | Permission dialog appears | Yes | Missing |
+| 6 | `PostToolUse` | After tool succeeds | No | **Implemented** |
+| 7 | `PostToolUseFailure` | After tool fails | No | Missing |
+| 8 | `SubagentStart` | Subagent spawned | No | Missing |
+| 9 | `SubagentStop` | Subagent finishes | Yes | Missing |
+| 10 | `Stop` | Claude finishes responding | Yes | **Implemented** |
+| 11 | `TeammateIdle` | Agent team teammate idle | Yes | Missing |
+| 12 | `TaskCompleted` | Task marked completed | Yes | Missing |
+| 13 | `ConfigChange` | Config file changes | Yes | Missing |
+| 14 | `WorktreeCreate` | Worktree being created | Yes | Missing |
+| 15 | `WorktreeRemove` | Worktree being removed | No | Missing |
+| 16 | `PreCompact` | Before context compaction | No | Missing |
+| 17 | `Notification` | Notification sent | No | Missing |
+| 18 | `SessionEnd` | Session terminates | No | Missing |
+
+### 7.2 Handler Types
+
+Claude Code supports **4 handler types**:
+
+| Type | Description | dbcode |
+|------|------------|--------|
+| `command` | Shell command execution, supports `async: true` for background | **Implemented** |
+| `http` | POST JSON to URL, `allowedEnvVars` for header interpolation | Missing |
+| `prompt` | LLM prompt evaluation | Missing |
+| `agent` | Subagent execution | Missing |
+
+All handlers support `timeout` and `statusMessage`. HTTP hooks require 2xx + `decision: "block"` to block.
+
+**Decision control**: `PreToolUse` uses `hookSpecificOutput.permissionDecision` (allow/deny/ask) + `updatedInput` for input modification.
+
+**Environment variables**: `$CLAUDE_PROJECT_DIR`, `$CLAUDE_PLUGIN_ROOT`, `$CLAUDE_ENV_FILE`, `$CLAUDE_CODE_REMOTE`
+
+### 7.3 Security Note
+
+Two CVEs found in Claude Code hooks: CVE-2025-59536, CVE-2026-21852 — hooks exploitable via malicious project configs. dbcode should learn from these vulnerabilities.
+
+---
+
+## 8. Checkpointing & Rewind (Major — Missing)
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
-| Skill loading | `.claude/skills/` directory scan | loader.ts (178 lines) | Partial |
-| SKILL.md parsing | Frontmatter + body | types.ts exists | Partial |
-| Skill triggering | Description-based matching | Not wired to agent loop | Major |
-| Bundled resources | scripts/, references/, assets/ | Not implemented | Major |
-| Skill packages | `.skill` file packaging | Not implemented | Medium |
-
-**Key gap**: Skills exist as a module but are NOT integrated into the agent loop or system prompt.
+| File change tracking | Tracks all Write/Edit/NotebookEdit changes | checkpoint-manager.ts exists | Partial |
+| `/rewind` command | Browse and revert to any checkpoint | Command stub only | **Major** |
+| Esc+Esc menu | Visual checkpoint browser | Not implemented | Major |
+| Scope | Only Write/Edit/NotebookEdit (not Bash changes) | — | — |
 
 ---
 
-## 9. Hooks System (Good)
+## 9. Keyboard Shortcuts & Input (Medium)
+
+### 9.1 Claude Code Shortcuts
+
+| Shortcut | Action | dbcode |
+|----------|--------|--------|
+| Ctrl+C | Cancel current operation | Implemented |
+| Ctrl+D | Exit | Not implemented |
+| Esc | Stop current action | Not implemented |
+| Esc+Esc | Browse history / rewind menu | Not implemented |
+| Shift+Enter | New line (instead of send) | Not implemented |
+| Shift+Tab | Cycle permission modes (4 modes) | Not implemented |
+| Option+T / Alt+T | Toggle extended thinking | Not implemented |
+| Ctrl+O | Toggle verbose/expanded view | Not implemented |
+| Ctrl+A / Ctrl+E | Start/end of line | Ink default |
+| Tab (after @) | Autocomplete file paths | Not implemented |
+
+Fully customizable via `~/.claude/keybindings.json` and `/keybindings` command.
+
+### 9.2 @ File Mentions
+
+Type `@` + path to include file content in context, with Tab autocomplete. dbcode has no equivalent.
+
+---
+
+## 10. Voice Mode (Future — Nice-to-have)
+
+Released March 2026:
+- `/voice` command activation
+- Push-to-talk: hold spacebar to speak, release to send
+- 20 languages supported
+- `voice:pushToTalk` keybinding rebindable
+- No extra cost for Pro/Max/Team/Enterprise
+
+Not a priority for dbcode but worth tracking.
+
+---
+
+## 11. IDE Integration (Medium)
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
-| Hook events | PreToolUse, PostToolUse, SessionStart, Stop, etc. | loader.ts + runner.ts | Parity |
-| Hook config | `.dbcode/hooks.json` | Implemented | Parity |
-| Auto-lint | Post-edit formatting | auto-lint.ts exists | Implemented |
-| UserPromptSubmit | Pre-process user input | Wired in useAgentLoop | Parity |
-
-**Status**: Hooks are well implemented. One of the stronger areas.
+| VS Code extension | Native diff viewer, session management | Not implemented | Medium |
+| JetBrains plugin | IDE diff viewer integration | Not implemented | Medium |
+| GitHub Actions | `claude-code-action`, @claude in PRs/issues | Not implemented | Medium |
+| Diff viewing | 2 modes: column (side-by-side) + unified | Terminal only | Minor |
 
 ---
 
-## 10. Session Management (Minor gaps)
+## 12. Permission System (Minor gaps)
+
+| Feature | Claude Code | dbcode | Gap |
+|---------|-------------|--------|-----|
+| Permission modes | 4 modes cycled with Shift+Tab | 5 modes defined, manager works | Parity |
+| Session store | Remember per-session approvals (NOT restored on resume) | session-store.ts exists | Parity |
+| Tool-specific rules | Glob patterns, deny > ask > allow priority | rules.ts exists | Parity |
+| Permission prompt | Interactive Y/N/always, diff preview for edits | PermissionPrompt component | Parity |
+| `/permissions` command | List all rules and source files | Missing | Minor |
+
+---
+
+## 13. Session Management (Minor gaps)
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
 | Create session | Auto-create on start | Implemented | Parity |
-| Resume (`--continue`) | Most recent session | Implemented | Parity |
-| Resume by ID (`--resume`) | Specific session | Implemented | Parity |
-| `/fork` | Branch conversation | Command exists | Parity |
-| `/export` | Export conversation | Command exists | Parity |
-| Session history | List past sessions | Basic | Minor |
+| `--continue` | Resume most recent | Implemented | Parity |
+| `--resume <id>` | Resume specific session | Implemented | Parity |
+| `--fork-session` | Copy history, diverge | `/fork` exists | Parity |
+| `/export` | Export to file or clipboard | Implemented | Parity |
 | Session search | Search across sessions | Not implemented | Medium |
 
 ---
 
-## 11. Git Integration (Medium gaps)
+## 14. Instructions System (Medium gaps)
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
-| Git status awareness | Always aware of branch, changes | Via bash_exec | Indirect |
-| Commit message generation | AI-generated conventional commits | Not built-in | Medium |
-| PR creation | `gh pr create` via tool | Via bash_exec | Indirect |
-| Diff display | `/diff` command | Implemented | Parity |
-| Git hooks | Pre-commit integration | Not implemented | Low |
-| Worktree for agents | Isolated git worktrees | Planned in spawner.ts | Partial |
-
----
-
-## 12. Security & Sandboxing (Medium gaps)
-
-| Feature | Claude Code | dbcode | Gap |
-|---------|-------------|--------|-----|
-| macOS Seatbelt | sandbox-exec profiles | seatbelt.ts (209 lines) | Implemented |
-| Windows AppContainer | Process isolation | Not implemented | Major (if Windows target) |
-| Secret scanner | Detect leaked secrets | secret-scanner.ts (34 lines, minimal) | Needs expansion |
-| Input guardrails | Filter dangerous tool inputs | guardrails/index.ts | Implemented |
-| Output guardrails | Filter sensitive output | output-limiter.ts | Basic |
-| Command filter | Block dangerous shell commands | command-filter.ts | Basic |
-| Content policy | PII, harmful content detection | Not implemented | Medium |
-
----
-
-## 13. Developer Experience (Major gaps)
-
-| Feature | Claude Code | dbcode | Gap |
-|---------|-------------|--------|-----|
-| First-run wizard | Model + API key setup | setup-wizard.ts | Parity |
-| `--print` mode | Headless single prompt | headless.ts | Parity |
-| `--output-format` | text, json, stream-json | Implemented | Parity |
-| `--add-dir` | Multi-repo support | CLI flag exists but unused | Partial |
-| `/doctor` | Diagnostics | Implemented | Parity |
-| Error messages | User-friendly, zero stack traces | handleError() in index.ts | Parity |
-| Update check | Notify of new versions | `/update` command exists | Parity |
-| Keyboard shortcuts | Tab, Ctrl+C, vim mode | Basic (Ctrl+C abort) | Minor |
-| Auto-update | Background update check | Not implemented | Low |
-
----
-
-## 14. Instructions System (Minor gaps)
-
-| Feature | Claude Code | dbcode | Gap |
-|---------|-------------|--------|-----|
-| CLAUDE.md loading | Project root + parents + .claude/ | loader.ts in instructions/ | Partial |
+| CLAUDE.md loading | Project root + parents + .claude/ | loader.ts (partial) | Minor |
 | User-level rules | `~/.claude/rules/` | Not scanned | Medium |
 | Project-level rules | `.claude/rules/` | Not scanned | Medium |
+| `claudeMdExcludes` | User/project/local/managed policy layers | Not implemented | Medium |
 | Hierarchical merge | Global → project → local | Not implemented | Medium |
-| `/init` command | Generate CLAUDE.md | Implemented | Parity |
+| Auto-memory | Claude saves notes across sessions automatically | Not implemented | Major |
+| `/memory` command | Edit CLAUDE.md memory files | Missing | Medium |
 
 ---
 
-## 15. Telemetry & Cost Tracking (Minor)
+## 15. Slash Commands (Medium)
+
+### 15.1 dbcode Implemented (27 commands)
+
+`/clear`, `/compact`, `/help`, `/model`, `/resume`, `/rewind`, `/effort`, `/fast`, `/simplify`, `/batch`, `/debug`, `/mcp`, `/config`, `/diff`, `/doctor`, `/stats`, `/status`, `/context`, `/copy`, `/export`, `/fork`, `/output-style`, `/rename`, `/cost`, `/update`, `/init`, `/plan`, `/undo`
+
+### 15.2 Missing vs Claude Code
+
+| Command | Claude Code | dbcode | Priority |
+|---------|-------------|--------|----------|
+| `/agents` | Manage custom subagents | Missing | High |
+| `/review` | Review code changes | Missing | High |
+| `/login` / `/logout` | API auth management | Missing | Medium |
+| `/memory` | View/edit project memory | Missing | Medium |
+| `/permissions` | View/manage tool permissions | Missing | Medium |
+| `/statusline` | Configure status line display | Missing | Low |
+| `/voice` | Activate voice input | Missing | Future |
+| `/keybindings` | Open keybindings.json | Missing | Low |
+| `/bashes` | List background tasks | Missing | Medium |
+| `/loop` | Recurring prompt on interval | Missing | Low |
+| `/add-dir` | Add working directories | CLI flag exists but unused | Partial |
+
+---
+
+## 16. Security & Sandboxing (Medium gaps)
 
 | Feature | Claude Code | dbcode | Gap |
 |---------|-------------|--------|-----|
-| Token counting | Per-message accurate | Basic aggregate | Minor |
-| Cost calculation | Per-model pricing table | MODEL_PRICING in StatusBar | Parity |
-| `/cost` command | Session cost summary | Implemented | Parity |
-| `/stats` command | Usage statistics | Implemented | Parity |
-| OpenTelemetry | Full OTLP export | otel-exporter.ts exists | Partial |
+| macOS Seatbelt | sandbox-exec profiles, `sandbox.filesystem.allowWrite/denyWrite` | seatbelt.ts (209 lines) | Implemented |
+| Linux bubblewrap | Kernel-level isolation | Not implemented | Major (if Linux target) |
+| Windows AppContainer | Process isolation | Not implemented | Major (if Windows target) |
+| Secret scanner | gitleaks pre-commit hook, 160+ detectors (API keys, tokens, private keys, high-entropy) | 34 lines, minimal | **Needs major expansion** |
+| Security Monitor | 2-part system prompt (2,482 + 2,460 tks) evaluating autonomous actions | Not implemented | Major |
+| Network isolation | Unix domain socket to proxy, domain allowlisting | Not implemented | Medium |
+| Sandbox config | `sandbox.enabled`, filesystem/network/commands fine-tuning | Basic | Medium |
+| Input guardrails | Filter dangerous tool inputs | Implemented | Parity |
+| Output limits | Bash output truncated > 30,000 chars | Basic | Minor |
+| Command filter | Block dangerous shell commands | Basic | Minor |
 
 ---
 
-## Priority Roadmap
+## 17. Config System (Medium gaps)
+
+### 17.1 Claude Code's 5-Level Hierarchy
+
+| Priority | Level | Source | dbcode |
+|----------|-------|--------|--------|
+| 1 (highest) | Managed Settings | Server-managed, MDM, managed-settings.json, HKCU registry | Missing |
+| 2 | CLI flags | `--model`, `--permission-mode`, etc. | **Implemented** |
+| 3 | Local project | `.claude/settings.local.json` | Missing |
+| 4 | Shared project | `.claude/settings.json` | **Implemented** |
+| 5 (lowest) | User settings | `~/.claude/settings.json` | **Implemented** |
+
+Array settings merge across scopes (concatenated + deduplicated).
+
+### 17.2 Managed-Only Settings (Enterprise)
+
+Claude Code supports enterprise-managed settings that users cannot override: `allowManagedPermissionRulesOnly`, `allowManagedHooksOnly`, `allowManagedMcpServersOnly`, `disableBypassPermissionsMode`, `strictKnownMarketplaces`, `blockedMarketplaces`.
+
+dbcode has no managed/enterprise settings tier.
+
+### 17.3 Environment Variables
+
+Claude Code documents **60+ environment variables**. dbcode supports ~5 (`DBCODE_MODEL`, `DBCODE_BASE_URL`, `DBCODE_API_KEY`, `OPENAI_API_KEY`, `DBCODE_VERBOSE`).
+
+---
+
+## 18. Plugins System (New — Missing)
+
+Claude Code introduced a **plugins system** in 2026:
+
+| Feature | Claude Code | dbcode | Gap |
+|---------|-------------|--------|-----|
+| Package format | Skills + hooks + agents + MCP servers bundled | Not implemented | Future |
+| Sources | GitHub, git, npm, URL, file, directory | Not implemented | Future |
+| Marketplace | Trust management, known marketplaces | Not implemented | Future |
+| Commands | `/plugins`, `/reload-plugins` | Missing | Future |
+
+Not a priority for dbcode v1, but worth tracking for v2+.
+
+---
+
+## 19. Model & Cost (Updated)
+
+### 17.1 Default Model Change
+
+dbcode default model changed from `gpt-4o` to `gpt-4.1-mini`:
+
+| | GPT-4o (previous) | GPT-4.1-mini (new) | Delta |
+|---|---|---|---|
+| Input/1M | $2.50 | $0.40 | **84% cheaper** |
+| Output/1M | $10.00 | $1.60 | **84% cheaper** |
+| Context | 128K | 1M | **8x larger** |
+| Max Output | 16,384 | 32,768 | **2x larger** |
+| Coding (SWE-bench) | ~33% | Higher (mini follows 4.1 improvements) | Better |
+| Tool calling | Baseline | 30% more efficient | Better |
+| Latency | Baseline | ~50% lower | Faster |
+
+### 17.2 Pricing Table (Complete)
+
+| Model | Input/1M | Output/1M | Cached Input/1M |
+|-------|----------|-----------|-----------------|
+| gpt-4.1 | $2.00 | $8.00 | $0.50 |
+| **gpt-4.1-mini** | **$0.40** | **$1.60** | **$0.10** |
+| gpt-4.1-nano | $0.10 | $0.40 | $0.025 |
+| gpt-4o | $2.50 | $10.00 | $1.25 |
+| gpt-4o-mini | $0.15 | $0.60 | $0.075 |
+| claude-opus-4-6 | $15.00 | $75.00 | — |
+| claude-sonnet-4-6 | $3.00 | $15.00 | — |
+
+---
+
+## 20. Priority Roadmap (Updated)
 
 ### P0 — Must Fix Now (Blocking real usage)
 
-1. **Intermediate assistant messages in activity feed** — Users can't see agent's reasoning across iterations
-2. **Custom slash commands** (`.md` files) — High-value, low-effort, Claude Code's killer feature
-3. **Agent tool registration** — Sub-agents exist but aren't usable from the agent loop
+1. **Agent tool registration** — Sub-agents exist (spawner.ts, 407 lines) but aren't usable from the agent loop. This is the single biggest capability gap.
+2. **Custom commands / Skills integration** — Wire skill triggering into agent loop + system prompt. Support `.md` files in `.dbcode/commands/`.
+3. **Context compaction overhaul** — Implement microcompaction (disk-backed cold storage) + structured summarization. Lower threshold from 95% to ~83%.
+4. **Intermediate assistant messages** — Every assistant message during agent loop should be an activity entry, not just the final one.
 
 ### P1 — High Priority (Major UX improvement)
 
-4. **Output formatting overhaul** — `⏺` markers, collapsible tool output, `⎿` result prefix
-5. **Context compaction strategy** — Structured summary instead of truncation
-6. **Skills integration** — Wire skill triggering into agent loop + system prompt
-7. **Hierarchical instructions** — Scan `~/.claude/rules/` + `.claude/rules/`
+5. **TodoWrite tool** — Simple task tracking (pending/in_progress/completed state machine)
+6. **WebFetch tool** — URL fetching with caching (15-min), essential for documentation lookup
+7. **Hierarchical instructions** — Scan `~/.dbcode/rules/` + `.dbcode/rules/`, implement merge hierarchy
+8. **Keyboard shortcuts** — Esc (stop), Shift+Enter (newline), Shift+Tab (mode cycle), Ctrl+O (verbose)
+9. **Dynamic system prompt** — Conditional assembly based on session state, features, tools
+10. **Checkpointing / Rewind** — Track file changes, implement `/rewind` with checkpoint browser
 
 ### P2 — Medium Priority (Feature completeness)
 
-8. **replace_all in file_edit** — Bulk renaming/replacement
-9. **Session search** — Find past conversations
-10. **Content-aware .gitignore** in glob_search
-11. **MCP config standardization**
-12. **Windows sandboxing** (if targeting Windows)
-13. **`/review` command**
+11. **MultiEdit tool** — Batch edits to single file
+12. **@ File mentions** — `@path` to include file content with Tab autocomplete
+13. **Background task management** — `run_in_background`, BashOutput, KillShell tools
+14. **Grep enhancements** — multiline mode, head_limit/offset pagination
+15. **Auto-memory system** — Persist notes across sessions automatically
+16. **Hook enhancements** — HTTP hooks, tool input modification, 18 lifecycle events
+17. **Session search** — Find past conversations
+18. **IDE integrations** — VS Code extension, JetBrains plugin
 
 ### P3 — Nice to Have (Polish)
 
-14. **Cell-level differential renderer** — Major engineering effort, big impact
-15. **OSC 8 clickable file paths**
-16. **Vim keybinding mode**
-17. **Auto-update background check**
-18. **Git commit message generation**
+19. **Cell-level differential renderer** — Major engineering effort, big impact (~85% flicker reduction)
+20. **Output formatting overhaul** — Progress indicators, turn duration, thinking verbs
+21. **Agent teams** — Multi-agent collaboration on shared codebases
+22. **Voice mode** — Push-to-talk voice input
+23. **OSC 8 clickable file paths**
+24. **Vim keybinding mode**
 
 ---
 
-## Architecture Health Assessment
+## 21. Architecture Health Assessment
 
 ### Strengths
 - Clean layer separation (CLI → Core → LLM/Tools → Utils)
@@ -348,23 +549,25 @@ dbcode has: `/clear`, `/compact`, `/help`, `/model`, `/resume`, `/rewind`, `/eff
 - Good tool abstraction with Zod validation
 - Hooks system is production-ready
 - Anti-flicker rendering (Progressive Static Flushing + DEC Mode 2026)
+- Multi-model support with model router (GPT-4.1, Claude, Llama, DeepSeek, etc.)
 
 ### Weaknesses
-- **No integration tests for multi-turn conversations** — The message pairing bug could have been caught
+- **Subagents/Skills are islands** — Code exists but not integrated into the agent loop
+- **Context management is naive** — No microcompaction, no rehydration, late trigger threshold
+- **System prompt is static** — No conditional assembly, no mid-conversation reminders
 - **Activity tracking incomplete** — Only final assistant message tracked, not intermediate ones
-- **Subagents/Skills/MCP are islands** — Code exists but not integrated into the agent loop
-- **No automated E2E test for rendering** — Flickering regressions can't be caught
-- **Secret scanner is minimal** (34 lines) — Needs real regex patterns for API keys, tokens, etc.
+- **No integration tests for multi-turn conversations**
+- **Secret scanner is minimal** (34 lines)
 
 ### Technical Debt
-- `conversation.toMessagesForLLM()` uses `tool_call_id` (snake_case) while `ChatMessage` uses `toolCallId` (camelCase) — field name mismatch requires manual mapping
+- `conversation.toMessagesForLLM()` uses `tool_call_id` (snake_case) while `ChatMessage` uses `toolCallId` (camelCase)
 - `ToolCall` type is duplicated between `message-types.ts` and `provider.ts`
 - `--add-dir` CLI flag is parsed but never used
 - Several stub files in subagents/ (explore.ts, general.ts, plan.ts are ~38 lines each)
 
 ---
 
-## Lines of Code Summary
+## 22. Lines of Code Summary
 
 | Module | Files | Lines | Status |
 |--------|-------|-------|--------|
@@ -384,3 +587,18 @@ dbcode has: `/clear`, `/compact`, `/help`, `/model`, `/resume`, `/rewind`, `/eff
 | Config | 4 | ~400 | Complete |
 | Other | 20 | ~1,200 | Various |
 | **Total** | **145** | **~13,000** | — |
+
+---
+
+## Sources
+
+- [Claude Code CLI Reference](https://code.claude.com/docs/en/cli-reference)
+- [Claude Code System Prompts](https://github.com/Piebald-AI/claude-code-system-prompts) (updated within minutes of each release)
+- [Claude Code Hooks Reference](https://code.claude.com/docs/en/hooks)
+- [Claude Code Skills](https://code.claude.com/docs/en/skills)
+- [Claude Code Sub-agents](https://code.claude.com/docs/en/sub-agents)
+- [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams)
+- [Claude Code Checkpointing](https://code.claude.com/docs/en/checkpointing)
+- [Claude Code Context Buffer Management](https://claudefa.st/blog/guide/mechanics/context-buffer-management)
+- [OpenAI GPT-4.1 Announcement](https://openai.com/index/gpt-4-1/)
+- [OpenAI API Pricing](https://openai.com/api/pricing/)
