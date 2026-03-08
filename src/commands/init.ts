@@ -177,8 +177,24 @@ export const initCommand: SlashCommand = {
   execute: async (_args, context) => {
     const result = await initProject(context.workingDirectory);
     if (result.created) {
-      return { output: `Project initialized at ${result.path}`, success: true, refreshInstructions: true };
+      const lines = [
+        `✓ 프로젝트 초기화 완료: ${result.path}`,
+        "",
+        "생성된 파일:",
+        `  ${PROJECT_DIR}/${APP_NAME.toUpperCase()}.md  — 프로젝트 지침 (AI가 매 세션 시작 시 읽음)`,
+        `  ${PROJECT_DIR}/settings.json    — 모델/도구 설정`,
+        `  ${PROJECT_DIR}/rules/           — 커스텀 규칙 디렉토리`,
+        "",
+        `${APP_NAME.toUpperCase()}.md를 편집하여 프로젝트 컨벤션, 빌드/테스트 명령어, 코딩 스타일을 추가하세요.`,
+      ];
+      return { output: lines.join("\n"), success: true, refreshInstructions: true };
     }
-    return { output: `Already initialized at ${result.path}`, success: true };
+    const lines = [
+      `이미 초기화됨: ${result.path}`,
+      "",
+      `${APP_NAME.toUpperCase()}.md를 편집하려면: 해당 파일을 직접 수정하세요.`,
+      `초기화를 다시 하려면: ${PROJECT_DIR}/ 디렉토리를 삭제 후 /init을 실행하세요.`,
+    ];
+    return { output: lines.join("\n"), success: true };
   },
 };

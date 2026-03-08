@@ -50,8 +50,14 @@ export function UserInput({
       // Enter handling: Enter submits, Shift+Enter inserts newline.
       // Ink's parseKeypress maps \r → name='return' and \n → name='enter'.
       // Most terminals send \r in raw mode, but some may send \n.
-      // We treat both as "Enter pressed".
-      const isEnter = key.return || input === "\n" || input === "\r";
+      // Korean/CJK IME may send Enter differently after character composition.
+      // We check multiple conditions to catch all terminal/IME variations.
+      const isEnter =
+        key.return ||
+        input === "\n" ||
+        input === "\r" ||
+        input === "\r\n" ||
+        (input.length === 1 && (input.charCodeAt(0) === 13 || input.charCodeAt(0) === 10));
       if (isEnter) {
         // Shift+Enter → newline (only works in terminals that send distinct
         // escape sequences for Shift+Enter, e.g. Kitty, WezTerm).
@@ -195,7 +201,11 @@ export function UserInput({
       }
 
       // Character insertion at cursor position
+      // Filter out control characters (ASCII 0-31) that shouldn't be inserted as text.
+      // Newlines should only be inserted via Shift+Enter or Ctrl+J, not here.
       if (input && !key.ctrl && !key.meta) {
+        const code = input.charCodeAt(0);
+        if (code < 32 && code !== 9) return; // allow Tab (9), block other control chars
         const next = value.slice(0, cursorOffset) + input + value.slice(cursorOffset);
         updateValue(next, cursorOffset + input.length);
       }
