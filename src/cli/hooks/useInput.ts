@@ -1,14 +1,57 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { dirname } from "node:path";
+import { INPUT_HISTORY_FILE, INPUT_HISTORY_MAX } from "../../constants.js";
 
-/** Hook for managing input history */
-export function useInputHistory(maxHistory = 100) {
-  const [history, setHistory] = useState<readonly string[]>([]);
+/** Load persisted history from disk */
+function loadHistory(): readonly string[] {
+  try {
+    const raw = readFileSync(INPUT_HISTORY_FILE, "utf-8");
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+      return parsed.slice(0, INPUT_HISTORY_MAX);
+    }
+    return [];
+  } catch {
+    return [];
+  }
+}
+
+/** Save history to disk */
+function saveHistory(history: readonly string[]): void {
+  try {
+    mkdirSync(dirname(INPUT_HISTORY_FILE), { recursive: true });
+    writeFileSync(INPUT_HISTORY_FILE, JSON.stringify(history.slice(0, INPUT_HISTORY_MAX)), "utf-8");
+  } catch {
+    // Silently ignore write errors
+  }
+}
+
+/** Hook for managing input history with disk persistence */
+export function useInputHistory(maxHistory = INPUT_HISTORY_MAX) {
+  const loaded = useRef(false);
+  const [history, setHistory] = useState<readonly string[]>(() => {
+    loaded.current = true;
+    return loadHistory();
+  });
   const [historyIndex, setHistoryIndex] = useState(-1);
+
+  // Persist to disk whenever history changes (skip initial load)
+  const isFirstRender = useRef(true);
+  useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      return;
+    }
+    saveHistory(history);
+  }, [history]);
 
   const addToHistory = useCallback(
     (input: string) => {
       setHistory((prev) => {
-        const next = [input, ...prev];
+        // Deduplicate: remove if already exists
+        const filtered = prev.filter((item) => item !== input);
+        const next = [input, ...filtered];
         return next.length > maxHistory ? next.slice(0, maxHistory) : next;
       });
       setHistoryIndex(-1);

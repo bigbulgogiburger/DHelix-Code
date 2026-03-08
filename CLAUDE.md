@@ -26,7 +26,7 @@ CLI (Ink/React)  →  Core  →  LLM / Tools / Permissions / Hooks  →  Utils
 ```
 src/
 ├── index.ts              # CLI bootstrap (commander), logo stdout, Ink render
-├── constants.ts          # Version, paths, limits, getProjectConfigPaths()
+├── constants.ts          # Version, paths, limits, getProjectConfigPaths(), INPUT_HISTORY_FILE
 ├── cli/                  # Layer 1: Terminal UI
 │   ├── App.tsx           # Root Ink component (keyboard shortcuts, permission cycling)
 │   ├── components/       # UI components (.tsx)
@@ -44,6 +44,7 @@ src/
 │   │   ├── useConversation # Immutable conversation state management
 │   │   ├── useTextBuffering # 100ms batched text streaming
 │   │   ├── useKeybindings # Keyboard shortcut registry + ~/.dbcode/keybindings.json
+│   │   ├── useInput       # Input history with disk persistence (~/.dbcode/input-history.json)
 │   │   └── ...           # usePermissionPrompt, useStreaming
 │   └── renderer/         # Terminal rendering
 │       ├── markdown.ts   # Markdown → terminal
@@ -243,6 +244,13 @@ User Input → Context Prepare → Input Filter → LLM Stream → Output Filter
 | Alt+T      | Toggle extended thinking        |
 
 Customizable via `~/.dbcode/keybindings.json`.
+
+## Input History
+
+- Persisted to `~/.dbcode/input-history.json` (survives restarts)
+- Up/Down arrow keys navigate history across sessions
+- Max 500 entries, deduplication on insert (most recent wins)
+- Auto-saves on every new input
 
 ## Coding Conventions
 

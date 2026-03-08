@@ -34,6 +34,12 @@ export const SESSIONS_DIR = join(CONFIG_DIR, "sessions");
 /** Default log file path */
 export const LOG_FILE = join(CONFIG_DIR, "debug.log");
 
+/** Input history file path */
+export const INPUT_HISTORY_FILE = join(CONFIG_DIR, "input-history.json");
+
+/** Maximum number of input history entries to persist */
+export const INPUT_HISTORY_MAX = 500;
+
 /** Agent loop limits */
 export const AGENT_LOOP = {
   /** Maximum iterations before force-stop */
