@@ -163,33 +163,35 @@ interface ToolCallStrategy {
 
 ## Tools (14 built-in)
 
-| Tool          | Permission | Description                                             |
-| ------------- | ---------- | ------------------------------------------------------- |
-| file_read     | safe       | Read with line numbers, offset/limit, image/PDF support |
-| file_write    | confirm    | Create/overwrite (must read first if exists)            |
-| file_edit     | confirm    | Search/Replace with uniqueness validation, diff preview |
-| bash_exec     | confirm    | Shell execution with timeout, background support        |
-| glob_search   | safe       | File pattern matching, sorted by mtime                  |
-| grep_search   | safe       | Regex content search (ripgrep wrapper)                  |
-| list_dir      | safe       | Directory listing with metadata                         |
-| web_fetch     | confirm    | HTTP fetch with 15-min cache, content extraction        |
-| web_search    | confirm    | Brave Search + DuckDuckGo fallback                      |
-| notebook_edit | confirm    | Jupyter notebook cell editing                           |
-| mkdir         | confirm    | Create directories recursively                          |
-| ask_user      | safe       | Ask user questions with choices                         |
+| Tool          | Permission | Description                                               |
+| ------------- | ---------- | --------------------------------------------------------- |
+| file_read     | safe       | Read with line numbers, offset/limit, image/PDF support   |
+| file_write    | confirm    | Create/overwrite (must read first if exists)              |
+| file_edit     | confirm    | Search/Replace with uniqueness validation, diff preview   |
+| bash_exec     | confirm    | Shell execution with timeout, background support          |
+| glob_search   | safe       | File pattern matching, sorted by mtime                    |
+| grep_search   | safe       | Regex content search (ripgrep wrapper)                    |
+| list_dir      | safe       | Directory listing with metadata                           |
+| web_fetch     | confirm    | HTTP fetch with 15-min cache, content extraction          |
+| web_search    | confirm    | Brave Search + DuckDuckGo fallback                        |
+| notebook_edit | confirm    | Jupyter notebook cell editing                             |
+| mkdir         | confirm    | Create directories recursively                            |
+| ask_user      | safe       | Ask user questions with choices                           |
 | agent         | confirm    | Spawn subagent (explore/plan/general) via factory pattern |
-| todo_write    | safe       | Task tracking with pending/in_progress/completed states |
+| todo_write    | safe       | Task tracking with pending/in_progress/completed states   |
 
 ## Rendering Architecture (Anti-Flicker)
 
 Logo is printed to stdout BEFORE Ink's `render()` call — it's never part of the dynamic area.
 
 **Progressive Static Flushing** (ActivityFeed):
+
 - Completed entries (finished tool calls, complete text) are immediately moved to `<Static>`
 - Only in-progress entries (running tools, streaming text) stay in the dynamic area
 - This keeps the dynamic area small regardless of conversation length
 
 **DEC Mode 2026** (synchronized-output.ts):
+
 - Wraps Ink render cycles with BEGIN/END markers for atomic frame display
 - Supported by Ghostty, iTerm2, WezTerm, VSCode terminal, kitty, tmux 3.4+
 - Unsupported terminals safely ignore the escape sequences
@@ -199,9 +201,11 @@ Logo is printed to stdout BEFORE Ink's `render()` call — it's never part of th
 ## Multi-Turn Message Pairing
 
 Agent loop results must be stored with proper assistant(toolCalls) → tool pairing:
+
 ```
 assistant(toolCalls=[tc1,tc2]) → tool(tc1 result) → tool(tc2 result) → assistant("done")
 ```
+
 Never store tool messages without a preceding assistant message containing matching `toolCalls`.
 The `useAgentLoop` hook extracts new messages via `result.messages.slice(initialMessageCount)` and saves them in order.
 
@@ -235,13 +239,13 @@ User Input → Context Prepare → Input Filter → LLM Stream → Output Filter
 
 ## Keyboard Shortcuts
 
-| Shortcut   | Action                          |
-|------------|---------------------------------|
-| Esc        | Cancel current agent loop       |
-| Shift+Tab  | Cycle permission modes          |
-| Ctrl+O     | Toggle verbose mode             |
-| Ctrl+D     | Exit application                |
-| Alt+T      | Toggle extended thinking        |
+| Shortcut  | Action                    |
+| --------- | ------------------------- |
+| Esc       | Cancel current agent loop |
+| Shift+Tab | Cycle permission modes    |
+| Ctrl+O    | Toggle verbose mode       |
+| Ctrl+D    | Exit application          |
+| Alt+T     | Toggle extended thinking  |
 
 Customizable via `~/.dbcode/keybindings.json`.
 

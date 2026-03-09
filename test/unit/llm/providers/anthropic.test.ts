@@ -18,7 +18,9 @@ function createMockResponse(data: unknown, ok = true, status = 200): Response {
   } as unknown as Response;
 }
 
-function createSSEStream(events: Array<{ event: string; data: unknown }>): ReadableStream<Uint8Array> {
+function createSSEStream(
+  events: Array<{ event: string; data: unknown }>,
+): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
   let index = 0;
 
@@ -266,11 +268,7 @@ describe("AnthropicProvider", () => {
       mockFetch.mockImplementation(() => {
         callCount++;
         return Promise.resolve(
-          createMockResponse(
-            { error: { message: "Invalid API key" } },
-            false,
-            401,
-          ),
+          createMockResponse({ error: { message: "Invalid API key" } }, false, 401),
         );
       });
 
@@ -307,15 +305,27 @@ describe("AnthropicProvider", () => {
           },
           {
             event: "content_block_start",
-            data: { type: "content_block_start", index: 0, content_block: { type: "text", text: "" } },
+            data: {
+              type: "content_block_start",
+              index: 0,
+              content_block: { type: "text", text: "" },
+            },
           },
           {
             event: "content_block_delta",
-            data: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "Hello " } },
+            data: {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "text_delta", text: "Hello " },
+            },
           },
           {
             event: "content_block_delta",
-            data: { type: "content_block_delta", index: 0, delta: { type: "text_delta", text: "world!" } },
+            data: {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "text_delta", text: "world!" },
+            },
           },
           {
             event: "content_block_stop",
@@ -323,7 +333,11 @@ describe("AnthropicProvider", () => {
           },
           {
             event: "message_delta",
-            data: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 5 } },
+            data: {
+              type: "message_delta",
+              delta: { stop_reason: "end_turn" },
+              usage: { output_tokens: 5 },
+            },
           },
           {
             event: "message_stop",
@@ -370,15 +384,27 @@ describe("AnthropicProvider", () => {
           },
           {
             event: "content_block_start",
-            data: { type: "content_block_start", index: 0, content_block: { type: "thinking", thinking: "" } },
+            data: {
+              type: "content_block_start",
+              index: 0,
+              content_block: { type: "thinking", thinking: "" },
+            },
           },
           {
             event: "content_block_delta",
-            data: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "Let me " } },
+            data: {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "thinking_delta", thinking: "Let me " },
+            },
           },
           {
             event: "content_block_delta",
-            data: { type: "content_block_delta", index: 0, delta: { type: "thinking_delta", thinking: "think..." } },
+            data: {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "thinking_delta", thinking: "think..." },
+            },
           },
           {
             event: "content_block_stop",
@@ -386,11 +412,19 @@ describe("AnthropicProvider", () => {
           },
           {
             event: "content_block_start",
-            data: { type: "content_block_start", index: 1, content_block: { type: "text", text: "" } },
+            data: {
+              type: "content_block_start",
+              index: 1,
+              content_block: { type: "text", text: "" },
+            },
           },
           {
             event: "content_block_delta",
-            data: { type: "content_block_delta", index: 1, delta: { type: "text_delta", text: "The answer is 42." } },
+            data: {
+              type: "content_block_delta",
+              index: 1,
+              delta: { type: "text_delta", text: "The answer is 42." },
+            },
           },
           {
             event: "content_block_stop",
@@ -398,7 +432,11 @@ describe("AnthropicProvider", () => {
           },
           {
             event: "message_delta",
-            data: { type: "message_delta", delta: { stop_reason: "end_turn" }, usage: { output_tokens: 30 } },
+            data: {
+              type: "message_delta",
+              delta: { stop_reason: "end_turn" },
+              usage: { output_tokens: 30 },
+            },
           },
           {
             event: "message_stop",
@@ -480,7 +518,11 @@ describe("AnthropicProvider", () => {
           },
           {
             event: "message_delta",
-            data: { type: "message_delta", delta: { stop_reason: "tool_use" }, usage: { output_tokens: 10 } },
+            data: {
+              type: "message_delta",
+              delta: { stop_reason: "tool_use" },
+              usage: { output_tokens: 10 },
+            },
           },
           {
             event: "message_stop",

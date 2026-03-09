@@ -176,9 +176,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     const message = error instanceof Error ? error.message : String(error);
     const isAbort = error instanceof Error && error.name === "AbortError";
     return {
-      output: isAbort
-        ? `Search timed out for "${params.query}"`
-        : `Search failed: ${message}`,
+      output: isAbort ? `Search timed out for "${params.query}"` : `Search failed: ${message}`,
       isError: true,
       metadata: { query: params.query },
     };

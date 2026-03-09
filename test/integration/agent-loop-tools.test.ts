@@ -10,9 +10,7 @@ import { z } from "zod";
  * Create a mock LLM provider that returns pre-defined responses sequentially.
  * Uses text-parsing strategy format (XML tool calls embedded in content).
  */
-function createMockProvider(
-  responses: Array<{ content: string }>,
-): LLMProvider {
+function createMockProvider(responses: Array<{ content: string }>): LLMProvider {
   let callIndex = 0;
   return {
     name: "mock-text-parsing",

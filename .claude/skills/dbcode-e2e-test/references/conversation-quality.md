@@ -10,6 +10,7 @@
 ## Test Mode: conversation-quality
 
 프로젝트 E2E 테스트와 달리, 이 모드는:
+
 - 간단한 mock 프로젝트나 빈 디렉토리에서 실행
 - 빌드/커버리지 대신 **대화 메트릭**에 집중
 - 각 시나리오는 5-8턴으로 구성 (E2E보다 짧음)
@@ -45,13 +46,13 @@ Turn 5: "Update README.md to reflect the current config.json values.
 
 ### Assertions
 
-| ID | Type | Description |
-|----|------|-------------|
-| cr-1 | file_contains | config.json has maxRetries: 5 (updated) |
-| cr-2 | file_contains | config.json has logLevel: "debug" (new field) |
+| ID   | Type              | Description                                        |
+| ---- | ----------------- | -------------------------------------------------- |
+| cr-1 | file_contains     | config.json has maxRetries: 5 (updated)            |
+| cr-2 | file_contains     | config.json has logLevel: "debug" (new field)      |
 | cr-3 | response_contains | Turn 4 response mentions "3" (original maxRetries) |
-| cr-4 | response_contains | Turn 4 response mentions "logLevel" |
-| cr-5 | file_consistency | README.md values match config.json after Turn 5 |
+| cr-4 | response_contains | Turn 4 response mentions "logLevel"                |
+| cr-5 | file_consistency  | README.md values match config.json after Turn 5    |
 
 ### Quality Metrics
 
@@ -87,13 +88,13 @@ Turn 5: "Show me the final version of both files."
 
 ### Assertions
 
-| ID | Type | Description |
-|----|------|-------------|
-| tc-1 | tool_sequence | Turn 1: file_write calls create directories before files |
-| tc-2 | tool_sequence | Turn 3: file_read before file_edit (reads helper.ts before editing) |
-| tc-3 | tool_sequence | Turn 4: file_read before file_edit (reads to find the bug location) |
-| tc-4 | tool_present | Turn 4: uses file_edit (not file_write to overwrite entire file) |
-| tc-5 | no_redundant_tools | No duplicate consecutive reads of the same file |
+| ID   | Type               | Description                                                         |
+| ---- | ------------------ | ------------------------------------------------------------------- |
+| tc-1 | tool_sequence      | Turn 1: file_write calls create directories before files            |
+| tc-2 | tool_sequence      | Turn 3: file_read before file_edit (reads helper.ts before editing) |
+| tc-3 | tool_sequence      | Turn 4: file_read before file_edit (reads to find the bug location) |
+| tc-4 | tool_present       | Turn 4: uses file_edit (not file_write to overwrite entire file)    |
+| tc-5 | no_redundant_tools | No duplicate consecutive reads of the same file                     |
 
 ### Quality Metrics
 
@@ -129,13 +130,13 @@ Turn 5: "Run all tests one final time and show me the results."
 
 ### Assertions
 
-| ID | Type | Description |
-|----|------|-------------|
-| er-1 | error_handled | If Turn 2 fails, agent attempts to install dependencies |
-| er-2 | retry_success | Agent retries the command after fixing the issue |
-| er-3 | no_panic | Agent doesn't abandon the task on first failure |
-| er-4 | all_tests_pass | Final test run in Turn 5 has 0 failures |
-| er-5 | iterations_bounded | No turn exceeds 15 iterations (no infinite retry loop) |
+| ID   | Type               | Description                                             |
+| ---- | ------------------ | ------------------------------------------------------- |
+| er-1 | error_handled      | If Turn 2 fails, agent attempts to install dependencies |
+| er-2 | retry_success      | Agent retries the command after fixing the issue        |
+| er-3 | no_panic           | Agent doesn't abandon the task on first failure         |
+| er-4 | all_tests_pass     | Final test run in Turn 5 has 0 failures                 |
+| er-5 | iterations_bounded | No turn exceeds 15 iterations (no infinite retry loop)  |
 
 ### Quality Metrics
 
@@ -174,12 +175,12 @@ Turn 5: "Review ALL .ts files and check if they follow the 4 rules
 
 ### Assertions
 
-| ID | Type | Description |
-|----|------|-------------|
-| ia-1 | pattern_present | All .ts files have JSDoc on every function |
-| ia-2 | pattern_absence | No `console.log` in any .ts file |
-| ia-3 | pattern_absence | No `let` where `const` could be used |
-| ia-4 | naming_convention | All variable names are camelCase |
+| ID   | Type                 | Description                                         |
+| ---- | -------------------- | --------------------------------------------------- |
+| ia-1 | pattern_present      | All .ts files have JSDoc on every function          |
+| ia-2 | pattern_absence      | No `console.log` in any .ts file                    |
+| ia-3 | pattern_absence      | No `let` where `const` could be used                |
+| ia-4 | naming_convention    | All variable names are camelCase                    |
 | ia-5 | self_review_accurate | Turn 5 response correctly identifies any violations |
 
 ### Quality Metrics
@@ -225,13 +226,13 @@ Turn 5: "Write comprehensive tests in src/calculator.test.ts covering:
 
 ### Assertions
 
-| ID | Type | Description |
-|----|------|-------------|
+| ID   | Type                | Description                                                |
+| ---- | ------------------- | ---------------------------------------------------------- |
 | pc-1 | backward_compatible | Original 2-arg function still works after Turn 3-4 changes |
-| pc-2 | feature_complete | All operations from all turns are present in final code |
-| pc-3 | tests_pass | All tests pass in Turn 5 |
-| pc-4 | test_coverage | Tests cover scenarios from ALL turns, not just the latest |
-| pc-5 | no_regression | Earlier features (basic ops) not broken by later additions |
+| pc-2 | feature_complete    | All operations from all turns are present in final code    |
+| pc-3 | tests_pass          | All tests pass in Turn 5                                   |
+| pc-4 | test_coverage       | Tests cover scenarios from ALL turns, not just the latest  |
+| pc-5 | no_regression       | Earlier features (basic ops) not broken by later additions |
 
 ### Quality Metrics
 
@@ -267,12 +268,12 @@ Turn 5: "Wait, I think JWT was better. Change back to JWT auth
 
 ### Assertions
 
-| ID | Type | Description |
-|----|------|-------------|
-| ch-1 | doc_code_sync | After Turn 4, api-design.md matches server.ts |
-| ch-2 | latest_wins | After Turn 5, JWT auth is used (latest instruction) |
-| ch-3 | prefix_correct | After Turn 5, /v2/ prefix (not /api/v1/) |
-| ch-4 | no_stale_code | No leftover session-based auth code after Turn 5 |
+| ID   | Type                | Description                                              |
+| ---- | ------------------- | -------------------------------------------------------- |
+| ch-1 | doc_code_sync       | After Turn 4, api-design.md matches server.ts            |
+| ch-2 | latest_wins         | After Turn 5, JWT auth is used (latest instruction)      |
+| ch-3 | prefix_correct      | After Turn 5, /v2/ prefix (not /api/v1/)                 |
+| ch-4 | no_stale_code       | No leftover session-based auth code after Turn 5         |
 | ch-5 | acknowledged_change | Agent acknowledges the contradiction in Turn 3 or Turn 5 |
 
 ### Quality Metrics
@@ -397,15 +398,17 @@ function validateResponseContains(
 **Scenarios Tested:** {N}/6
 
 ## Summary
-| Scenario | Context | Tools | Recovery | Rules | Complexity | Contradictions | Score |
-|----------|---------|-------|----------|-------|------------|----------------|-------|
-| 1. Context Retention | PASS | - | - | - | - | - | 4.5/5 |
-| 2. Tool Coherence | - | PASS | - | - | - | - | 4.0/5 |
-| ... | ... | ... | ... | ... | ... | ... | ... |
+
+| Scenario             | Context | Tools | Recovery | Rules | Complexity | Contradictions | Score |
+| -------------------- | ------- | ----- | -------- | ----- | ---------- | -------------- | ----- |
+| 1. Context Retention | PASS    | -     | -        | -     | -          | -              | 4.5/5 |
+| 2. Tool Coherence    | -       | PASS  | -        | -     | -          | -              | 4.0/5 |
+| ...                  | ...     | ...   | ...      | ...   | ...        | ...            | ...   |
 
 ## Per-Scenario Details
 
 ### Scenario 1: Context Retention
+
 - **Turns:** 5/5 completed
 - **Context Checks:** 4/4 passed (recalled all prior values)
 - **Hallucinations:** 0
@@ -413,6 +416,7 @@ function validateResponseContains(
 - **Notable:** Agent correctly recalled original maxRetries=3 after changing to 5
 
 ### Scenario 2: Tool Call Coherence
+
 - **Read-before-Edit Rate:** 100% (8/8 edits had prior reads)
 - **Redundant Reads:** 1 (src/index.ts read twice in Turn 3)
 - **Edit vs Write:** 85% edits used file_edit (good)
@@ -420,15 +424,15 @@ function validateResponseContains(
 
 ## Aggregate Metrics
 
-| Metric | Value | Target |
-|--------|-------|--------|
-| Context Retention Rate | 95% | >= 90% |
-| Read-before-Edit Rate | 92% | >= 95% |
-| Error Recovery Rate | 100% | >= 80% |
-| Rule Compliance Rate | 88% | >= 85% |
-| Backward Compatibility | 100% | 100% |
-| Contradiction Handling | 90% | >= 85% |
-| Avg Iterations/Turn | 4.2 | < 10 |
+| Metric                 | Value | Target |
+| ---------------------- | ----- | ------ |
+| Context Retention Rate | 95%   | >= 90% |
+| Read-before-Edit Rate  | 92%   | >= 95% |
+| Error Recovery Rate    | 100%  | >= 80% |
+| Rule Compliance Rate   | 88%   | >= 85% |
+| Backward Compatibility | 100%  | 100%   |
+| Contradiction Handling | 90%   | >= 85% |
+| Avg Iterations/Turn    | 4.2   | < 10   |
 ```
 
 ---

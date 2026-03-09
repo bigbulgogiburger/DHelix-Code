@@ -14,11 +14,11 @@
 3. [DBCODE.md 프로젝트 인스트럭션 시스템](#issue-6-dbcodemd-프로젝트-인스트럭션-시스템-고도화)
 4. [Agent Activity Feed — 에이전트 작업 내역 UI](#3-agent-activity-feed--에이전트-작업-내역-ui)
 5. [Gap Analysis: Claude Code 대비 부족한 부분](#4-gap-analysis-claude-code-대비-부족한-부분)
-5. [Phase별 개발 계획](#5-phase별-개발-계획)
-6. [상세 구현 명세](#6-상세-구현-명세)
-7. [아키텍처 변경 사항](#7-아키텍처-변경-사항)
-8. [테스트 전략](#8-테스트-전략)
-9. [우선순위 매트릭스](#9-우선순위-매트릭스)
+6. [Phase별 개발 계획](#5-phase별-개발-계획)
+7. [상세 구현 명세](#6-상세-구현-명세)
+8. [아키텍처 변경 사항](#7-아키텍처-변경-사항)
+9. [테스트 전략](#8-테스트-전략)
+10. [우선순위 매트릭스](#9-우선순위-매트릭스)
 
 ---
 
@@ -26,26 +26,26 @@
 
 ### 잘 구현된 부분
 
-| 영역 | 상태 | 비고 |
-|------|------|------|
-| Agent Loop (ReAct) | 완성 | 50 iteration 제한, 에러 복구, 스트리밍 |
-| LLM Client | 완성 | OpenAI 호환, 듀얼 tool-call 전략 |
-| Tool System | 완성 | 7 P0 tools, Registry, Executor, Zod validation |
-| Session 관리 | 완성 | JSONL 형식, resume, fork 지원 |
-| Context 관리 | 완성 | 토큰 예산, 95% 자동 compaction |
-| Config 시스템 | 완성 | 5-level 계층적 설정, Zod 스키마 |
-| Slash Commands | 골격 완성 | 26개 커맨드 등록, registry 존재 |
+| 영역               | 상태      | 비고                                           |
+| ------------------ | --------- | ---------------------------------------------- |
+| Agent Loop (ReAct) | 완성      | 50 iteration 제한, 에러 복구, 스트리밍         |
+| LLM Client         | 완성      | OpenAI 호환, 듀얼 tool-call 전략               |
+| Tool System        | 완성      | 7 P0 tools, Registry, Executor, Zod validation |
+| Session 관리       | 완성      | JSONL 형식, resume, fork 지원                  |
+| Context 관리       | 완성      | 토큰 예산, 95% 자동 compaction                 |
+| Config 시스템      | 완성      | 5-level 계층적 설정, Zod 스키마                |
+| Slash Commands     | 골격 완성 | 26개 커맨드 등록, registry 존재                |
 
 ### 문제가 있는 부분
 
-| 영역 | 상태 | 심각도 |
-|------|------|--------|
-| 텍스트 입력 (커서 이동) | **미구현** | CRITICAL |
-| Permission UI | **Y/N 텍스트 입력** | HIGH |
-| Slash Command 자동완성 | **메뉴가 안 뜸** | HIGH |
-| 로고 표시 | **사라짐** | MEDIUM |
-| 폴더 생성 (mkdir) | **전용 도구 없음** | MEDIUM |
-| Git 통합 | **bash_exec 의존** | LOW (동작은 함) |
+| 영역                    | 상태                | 심각도          |
+| ----------------------- | ------------------- | --------------- |
+| 텍스트 입력 (커서 이동) | **미구현**          | CRITICAL        |
+| Permission UI           | **Y/N 텍스트 입력** | HIGH            |
+| Slash Command 자동완성  | **메뉴가 안 뜸**    | HIGH            |
+| 로고 표시               | **사라짐**          | MEDIUM          |
+| 폴더 생성 (mkdir)       | **전용 도구 없음**  | MEDIUM          |
+| Git 통합                | **bash_exec 의존**  | LOW (동작은 함) |
 
 ---
 
@@ -54,10 +54,12 @@
 ### Issue #1: 폴더 생성 불가 & Git 명령 가능 여부
 
 **현재 상태:**
+
 - `file_write` 도구에서 `mkdir(dirname(filePath), { recursive: true })`로 부모 디렉토리 자동 생성은 되지만, **빈 폴더만 생성하는 전용 도구가 없음**
 - Git 명령은 `bash_exec`를 통해 **이미 가능**하지만, 사용자에게 이 사실이 명확하지 않음
 
 **해결 방안:**
+
 ```
 A) mkdir 전용 도구 추가 (src/tools/definitions/mkdir.ts)
 B) Git 전용 도구 추가 또는 시스템 프롬프트에 git 사용법 명시
@@ -71,6 +73,7 @@ C) /git slash command 추가 (status, diff, commit, push 등 서브커맨드)
 ### Issue #2: Permission UI 개선
 
 **현재 상태 (`src/cli/components/PermissionPrompt.tsx`):**
+
 ```
 ┌─────────────────────────────┐
 │ Permission required         │
@@ -81,6 +84,7 @@ C) /git slash command 추가 (status, diff, commit, push 등 서브커맨드)
 ```
 
 **목표 (Claude Code 스타일):**
+
 ```
 ┌─────────────────────────────────────────────┐
 │  bash_exec                                  │
@@ -91,6 +95,7 @@ C) /git slash command 추가 (status, diff, commit, push 등 서브커맨드)
 ```
 
 **해결 방안:**
+
 - `useInput`의 `key.leftArrow` / `key.rightArrow`로 탭 네비게이션 구현
 - 선택된 항목 하이라이트 (bold + underline + 색상 변경)
 - Enter로 확정
@@ -103,11 +108,13 @@ C) /git slash command 추가 (status, diff, commit, push 등 서브커맨드)
 ### Issue #3: Slash Command 자동완성 메뉴가 안 뜸
 
 **현재 상태 (`src/cli/components/SlashCommandMenu.tsx`):**
+
 - `SlashCommandMenu` 컴포넌트는 존재
 - `getMatchingCommands()`로 필터링 로직 있음
 - **문제:** `App.tsx`에서 메뉴 렌더링 조건이 충족되지 않거나, 입력 상태와 메뉴 표시 간 연동이 끊어져 있을 가능성
 
 **해결 방안:**
+
 1. `UserInput` → `App.tsx`로 현재 입력값 실시간 전달 (onChange 콜백)
 2. `/`로 시작하면 `SlashCommandMenu` 렌더링
 3. 위/아래 방향키로 항목 탐색
@@ -122,6 +129,7 @@ C) /git slash command 추가 (status, diff, commit, push 등 서브커맨드)
 ### Issue #4: 텍스트 입력 시 커서 이동 불가
 
 **현재 상태 (`src/cli/components/UserInput.tsx`, 61줄):**
+
 - `useInput`으로 키 입력 캡처
 - **커서 위치(cursorOffset) 상태가 없음** — 항상 문자열 끝에 append만 됨
 - 방향키 핸들러가 없어서 좌/우 이동 불가
@@ -129,10 +137,12 @@ C) /git slash command 추가 (status, diff, commit, push 등 서브커맨드)
 **해결 방안 (두 가지 접근):**
 
 **Option A: `ink-text-input` 또는 `@inkjs/ui TextInput` 채택**
+
 - 장점: 커서 이동, 제거, 삽입 등 모든 기본 기능 내장
 - 단점: 커스텀 기능(멀티라인, vim 모드 등) 추가 어려움
 
 **Option B: 커스텀 구현 (권장)**
+
 - `cursorOffset` 상태 추가
 - 방향키 핸들러 구현
 - `Ctrl+A` (Home), `Ctrl+E` (End), `Alt+B/F` (단어 이동) 지원
@@ -140,17 +150,17 @@ C) /git slash command 추가 (status, diff, commit, push 등 서브커맨드)
 
 ```typescript
 // 핵심 상태
-const [value, setValue] = useState('')
-const [cursorOffset, setCursorOffset] = useState(0)
+const [value, setValue] = useState("");
+const [cursorOffset, setCursorOffset] = useState(0);
 
 // 방향키 핸들링
-if (key.leftArrow) setCursorOffset(prev => Math.max(0, prev - 1))
-if (key.rightArrow) setCursorOffset(prev => Math.min(value.length, prev + 1))
+if (key.leftArrow) setCursorOffset((prev) => Math.max(0, prev - 1));
+if (key.rightArrow) setCursorOffset((prev) => Math.min(value.length, prev + 1));
 
 // 문자 삽입 (커서 위치에)
-const newValue = value.slice(0, cursorOffset) + input + value.slice(cursorOffset)
-setValue(newValue)
-setCursorOffset(prev => prev + input.length)
+const newValue = value.slice(0, cursorOffset) + input + value.slice(cursorOffset);
+setValue(newValue);
+setCursorOffset((prev) => prev + input.length);
 ```
 
 **구현 우선순위:** P0 (가장 기본적인 UX)
@@ -160,6 +170,7 @@ setCursorOffset(prev => prev + input.length)
 ### Issue #5: 로고 사라짐
 
 **현재 상태:**
+
 - `src/cli/components/Logo.tsx`에 Doge 픽셀아트 로고가 구현되어 있음
 - `App.tsx`에서 `<Logo />` 렌더링 조건 확인 필요
 - 가능한 원인:
@@ -169,6 +180,7 @@ setCursorOffset(prev => prev + input.length)
   4. headless 모드에서 로고 비활성화가 일반 모드에 영향
 
 **해결 방안:**
+
 1. `App.tsx`에서 로고 렌더링 로직 디버깅
 2. 앱 시작 시 항상 로고 표시되도록 보장
 3. 로고 아래에 버전 번호 + 모델명 표시
@@ -212,23 +224,23 @@ Claude Code는 프로젝트 인스트럭션을 **계층적으로 발견, 로드,
 
 **핵심 기능들:**
 
-| 기능 | 설명 |
-|------|------|
-| **@import 지시자** | `@README.md`, `@docs/guide.md`로 다른 파일 참조 (최대 5단계 재귀) |
-| **경로 조건부 규칙** | `.claude/rules/*.md`에 YAML frontmatter로 glob 패턴 지정 → 해당 파일 작업 시만 로드 |
-| **지연 로딩** | 하위 디렉토리 CLAUDE.md는 해당 디렉토리 파일 접근 시에만 로드 |
-| **Compaction 생존** | `/compact` 후 CLAUDE.md를 디스크에서 **다시 읽어** 재주입 (절대 소실 안 됨) |
-| **병합 방식** | 모든 파일이 **연결(concatenate)** — 덮어쓰기 아님 |
-| **크기 권장** | 파일당 200줄 이하, 전체 ~5,000 토큰 이하 |
-| **`/init` 커맨드** | 코드베이스를 분석하여 맞춤형 CLAUDE.md 자동 생성 |
-| **InstructionsLoaded 훅** | 어떤 파일이 왜 로드되었는지 디버깅 가능 |
+| 기능                      | 설명                                                                                |
+| ------------------------- | ----------------------------------------------------------------------------------- |
+| **@import 지시자**        | `@README.md`, `@docs/guide.md`로 다른 파일 참조 (최대 5단계 재귀)                   |
+| **경로 조건부 규칙**      | `.claude/rules/*.md`에 YAML frontmatter로 glob 패턴 지정 → 해당 파일 작업 시만 로드 |
+| **지연 로딩**             | 하위 디렉토리 CLAUDE.md는 해당 디렉토리 파일 접근 시에만 로드                       |
+| **Compaction 생존**       | `/compact` 후 CLAUDE.md를 디스크에서 **다시 읽어** 재주입 (절대 소실 안 됨)         |
+| **병합 방식**             | 모든 파일이 **연결(concatenate)** — 덮어쓰기 아님                                   |
+| **크기 권장**             | 파일당 200줄 이하, 전체 ~5,000 토큰 이하                                            |
+| **`/init` 커맨드**        | 코드베이스를 분석하여 맞춤형 CLAUDE.md 자동 생성                                    |
+| **InstructionsLoaded 훅** | 어떤 파일이 왜 로드되었는지 디버깅 가능                                             |
 
 **CLAUDE.md vs CLAUDE.local.md:**
 
-| | CLAUDE.md | CLAUDE.local.md |
-|---|-----------|-----------------|
-| 용도 | 팀 공유 규칙 | 개인 설정 |
-| Git | 커밋 | .gitignore |
+|      | CLAUDE.md            | CLAUDE.local.md                 |
+| ---- | -------------------- | ------------------------------- |
+| 용도 | 팀 공유 규칙         | 개인 설정                       |
+| Git  | 커밋                 | .gitignore                      |
 | 예시 | 코딩 표준, 빌드 명령 | 개인 sandbox URL, 테스트 데이터 |
 
 ---
@@ -237,16 +249,16 @@ Claude Code는 프로젝트 인스트럭션을 **계층적으로 발견, 로드,
 
 분석 결과, dbcode에는 **놀랍게도 이미 정교한 인스트럭션 시스템이 존재**한다:
 
-| 컴포넌트 | 파일 | 상태 |
-|----------|------|------|
-| DBCODE.md 로딩 | `src/instructions/loader.ts` | **완성** — 프로젝트 루트 + `.dbcode/` 탐색 |
-| @import 지시자 | `src/instructions/parser.ts` | **완성** — 재귀 해석, 순환 참조 방지 (10단계) |
-| 경로 조건부 규칙 | `src/instructions/path-matcher.ts` | **완성** — `.dbcode/rules/*.md` + glob 매칭 |
-| 시스템 프롬프트 주입 | `src/core/system-prompt-builder.ts` | **완성** — priority 70으로 주입 |
-| Interactive 모드 연동 | `src/cli/App.tsx` | **완성** — useEffect로 로드 |
-| Headless 모드 연동 | `src/cli/headless.ts` | **완성** — 에이전트 루프 전 로드 |
-| `dbcode init` | `src/commands/init.ts` | **기본** — DBCODE.md + settings.json 생성 |
-| 훅 시스템 | `src/hooks/` | **완성** — 17개 이벤트, `InstructionsLoaded` 포함 |
+| 컴포넌트              | 파일                                | 상태                                              |
+| --------------------- | ----------------------------------- | ------------------------------------------------- |
+| DBCODE.md 로딩        | `src/instructions/loader.ts`        | **완성** — 프로젝트 루트 + `.dbcode/` 탐색        |
+| @import 지시자        | `src/instructions/parser.ts`        | **완성** — 재귀 해석, 순환 참조 방지 (10단계)     |
+| 경로 조건부 규칙      | `src/instructions/path-matcher.ts`  | **완성** — `.dbcode/rules/*.md` + glob 매칭       |
+| 시스템 프롬프트 주입  | `src/core/system-prompt-builder.ts` | **완성** — priority 70으로 주입                   |
+| Interactive 모드 연동 | `src/cli/App.tsx`                   | **완성** — useEffect로 로드                       |
+| Headless 모드 연동    | `src/cli/headless.ts`               | **완성** — 에이전트 루프 전 로드                  |
+| `dbcode init`         | `src/commands/init.ts`              | **기본** — DBCODE.md + settings.json 생성         |
+| 훅 시스템             | `src/hooks/`                        | **완성** — 17개 이벤트, `InstructionsLoaded` 포함 |
 
 **실제 로딩 흐름 (이미 구현됨):**
 
@@ -267,22 +279,22 @@ dbcode 시작
 
 #### 6-3. Claude Code 대비 Gap 분석
 
-| 기능 | Claude Code | dbcode | Gap |
-|------|-------------|--------|-----|
-| 프로젝트 루트 DBCODE.md | O | O | - |
-| `.dbcode/DBCODE.md` | O | O | - |
-| @import 지시자 | O (5단계) | O (10단계) | - (dbcode가 더 관대) |
-| 경로 조건부 규칙 | O | O | - |
-| 시스템 프롬프트 주입 | O | O | - |
-| `InstructionsLoaded` 훅 | O | O | - |
-| **사용자 글로벌** `~/.dbcode/DBCODE.md` | O | **X** | **HIGH** |
-| **상위 디렉토리 상향 탐색** | O (CWD→/) | **X** | MEDIUM |
-| **DBCODE.local.md** (개인용, gitignore) | O | **X** | **HIGH** |
-| **Compaction 시 재로딩** | O | **X** | **HIGH** |
-| **`/init` 코드베이스 분석** | O (AI가 분석) | **X** (템플릿만) | **HIGH** |
-| 하위 디렉토리 지연 로딩 | O | X | MEDIUM |
-| 관리 정책 (OS-level) | O | X | LOW (엔터프라이즈용) |
-| `/memory` 디버그 커맨드 | O | X | MEDIUM |
+| 기능                                    | Claude Code   | dbcode           | Gap                  |
+| --------------------------------------- | ------------- | ---------------- | -------------------- |
+| 프로젝트 루트 DBCODE.md                 | O             | O                | -                    |
+| `.dbcode/DBCODE.md`                     | O             | O                | -                    |
+| @import 지시자                          | O (5단계)     | O (10단계)       | - (dbcode가 더 관대) |
+| 경로 조건부 규칙                        | O             | O                | -                    |
+| 시스템 프롬프트 주입                    | O             | O                | -                    |
+| `InstructionsLoaded` 훅                 | O             | O                | -                    |
+| **사용자 글로벌** `~/.dbcode/DBCODE.md` | O             | **X**            | **HIGH**             |
+| **상위 디렉토리 상향 탐색**             | O (CWD→/)     | **X**            | MEDIUM               |
+| **DBCODE.local.md** (개인용, gitignore) | O             | **X**            | **HIGH**             |
+| **Compaction 시 재로딩**                | O             | **X**            | **HIGH**             |
+| **`/init` 코드베이스 분석**             | O (AI가 분석) | **X** (템플릿만) | **HIGH**             |
+| 하위 디렉토리 지연 로딩                 | O             | X                | MEDIUM               |
+| 관리 정책 (OS-level)                    | O             | X                | LOW (엔터프라이즈용) |
+| `/memory` 디버그 커맨드                 | O             | X                | MEDIUM               |
 
 ---
 
@@ -319,32 +331,32 @@ dbcode init
 // 목표: 글로벌 + 프로젝트 로드 후 병합
 
 async function loadInstructions(cwd: string): Promise<LoadedInstructions> {
-  const layers: string[] = []
+  const layers: string[] = [];
 
   // 1. 사용자 글로벌
-  const globalMd = await tryRead(join(homedir(), '.dbcode', 'DBCODE.md'))
-  if (globalMd) layers.push(globalMd)
+  const globalMd = await tryRead(join(homedir(), ".dbcode", "DBCODE.md"));
+  if (globalMd) layers.push(globalMd);
 
   // 2. 사용자 글로벌 규칙
-  const globalRules = await loadRules(join(homedir(), '.dbcode', 'rules'))
-  if (globalRules) layers.push(globalRules)
+  const globalRules = await loadRules(join(homedir(), ".dbcode", "rules"));
+  if (globalRules) layers.push(globalRules);
 
   // 3. 프로젝트 DBCODE.md (기존 로직)
-  const projectMd = await findProjectInstructions(cwd)
-  if (projectMd) layers.push(await resolveImports(projectMd.content, projectMd.dir))
+  const projectMd = await findProjectInstructions(cwd);
+  if (projectMd) layers.push(await resolveImports(projectMd.content, projectMd.dir));
 
   // 4. 프로젝트 규칙 (기존 로직)
-  const projectRules = await loadPathRules(cwd)
-  if (projectRules) layers.push(projectRules)
+  const projectRules = await loadPathRules(cwd);
+  if (projectRules) layers.push(projectRules);
 
   // 5. DBCODE.local.md (신규)
-  const localMd = await tryRead(join(cwd, 'DBCODE.local.md'))
-  if (localMd) layers.push(localMd)
+  const localMd = await tryRead(join(cwd, "DBCODE.local.md"));
+  if (localMd) layers.push(localMd);
 
   return {
-    combined: layers.join('\n\n---\n\n'),
+    combined: layers.join("\n\n---\n\n"),
     // ...
-  }
+  };
 }
 ```
 
@@ -353,15 +365,20 @@ async function loadInstructions(cwd: string): Promise<LoadedInstructions> {
 **목표:** 개인 설정용 파일 (git에 커밋하지 않음)
 
 **변경 사항:**
+
 1. `loader.ts`에서 `DBCODE.local.md` 로드 추가 (최고 우선순위)
 2. `dbcode init`에서 `.gitignore`에 `DBCODE.local.md` 자동 추가
 3. 템플릿:
+
 ```markdown
 # DBCODE.local.md — Personal Settings (not committed to git)
 
 # Add your personal preferences here:
+
 # - Custom test data paths
+
 # - Personal workflow preferences
+
 # - Local environment specifics
 ```
 
@@ -374,22 +391,22 @@ async function loadInstructions(cwd: string): Promise<LoadedInstructions> {
 ```typescript
 async function compactContext(messages, config) {
   // 1. 디스크에서 DBCODE.md 다시 읽기
-  const freshInstructions = await loadInstructions(config.workingDirectory)
+  const freshInstructions = await loadInstructions(config.workingDirectory);
 
   // 2. 시스템 프롬프트 재구성
   const systemPrompt = buildSystemPrompt({
     ...config,
     projectInstructions: freshInstructions.combined,
-  })
+  });
 
   // 3. 대화 내역만 요약 (시스템 프롬프트는 fresh)
   const compacted = [
-    { role: 'system', content: systemPrompt },
-    ...summarizeMessages(messages.slice(1)),  // 시스템 제외 요약
-    ...messages.slice(-5),                     // 최근 5턴 유지
-  ]
+    { role: "system", content: systemPrompt },
+    ...summarizeMessages(messages.slice(1)), // 시스템 제외 요약
+    ...messages.slice(-5), // 최근 5턴 유지
+  ];
 
-  return compacted
+  return compacted;
 }
 ```
 
@@ -398,14 +415,15 @@ async function compactContext(messages, config) {
 ```typescript
 // CWD에서 / 까지 올라가며 DBCODE.md 수집
 function findInstructionsUpward(cwd: string): string[] {
-  const results: string[] = []
-  let dir = cwd
-  while (dir !== dirname(dir)) {  // 루트에 도달할 때까지
-    const md = tryReadSync(join(dir, 'DBCODE.md'))
-    if (md) results.unshift(md)   // 상위가 앞에 (낮은 우선순위)
-    dir = dirname(dir)
+  const results: string[] = [];
+  let dir = cwd;
+  while (dir !== dirname(dir)) {
+    // 루트에 도달할 때까지
+    const md = tryReadSync(join(dir, "DBCODE.md"));
+    if (md) results.unshift(md); // 상위가 앞에 (낮은 우선순위)
+    dir = dirname(dir);
   }
-  return results
+  return results;
 }
 ```
 
@@ -459,22 +477,26 @@ $ dbcode init
 # DBCODE.md — dbcode Project Instructions
 
 ## Project
+
 - CLI AI coding assistant built with Node.js 20+ / TypeScript 5.8 / Ink 5.x
 - ESM only, JSX runtime = ink
 
 ## Commands
+
 - Build: `npm run build` (tsup)
 - Test: `npm test` (vitest)
 - Lint: `npm run lint` (eslint + prettier)
 - Typecheck: `npm run typecheck`
 
 ## Architecture
+
 - src/cli/ — Terminal UI (Ink/React components)
 - src/core/ — Business logic (ZERO UI imports)
 - src/llm/ — LLM client (OpenAI-compatible)
 - src/tools/ — Tool system (7 P0 tools)
 
 ## Conventions
+
 - Named exports only (no default exports)
 - ESM imports with .js extension
 - No circular dependencies
@@ -482,6 +504,7 @@ $ dbcode init
 - No `any` type — use `unknown` + type guards
 
 ## Commit Style
+
 - Conventional: feat(module), fix(module), test(module)
 ```
 
@@ -489,28 +512,28 @@ $ dbcode init
 
 #### 6-6. 우선순위 요약
 
-| # | 작업 | Phase | 우선순위 |
-|---|------|-------|----------|
-| 1 | `/init` AI 코드베이스 분석 | Phase 1 | **P0** |
-| 2 | `~/.dbcode/DBCODE.md` 글로벌 인스트럭션 | Phase 1 | **P0** |
-| 3 | Compaction 시 인스트럭션 재로딩 | Phase 1 | **P0** |
-| 4 | `DBCODE.local.md` 지원 | Phase 1 | P1 |
-| 5 | 상위 디렉토리 상향 탐색 | Phase 2 | P2 |
-| 6 | `/memory` 디버그 커맨드 | Phase 2 | P2 |
-| 7 | 하위 디렉토리 지연 로딩 | Phase 3 | P2 |
+| #   | 작업                                    | Phase   | 우선순위 |
+| --- | --------------------------------------- | ------- | -------- |
+| 1   | `/init` AI 코드베이스 분석              | Phase 1 | **P0**   |
+| 2   | `~/.dbcode/DBCODE.md` 글로벌 인스트럭션 | Phase 1 | **P0**   |
+| 3   | Compaction 시 인스트럭션 재로딩         | Phase 1 | **P0**   |
+| 4   | `DBCODE.local.md` 지원                  | Phase 1 | P1       |
+| 5   | 상위 디렉토리 상향 탐색                 | Phase 2 | P2       |
+| 6   | `/memory` 디버그 커맨드                 | Phase 2 | P2       |
+| 7   | 하위 디렉토리 지연 로딩                 | Phase 3 | P2       |
 
 ---
 
 #### 6-7. 참고 자료
 
-| 자료 | 내용 |
-|------|------|
-| [How Claude remembers your project](https://code.claude.com/docs/en/memory) | 공식 CLAUDE.md 문서 |
-| [Using CLAUDE.MD files](https://claude.com/blog/using-claude-md-files) | Anthropic 블로그 |
-| [CLAUDE.md Mastery Guide](https://claudefa.st/blog/guide/mechanics/claude-md-mastery) | 커뮤니티 심층 가이드 |
-| [How to Write a Good CLAUDE.md](https://www.builder.io/blog/claude-md-guide) | Builder.io 가이드 |
-| [Claude Code Best Practices](https://code.claude.com/docs/en/best-practices) | 공식 권장사항 |
-| [Rules Directory Guide](https://claudefa.st/blog/guide/mechanics/rules-directory) | .claude/rules/ 상세 가이드 |
+| 자료                                                                                  | 내용                       |
+| ------------------------------------------------------------------------------------- | -------------------------- |
+| [How Claude remembers your project](https://code.claude.com/docs/en/memory)           | 공식 CLAUDE.md 문서        |
+| [Using CLAUDE.MD files](https://claude.com/blog/using-claude-md-files)                | Anthropic 블로그           |
+| [CLAUDE.md Mastery Guide](https://claudefa.st/blog/guide/mechanics/claude-md-mastery) | 커뮤니티 심층 가이드       |
+| [How to Write a Good CLAUDE.md](https://www.builder.io/blog/claude-md-guide)          | Builder.io 가이드          |
+| [Claude Code Best Practices](https://code.claude.com/docs/en/best-practices)          | 공식 권장사항              |
+| [Rules Directory Guide](https://claudefa.st/blog/guide/mechanics/rules-directory)     | .claude/rules/ 상세 가이드 |
 
 ---
 
@@ -560,27 +583,28 @@ Claude Code에서 사용자가 프롬프트를 보내면, 터미널에 다음이
 
 #### A. 스피너 + Thinking 표시기
 
-| 요소 | 설명 |
-|------|------|
-| 스피너 문자 | 브레일 패턴 `⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏` (80ms 간격 회전) |
+| 요소        | 설명                                                        |
+| ----------- | ----------------------------------------------------------- |
+| 스피너 문자 | 브레일 패턴 `⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏` (80ms 간격 회전)                   |
 | 스피너 라벨 | "Thinking...", "Analyzing...", 또는 커스텀 verb (설정 가능) |
-| 시머 효과 | Extended Thinking 중 "Thinking..." 텍스트에 애니메이션 적용 |
-| 색상 | 시안(cyan) |
-| 고정 폭 | 브레일 문자는 고정 폭으로 애니메이션 시 레이아웃 떨림 방지 |
+| 시머 효과   | Extended Thinking 중 "Thinking..." 텍스트에 애니메이션 적용 |
+| 색상        | 시안(cyan)                                                  |
+| 고정 폭     | 브레일 문자는 고정 폭으로 애니메이션 시 레이아웃 떨림 방지  |
 
 #### B. 스트리밍 텍스트
 
-| 요소 | 설명 |
-|------|------|
-| 전달 방식 | SSE `content_block_delta` → `text_delta` 청크 단위 |
-| 렌더링 | 버퍼링된 청크 단위 표시 (순수 문자 단위 아님) |
-| 커서 | 생성 중일 때 끝에 회색 블록 커서 `▌` 표시 |
-| 마크다운 | 스트리밍 중에는 raw 텍스트, **완료 후** 마크다운 렌더링으로 전환 |
-| 코드 블록 | Tree-sitter 기반 구문 하이라이팅 (완료 후) |
+| 요소      | 설명                                                             |
+| --------- | ---------------------------------------------------------------- |
+| 전달 방식 | SSE `content_block_delta` → `text_delta` 청크 단위               |
+| 렌더링    | 버퍼링된 청크 단위 표시 (순수 문자 단위 아님)                    |
+| 커서      | 생성 중일 때 끝에 회색 블록 커서 `▌` 표시                        |
+| 마크다운  | 스트리밍 중에는 raw 텍스트, **완료 후** 마크다운 렌더링으로 전환 |
+| 코드 블록 | Tree-sitter 기반 구문 하이라이팅 (완료 후)                       |
 
 #### C. Tool Call 표시 — 핵심 패턴
 
 **실행 중 (현재시제 동사 + 현재 대상):**
+
 ```
 ⠋ Reading src/core/agent-loop.ts
 ⠋ Editing src/cli/App.tsx
@@ -590,6 +614,7 @@ Claude Code에서 사용자가 프롬프트를 보내면, 터미널에 다음이
 ```
 
 **완료 (과거시제 동사 + 개수 요약):**
+
 ```
 ✓ Read 3 files
 ✓ Edited src/cli/App.tsx
@@ -599,27 +624,29 @@ Claude Code에서 사용자가 프롬프트를 보내면, 터미널에 다음이
 ```
 
 **에러:**
+
 ```
 ✗ Failed to read /etc/shadow
 ```
 
 **거부됨:**
+
 ```
 ! Denied: bash_exec (rm -rf /)
 ```
 
 **도구별 표시 규칙:**
 
-| 도구 | 실행 중 | 완료 | 비고 |
-|------|---------|------|------|
-| file_read | `Reading {path}` | `Read {N} files` | 복수 파일 시 개수 요약 |
-| file_write | `Writing {path}` | `Wrote {path}` | |
-| file_edit | `Editing {path}` | `Edited {path}` | + 인라인 diff 표시 |
-| bash_exec | `Running {command}` | `Ran {command}` | 명령어 축약 (50자) |
-| glob_search | `Searching for {pattern}` | `Found {N} files` | |
-| grep_search | `Searching for "{pattern}"` | `Searched for "{pattern}"` | |
-| ask_user | `Waiting for user input` | `Got user response` | |
-| mkdir | `Creating {path}` | `Created {path}` | |
+| 도구        | 실행 중                     | 완료                       | 비고                   |
+| ----------- | --------------------------- | -------------------------- | ---------------------- |
+| file_read   | `Reading {path}`            | `Read {N} files`           | 복수 파일 시 개수 요약 |
+| file_write  | `Writing {path}`            | `Wrote {path}`             |                        |
+| file_edit   | `Editing {path}`            | `Edited {path}`            | + 인라인 diff 표시     |
+| bash_exec   | `Running {command}`         | `Ran {command}`            | 명령어 축약 (50자)     |
+| glob_search | `Searching for {pattern}`   | `Found {N} files`          |                        |
+| grep_search | `Searching for "{pattern}"` | `Searched for "{pattern}"` |                        |
+| ask_user    | `Waiting for user input`    | `Got user response`        |                        |
+| mkdir       | `Creating {path}`           | `Created {path}`           |                        |
 
 #### D. Diff 표시 (파일 편집 시)
 
@@ -674,32 +701,32 @@ Activity feed 스크롤이 멈추고 사용자 응답을 기다림. 응답 후 f
 [gpt-4o] [████████░░░░ 67%] [cost: $0.12] [streaming...]
 ```
 
-| 요소 | 설명 |
-|------|------|
-| 모델명 | 파란색 |
-| 토큰 사용량 바 | 0-60% 초록, 60-80% 노랑, 80%+ 빨강 |
-| 비용 | 누적 API 비용 |
-| 스트리밍 표시기 | 활성 시 "streaming..." |
-| 소요 시간 | `showTurnDuration` 설정 시 표시 |
+| 요소            | 설명                               |
+| --------------- | ---------------------------------- |
+| 모델명          | 파란색                             |
+| 토큰 사용량 바  | 0-60% 초록, 60-80% 노랑, 80%+ 빨강 |
+| 비용            | 누적 API 비용                      |
+| 스트리밍 표시기 | 활성 시 "streaming..."             |
+| 소요 시간       | `showTurnDuration` 설정 시 표시    |
 
 ---
 
 ### 3.3 dbcode 현재 상태 vs. Claude Code Activity Feed
 
-| 컴포넌트 | Claude Code | dbcode 현재 | Gap |
-|----------|-------------|-------------|-----|
-| `<Static>` 완료 메시지 | O (스크롤백) | O (`MessageList.tsx`) | - |
-| 스트리밍 텍스트 + 커서 | O | O (`StreamingMessage.tsx`) | - |
-| 스피너 | O (커스텀 verb) | O (`Spinner.tsx`, 고정 라벨) | MEDIUM |
-| Tool Call 상태 아이콘 | O (✓/✗/!) | △ (`ToolCallBlock.tsx`, `...`/`+`/`x`/`!`) | **HIGH** |
-| 현재시제→과거시제 전환 | O | X (이름만 표시) | **HIGH** |
-| 도구 결과 개수 요약 | O ("Read 3 files") | X | **HIGH** |
-| 인라인 Diff 표시 | O (빨강/초록 배경) | X | **CRITICAL** |
-| Thinking/시머 표시 | O | X | MEDIUM |
-| Sub-agent 진행 표시 | O | X | MEDIUM |
-| 접기/펼치기 | O | △ (`isExpanded` prop 있음) | MEDIUM |
-| Status Bar 비용 표시 | O | △ (토큰만, 비용 없음) | LOW |
-| 이벤트 시스템 | O | O (`mitt` 기반) | - |
+| 컴포넌트               | Claude Code        | dbcode 현재                                | Gap          |
+| ---------------------- | ------------------ | ------------------------------------------ | ------------ |
+| `<Static>` 완료 메시지 | O (스크롤백)       | O (`MessageList.tsx`)                      | -            |
+| 스트리밍 텍스트 + 커서 | O                  | O (`StreamingMessage.tsx`)                 | -            |
+| 스피너                 | O (커스텀 verb)    | O (`Spinner.tsx`, 고정 라벨)               | MEDIUM       |
+| Tool Call 상태 아이콘  | O (✓/✗/!)          | △ (`ToolCallBlock.tsx`, `...`/`+`/`x`/`!`) | **HIGH**     |
+| 현재시제→과거시제 전환 | O                  | X (이름만 표시)                            | **HIGH**     |
+| 도구 결과 개수 요약    | O ("Read 3 files") | X                                          | **HIGH**     |
+| 인라인 Diff 표시       | O (빨강/초록 배경) | X                                          | **CRITICAL** |
+| Thinking/시머 표시     | O                  | X                                          | MEDIUM       |
+| Sub-agent 진행 표시    | O                  | X                                          | MEDIUM       |
+| 접기/펼치기            | O                  | △ (`isExpanded` prop 있음)                 | MEDIUM       |
+| Status Bar 비용 표시   | O                  | △ (토큰만, 비용 없음)                      | LOW          |
+| 이벤트 시스템          | O                  | O (`mitt` 기반)                            | -            |
 
 **핵심 Gap:** dbcode의 `ToolCallBlock.tsx`는 도구 이름과 상태 아이콘만 표시한다. Claude Code처럼 **현재 작업 대상(파일명, 명령어)을 실시간 표시**하고, **완료 시 과거시제 요약으로 전환**하는 패턴이 없다.
 
@@ -710,12 +737,16 @@ Activity feed 스크롤이 멈추고 사용자 응답을 기다림. 응답 후 f
 #### Phase 0-5: ToolCallBlock 고도화 (P0)
 
 **현재 `ToolCallBlock.tsx`:**
+
 ```tsx
 // 단순히 이름 + 상태 아이콘
-<Text color={statusColor}>{statusIcon} {name}</Text>
+<Text color={statusColor}>
+  {statusIcon} {name}
+</Text>
 ```
 
 **목표:**
+
 ```tsx
 // 실행 중
 <Text color="yellow">
@@ -735,15 +766,15 @@ Activity feed 스크롤이 멈추고 사용자 응답을 기다림. 응답 후 f
 
 ```typescript
 interface ToolCallDisplay {
-  id: string
-  name: string
-  status: 'running' | 'complete' | 'error' | 'denied'
+  id: string;
+  name: string;
+  status: "running" | "complete" | "error" | "denied";
   // 신규 필드:
-  args?: Record<string, unknown>    // 도구 인자 (파일경로, 명령어 등)
-  output?: string                    // 도구 결과
-  startedAt?: number                 // 시작 시간
-  completedAt?: number               // 완료 시간
-  isError?: boolean
+  args?: Record<string, unknown>; // 도구 인자 (파일경로, 명령어 등)
+  output?: string; // 도구 결과
+  startedAt?: number; // 시작 시간
+  completedAt?: number; // 완료 시간
+  isError?: boolean;
 }
 ```
 
@@ -751,59 +782,59 @@ interface ToolCallDisplay {
 
 ```typescript
 interface ToolDisplayText {
-  running: string   // "Reading src/file.ts"
-  complete: string  // "Read 3 files"
-  error: string     // "Failed to read /etc/shadow"
+  running: string; // "Reading src/file.ts"
+  complete: string; // "Read 3 files"
+  error: string; // "Failed to read /etc/shadow"
 }
 
 export function getToolDisplayText(
   name: string,
-  status: 'running' | 'complete' | 'error',
+  status: "running" | "complete" | "error",
   args?: Record<string, unknown>,
-  output?: string
+  output?: string,
 ): string {
   switch (name) {
-    case 'file_read':
-      if (status === 'running') return `Reading ${args?.file_path}`
-      if (status === 'complete') return `Read ${args?.file_path}`
-      return `Failed to read ${args?.file_path}`
+    case "file_read":
+      if (status === "running") return `Reading ${args?.file_path}`;
+      if (status === "complete") return `Read ${args?.file_path}`;
+      return `Failed to read ${args?.file_path}`;
 
-    case 'file_edit':
-      if (status === 'running') return `Editing ${args?.file_path}`
-      if (status === 'complete') return `Edited ${args?.file_path}`
-      return `Failed to edit ${args?.file_path}`
+    case "file_edit":
+      if (status === "running") return `Editing ${args?.file_path}`;
+      if (status === "complete") return `Edited ${args?.file_path}`;
+      return `Failed to edit ${args?.file_path}`;
 
-    case 'file_write':
-      if (status === 'running') return `Writing ${args?.file_path}`
-      if (status === 'complete') return `Wrote ${args?.file_path}`
-      return `Failed to write ${args?.file_path}`
+    case "file_write":
+      if (status === "running") return `Writing ${args?.file_path}`;
+      if (status === "complete") return `Wrote ${args?.file_path}`;
+      return `Failed to write ${args?.file_path}`;
 
-    case 'bash_exec':
-      const cmd = truncate(String(args?.command), 50)
-      if (status === 'running') return `Running ${cmd}`
-      if (status === 'complete') return `Ran ${cmd}`
-      return `Command failed: ${cmd}`
+    case "bash_exec":
+      const cmd = truncate(String(args?.command), 50);
+      if (status === "running") return `Running ${cmd}`;
+      if (status === "complete") return `Ran ${cmd}`;
+      return `Command failed: ${cmd}`;
 
-    case 'glob_search':
-      if (status === 'running') return `Searching for ${args?.pattern}`
+    case "glob_search":
+      if (status === "running") return `Searching for ${args?.pattern}`;
       // output에서 매칭 개수 파싱
-      if (status === 'complete') return `Found ${countMatches(output)} files`
-      return `Search failed: ${args?.pattern}`
+      if (status === "complete") return `Found ${countMatches(output)} files`;
+      return `Search failed: ${args?.pattern}`;
 
-    case 'grep_search':
-      if (status === 'running') return `Searching for "${args?.pattern}"`
-      if (status === 'complete') return `Searched for "${args?.pattern}"`
-      return `Search failed: "${args?.pattern}"`
+    case "grep_search":
+      if (status === "running") return `Searching for "${args?.pattern}"`;
+      if (status === "complete") return `Searched for "${args?.pattern}"`;
+      return `Search failed: "${args?.pattern}"`;
 
-    case 'mkdir':
-      if (status === 'running') return `Creating ${args?.path}`
-      if (status === 'complete') return `Created ${args?.path}`
-      return `Failed to create ${args?.path}`
+    case "mkdir":
+      if (status === "running") return `Creating ${args?.path}`;
+      if (status === "complete") return `Created ${args?.path}`;
+      return `Failed to create ${args?.path}`;
 
     default:
-      if (status === 'running') return `Running ${name}`
-      if (status === 'complete') return `Completed ${name}`
-      return `Failed: ${name}`
+      if (status === "running") return `Running ${name}`;
+      if (status === "complete") return `Completed ${name}`;
+      return `Failed: ${name}`;
   }
 }
 ```
@@ -812,38 +843,45 @@ export function getToolDisplayText(
 
 ```typescript
 // agent-loop.ts에서
-config.events.emit('tool:start', {
+config.events.emit("tool:start", {
   name: toolCall.name,
   id: toolCall.id,
-  args: toolCall.arguments,  // 신규: 도구 인자 전달
-})
+  args: toolCall.arguments, // 신규: 도구 인자 전달
+});
 
-config.events.emit('tool:complete', {
+config.events.emit("tool:complete", {
   name: toolCall.name,
   id: toolCall.id,
   isError: result.isError,
-  output: result.output,     // 신규: 결과 전달
-})
+  output: result.output, // 신규: 결과 전달
+});
 ```
 
 4. **App.tsx 이벤트 핸들러 업데이트:**
 
 ```typescript
-events.on('tool:start', ({ name, id, args }) => {
-  setToolCalls(prev => [...prev, {
-    id, name, status: 'running',
-    args,            // 신규
-    startedAt: Date.now(),
-  }])
-})
+events.on("tool:start", ({ name, id, args }) => {
+  setToolCalls((prev) => [
+    ...prev,
+    {
+      id,
+      name,
+      status: "running",
+      args, // 신규
+      startedAt: Date.now(),
+    },
+  ]);
+});
 
-events.on('tool:complete', ({ id, isError, output }) => {
-  setToolCalls(prev => prev.map(tc =>
-    tc.id === id
-      ? { ...tc, status: isError ? 'error' : 'complete', output, completedAt: Date.now() }
-      : tc
-  ))
-})
+events.on("tool:complete", ({ id, isError, output }) => {
+  setToolCalls((prev) =>
+    prev.map((tc) =>
+      tc.id === id
+        ? { ...tc, status: isError ? "error" : "complete", output, completedAt: Date.now() }
+        : tc,
+    ),
+  );
+});
 ```
 
 #### Phase 1-9: DiffView 컴포넌트 (P1)
@@ -852,22 +890,41 @@ events.on('tool:complete', ({ id, isError, output }) => {
 
 ```typescript
 interface DiffViewProps {
-  filePath: string
-  oldContent: string
-  newContent: string
+  filePath: string;
+  oldContent: string;
+  newContent: string;
 }
 ```
 
 **렌더링:**
+
 ```tsx
 <Box flexDirection="column" borderStyle="round" borderColor="gray">
-  <Text bold dimColor> {filePath}</Text>
+  <Text bold dimColor>
+    {" "}
+    {filePath}
+  </Text>
   {diffLines.map((line, i) => {
-    if (line.type === 'add')
-      return <Text key={i} backgroundColor="green" color="white"> + {line.text}</Text>
-    if (line.type === 'remove')
-      return <Text key={i} backgroundColor="red" color="white"> - {line.text}</Text>
-    return <Text key={i} dimColor>   {line.text}</Text>  // context
+    if (line.type === "add")
+      return (
+        <Text key={i} backgroundColor="green" color="white">
+          {" "}
+          + {line.text}
+        </Text>
+      );
+    if (line.type === "remove")
+      return (
+        <Text key={i} backgroundColor="red" color="white">
+          {" "}
+          - {line.text}
+        </Text>
+      );
+    return (
+      <Text key={i} dimColor>
+        {" "}
+        {line.text}
+      </Text>
+    ); // context
   })}
 </Box>
 ```
@@ -887,9 +944,9 @@ interface DiffViewProps {
 
 ```typescript
 interface CollapsedToolGroupProps {
-  tools: ToolCallDisplay[]
-  isExpanded: boolean
-  onToggle: () => void
+  tools: ToolCallDisplay[];
+  isExpanded: boolean;
+  onToggle: () => void;
 }
 ```
 
@@ -971,31 +1028,31 @@ App.tsx (상태 관리)
 
 ### 3.6 Phase별 Activity Feed 구현 로드맵
 
-| Phase | 작업 | 예상 LOC | 우선순위 |
-|-------|------|----------|----------|
-| **0-5** | ToolCallBlock에 도구 인자/결과 표시, 현재시제→과거시제 전환 | +100 | **P0** |
-| **0-6** | `tool-display.ts` 도구별 표시 문구 매퍼 | +80 | **P0** |
-| **0-7** | `tool:start`/`tool:complete` 이벤트에 args/output 추가 | +30 | **P0** |
-| **1-9** | `DiffView.tsx` 인라인 diff 컴포넌트 | +120 | **P1** |
-| **1-10** | `CollapsedToolGroup.tsx` 도구 그룹 접기 | +80 | **P1** |
-| **1-11** | Static/Dynamic 영역 분리 리팩토링 | +60 | **P1** |
-| **2-9** | `ThinkingBlock.tsx` 사유 표시 블록 | +70 | **P2** |
-| **2-10** | Sub-agent 진행 표시 | +50 | **P2** |
-| **2-11** | Status Bar 비용 + 소요시간 표시 | +40 | **P2** |
+| Phase    | 작업                                                        | 예상 LOC | 우선순위 |
+| -------- | ----------------------------------------------------------- | -------- | -------- |
+| **0-5**  | ToolCallBlock에 도구 인자/결과 표시, 현재시제→과거시제 전환 | +100     | **P0**   |
+| **0-6**  | `tool-display.ts` 도구별 표시 문구 매퍼                     | +80      | **P0**   |
+| **0-7**  | `tool:start`/`tool:complete` 이벤트에 args/output 추가      | +30      | **P0**   |
+| **1-9**  | `DiffView.tsx` 인라인 diff 컴포넌트                         | +120     | **P1**   |
+| **1-10** | `CollapsedToolGroup.tsx` 도구 그룹 접기                     | +80      | **P1**   |
+| **1-11** | Static/Dynamic 영역 분리 리팩토링                           | +60      | **P1**   |
+| **2-9**  | `ThinkingBlock.tsx` 사유 표시 블록                          | +70      | **P2**   |
+| **2-10** | Sub-agent 진행 표시                                         | +50      | **P2**   |
+| **2-11** | Status Bar 비용 + 소요시간 표시                             | +40      | **P2**   |
 
 ---
 
 ### 3.7 참고: Claude Code Activity Feed 출처
 
-| 자료 | 내용 |
-|------|------|
-| [DeepWiki: UI/UX & Terminal Integration](https://deepwiki.com/anthropics/claude-code/3.9-uiux-and-terminal-integration) | Ink 컴포넌트 구조, Static/Dynamic 분리 |
-| [Pragmatic Engineer: How Claude Code is Built](https://newsletter.pragmaticengineer.com/p/how-claude-code-is-built) | 아키텍처 개요, Yoga WASM, React Compiler |
-| [Medium: Claude Code Internals Part 11 - Terminal UI](https://kotrotsos.medium.com/claude-code-internals-part-11-terminal-ui-542fe17db016) | 상세 터미널 UI 분석 |
-| [Official: How Claude Code Works](https://code.claude.com/docs/en/how-claude-code-works) | 공식 아키텍처 문서 |
-| [claude-devtools](https://www.claude-dev.tools/) | 세션 로그 분석 도구 (활동 내역 시각화) |
-| [claude-esp](https://github.com/phiat/claude-esp) | 숨겨진 출력 스트리머 |
-| [OpenCode Terminal UI](https://deepwiki.com/opencode-ai/opencode/4-terminal-ui-system) | 경쟁 제품 UI 구현 참고 |
+| 자료                                                                                                                                       | 내용                                     |
+| ------------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| [DeepWiki: UI/UX & Terminal Integration](https://deepwiki.com/anthropics/claude-code/3.9-uiux-and-terminal-integration)                    | Ink 컴포넌트 구조, Static/Dynamic 분리   |
+| [Pragmatic Engineer: How Claude Code is Built](https://newsletter.pragmaticengineer.com/p/how-claude-code-is-built)                        | 아키텍처 개요, Yoga WASM, React Compiler |
+| [Medium: Claude Code Internals Part 11 - Terminal UI](https://kotrotsos.medium.com/claude-code-internals-part-11-terminal-ui-542fe17db016) | 상세 터미널 UI 분석                      |
+| [Official: How Claude Code Works](https://code.claude.com/docs/en/how-claude-code-works)                                                   | 공식 아키텍처 문서                       |
+| [claude-devtools](https://www.claude-dev.tools/)                                                                                           | 세션 로그 분석 도구 (활동 내역 시각화)   |
+| [claude-esp](https://github.com/phiat/claude-esp)                                                                                          | 숨겨진 출력 스트리머                     |
+| [OpenCode Terminal UI](https://deepwiki.com/opencode-ai/opencode/4-terminal-ui-system)                                                     | 경쟁 제품 UI 구현 참고                   |
 
 ---
 
@@ -1003,65 +1060,65 @@ App.tsx (상태 관리)
 
 ### 입력 시스템
 
-| 기능 | Claude Code | dbcode | Gap |
-|------|-------------|--------|-----|
-| 커서 좌/우 이동 | O | X | **CRITICAL** |
-| Ctrl+A/E (Home/End) | O | X | HIGH |
-| Alt+B/F (단어 이동) | O | X | MEDIUM |
-| Ctrl+K (줄 끝까지 삭제) | O | X | MEDIUM |
-| Ctrl+U (줄 전체 삭제) | O | X | MEDIUM |
-| 입력 히스토리 (위/아래 방향키) | O | X | HIGH |
-| 멀티라인 입력 | O (Shift+Enter) | X | HIGH |
-| Vim 모드 | O (/vim) | X | LOW |
-| 파일 경로 자동완성 (@) | O | X | MEDIUM |
-| Reverse search (Ctrl+R) | O | X | LOW |
+| 기능                           | Claude Code     | dbcode | Gap          |
+| ------------------------------ | --------------- | ------ | ------------ |
+| 커서 좌/우 이동                | O               | X      | **CRITICAL** |
+| Ctrl+A/E (Home/End)            | O               | X      | HIGH         |
+| Alt+B/F (단어 이동)            | O               | X      | MEDIUM       |
+| Ctrl+K (줄 끝까지 삭제)        | O               | X      | MEDIUM       |
+| Ctrl+U (줄 전체 삭제)          | O               | X      | MEDIUM       |
+| 입력 히스토리 (위/아래 방향키) | O               | X      | HIGH         |
+| 멀티라인 입력                  | O (Shift+Enter) | X      | HIGH         |
+| Vim 모드                       | O (/vim)        | X      | LOW          |
+| 파일 경로 자동완성 (@)         | O               | X      | MEDIUM       |
+| Reverse search (Ctrl+R)        | O               | X      | LOW          |
 
 ### Permission 시스템
 
-| 기능 | Claude Code | dbcode | Gap |
-|------|-------------|--------|-----|
-| 방향키 선택 UI | O | X | **CRITICAL** |
-| Session-level 승인 | O | O (일부) | - |
-| 프로젝트별 규칙 | O | O | - |
-| Shift+Tab 모드 전환 | O | X | MEDIUM |
-| /permissions 커맨드 | O | X | MEDIUM |
+| 기능                | Claude Code | dbcode   | Gap          |
+| ------------------- | ----------- | -------- | ------------ |
+| 방향키 선택 UI      | O           | X        | **CRITICAL** |
+| Session-level 승인  | O           | O (일부) | -            |
+| 프로젝트별 규칙     | O           | O        | -            |
+| Shift+Tab 모드 전환 | O           | X        | MEDIUM       |
+| /permissions 커맨드 | O           | X        | MEDIUM       |
 
 ### Git 통합
 
-| 기능 | Claude Code | dbcode | Gap |
-|------|-------------|--------|-----|
-| git 명령 실행 | O | O (bash_exec) | - |
-| 자동 체크포인트 | O (매 수정 전 스냅샷) | X | **HIGH** |
-| /diff 커맨드 | O (인터랙티브 뷰어) | 정의만 있음 | HIGH |
-| Esc+Esc Rewind | O | X | MEDIUM |
-| 커밋 메시지 자동 생성 | O | X | MEDIUM |
-| PR 생성 | O (gh CLI) | X | LOW |
+| 기능                  | Claude Code           | dbcode        | Gap      |
+| --------------------- | --------------------- | ------------- | -------- |
+| git 명령 실행         | O                     | O (bash_exec) | -        |
+| 자동 체크포인트       | O (매 수정 전 스냅샷) | X             | **HIGH** |
+| /diff 커맨드          | O (인터랙티브 뷰어)   | 정의만 있음   | HIGH     |
+| Esc+Esc Rewind        | O                     | X             | MEDIUM   |
+| 커밋 메시지 자동 생성 | O                     | X             | MEDIUM   |
+| PR 생성               | O (gh CLI)            | X             | LOW      |
 
 ### Agent 기능
 
-| 기능 | Claude Code | dbcode | Gap |
-|------|-------------|--------|-----|
-| Sub-agent 실행 | O | 골격만 존재 | HIGH |
-| Background task | O | X | MEDIUM |
-| MCP 서버 연동 | O | 골격만 존재 | HIGH |
-| Hooks 시스템 | O | 골격 있음 | MEDIUM |
-| Skills/Plugins | O | 골격만 존재 | LOW |
+| 기능            | Claude Code | dbcode      | Gap    |
+| --------------- | ----------- | ----------- | ------ |
+| Sub-agent 실행  | O           | 골격만 존재 | HIGH   |
+| Background task | O           | X           | MEDIUM |
+| MCP 서버 연동   | O           | 골격만 존재 | HIGH   |
+| Hooks 시스템    | O           | 골격 있음   | MEDIUM |
+| Skills/Plugins  | O           | 골격만 존재 | LOW    |
 
 ### 도구(Tools) 시스템
 
-| 기능 | Claude Code | dbcode | Gap |
-|------|-------------|--------|-----|
-| file_read | O | O | - |
-| file_write | O | O | - |
-| file_edit | O | O | - |
-| bash_exec | O | O | - |
-| glob_search | O | O | - |
-| grep_search | O | O | - |
-| ask_user | O | O | - |
-| mkdir | 암묵적 (bash_exec) | 암묵적 (file_write) | MEDIUM |
-| WebFetch | O | X | MEDIUM |
-| WebSearch | O | X | LOW |
-| notebook_edit | O | X | LOW |
+| 기능          | Claude Code        | dbcode              | Gap    |
+| ------------- | ------------------ | ------------------- | ------ |
+| file_read     | O                  | O                   | -      |
+| file_write    | O                  | O                   | -      |
+| file_edit     | O                  | O                   | -      |
+| bash_exec     | O                  | O                   | -      |
+| glob_search   | O                  | O                   | -      |
+| grep_search   | O                  | O                   | -      |
+| ask_user      | O                  | O                   | -      |
+| mkdir         | 암묵적 (bash_exec) | 암묵적 (file_write) | MEDIUM |
+| WebFetch      | O                  | X                   | MEDIUM |
+| WebSearch     | O                  | X                   | LOW    |
+| notebook_edit | O                  | X                   | LOW    |
 
 ---
 
@@ -1071,17 +1128,18 @@ App.tsx (상태 관리)
 
 > **목표:** 기본적인 사용성 확보 — 이것 없이는 도구로서 기능하지 못함
 
-| # | 작업 | 파일 | 예상 LOC |
-|---|------|------|----------|
-| 0-1 | **텍스트 입력 커서 이동** 구현 | `UserInput.tsx` | +80 |
-| 0-2 | **Permission UI** 방향키 선택으로 전환 | `PermissionPrompt.tsx` | +60 |
-| 0-3 | **Slash Command 메뉴** 연동 수정 | `App.tsx`, `SlashCommandMenu.tsx`, `UserInput.tsx` | +40 |
-| 0-4 | **로고 복구** + 시작 화면 정리 | `App.tsx`, `Logo.tsx` | +20 |
-| 0-5 | **ToolCallBlock 고도화** — 도구 인자 표시, 현재→과거시제 전환 | `ToolCallBlock.tsx`, `App.tsx` | +100 |
-| 0-6 | **tool-display.ts** 도구별 표시 문구 매퍼 | 신규 `cli/renderer/tool-display.ts` | +80 |
-| 0-7 | **이벤트 페이로드 확장** — tool:start/complete에 args/output 추가 | `agent-loop.ts`, `utils/events.ts` | +30 |
+| #   | 작업                                                              | 파일                                               | 예상 LOC |
+| --- | ----------------------------------------------------------------- | -------------------------------------------------- | -------- |
+| 0-1 | **텍스트 입력 커서 이동** 구현                                    | `UserInput.tsx`                                    | +80      |
+| 0-2 | **Permission UI** 방향키 선택으로 전환                            | `PermissionPrompt.tsx`                             | +60      |
+| 0-3 | **Slash Command 메뉴** 연동 수정                                  | `App.tsx`, `SlashCommandMenu.tsx`, `UserInput.tsx` | +40      |
+| 0-4 | **로고 복구** + 시작 화면 정리                                    | `App.tsx`, `Logo.tsx`                              | +20      |
+| 0-5 | **ToolCallBlock 고도화** — 도구 인자 표시, 현재→과거시제 전환     | `ToolCallBlock.tsx`, `App.tsx`                     | +100     |
+| 0-6 | **tool-display.ts** 도구별 표시 문구 매퍼                         | 신규 `cli/renderer/tool-display.ts`                | +80      |
+| 0-7 | **이벤트 페이로드 확장** — tool:start/complete에 args/output 추가 | `agent-loop.ts`, `utils/events.ts`                 | +30      |
 
 **검증 기준:**
+
 - [ ] 입력 중 좌/우 방향키로 커서 이동 가능
 - [ ] Permission 프롬프트에서 방향키로 선택지 탐색 + Enter 확정
 - [ ] `/` 입력 시 커맨드 메뉴 표시, 위/아래 탐색, Tab/Enter 선택
@@ -1094,18 +1152,19 @@ App.tsx (상태 관리)
 
 > **목표:** 실제 개발 작업에서 생산적으로 사용 가능한 수준
 
-| # | 작업 | 파일 | 예상 LOC |
-|---|------|------|----------|
-| 1-1 | **입력 히스토리** (위/아래 방향키) | `UserInput.tsx`, 신규 `input-history.ts` | +60 |
-| 1-2 | **멀티라인 입력** (Shift+Enter) | `UserInput.tsx` | +40 |
-| 1-3 | **Readline 단축키** (Ctrl+A/E/K/U/W) | `UserInput.tsx` | +50 |
-| 1-4 | **mkdir 전용 도구** 추가 | 신규 `tools/definitions/mkdir.ts` | +35 |
-| 1-5 | **Git 체크포인트** (파일 수정 전 스냅샷) | 신규 `core/checkpoint-manager.ts` | +120 |
-| 1-6 | **/diff 커맨드** 실제 구현 | `commands/diff.ts` | +80 |
-| 1-7 | **Shift+Tab 모드 전환** (Normal → Auto-Accept → Plan) | `App.tsx`, `permissions/` | +40 |
-| 1-8 | **로고 + Welcome 화면** 완성 | `Logo.tsx`, 신규 `WelcomeScreen.tsx` | +60 |
+| #   | 작업                                                  | 파일                                     | 예상 LOC |
+| --- | ----------------------------------------------------- | ---------------------------------------- | -------- |
+| 1-1 | **입력 히스토리** (위/아래 방향키)                    | `UserInput.tsx`, 신규 `input-history.ts` | +60      |
+| 1-2 | **멀티라인 입력** (Shift+Enter)                       | `UserInput.tsx`                          | +40      |
+| 1-3 | **Readline 단축키** (Ctrl+A/E/K/U/W)                  | `UserInput.tsx`                          | +50      |
+| 1-4 | **mkdir 전용 도구** 추가                              | 신규 `tools/definitions/mkdir.ts`        | +35      |
+| 1-5 | **Git 체크포인트** (파일 수정 전 스냅샷)              | 신규 `core/checkpoint-manager.ts`        | +120     |
+| 1-6 | **/diff 커맨드** 실제 구현                            | `commands/diff.ts`                       | +80      |
+| 1-7 | **Shift+Tab 모드 전환** (Normal → Auto-Accept → Plan) | `App.tsx`, `permissions/`                | +40      |
+| 1-8 | **로고 + Welcome 화면** 완성                          | `Logo.tsx`, 신규 `WelcomeScreen.tsx`     | +60      |
 
 **검증 기준:**
+
 - [ ] 이전 입력을 위/아래 키로 탐색
 - [ ] 긴 프롬프트를 여러 줄에 걸쳐 입력 가능
 - [ ] `mkdir` 도구가 LLM에 노출되어 폴더 생성 가능
@@ -1118,18 +1177,19 @@ App.tsx (상태 관리)
 
 > **목표:** 진정한 AI Agent 수준의 자율성과 도구 활용
 
-| # | 작업 | 파일 | 예상 LOC |
-|---|------|------|----------|
-| 2-1 | **시스템 프롬프트 고도화** — git/mkdir 사용법, 코딩 컨벤션 주입 | `system-prompt-builder.ts` | +100 |
-| 2-2 | **@파일경로 자동완성** | `UserInput.tsx`, 신규 `FileCompleter.tsx` | +80 |
-| 2-3 | **Sub-agent 실행** 구현 | `subagents/` | +200 |
-| 2-4 | **MCP 서버 연동** 구현 | `mcp/` | +250 |
-| 2-5 | **WebFetch 도구** 추가 | `tools/definitions/web-fetch.ts` | +60 |
-| 2-6 | **/rewind 커맨드** (Esc+Esc 체크포인트 복원) | `commands/rewind.ts`, `App.tsx` | +80 |
-| 2-7 | **커밋 메시지 자동 생성** | 신규 `git/commit-message.ts` | +60 |
-| 2-8 | **Hooks 시스템** 완성 (pre-tool, post-tool 이벤트) | `hooks/` | +100 |
+| #   | 작업                                                            | 파일                                      | 예상 LOC |
+| --- | --------------------------------------------------------------- | ----------------------------------------- | -------- |
+| 2-1 | **시스템 프롬프트 고도화** — git/mkdir 사용법, 코딩 컨벤션 주입 | `system-prompt-builder.ts`                | +100     |
+| 2-2 | **@파일경로 자동완성**                                          | `UserInput.tsx`, 신규 `FileCompleter.tsx` | +80      |
+| 2-3 | **Sub-agent 실행** 구현                                         | `subagents/`                              | +200     |
+| 2-4 | **MCP 서버 연동** 구현                                          | `mcp/`                                    | +250     |
+| 2-5 | **WebFetch 도구** 추가                                          | `tools/definitions/web-fetch.ts`          | +60      |
+| 2-6 | **/rewind 커맨드** (Esc+Esc 체크포인트 복원)                    | `commands/rewind.ts`, `App.tsx`           | +80      |
+| 2-7 | **커밋 메시지 자동 생성**                                       | 신규 `git/commit-message.ts`              | +60      |
+| 2-8 | **Hooks 시스템** 완성 (pre-tool, post-tool 이벤트)              | `hooks/`                                  | +100     |
 
 **검증 기준:**
+
 - [ ] LLM이 자발적으로 git status/commit 수행
 - [ ] `@src/` 입력 시 파일 경로 자동완성
 - [ ] MCP 서버 연결 및 도구 목록 조회
@@ -1141,15 +1201,15 @@ App.tsx (상태 관리)
 
 > **목표:** 프로덕션 품질 + 확장 가능한 플러그인 생태계
 
-| # | 작업 | 파일 | 예상 LOC |
-|---|------|------|----------|
-| 3-1 | **macOS Seatbelt 샌드박스** 구현 | `sandbox/` | +150 |
-| 3-2 | **Skills/Plugins** 시스템 구현 | `skills/` | +200 |
-| 3-3 | **Telemetry** (opt-in 사용 통계) | `telemetry/` | +80 |
-| 3-4 | **E2E 테스트** 스위트 완성 | `test/e2e/` | +300 |
-| 3-5 | **/doctor** 시스템 진단 구현 | `commands/doctor.ts` | +60 |
-| 3-6 | **성능 최적화** (startup time, 메모리) | 전반 | +50 |
-| 3-7 | **문서화** (README, 사용 가이드) | `docs/` | +500 |
+| #   | 작업                                   | 파일                 | 예상 LOC |
+| --- | -------------------------------------- | -------------------- | -------- |
+| 3-1 | **macOS Seatbelt 샌드박스** 구현       | `sandbox/`           | +150     |
+| 3-2 | **Skills/Plugins** 시스템 구현         | `skills/`            | +200     |
+| 3-3 | **Telemetry** (opt-in 사용 통계)       | `telemetry/`         | +80      |
+| 3-4 | **E2E 테스트** 스위트 완성             | `test/e2e/`          | +300     |
+| 3-5 | **/doctor** 시스템 진단 구현           | `commands/doctor.ts` | +60      |
+| 3-6 | **성능 최적화** (startup time, 메모리) | 전반                 | +50      |
+| 3-7 | **문서화** (README, 사용 가이드)       | `docs/`              | +500     |
 
 ---
 
@@ -1277,24 +1337,26 @@ SlashCommandMenu에서 선택 시:
 ```
 
 **UserInput에 추가할 prop:**
+
 ```typescript
 interface UserInputProps {
-  onSubmit: (value: string) => void
-  onChange?: (value: string) => void     // 신규: 실시간 입력값 전달
-  onSlashSelect?: (command: string) => void  // 신규: 메뉴에서 선택 시
-  disabled?: boolean
+  onSubmit: (value: string) => void;
+  onChange?: (value: string) => void; // 신규: 실시간 입력값 전달
+  onSlashSelect?: (command: string) => void; // 신규: 메뉴에서 선택 시
+  disabled?: boolean;
 }
 ```
 
 **SlashCommandMenu 개선:**
+
 ```typescript
 // 위/아래 방향키로 항목 탐색
 useInput((input, key) => {
-  if (key.upArrow)   setSelectedIndex(i => Math.max(0, i - 1))
-  if (key.downArrow) setSelectedIndex(i => Math.min(items.length - 1, i + 1))
-  if (key.tab || key.return) onSelect(items[selectedIndex].name)
-  if (key.escape) onClose()
-})
+  if (key.upArrow) setSelectedIndex((i) => Math.max(0, i - 1));
+  if (key.downArrow) setSelectedIndex((i) => Math.min(items.length - 1, i + 1));
+  if (key.tab || key.return) onSelect(items[selectedIndex].name);
+  if (key.escape) onClose();
+});
 ```
 
 ---
@@ -1304,22 +1366,22 @@ useInput((input, key) => {
 **파일:** `src/tools/definitions/mkdir.ts`
 
 ```typescript
-import { z } from 'zod'
-import { mkdir } from 'node:fs/promises'
-import type { ToolDefinition } from '../types.js'
+import { z } from "zod";
+import { mkdir } from "node:fs/promises";
+import type { ToolDefinition } from "../types.js";
 
 export const mkdirTool: ToolDefinition = {
-  name: 'mkdir',
-  description: 'Create a directory and all necessary parent directories.',
+  name: "mkdir",
+  description: "Create a directory and all necessary parent directories.",
   parameterSchema: z.object({
-    path: z.string().describe('Absolute path of the directory to create'),
+    path: z.string().describe("Absolute path of the directory to create"),
   }),
-  permissionLevel: 'confirm',
+  permissionLevel: "confirm",
   execute: async (params) => {
-    await mkdir(params.path, { recursive: true })
-    return { output: `Created directory: ${params.path}`, isError: false }
+    await mkdir(params.path, { recursive: true });
+    return { output: `Created directory: ${params.path}`, isError: false };
   },
-}
+};
 ```
 
 ---
@@ -1329,6 +1391,7 @@ export const mkdirTool: ToolDefinition = {
 **파일:** `src/core/checkpoint-manager.ts`
 
 **설계:**
+
 ```
 매 파일 수정 tool 실행 전:
   1. git stash create → stash ref 획득 (working tree 오염 없음)
@@ -1342,6 +1405,7 @@ export const mkdirTool: ToolDefinition = {
 ```
 
 **주의사항:**
+
 - `git stash create`는 working tree를 변경하지 않음 (stash push와 다름)
 - `git log`에 흔적을 남기지 않음
 - 30일 후 자동 만료 (gc)
@@ -1358,11 +1422,13 @@ export const mkdirTool: ToolDefinition = {
 ## Available Tools Usage Guide
 
 ### File System Operations
+
 - Use `file_write` to create files (parent directories are auto-created)
 - Use `mkdir` to create empty directories
 - Use `bash_exec` for complex file operations (mv, cp, rm, chmod)
 
 ### Git Operations
+
 - You have full git access via `bash_exec`
 - ALWAYS check `git status` before committing
 - Generate meaningful commit messages following conventional commits
@@ -1370,6 +1436,7 @@ export const mkdirTool: ToolDefinition = {
 - Create branches for feature work: `git checkout -b feat/description`
 
 ### Best Practices
+
 - Read files before modifying them
 - Use `grep_search` to understand codebase before making changes
 - Ask the user when requirements are ambiguous
@@ -1444,28 +1511,28 @@ export const mkdirTool: ToolDefinition = {
 
 ```typescript
 // UserInput 테스트
-describe('UserInput cursor movement', () => {
-  it('should move cursor left/right with arrow keys')
-  it('should insert character at cursor position')
-  it('should delete character at cursor position with backspace')
-  it('should handle Ctrl+A (home) and Ctrl+E (end)')
-})
+describe("UserInput cursor movement", () => {
+  it("should move cursor left/right with arrow keys");
+  it("should insert character at cursor position");
+  it("should delete character at cursor position with backspace");
+  it("should handle Ctrl+A (home) and Ctrl+E (end)");
+});
 
 // PermissionPrompt 테스트
-describe('PermissionPrompt selection', () => {
-  it('should cycle options with left/right arrows')
-  it('should confirm selection with Enter')
-  it('should highlight selected option')
-})
+describe("PermissionPrompt selection", () => {
+  it("should cycle options with left/right arrows");
+  it("should confirm selection with Enter");
+  it("should highlight selected option");
+});
 
 // SlashCommandMenu 테스트
-describe('SlashCommandMenu', () => {
-  it('should show when input starts with "/"')
-  it('should filter commands by prefix')
-  it('should navigate with up/down arrows')
-  it('should select with Tab/Enter')
-  it('should close with Escape')
-})
+describe("SlashCommandMenu", () => {
+  it('should show when input starts with "/"');
+  it("should filter commands by prefix");
+  it("should navigate with up/down arrows");
+  it("should select with Tab/Enter");
+  it("should close with Escape");
+});
 ```
 
 ### E2E 시나리오
@@ -1519,20 +1586,20 @@ describe('SlashCommandMenu', () => {
 
 ### Ink 생태계
 
-| 패키지 | 용도 | URL |
-|--------|------|-----|
-| ink-text-input | 텍스트 입력 (커서 이동 내장) | github.com/vadimdemedes/ink-text-input |
-| @inkjs/ui | TextInput, Select, ConfirmInput 등 | github.com/vadimdemedes/ink-ui |
-| ink-select-input | 선택 목록 (위/아래 방향키) | github.com/vadimdemedes/ink-select-input |
+| 패키지           | 용도                               | URL                                      |
+| ---------------- | ---------------------------------- | ---------------------------------------- |
+| ink-text-input   | 텍스트 입력 (커서 이동 내장)       | github.com/vadimdemedes/ink-text-input   |
+| @inkjs/ui        | TextInput, Select, ConfirmInput 등 | github.com/vadimdemedes/ink-ui           |
+| ink-select-input | 선택 목록 (위/아래 방향키)         | github.com/vadimdemedes/ink-select-input |
 
 ### 경쟁 제품 분석
 
-| 제품 | Permission UI | Input | Slash Commands | Git 통합 |
-|------|--------------|-------|----------------|----------|
-| Claude Code | 탭 선택 | readline+vim | 40+ 자동완성 | 체크포인트 |
-| Cline | 버튼 (VS Code) | VS Code 내장 | 없음 | 없음 |
-| OpenCode (Go) | 미확인 | 커스텀 | 미확인 | 미확인 |
-| Aider | 텍스트 | readline | /commands | git 자동커밋 |
+| 제품          | Permission UI  | Input        | Slash Commands | Git 통합     |
+| ------------- | -------------- | ------------ | -------------- | ------------ |
+| Claude Code   | 탭 선택        | readline+vim | 40+ 자동완성   | 체크포인트   |
+| Cline         | 버튼 (VS Code) | VS Code 내장 | 없음           | 없음         |
+| OpenCode (Go) | 미확인         | 커스텀       | 미확인         | 미확인       |
+| Aider         | 텍스트         | readline     | /commands      | git 자동커밋 |
 
 ---
 

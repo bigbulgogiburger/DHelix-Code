@@ -22,15 +22,21 @@ function getToolStatus(entry: ActivityEntry): "running" | "complete" | "error" |
   }
 }
 
-function findStartTime(entries: readonly ActivityEntry[], toolId: string | undefined): number | undefined {
+function findStartTime(
+  entries: readonly ActivityEntry[],
+  toolId: string | undefined,
+): number | undefined {
   if (!toolId) return undefined;
-  const startEntry = entries.find(
-    (e) => e.type === "tool-start" && e.data.id === toolId,
-  );
+  const startEntry = entries.find((e) => e.type === "tool-start" && e.data.id === toolId);
   return typeof startEntry?.data.startTime === "number" ? startEntry.data.startTime : undefined;
 }
 
-function renderEntry(entry: ActivityEntry, index: number, isLive: boolean, allEntries: readonly ActivityEntry[]): React.ReactNode {
+function renderEntry(
+  entry: ActivityEntry,
+  index: number,
+  isLive: boolean,
+  allEntries: readonly ActivityEntry[],
+): React.ReactNode {
   switch (entry.type) {
     case "user-message":
       return (
@@ -64,9 +70,12 @@ function renderEntry(entry: ActivityEntry, index: number, isLive: boolean, allEn
     case "tool-complete":
     case "tool-denied": {
       const toolId = typeof entry.data.id === "string" ? entry.data.id : undefined;
-      const startTime = entry.type === "tool-start"
-        ? (typeof entry.data.startTime === "number" ? entry.data.startTime : undefined)
-        : findStartTime(allEntries, toolId);
+      const startTime =
+        entry.type === "tool-start"
+          ? typeof entry.data.startTime === "number"
+            ? entry.data.startTime
+            : undefined
+          : findStartTime(allEntries, toolId);
       return (
         <ToolCallBlock
           key={`entry-${index}`}

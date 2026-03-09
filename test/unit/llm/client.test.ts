@@ -7,11 +7,7 @@ vi.mock("openai", () => {
   class MockAPIError extends Error {
     status: number;
     headers: Record<string, string>;
-    constructor(
-      status: number,
-      message: string,
-      headers: Record<string, string> = {},
-    ) {
+    constructor(status: number, message: string, headers: Record<string, string> = {}) {
       super(message);
       this.status = status;
       this.headers = headers;
@@ -288,7 +284,9 @@ describe("OpenAICompatibleClient", () => {
   describe("chat error handling", () => {
     it("should provide clear message for authentication errors (401)", async () => {
       mockCreate.mockRejectedValueOnce(
-        new (OpenAI as unknown as { AuthenticationError: new (msg: string) => Error }).AuthenticationError("Invalid API key"),
+        new (
+          OpenAI as unknown as { AuthenticationError: new (msg: string) => Error }
+        ).AuthenticationError("Invalid API key"),
       );
 
       await expect(
@@ -302,7 +300,9 @@ describe("OpenAICompatibleClient", () => {
 
     it("should provide clear message for permission denied (403)", async () => {
       mockCreate.mockRejectedValueOnce(
-        new (OpenAI as unknown as { PermissionDeniedError: new (msg: string) => Error }).PermissionDeniedError("No access"),
+        new (
+          OpenAI as unknown as { PermissionDeniedError: new (msg: string) => Error }
+        ).PermissionDeniedError("No access"),
       );
 
       await expect(
@@ -315,7 +315,11 @@ describe("OpenAICompatibleClient", () => {
     });
 
     it("should fail immediately on rate limit (429) without retrying", async () => {
-      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const RLE = (
+        OpenAI as unknown as {
+          RateLimitError: new (msg: string, h?: Record<string, string>) => Error;
+        }
+      ).RateLimitError;
       const err = new RLE("Rate limit exceeded");
       mockCreate.mockRejectedValueOnce(err);
 
@@ -332,7 +336,8 @@ describe("OpenAICompatibleClient", () => {
     });
 
     it("should retry on server error (500) and succeed on second try", async () => {
-      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error }).InternalServerError;
+      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error })
+        .InternalServerError;
       mockCreate.mockRejectedValueOnce(new ISE("Internal server error")).mockResolvedValueOnce({
         choices: [
           {
@@ -369,7 +374,8 @@ describe("OpenAICompatibleClient", () => {
     });
 
     it("should retry on timeout and provide clear message", async () => {
-      const ACTE = (OpenAI as unknown as { APIConnectionTimeoutError: new (msg: string) => Error }).APIConnectionTimeoutError;
+      const ACTE = (OpenAI as unknown as { APIConnectionTimeoutError: new (msg: string) => Error })
+        .APIConnectionTimeoutError;
       const err = new ACTE("Request timed out");
       mockCreate
         .mockRejectedValueOnce(err)
@@ -499,11 +505,9 @@ describe("OpenAICompatibleClient", () => {
     });
 
     it("should retry stream on server errors", async () => {
-      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error }).InternalServerError;
-      const chunks = [
-        { choices: [{ delta: { content: "Hello" } }] },
-        { choices: [{ delta: {} }] },
-      ];
+      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error })
+        .InternalServerError;
+      const chunks = [{ choices: [{ delta: { content: "Hello" } }] }, { choices: [{ delta: {} }] }];
 
       mockCreate.mockRejectedValueOnce(new ISE("Server overloaded")).mockResolvedValueOnce({
         [Symbol.asyncIterator]: async function* () {
@@ -531,21 +535,23 @@ describe("OpenAICompatibleClient", () => {
 
   describe("retry consolidation", () => {
     it("should not retry rate limit errors (fail fast)", async () => {
-      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const RLE = (
+        OpenAI as unknown as {
+          RateLimitError: new (msg: string, h?: Record<string, string>) => Error;
+        }
+      ).RateLimitError;
       const err = new RLE("Rate limit exceeded");
 
       // Even if a success would follow, rate limit should not retry
-      mockCreate
-        .mockRejectedValueOnce(err)
-        .mockResolvedValueOnce({
-          choices: [
-            {
-              message: { content: "OK", tool_calls: undefined },
-              finish_reason: "stop",
-            },
-          ],
-          usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
-        });
+      mockCreate.mockRejectedValueOnce(err).mockResolvedValueOnce({
+        choices: [
+          {
+            message: { content: "OK", tool_calls: undefined },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+      });
 
       await expect(
         client.chat({
@@ -560,7 +566,11 @@ describe("OpenAICompatibleClient", () => {
     });
 
     it("should propagate retryAfterMs in LLMError from Retry-After header", async () => {
-      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const RLE = (
+        OpenAI as unknown as {
+          RateLimitError: new (msg: string, h?: Record<string, string>) => Error;
+        }
+      ).RateLimitError;
       const err = new RLE("Rate limit exceeded", { "retry-after": "2" });
       mockCreate.mockRejectedValueOnce(err);
 
@@ -582,7 +592,8 @@ describe("OpenAICompatibleClient", () => {
     });
 
     it("should use short backoff (1s, 2s, 4s) for transient errors", async () => {
-      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error }).InternalServerError;
+      const ISE = (OpenAI as unknown as { InternalServerError: new (msg: string) => Error })
+        .InternalServerError;
       const err = new ISE("Internal server error");
 
       // Fail 3 times (1s + 2s + 4s = ~7s total), then succeed
@@ -616,7 +627,11 @@ describe("OpenAICompatibleClient", () => {
     }, 30000);
 
     it("should fail immediately on rate limit with no retries (MAX_RETRIES_RATE_LIMIT = 0)", async () => {
-      const RLE = (OpenAI as unknown as { RateLimitError: new (msg: string, h?: Record<string, string>) => Error }).RateLimitError;
+      const RLE = (
+        OpenAI as unknown as {
+          RateLimitError: new (msg: string, h?: Record<string, string>) => Error;
+        }
+      ).RateLimitError;
       const err = new RLE("Rate limit exceeded");
       mockCreate.mockRejectedValueOnce(err);
 

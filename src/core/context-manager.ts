@@ -342,9 +342,10 @@ export class ContextManager {
       try {
         const content = await readFile(filePath, "utf-8");
         // Limit each file to a reasonable size for rehydration
-        const truncated = content.length > 4000
-          ? content.slice(0, 3800) + "\n[... truncated for rehydration ...]"
-          : content;
+        const truncated =
+          content.length > 4000
+            ? content.slice(0, 3800) + "\n[... truncated for rehydration ...]"
+            : content;
         fileContents.push(`--- ${filePath} ---\n${truncated}`);
       } catch {
         // File may have been deleted or moved — skip it
@@ -604,7 +605,11 @@ export class ContextManager {
     if (msg.name) return msg.name;
 
     const content = msg.content;
-    if (content.startsWith("Error:") || content.startsWith("STDOUT:") || content.startsWith("STDERR:")) {
+    if (
+      content.startsWith("Error:") ||
+      content.startsWith("STDOUT:") ||
+      content.startsWith("STDERR:")
+    ) {
       return "bash_exec";
     }
     if (content.includes("matches found") || content.includes("No matches")) {

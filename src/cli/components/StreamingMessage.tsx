@@ -24,7 +24,10 @@ function partialRenderMarkdown(text: string): { rendered: string; raw: string } 
     const incompletePart = text.slice(lastCodeBlockStart);
 
     return {
-      rendered: completePart.length > 0 && hasMarkdown(completePart) ? renderMarkdown(completePart) : completePart,
+      rendered:
+        completePart.length > 0 && hasMarkdown(completePart)
+          ? renderMarkdown(completePart)
+          : completePart,
       raw: incompletePart,
     };
   }

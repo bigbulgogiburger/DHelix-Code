@@ -17,6 +17,7 @@ description: |
 ## Purpose
 
 Two validation modes:
+
 1. **Project E2E** — Validate that dbcode can create real-world projects through multi-turn conversations
    (initialization, implementation, building, testing, 80%+ coverage).
 2. **Conversation Quality** — Validate dbcode's multi-turn conversation capabilities
@@ -31,11 +32,13 @@ which then uses tools (file_write, bash_exec, etc.) to create project code. The 
 that this agent loop can produce working projects.
 
 **You (Claude)** are the test engineer. Your job is to:
+
 1. Generate the test harness file (a `.test.ts` file that calls `runAgentLoop()`)
 2. Run the test via `npx vitest run <test-file>`
 3. Observe the output and report results
 
 **You must NEVER:**
+
 - Directly create project files (no writing Java, Kotlin, TypeScript, Dart, HTML, CSS, etc. into the test-projects/ directory)
 - Directly run build commands on the project (no `./gradlew build`, `npm run build` yourself)
 - Directly fix code that dbcode generated (if it fails, that's a valid test failure)
@@ -82,6 +85,7 @@ the entire purpose of the test.
 ### After Running the Test
 
 Once `npx vitest run` completes, you CAN:
+
 - Read generated files to inspect quality (for the report)
 - Run build/test commands to verify results (for double-checking)
 - Analyze DBCODE.md compliance by reading what dbcode produced
@@ -94,6 +98,7 @@ report it as a test finding — don't fix it.
 ## Test Philosophy
 
 The tests are designed to catch real failure modes:
+
 - Can the agent maintain context across 8-12 turns?
 - Does it produce code that actually compiles and passes tests?
 - Does it respect DBCODE.md project instructions?
@@ -112,14 +117,14 @@ The tests are designed to catch real failure modes:
 
 프로젝트 빌드가 아닌 **대화 자체의 품질**을 검증. `references/conversation-quality.md` 참조.
 
-| Scenario | 검증 대상 | 턴 수 | 실행 시간 |
-|----------|-----------|-------|-----------|
-| 1. Context Retention | 이전 턴 정보 기억 | 5 | ~3분 |
-| 2. Tool Call Coherence | 도구 호출 순서/논리 | 5 | ~3분 |
-| 3. Error Recovery | 실패 시 자체 복구 | 5 | ~5분 |
-| 4. Instruction Adherence | 세션 전반 지시 준수 | 5 | ~3분 |
-| 5. Progressive Complexity | 점진적 복잡성 대응 | 5 | ~4분 |
-| 6. Contradiction Handling | 모순 지시 처리 | 5 | ~3분 |
+| Scenario                  | 검증 대상           | 턴 수 | 실행 시간 |
+| ------------------------- | ------------------- | ----- | --------- |
+| 1. Context Retention      | 이전 턴 정보 기억   | 5     | ~3분      |
+| 2. Tool Call Coherence    | 도구 호출 순서/논리 | 5     | ~3분      |
+| 3. Error Recovery         | 실패 시 자체 복구   | 5     | ~5분      |
+| 4. Instruction Adherence  | 세션 전반 지시 준수 | 5     | ~3분      |
+| 5. Progressive Complexity | 점진적 복잡성 대응  | 5     | ~4분      |
+| 6. Contradiction Handling | 모순 지시 처리      | 5     | ~3분      |
 
 #### 대화 품질 테스트 실행 방법
 
@@ -134,17 +139,17 @@ The tests are designed to catch real failure modes:
 
 프로젝트 E2E와 달리 빌드/커버리지 대신:
 
-| Assertion 유형 | 설명 |
-|----------------|------|
-| `response_contains` | 에이전트 응답에 특정 키워드 포함 여부 |
-| `tool_sequence` | 도구 호출 순서 검증 (read → edit, 디렉토리 → 파일) |
-| `no_redundant_tools` | 불필요한 중복 도구 호출 없음 |
-| `pattern_present` | 생성된 코드에 특정 패턴 존재 (JSDoc, camelCase 등) |
-| `pattern_absence` | 생성된 코드에 금지 패턴 부재 (console.log, let 등) |
-| `file_consistency` | 다른 턴에서 생성된 파일 간 일관성 |
-| `backward_compatible` | 이후 턴 변경이 이전 기능을 깨지 않음 |
-| `error_handled` | 실패 시 적절한 복구 시도 |
-| `acknowledged_change` | 모순 지시 시 인지/설명 여부 |
+| Assertion 유형        | 설명                                               |
+| --------------------- | -------------------------------------------------- |
+| `response_contains`   | 에이전트 응답에 특정 키워드 포함 여부              |
+| `tool_sequence`       | 도구 호출 순서 검증 (read → edit, 디렉토리 → 파일) |
+| `no_redundant_tools`  | 불필요한 중복 도구 호출 없음                       |
+| `pattern_present`     | 생성된 코드에 특정 패턴 존재 (JSDoc, camelCase 등) |
+| `pattern_absence`     | 생성된 코드에 금지 패턴 부재 (console.log, let 등) |
+| `file_consistency`    | 다른 턴에서 생성된 파일 간 일관성                  |
+| `backward_compatible` | 이후 턴 변경이 이전 기능을 깨지 않음               |
+| `error_handled`       | 실패 시 적절한 복구 시도                           |
+| `acknowledged_change` | 모순 지시 시 인지/설명 여부                        |
 
 #### 언제 대화 품질 테스트를 실행하는가
 
@@ -184,13 +189,13 @@ LLM API calls. Tests are skipped when `OPENAI_API_KEY` is absent.
 
 Available stacks (read the relevant `references/stack-*.md` for turn details):
 
-| ID | Stack | Reference |
-|----|-------|-----------|
-| 1 | Spring MVC + JSP + JavaScript | `references/stack-spring-jsp.md` |
-| 2 | Spring Boot + React (TypeScript) | `references/stack-springboot-react.md` |
-| 3 | Spring Boot + Vue 3 (TypeScript) | `references/stack-springboot-vue.md` |
-| 4 | Spring Boot + Flutter (Dart) | `references/stack-springboot-flutter.md` |
-| 5 | Flutter WebView + Spring Boot API | `references/stack-flutter-webview.md` |
+| ID  | Stack                             | Reference                                |
+| --- | --------------------------------- | ---------------------------------------- |
+| 1   | Spring MVC + JSP + JavaScript     | `references/stack-spring-jsp.md`         |
+| 2   | Spring Boot + React (TypeScript)  | `references/stack-springboot-react.md`   |
+| 3   | Spring Boot + Vue 3 (TypeScript)  | `references/stack-springboot-vue.md`     |
+| 4   | Spring Boot + Flutter (Dart)      | `references/stack-springboot-flutter.md` |
+| 5   | Flutter WebView + Spring Boot API | `references/stack-flutter-webview.md`    |
 
 ### Step 2: Generate the Test File
 
@@ -217,6 +222,7 @@ npx vitest run test/e2e/project-N-session.test.ts
 
 Then WAIT. The test will take 10-30 minutes depending on the stack.
 dbcode's agent loop will autonomously:
+
 - Create DBCODE.md
 - Scaffold the project
 - Implement features
@@ -232,6 +238,7 @@ Every test session MUST include these turns in order. These are the USER PROMPTS
 inside the test file — dbcode receives them and acts on them autonomously.
 
 #### Turn 0: /init (MANDATORY FIRST TURN)
+
 ```
 "Run /init to initialize this project. Create a DBCODE.md that describes a {STACK_NAME}
 project with the following conventions: {CONVENTIONS}. Include build commands, test
@@ -239,10 +246,12 @@ commands, code style rules, and directory structure."
 ```
 
 **Assertions (in the test file):**
+
 - `DBCODE.md` exists at project root
 - Contains project name, stack info, build/test commands
 
 #### Turn 1: Project Scaffolding
+
 ```
 "Create the project structure for a {PROJECT_TYPE} application.
 Set up {BUILD_TOOL} with all necessary dependencies.
@@ -250,11 +259,14 @@ Follow the conventions in DBCODE.md."
 ```
 
 **Assertions:**
+
 - Build config file exists (build.gradle, package.json, pubspec.yaml)
 - Source directory structure created
 
 #### Turns 2-6: Feature Implementation
+
 Each turn adds one feature. Be specific about requirements:
+
 ```
 "Implement {FEATURE} with the following requirements:
 - {REQUIREMENT_1}
@@ -265,14 +277,17 @@ Refer to DBCODE.md for coding conventions."
 The phrase "Refer to DBCODE.md" forces the agent to re-read project instructions.
 
 #### Turn 7: Build Validation (MANDATORY)
+
 ```
 "Build the project. Fix any compilation errors. Run: {BUILD_COMMAND}"
 ```
 
 **Assertions:**
+
 - Build succeeds (validated by the test's `validateBuild()` helper)
 
 #### Turn 8: Test Writing + Coverage (MANDATORY)
+
 ```
 "Write comprehensive tests to achieve at least 80% code coverage.
 Run tests with coverage: {TEST_COVERAGE_COMMAND}.
@@ -280,15 +295,18 @@ Fix any failing tests."
 ```
 
 **Assertions:**
+
 - Tests pass (no failures)
 - Coverage report shows >= 80%
 
 #### Turn 9: DBCODE.md Compliance Check (MANDATORY)
+
 ```
 "Review the project against DBCODE.md conventions. List any violations and fix them."
 ```
 
 **Assertions:**
+
 - Agent reads DBCODE.md (verify via event tracking)
 
 ### Step 5: DBCODE.md Reference Monitoring
@@ -313,27 +331,27 @@ After the test completes, evaluate the results:
 
 #### Quantitative Metrics (Automated — inside the test file)
 
-| Metric | Target | How to Measure |
-|--------|--------|----------------|
-| Build Success | 100% | `validateBuild()` exit code |
-| Test Pass Rate | 100% | Parse test runner output |
-| Test Coverage | >= 80% | Parse coverage report |
-| DBCODE.md Reads | >= 2 | Event monitoring count |
-| Turn Completion | 100% | All turns complete without error |
-| Iterations/Turn | < 25 | `result.iterations` per turn |
+| Metric          | Target | How to Measure                   |
+| --------------- | ------ | -------------------------------- |
+| Build Success   | 100%   | `validateBuild()` exit code      |
+| Test Pass Rate  | 100%   | Parse test runner output         |
+| Test Coverage   | >= 80% | Parse coverage report            |
+| DBCODE.md Reads | >= 2   | Event monitoring count           |
+| Turn Completion | 100%   | All turns complete without error |
+| Iterations/Turn | < 25   | `result.iterations` per turn     |
 
 #### Qualitative Metrics (You review AFTER the test runs)
 
 After the test completes, you may read the generated files to assess:
 
-| Metric | Rating (1-5) | What to Look For |
-|--------|-------------|------------------|
-| Code Quality | | Idiomatic patterns, no copy-paste smell |
-| Architecture | | Proper separation of concerns, layering |
-| Test Quality | | Meaningful assertions, edge cases covered |
-| DBCODE.md Compliance | | Actually follows declared conventions |
-| Error Recovery | | Handles build/test failures gracefully |
-| Context Retention | | References earlier turns, no contradictions |
+| Metric               | Rating (1-5) | What to Look For                            |
+| -------------------- | ------------ | ------------------------------------------- |
+| Code Quality         |              | Idiomatic patterns, no copy-paste smell     |
+| Architecture         |              | Proper separation of concerns, layering     |
+| Test Quality         |              | Meaningful assertions, edge cases covered   |
+| DBCODE.md Compliance |              | Actually follows declared conventions       |
+| Error Recovery       |              | Handles build/test failures gracefully      |
+| Context Retention    |              | References earlier turns, no contradictions |
 
 ### Step 7: Generate Evaluation Report
 
@@ -347,13 +365,16 @@ After running all stacks, produce a markdown report:
 **Stacks Tested:** {N}/5
 
 ## Summary
-| Stack | Build | Tests | Coverage | DBCODE Refs | Score |
-|-------|-------|-------|----------|-------------|-------|
-| Spring+JSP | PASS | 12/12 | 85% | 3 | 4.2/5 |
-| ... | ... | ... | ... | ... | ... |
+
+| Stack      | Build | Tests | Coverage | DBCODE Refs | Score |
+| ---------- | ----- | ----- | -------- | ----------- | ----- |
+| Spring+JSP | PASS  | 12/12 | 85%      | 3           | 4.2/5 |
+| ...        | ...   | ...   | ...      | ...         | ...   |
 
 ## Per-Stack Details
+
 ### Stack 1: {NAME}
+
 - **Turns:** {N} completed / {N} total
 - **Total Iterations:** {N}
 - **DBCODE.md References:** {list of turns}
@@ -411,11 +432,11 @@ const E2E_CONFIG = {
   maxTokens: 16384,
   maxContextTokens: 128_000,
   useStreaming: false,
-  turnTimeout: 180_000,       // 3 minutes per turn
-  buildTimeout: 120_000,      // 2 minutes for builds
-  testTimeout: 120_000,       // 2 minutes for tests
-  minCoverage: 80,            // 80% minimum
-  minDbcodeReads: 2,          // Must read DBCODE.md at least twice
+  turnTimeout: 180_000, // 3 minutes per turn
+  buildTimeout: 120_000, // 2 minutes for builds
+  testTimeout: 120_000, // 2 minutes for tests
+  minCoverage: 80, // 80% minimum
+  minDbcodeReads: 2, // Must read DBCODE.md at least twice
 };
 ```
 
@@ -432,6 +453,7 @@ in the background, then periodically read this file and report to the user.
 **Progress file path:** `test-projects/{stack-name}/.e2e-progress.json`
 
 The test harness writes this file after every turn completes:
+
 ```json
 {
   "currentTurn": 3,
@@ -459,19 +481,26 @@ import { writeFileSync } from "node:fs";
 const progressFile = resolve(projectDir, ".e2e-progress.json");
 
 function writeProgress(turnName: string, status: "running" | "completed" | "failed") {
-  writeFileSync(progressFile, JSON.stringify({
-    currentTurn,
-    totalTurns: TOTAL_TURNS,
-    turnName,
-    status,
-    iterations: metrics.totalIterations,
-    dbcodeReads: metrics.dbcodeReads.length,
-    lastToolCall: metrics.toolCalls.at(-1)?.tool ?? "none",
-    filesCreated: 0, // optionally count with glob
-    errors: metrics.errors,
-    startedAt: startTime,
-    lastUpdatedAt: new Date().toISOString(),
-  }, null, 2));
+  writeFileSync(
+    progressFile,
+    JSON.stringify(
+      {
+        currentTurn,
+        totalTurns: TOTAL_TURNS,
+        turnName,
+        status,
+        iterations: metrics.totalIterations,
+        dbcodeReads: metrics.dbcodeReads.length,
+        lastToolCall: metrics.toolCalls.at(-1)?.tool ?? "none",
+        filesCreated: 0, // optionally count with glob
+        errors: metrics.errors,
+        startedAt: startTime,
+        lastUpdatedAt: new Date().toISOString(),
+      },
+      null,
+      2,
+    ),
+  );
 }
 ```
 
@@ -529,17 +558,20 @@ are created by dbcode's agent loop.
 ## Quick Reference
 
 ### Project E2E
+
 - Test harness template: `references/test-harness.md`
 - Stack-specific turns: `references/stack-*.md`
 - Validation script: `scripts/validate-session.ts`
 - Existing E2E examples: `test/e2e/project-*-session.test.ts`
 
 ### Conversation Quality
+
 - Scenario definitions: `references/conversation-quality.md`
 - Test harness template: `references/test-harness.md` (shared)
 - Conversation quality tests: `test/e2e/conversation-quality-*.test.ts`
 
 ### Shared
+
 - Agent loop source: `src/core/agent-loop.ts`
 - Instruction loader: `src/instructions/loader.ts`
 - Init command: `src/commands/init.ts`

@@ -142,17 +142,20 @@ function classifyError(error: unknown, operation: string, model: string): LLMErr
     );
   }
   if (error instanceof OpenAI.PermissionDeniedError) {
-    return new LLMError(
-      "Permission denied. Your API key may lack access to this model.",
-      { model, cause: error.message, status: error.status },
-    );
+    return new LLMError("Permission denied. Your API key may lack access to this model.", {
+      model,
+      cause: error.message,
+      status: error.status,
+    });
   }
   if (error instanceof OpenAI.RateLimitError) {
     const retryAfterMs = getRetryDelay(error, 0);
-    return new LLMError(
-      "Rate limit exceeded. Please wait before retrying.",
-      { model, cause: error.message, status: 429, retryAfterMs },
-    );
+    return new LLMError("Rate limit exceeded. Please wait before retrying.", {
+      model,
+      cause: error.message,
+      status: 429,
+      retryAfterMs,
+    });
   }
   if (error instanceof OpenAI.APIConnectionTimeoutError) {
     return new LLMError(
@@ -193,8 +196,36 @@ export interface OpenAIClientConfig {
 }
 
 /**
+ * Normalize Azure OpenAI URLs for the OpenAI SDK.
+ * Azure URLs contain ".openai.azure.com" and may include /chat/completions and ?api-version=...
+ * The SDK appends /chat/completions automatically, so we strip it and extract api-version.
+ */
+function normalizeAzureUrl(baseURL: string): {
+  baseURL: string;
+  apiVersion?: string;
+  isAzure: boolean;
+} {
+  if (!baseURL.includes(".openai.azure.com")) {
+    return { baseURL, isAzure: false };
+  }
+
+  // Extract api-version from query string
+  let apiVersion: string | undefined;
+  const urlObj = new URL(baseURL);
+  apiVersion = urlObj.searchParams.get("api-version") ?? undefined;
+
+  // Strip /chat/completions and query string from the path
+  let cleanPath = urlObj.pathname.replace(/\/chat\/completions\/?$/, "");
+  // Ensure no trailing slash
+  cleanPath = cleanPath.replace(/\/$/, "");
+
+  const cleanURL = `${urlObj.protocol}//${urlObj.host}${cleanPath}`;
+  return { baseURL: cleanURL, apiVersion, isAzure: true };
+}
+
+/**
  * OpenAI-compatible LLM client.
- * Works with any OpenAI-compatible API (OpenAI, Ollama, vLLM, llama.cpp, etc.)
+ * Works with any OpenAI-compatible API (OpenAI, Azure OpenAI, Ollama, vLLM, llama.cpp, etc.)
  * Includes automatic retries for transient errors with exponential backoff.
  */
 export class OpenAICompatibleClient implements LLMProvider {
@@ -202,11 +233,20 @@ export class OpenAICompatibleClient implements LLMProvider {
   private readonly client: OpenAI;
 
   constructor(config: OpenAIClientConfig) {
+    const { baseURL, apiVersion, isAzure } = normalizeAzureUrl(config.baseURL);
+    const apiKey = config.apiKey ?? "no-key-required";
+
     this.client = new OpenAI({
-      baseURL: config.baseURL,
-      apiKey: config.apiKey ?? "no-key-required",
+      baseURL,
+      apiKey,
       timeout: config.timeout ?? 120_000,
       maxRetries: 0, // We handle retries ourselves for better control
+      ...(isAzure
+        ? {
+            defaultQuery: { "api-version": apiVersion ?? "2025-01-01-preview" },
+            defaultHeaders: { "api-key": apiKey },
+          }
+        : {}),
     });
   }
 
@@ -323,12 +363,11 @@ export class OpenAICompatibleClient implements LLMProvider {
       { signal: request.signal },
     );
 
-    const toolCallsInProgress = new Map<
-      number,
-      { id: string; name: string; arguments: string }
-    >();
+    const toolCallsInProgress = new Map<number, { id: string; name: string; arguments: string }>();
 
-    let streamUsage: { promptTokens: number; completionTokens: number; totalTokens: number } | undefined;
+    let streamUsage:
+      | { promptTokens: number; completionTokens: number; totalTokens: number }
+      | undefined;
 
     for await (const chunk of stream) {
       // OpenAI sends usage on the final chunk when stream_options.include_usage is true

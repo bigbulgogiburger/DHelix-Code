@@ -56,7 +56,12 @@ export function useAgentLoop({
   } = useConversation("main");
 
   const [isProcessing, setIsProcessing] = useState(false);
-  const { text: streamingText, appendText, flush: flushText, reset: resetText } = useTextBuffering(100);
+  const {
+    text: streamingText,
+    appendText,
+    flush: flushText,
+    reset: resetText,
+  } = useTextBuffering(100);
   const [error, setError] = useState<string | null>(null);
   const [tokenCount, setTokenCount] = useState(0);
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
@@ -98,11 +103,29 @@ export function useAgentLoop({
 
   // Wire up event listeners for activity tracking + text buffering
   useEffect(() => {
-    const onToolStart = ({ name, id, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
+    const onToolStart = ({
+      name,
+      id,
+      args,
+    }: {
+      name: string;
+      id: string;
+      args?: Record<string, unknown>;
+    }) => {
       activityRef.current.addEntry("tool-start", { name, id, args, startTime: Date.now() });
       syncCurrentTurn();
     };
-    const onToolComplete = ({ id, name, isError, output }: { name: string; id: string; isError: boolean; output?: string }) => {
+    const onToolComplete = ({
+      id,
+      name,
+      isError,
+      output,
+    }: {
+      name: string;
+      id: string;
+      isError: boolean;
+      output?: string;
+    }) => {
       activityRef.current.addEntry("tool-complete", { name, id, isError, output });
       syncCurrentTurn();
     };
@@ -262,9 +285,7 @@ export function useAgentLoop({
 
         // Persist to session
         if (sessionManager && sessionId) {
-          const sessionMessages: ChatMessage[] = [
-            { role: "user", content: input },
-          ];
+          const sessionMessages: ChatMessage[] = [{ role: "user", content: input }];
           for (const msg of newMessages) {
             if (msg.role === "assistant" || msg.role === "tool") {
               sessionMessages.push({
@@ -402,7 +423,11 @@ export function useAgentLoop({
         ...currentTurn,
         entries: [
           ...currentTurn.entries,
-          { type: "assistant-text" as const, timestamp: new Date(), data: { content: streamingText, isComplete: false } },
+          {
+            type: "assistant-text" as const,
+            timestamp: new Date(),
+            data: { content: streamingText, isComplete: false },
+          },
         ],
       };
     }

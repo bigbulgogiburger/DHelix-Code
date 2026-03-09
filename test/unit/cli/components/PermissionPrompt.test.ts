@@ -32,7 +32,10 @@ vi.mock("react", () => {
 vi.mock("ink", () => ({
   Box: () => null,
   Text: () => null,
-  useInput: (callback: (input: string, key: Record<string, boolean>) => void, opts?: { isActive?: boolean }) => {
+  useInput: (
+    callback: (input: string, key: Record<string, boolean>) => void,
+    opts?: { isActive?: boolean },
+  ) => {
     if (opts?.isActive !== false) {
       useInputCallback = callback;
     } else {

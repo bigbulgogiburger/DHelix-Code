@@ -64,7 +64,13 @@ describe("notebook_edit tool", () => {
 
   it("should add a cell at a specific index", async () => {
     const result = await notebookEditTool.execute(
-      { path: "test.ipynb", action: "add", cellIndex: 1, cellType: "markdown", source: "## Subtitle" },
+      {
+        path: "test.ipynb",
+        action: "add",
+        cellIndex: 1,
+        cellType: "markdown",
+        source: "## Subtitle",
+      },
       context,
     );
 
@@ -78,7 +84,13 @@ describe("notebook_edit tool", () => {
 
   it("should replace a cell", async () => {
     const result = await notebookEditTool.execute(
-      { path: "test.ipynb", action: "replace", cellIndex: 0, cellType: "code", source: "print('replaced')" },
+      {
+        path: "test.ipynb",
+        action: "replace",
+        cellIndex: 0,
+        cellType: "code",
+        source: "print('replaced')",
+      },
       context,
     );
 

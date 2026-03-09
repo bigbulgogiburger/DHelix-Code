@@ -25,13 +25,20 @@ export const undoCommand: SlashCommand = {
     try {
       if (!target) {
         // List modified files
-        const diff = execSync("git diff --name-only", { cwd, encoding: "utf-8", stdio: "pipe" }).trim();
-        const staged = execSync("git diff --cached --name-only", { cwd, encoding: "utf-8", stdio: "pipe" }).trim();
+        const diff = execSync("git diff --name-only", {
+          cwd,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }).trim();
+        const staged = execSync("git diff --cached --name-only", {
+          cwd,
+          encoding: "utf-8",
+          stdio: "pipe",
+        }).trim();
 
-        const allFiles = [...new Set([
-          ...(diff ? diff.split("\n") : []),
-          ...(staged ? staged.split("\n") : []),
-        ])];
+        const allFiles = [
+          ...new Set([...(diff ? diff.split("\n") : []), ...(staged ? staged.split("\n") : [])]),
+        ];
 
         if (allFiles.length === 0) {
           return { output: "No modified files to undo.", success: true };
@@ -53,7 +60,11 @@ export const undoCommand: SlashCommand = {
       }
 
       // Revert specific file
-      execSync(`git checkout -- ${JSON.stringify(target)}`, { cwd, encoding: "utf-8", stdio: "pipe" });
+      execSync(`git checkout -- ${JSON.stringify(target)}`, {
+        cwd,
+        encoding: "utf-8",
+        stdio: "pipe",
+      });
       return { output: `Reverted: ${target}`, success: true };
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);

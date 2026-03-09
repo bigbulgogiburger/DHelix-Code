@@ -30,11 +30,7 @@ export interface LogoProps {
   readonly showLogo?: boolean;
 }
 
-export function Logo({
-  version = VERSION,
-  modelName,
-  showLogo = true,
-}: LogoProps) {
+export function Logo({ version = VERSION, modelName, showLogo = true }: LogoProps) {
   return (
     <Box flexDirection="column">
       {showLogo &&
@@ -85,7 +81,8 @@ export function printStartupLogo(modelName?: string, version: string = VERSION):
   }
 
   // Version line
-  const versionLine = chalk.bold.cyan(`${APP_NAME} v${version}`) +
+  const versionLine =
+    chalk.bold.cyan(`${APP_NAME} v${version}`) +
     (modelName ? " " + chalk.gray(`Model: ${modelName}`) : "");
   process.stdout.write("\n" + versionLine + "\n");
 

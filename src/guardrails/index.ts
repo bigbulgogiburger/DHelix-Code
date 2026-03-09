@@ -28,8 +28,7 @@ export function applyOutputGuardrails(output: string): GuardrailResult {
   const limitResult = limitOutput(text);
   const finalText = limitResult.result;
 
-  const modified =
-    scanResult.found || limitResult.limited ? finalText : undefined;
+  const modified = scanResult.found || limitResult.limited ? finalText : undefined;
 
   if (scanResult.found) {
     return {

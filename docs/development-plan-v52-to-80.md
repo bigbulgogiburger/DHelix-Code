@@ -11,12 +11,14 @@
 코드를 전부 읽어봤습니다. 솔직한 소감:
 
 **생각보다 잘 만든 것:**
+
 - MCP 클라이언트 (`src/mcp/client.ts`) — JSON-RPC 2.0 완전 구현, stdio 트랜스포트, 환경변수 resolve까지. 스켈레톤이 아니라 **동작 가능한 수준**
 - Tool Bridge (`src/mcp/tool-bridge.ts`) — MCP 도구를 dbcode 도구 레지스트리에 자동 등록, 네임스페이싱(`mcp__server__tool`), deferred loading 판단까지 있음
 - Subagent spawner — 병렬 실행, 필터된 레지스트리, 격리된 이벤트 에미터. 구조가 Claude Code의 Agent tool과 거의 동일
 - Permission 시스템 — 3단계 체크(세션 승인 → 규칙 → 모드), 5가지 모드, glob 패턴 룰. 이건 프로덕션급
 
 **진짜 문제:**
+
 1. **MCP가 App.tsx에 연결 안 됨** — 클라이언트는 있는데 부팅 시 서버 연결하는 코드가 없음
 2. **Context Compaction이 가짜** — LLM 요약이 아닌 텍스트 truncation. 긴 세션에서 맥락 유실
 3. **토큰 사용량 추적 없음** — `usage: { promptTokens: 0, completionTokens: 0 }` 하드코딩
@@ -28,15 +30,15 @@
 
 ## 2. 점수 목표 역산
 
-| 영역 | 현재 | 목표 | 가중치 | 점수 증가 |
-|------|------|------|--------|-----------|
-| 아키텍처 설계 | 78 | 85 | 20% | +1.4 |
-| 핵심 기능 완성도 | 45 | **75** | 30% | **+9.0** |
-| LLM 클라이언트 | 65 | **80** | 15% | **+2.25** |
-| CLI/UX | 55 | 70 | 15% | +2.25 |
-| 테스트 & 품질 | 40 | **70** | 10% | **+3.0** |
-| 프로덕션 준비도 | 20 | **55** | 10% | **+3.5** |
-| **총점** | **52** | | | **→ 73.5** |
+| 영역             | 현재   | 목표   | 가중치 | 점수 증가  |
+| ---------------- | ------ | ------ | ------ | ---------- |
+| 아키텍처 설계    | 78     | 85     | 20%    | +1.4       |
+| 핵심 기능 완성도 | 45     | **75** | 30%    | **+9.0**   |
+| LLM 클라이언트   | 65     | **80** | 15%    | **+2.25**  |
+| CLI/UX           | 55     | 70     | 15%    | +2.25      |
+| 테스트 & 품질    | 40     | **70** | 10%    | **+3.0**   |
+| 프로덕션 준비도  | 20     | **55** | 10%    | **+3.5**   |
+| **총점**         | **52** |        |        | **→ 73.5** |
 
 **핵심**: 기능 완성도(30%)와 프로덕션 준비도(10%)에서 대부분의 점수를 올려야 함
 
@@ -51,6 +53,7 @@
 #### 1-1. LLM 기반 Context Compaction (+8점)
 
 **현재 문제:**
+
 ```typescript
 // context-manager.ts:228 — summarizeTurns()
 // 단순 텍스트 잘라내기. LLM이 아닌 regex로 파일 경로만 추출
@@ -61,6 +64,7 @@ private summarizeTurns(turns, focusTopic): string {
 ```
 
 **해야 할 것:**
+
 ```
 context-manager.ts 수정:
 1. summarizeTurns()에 LLM 호출 추가
@@ -70,6 +74,7 @@ context-manager.ts 수정:
 ```
 
 **구체적 태스크:**
+
 - [ ] `ContextManager`에 `LLMProvider` 의존성 주입
 - [ ] `summarizeWithLLM(turns: Turn[], focusTopic?: string): Promise<string>` 메서드 추가
 - [ ] 요약 프롬프트 설계 (Claude Code의 compaction prompt 참고)
@@ -82,6 +87,7 @@ context-manager.ts 수정:
 #### 1-2. 토큰 사용량 실시간 추적 (+3점)
 
 **현재 문제:**
+
 ```typescript
 // agent-loop.ts:186 — 스트리밍 응답에서 usage가 항상 0
 response = {
@@ -92,6 +98,7 @@ response = {
 ```
 
 **해야 할 것:**
+
 ```
 1. streaming.ts: OpenAI stream의 usage chunk 파싱 (stream_options.include_usage)
 2. client.ts: chat() 요청 시 stream_options 추가
@@ -101,6 +108,7 @@ response = {
 ```
 
 **구체적 태스크:**
+
 - [ ] `StreamAccumulator`에 `usage` 필드 추가
 - [ ] `consumeStream()`에서 `usage` chunk 파싱
 - [ ] `client.ts`의 `stream()` 메서드에 `stream_options: { include_usage: true }` 추가
@@ -114,6 +122,7 @@ response = {
 **현재 문제:** 509줄에 모든 로직이 집중. 비즈니스 로직(agent loop 호출)과 UI(렌더링)가 혼재.
 
 **해야 할 것:**
+
 ```
 App.tsx → 3개 파일로 분리:
 1. hooks/useAgentLoop.ts — processMessage(), 이벤트 바인딩, 에러 처리
@@ -122,6 +131,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] `useAgentLoop` 커스텀 훅 추출 (processMessage, 이벤트, activity tracking)
 - [ ] `usePermissionPrompt` 훅 추출 (pendingPermission, handleResponse)
 - [ ] `App.tsx`를 순수 컴포넌트로 축소
@@ -140,6 +150,7 @@ App.tsx → 3개 파일로 분리:
 **현재 상태:** MCP 클라이언트는 **완성**되어 있음. 하지만 App 부팅 시 서버에 연결하는 코드가 없음.
 
 **해야 할 것:**
+
 ```
 1. 설정 파일에서 MCP 서버 목록 로드 (~/.dbcode/mcp.json 또는 config)
 2. 부팅 시 각 서버에 connect()
@@ -149,6 +160,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **설정 파일 형식:**
+
 ```json
 {
   "mcpServers": {
@@ -168,6 +180,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] `src/mcp/manager.ts` 생성 — MCP 서버 라이프사이클 관리
   - `loadConfig()`: 설정 파일 파싱
   - `connectAll()`: 모든 서버 병렬 연결
@@ -194,6 +207,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] `src/guardrails/secret-scanner.ts`
   - 정규식 기반 패턴 매칭 (AWS_KEY, GITHUB_TOKEN, password=, etc.)
   - tool result에서 감지 시 `[REDACTED]`로 치환
@@ -217,13 +231,14 @@ App.tsx → 3개 파일로 분리:
 
 현재 8개 → 11개로 확장. 가장 자주 쓰이는 것부터.
 
-| 도구 | 퍼미션 | 구현 난이도 | 설명 |
-|------|--------|-------------|------|
-| `web_fetch` | confirm | 중 | URL → 텍스트 변환 (readability 추출) |
-| `list_dir` | safe | 하 | 디렉토리 목록 (tree 형태) |
-| `notebook_edit` | confirm | 중 | .ipynb 셀 추가/수정/삭제 |
+| 도구            | 퍼미션  | 구현 난이도 | 설명                                 |
+| --------------- | ------- | ----------- | ------------------------------------ |
+| `web_fetch`     | confirm | 중          | URL → 텍스트 변환 (readability 추출) |
+| `list_dir`      | safe    | 하          | 디렉토리 목록 (tree 형태)            |
+| `notebook_edit` | confirm | 중          | .ipynb 셀 추가/수정/삭제             |
 
 **구체적 태스크:**
+
 - [ ] `src/tools/definitions/web-fetch.ts`
   - `node:https` 또는 `undici`로 HTTP GET
   - HTML → 텍스트 변환 (cheerio 또는 linkedom)
@@ -250,6 +265,7 @@ App.tsx → 3개 파일로 분리:
 **현재 문제:** OpenAI SDK 호환 API만 지원. Anthropic Claude를 쓰려면 별도 프록시 필요.
 
 **해야 할 것:**
+
 ```
 1. src/llm/providers/anthropic.ts — Anthropic SDK 래퍼
 2. src/llm/providers/openai.ts — 기존 client.ts 리네이밍
@@ -260,6 +276,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] `@anthropic-ai/sdk` 의존성 추가
 - [ ] `src/llm/providers/anthropic.ts` — `LLMProvider` 인터페이스 구현
   - `chat()`, `stream()`, `countTokens()` 구현
@@ -277,6 +294,7 @@ App.tsx → 3개 파일로 분리:
 **현재 문제:** 세션 매니저가 있지만, 이전 세션 재개 UX가 없음.
 
 **해야 할 것:**
+
 ```
 1. /resume — 최근 세션 재개
 2. /history — 세션 목록 표시
@@ -284,6 +302,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] `/resume [session-id]` 슬래시 명령 추가
 - [ ] `/history` 명령 — 최근 10개 세션 목록 (시간, 첫 메시지, 턴 수)
 - [ ] 세션 메타데이터 저장 (첫 메시지, 턴 수, 마지막 시간)
@@ -296,6 +315,7 @@ App.tsx → 3개 파일로 분리:
 **현재 문제:** 에러 발생 시 빨간 텍스트만 표시. 사용자가 뭘 해야 할지 모름.
 
 **해야 할 것:**
+
 ```
 1. 에러 유형별 가이드 메시지
    - Rate limit → "X초 후 자동 재시도됩니다" + 프로그레스 바
@@ -307,6 +327,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] `ErrorBanner` 컴포넌트에 actionable 메시지 추가
 - [ ] `/retry` 명령 구현
 - [ ] `/compact [topic]` 명령 구현 (manualCompact 연결)
@@ -325,6 +346,7 @@ App.tsx → 3개 파일로 분리:
 **현재 문제:** 86개 테스트 파일이 있지만 대부분 단위 테스트. 모듈 간 연동 검증 부재.
 
 **해야 할 것:**
+
 ```
 1. Agent Loop 통합 테스트
    - Mock LLM + 실제 도구 → 파일 생성/편집 시나리오
@@ -341,6 +363,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] `test/integration/agent-loop-tools.test.ts` — agent loop + 도구 연동
 - [ ] `test/integration/mcp-bridge.test.ts` — MCP 클라이언트 + 브릿지
 - [ ] `test/integration/context-compaction.test.ts` — 토큰 초과 시 compaction
@@ -353,6 +376,7 @@ App.tsx → 3개 파일로 분리:
 #### 4-2. CI/CD 파이프라인 (+3점)
 
 **해야 할 것:**
+
 ```
 .github/workflows/ci.yml:
 1. lint + typecheck + 단위 테스트 (PR마다)
@@ -363,6 +387,7 @@ App.tsx → 3개 파일로 분리:
 ```
 
 **구체적 태스크:**
+
 - [ ] GitHub Actions 워크플로우 생성
 - [ ] `npm run ci` 스크립트: `typecheck && lint && test:coverage`
 - [ ] 커버리지 게이트: 70% 미만 시 CI 실패
@@ -410,46 +435,46 @@ ROI     │   1-2 토큰     │  3-2 세션 복원 │
 
 ### Sprint 1 (Week 1-2): 3명 병렬
 
-| 팀원 | 태스크 | 파일 소유권 |
-|------|--------|-------------|
-| Agent A | 1-1 LLM Context Compaction | `src/core/context-manager.ts` |
-| Agent B | 1-2 토큰 사용량 추적 | `src/llm/streaming.ts`, `src/llm/client.ts` |
-| Agent C | 1-3 App.tsx 리팩토링 | `src/cli/App.tsx`, `src/cli/hooks/` |
+| 팀원    | 태스크                     | 파일 소유권                                 |
+| ------- | -------------------------- | ------------------------------------------- |
+| Agent A | 1-1 LLM Context Compaction | `src/core/context-manager.ts`               |
+| Agent B | 1-2 토큰 사용량 추적       | `src/llm/streaming.ts`, `src/llm/client.ts` |
+| Agent C | 1-3 App.tsx 리팩토링       | `src/cli/App.tsx`, `src/cli/hooks/`         |
 
 ### Sprint 2 (Week 3-4): 3명 병렬
 
-| 팀원 | 태스크 | 파일 소유권 |
-|------|--------|-------------|
-| Agent D | 2-1 MCP 서버 부팅 통합 | `src/mcp/manager.ts`, `src/index.ts` |
-| Agent E | 2-2 Guardrails 구현 | `src/guardrails/*` (신규) |
-| Agent F | 2-3 도구 3개 추가 | `src/tools/definitions/` (신규 파일만) |
+| 팀원    | 태스크                 | 파일 소유권                            |
+| ------- | ---------------------- | -------------------------------------- |
+| Agent D | 2-1 MCP 서버 부팅 통합 | `src/mcp/manager.ts`, `src/index.ts`   |
+| Agent E | 2-2 Guardrails 구현    | `src/guardrails/*` (신규)              |
+| Agent F | 2-3 도구 3개 추가      | `src/tools/definitions/` (신규 파일만) |
 
 ### Sprint 3 (Week 5-6): 3명 병렬
 
-| 팀원 | 태스크 | 파일 소유권 |
-|------|--------|-------------|
-| Agent G | 3-1 Anthropic API 지원 | `src/llm/providers/` (신규) |
-| Agent H | 3-2 + 3-3 세션 복원 + 에러 UX | `src/commands/`, `src/cli/components/ErrorBanner.tsx` |
-| Agent A' | guardrails ↔ agent-loop 통합 | `src/core/agent-loop.ts` (guardrails 적용 부분만) |
+| 팀원     | 태스크                        | 파일 소유권                                           |
+| -------- | ----------------------------- | ----------------------------------------------------- |
+| Agent G  | 3-1 Anthropic API 지원        | `src/llm/providers/` (신규)                           |
+| Agent H  | 3-2 + 3-3 세션 복원 + 에러 UX | `src/commands/`, `src/cli/components/ErrorBanner.tsx` |
+| Agent A' | guardrails ↔ agent-loop 통합 | `src/core/agent-loop.ts` (guardrails 적용 부분만)     |
 
 ### Sprint 4 (Week 7-8): 2명 병렬
 
-| 팀원 | 태스크 | 파일 소유권 |
-|------|--------|-------------|
-| Agent I | 4-1 통합 테스트 전체 | `test/integration/*` |
+| 팀원    | 태스크                 | 파일 소유권                             |
+| ------- | ---------------------- | --------------------------------------- |
+| Agent I | 4-1 통합 테스트 전체   | `test/integration/*`                    |
 | Agent J | 4-2 CI/CD + 4-3 README | `.github/`, `README.md`, `package.json` |
 
 ---
 
 ## 6. 리스크 & 완화책
 
-| 리스크 | 확률 | 영향 | 완화책 |
-|--------|------|------|--------|
-| LLM 기반 compaction 비용 | 높음 | 중 | 캐시 + 저렴한 모델 사용 (Haiku급) |
-| MCP 서버 연결 불안정 | 중간 | 높음 | 연결 실패 무시 + 재연결 로직 |
-| Anthropic SDK 호환성 | 낮음 | 중 | tool_use 포맷 차이 주의, 통합 테스트 필수 |
-| App.tsx 리팩토링 회귀 | 중간 | 중 | 리팩토링 전 스냅샷 테스트 추가 |
-| CI 비용 (API 호출) | 중간 | 낮 | smoke 테스트는 nightly만 실행 |
+| 리스크                   | 확률 | 영향 | 완화책                                    |
+| ------------------------ | ---- | ---- | ----------------------------------------- |
+| LLM 기반 compaction 비용 | 높음 | 중   | 캐시 + 저렴한 모델 사용 (Haiku급)         |
+| MCP 서버 연결 불안정     | 중간 | 높음 | 연결 실패 무시 + 재연결 로직              |
+| Anthropic SDK 호환성     | 낮음 | 중   | tool_use 포맷 차이 주의, 통합 테스트 필수 |
+| App.tsx 리팩토링 회귀    | 중간 | 중   | 리팩토링 전 스냅샷 테스트 추가            |
+| CI 비용 (API 호출)       | 중간 | 낮   | smoke 테스트는 nightly만 실행             |
 
 ---
 
@@ -458,22 +483,26 @@ ROI     │   1-2 토큰     │  3-2 세션 복원 │
 각 스프린트 종료 시 체크:
 
 ### Sprint 1 완료 기준
+
 - [ ] 20턴 이상 대화에서 맥락 유실 없이 동작 (LLM compaction)
 - [ ] StatusBar에 실시간 토큰 사용량 표시
 - [ ] App.tsx 300줄 이하
 
 ### Sprint 2 완료 기준
+
 - [ ] `~/.dbcode/mcp.json` 설정으로 MCP 서버 자동 연결
 - [ ] `rm -rf /` 명령 차단 확인
 - [ ] API 키가 tool result에 노출되지 않음 확인
 - [ ] 도구 11개 이상 등록
 
 ### Sprint 3 완료 기준
+
 - [ ] `ANTHROPIC_API_KEY`로 Claude 모델 직접 호출 가능
 - [ ] `/resume`로 이전 세션 재개 동작
 - [ ] rate limit 시 자동 재시도 + 카운트다운 UI
 
 ### Sprint 4 완료 기준
+
 - [ ] 테스트 커버리지 70% 이상
 - [ ] GitHub Actions CI 그린
 - [ ] `npx dbcode`로 설치 없이 실행 가능

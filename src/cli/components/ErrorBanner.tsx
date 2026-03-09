@@ -18,7 +18,8 @@ function classifyError(message: string): ErrorClassification {
     return {
       type: "rate_limit",
       icon: "\u23F3",
-      guide: "API \uC0AC\uC6A9\uB7C9\uC774 \uCD08\uACFC\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.",
+      guide:
+        "API \uC0AC\uC6A9\uB7C9\uC774 \uCD08\uACFC\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.",
     };
   }
 
@@ -32,23 +33,35 @@ function classifyError(message: string): ErrorClassification {
     return {
       type: "network",
       icon: "\uD83D\uDD0C",
-      guide: "\uB124\uD2B8\uC6CC\uD06C\uB97C \uD655\uC778\uD558\uC138\uC694. \uC11C\uBC84\uAC00 \uC2E4\uD589 \uC911\uC778\uC9C0 \uD655\uC778: dbcode --base-url <url>",
+      guide:
+        "\uB124\uD2B8\uC6CC\uD06C\uB97C \uD655\uC778\uD558\uC138\uC694. \uC11C\uBC84\uAC00 \uC2E4\uD589 \uC911\uC778\uC9C0 \uD655\uC778: dbcode --base-url <url>",
     };
   }
 
-  if (lower.includes("too many tokens") || lower.includes("request too large") || lower.includes("context_length")) {
+  if (
+    lower.includes("too many tokens") ||
+    lower.includes("request too large") ||
+    lower.includes("context_length")
+  ) {
     return {
       type: "token_limit",
       icon: "\uD83D\uDCCF",
-      guide: "\uB300\uD654\uAC00 \uB108\uBB34 \uAE41\uB2C8\uB2E4. /compact\uB85C \uC555\uCD95\uD558\uC138\uC694.",
+      guide:
+        "\uB300\uD654\uAC00 \uB108\uBB34 \uAE41\uB2C8\uB2E4. /compact\uB85C \uC555\uCD95\uD558\uC138\uC694.",
     };
   }
 
-  if (lower.includes("401") || lower.includes("unauthorized") || lower.includes("api key") || lower.includes("api_key")) {
+  if (
+    lower.includes("401") ||
+    lower.includes("unauthorized") ||
+    lower.includes("api key") ||
+    lower.includes("api_key")
+  ) {
     return {
       type: "auth",
       icon: "\uD83D\uDD11",
-      guide: "API \uD0A4\uAC00 \uC720\uD6A8\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. --api-key \uB610\uB294 \uD658\uACBD\uBCC0\uC218\uB97C \uD655\uC778\uD558\uC138\uC694.",
+      guide:
+        "API \uD0A4\uAC00 \uC720\uD6A8\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. --api-key \uB610\uB294 \uD658\uACBD\uBCC0\uC218\uB97C \uD655\uC778\uD558\uC138\uC694.",
     };
   }
 
@@ -56,7 +69,8 @@ function classifyError(message: string): ErrorClassification {
     return {
       type: "model_not_found",
       icon: "\uD83E\uDD16",
-      guide: "\uBAA8\uB378\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. /model\uB85C \uBCC0\uACBD\uD558\uC138\uC694.",
+      guide:
+        "\uBAA8\uB378\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. /model\uB85C \uBCC0\uACBD\uD558\uC138\uC694.",
     };
   }
 
@@ -81,11 +95,7 @@ export function ErrorBanner({ message, details }: ErrorBannerProps) {
           {details}
         </Text>
       ) : null}
-      {classification.guide ? (
-        <Text dimColor>
-          {classification.guide}
-        </Text>
-      ) : null}
+      {classification.guide ? <Text dimColor>{classification.guide}</Text> : null}
     </Box>
   );
 }

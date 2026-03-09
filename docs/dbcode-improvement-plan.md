@@ -10,18 +10,18 @@
 
 사용자 테스트에서 발견된 문제와 코드 분석을 통해 추가 발견된 문제를 종합하면 다음과 같습니다:
 
-| # | 문제 | 심각도 | 카테고리 |
-|---|------|--------|----------|
-| 1 | 로고가 스크롤되어 사라짐 | Medium | UI/UX |
-| 2 | 긴 텍스트에서 글씨 번쩍번쩍 깜빡임 | Critical | UI/Rendering |
-| 3 | 작업 내용과 진행 상황이 분리됨 | Critical | UI/UX Architecture |
-| 4 | 다중 인스턴스 동시 실행 불가 | High | Architecture |
-| 5 | Java/Spring Boot 프로젝트 빌드 실패 | High | Agent Quality |
-| 6 | 빌드/테스트 수정 루프 타임아웃 | High | Agent Loop |
-| 7 | 도구 실행 이력이 대화에 보존되지 않음 | Critical | Conversation State |
-| 8 | 멀티라인 입력 미지원 | Medium | Input UX |
-| 9 | 입력 히스토리(위/아래 화살표) 미지원 | Medium | Input UX |
-| 10 | 컨텍스트 압축이 단순 절삭 방식 | Medium | Context Management |
+| #   | 문제                                  | 심각도   | 카테고리           |
+| --- | ------------------------------------- | -------- | ------------------ |
+| 1   | 로고가 스크롤되어 사라짐              | Medium   | UI/UX              |
+| 2   | 긴 텍스트에서 글씨 번쩍번쩍 깜빡임    | Critical | UI/Rendering       |
+| 3   | 작업 내용과 진행 상황이 분리됨        | Critical | UI/UX Architecture |
+| 4   | 다중 인스턴스 동시 실행 불가          | High     | Architecture       |
+| 5   | Java/Spring Boot 프로젝트 빌드 실패   | High     | Agent Quality      |
+| 6   | 빌드/테스트 수정 루프 타임아웃        | High     | Agent Loop         |
+| 7   | 도구 실행 이력이 대화에 보존되지 않음 | Critical | Conversation State |
+| 8   | 멀티라인 입력 미지원                  | Medium   | Input UX           |
+| 9   | 입력 히스토리(위/아래 화살표) 미지원  | Medium   | Input UX           |
+| 10  | 컨텍스트 압축이 단순 절삭 방식        | Medium   | Context Management |
 
 ---
 
@@ -46,6 +46,7 @@
 **Claude Code와의 차이**: Claude Code는 세션 시작 시 로고를 한 번 출력하지만, 핵심은 로고 자체가 아니라 **세션 컨텍스트 정보**(모델명, 프로젝트 경로, 세션 ID)가 항상 접근 가능하다는 점입니다. StatusBar에 이 정보가 통합되어 있어 로고가 스크롤되어도 컨텍스트를 잃지 않습니다.
 
 **개선 방향**:
+
 - 로고는 `<Static>`에 남기되, 핵심 정보(모델, 버전)는 `StatusBar`에 상시 표시
 - 또는 `/logo` 슬래시 명령으로 언제든 다시 볼 수 있게 제공
 - 세션 시작 시 한 번 출력하는 것은 유지하되, 사라지는 것 자체는 자연스러운 동작으로 수용
@@ -63,7 +64,7 @@
 ```tsx
 // 매 텍스트 델타마다 상태 업데이트 → 전체 UI 리렌더
 const onTextDelta = ({ text }: { text: string }) => {
-  setStreamingText((prev) => prev + text);  // 글자 1개마다 리렌더
+  setStreamingText((prev) => prev + text); // 글자 1개마다 리렌더
 };
 ```
 
@@ -71,10 +72,11 @@ const onTextDelta = ({ text }: { text: string }) => {
 // 80ms마다 스피너 프레임 변경 → 추가 리렌더
 const timer = setInterval(() => {
   setFrameIndex((prev) => (prev + 1) % SPINNER_FRAMES.length);
-}, FRAME_INTERVAL);  // 80ms
+}, FRAME_INTERVAL); // 80ms
 ```
 
 LLM 스트리밍 중에는:
+
 - **텍스트 델타**: 토큰 하나당 `setStreamingText` → 리렌더
 - **스피너**: 80ms마다 `setFrameIndex` → 리렌더
 - **ToolCallBlock 스피너**: 실행 중인 도구마다 80ms 리렌더
@@ -83,6 +85,7 @@ LLM 스트리밍 중에는:
 #### 원인 2: Ink의 전체 재그리기 방식
 
 Ink는 동적 영역(Static 아닌 부분)을 매 렌더마다 완전히 지우고 다시 그립니다. 내용이 터미널 높이를 초과하면:
+
 1. 이전 프레임 전체 삭제 (ANSI escape)
 2. 새 프레임 전체 출력
 3. 이 사이에 순간적으로 빈 화면이 보임 → **번쩍임**
@@ -138,6 +141,7 @@ Phase 2 (구조적):
 1. **도구 이력 소실**: `processMessage` 시작 시 `setToolCalls([])` 으로 이전 턴의 도구 호출을 모두 삭제합니다. 이전에 무슨 파일을 읽고, 무슨 명령을 실행했는지 알 수 없습니다.
 
 2. **텍스트와 도구의 시간적 분리**: Claude Code에서는 어시스턴트의 텍스트와 도구 호출이 시간순으로 인터리빙됩니다:
+
    ```
    assistant: 파일을 확인하겠습니다.
      [✓] Read src/App.tsx
@@ -146,7 +150,9 @@ Phase 2 (구조적):
      [✓] Ran npm test
    assistant: 테스트가 통과했습니다.
    ```
+
    dbcode에서는:
+
    ```
    assistant: 테스트가 통과했습니다.  ← 최종 텍스트만
      [✓] Read src/App.tsx              ← 도구 호출은 별도 블록
@@ -193,7 +199,13 @@ interface TurnActivity {
 type ActivityEntry =
   | { type: "assistant-text"; content: string }
   | { type: "tool-start"; id: string; name: string; args?: Record<string, unknown> }
-  | { type: "tool-complete"; id: string; name: string; status: "complete" | "error"; output?: string }
+  | {
+      type: "tool-complete";
+      id: string;
+      name: string;
+      status: "complete" | "error";
+      output?: string;
+    }
   | { type: "permission-request"; toolName: string }
   | { type: "permission-result"; allowed: boolean };
 ```
@@ -214,12 +226,14 @@ type ActivityEntry =
 **현재 상태**: dbcode는 단일 인스턴스만을 가정하고 설계되었습니다.
 
 **충돌 지점**:
+
 - `~/.dbcode/sessions/` 디렉토리의 세션 파일 동시 접근
 - `~/.dbcode/debug.log` 로그 파일 경합
 - 동일 프로젝트 디렉토리에서 복수 인스턴스의 파일 수정 충돌
 - CLI stdin/stdout 점유 (터미널당 1개는 자연스러움, 문제는 같은 프로젝트를 다른 터미널에서 열 때)
 
 **개선 방향**:
+
 ```
 1. 세션 격리: 인스턴스별 고유 세션 ID + 잠금 파일(lockfile) 도입
 2. 로그 격리: 인스턴스별 로그 파일 또는 로그 로테이션
@@ -235,15 +249,16 @@ type ActivityEntry =
 
 **testJava 프로젝트 분석 결과**:
 
-| 문제 | 원인 | 심각도 |
-|------|------|--------|
-| User 엔티티 중복 | 루트와 entity/ 디렉토리에 각각 다른 필드의 User 생성 | Critical |
-| 필드 불일치 | Controller가 `getUsername()` 호출하지만 엔티티에는 `name` 필드만 존재 | Critical |
-| QueryDSL 버전 | 5.0.0은 Spring Boot 3.x (Jakarta) 미지원, 6.0+ 필요 | High |
-| settings.gradle 누락 | Gradle 프로젝트 표준 파일 누락 | Low |
-| Gradle Wrapper 생성 실패 | 디렉토리에 기존 파일이 있어 `gradle init` 실패 | High |
+| 문제                     | 원인                                                                  | 심각도   |
+| ------------------------ | --------------------------------------------------------------------- | -------- |
+| User 엔티티 중복         | 루트와 entity/ 디렉토리에 각각 다른 필드의 User 생성                  | Critical |
+| 필드 불일치              | Controller가 `getUsername()` 호출하지만 엔티티에는 `name` 필드만 존재 | Critical |
+| QueryDSL 버전            | 5.0.0은 Spring Boot 3.x (Jakarta) 미지원, 6.0+ 필요                   | High     |
+| settings.gradle 누락     | Gradle 프로젝트 표준 파일 누락                                        | Low      |
+| Gradle Wrapper 생성 실패 | 디렉토리에 기존 파일이 있어 `gradle init` 실패                        | High     |
 
 **기존 E2E 테스트 (test-projects/spring-boot-api)에서도 유사 문제 발견**:
+
 - `repositories { mavenCentral() }` 누락
 - import 문 누락
 - Gradle 9.3.1 호환성 문제
@@ -283,6 +298,7 @@ type ActivityEntry =
 **문제**: Java/Flutter 프로젝트의 첫 빌드는 의존성 다운로드만 수 분이 소요됩니다. 빌드 오류가 발생하면 LLM이 파일을 수정하고 다시 빌드하는 과정에서 쉽게 타임아웃됩니다.
 
 **개선 방향**:
+
 ```
 1. 의존성 다운로드와 빌드 분리
    - `gradle dependencies` → timeout 600s (의존성)
@@ -312,6 +328,7 @@ if (lastMessage && lastMessage.role === "assistant") {
 **문제**: agent-loop은 내부적으로 모든 도구 호출과 결과를 `messages` 배열에 유지하지만, App.tsx에서는 최종 assistant 텍스트만 `conversation`에 추가합니다. 도구 호출 이력은 UI에서만 임시로 표시되고 영구 보존되지 않습니다.
 
 **개선 방향**:
+
 ```
 1. Conversation에 도구 호출 메시지도 포함
    - tool-call 메시지 (assistant가 도구를 호출함)
@@ -331,6 +348,7 @@ if (lastMessage && lastMessage.role === "assistant") {
 **Claude Code와의 차이**: Claude Code는 `Shift+Enter`로 줄바꿈, `Enter`로 제출을 분리합니다. 코드 붙여넣기, 여러 줄의 지시사항 입력에 필수적입니다.
 
 **개선 방향**:
+
 ```
 1. Shift+Enter 또는 Option+Enter → 줄바꿈 삽입
 2. Enter → 제출
@@ -345,6 +363,7 @@ if (lastMessage && lastMessage.role === "assistant") {
 **현재**: 위/아래 화살표 키에 대한 핸들러가 없습니다.
 
 **개선 방향**:
+
 ```
 1. 입력 히스토리 배열 관리 (세션 내)
 2. 위 화살표 → 이전 입력, 아래 화살표 → 다음 입력
@@ -360,6 +379,7 @@ if (lastMessage && lastMessage.role === "assistant") {
 현재 context-manager는 토큰 예산 초과 시 단순 절삭 방식을 사용합니다. 오래된 메시지를 잘라냅니다.
 
 **개선 방향**:
+
 ```
 1. 요약 기반 압축: LLM에게 이전 대화를 요약하도록 요청
 2. 중요도 기반 보존: 시스템 프롬프트, 최근 N턴, 핵심 결정 사항 보존
@@ -375,13 +395,13 @@ if (lastMessage && lastMessage.role === "assistant") {
 
 > 사용성에 직접적으로 영향을 미치는 즉각적 수정
 
-| # | 작업 | 파일 | 예상 복잡도 |
-|---|------|------|------------|
-| 0-1 | 텍스트 델타 버퍼링 (50ms 배치) | `App.tsx` | Low |
-| 0-2 | 스트리밍 중 마크다운 렌더링 비활성화 | `StreamingMessage.tsx` | Low |
-| 0-3 | 스피너 인터벌 200ms로 변경 | `Spinner.tsx`, `ToolCallBlock.tsx` | Low |
-| 0-4 | React.memo 적용 (MessageList, ToolCallBlock) | 각 컴포넌트 | Low |
-| 0-5 | StatusBar에 모델/버전 정보 상시 표시 | `StatusBar.tsx` | Low |
+| #   | 작업                                         | 파일                               | 예상 복잡도 |
+| --- | -------------------------------------------- | ---------------------------------- | ----------- |
+| 0-1 | 텍스트 델타 버퍼링 (50ms 배치)               | `App.tsx`                          | Low         |
+| 0-2 | 스트리밍 중 마크다운 렌더링 비활성화         | `StreamingMessage.tsx`             | Low         |
+| 0-3 | 스피너 인터벌 200ms로 변경                   | `Spinner.tsx`, `ToolCallBlock.tsx` | Low         |
+| 0-4 | React.memo 적용 (MessageList, ToolCallBlock) | 각 컴포넌트                        | Low         |
+| 0-5 | StatusBar에 모델/버전 정보 상시 표시         | `StatusBar.tsx`                    | Low         |
 
 ```typescript
 // 0-1: 텍스트 델타 버퍼링 예시
@@ -404,16 +424,17 @@ const onTextDelta = ({ text }: { text: string }) => {
 
 > 가장 큰 UX 개선 — 작업 내용과 진행 상황 통합
 
-| # | 작업 | 설명 |
-|---|------|------|
-| 1-1 | `TurnActivity` 데이터 모델 정의 | 턴 단위 활동 기록 타입 |
-| 1-2 | `ActivityCollector` 구현 | 이벤트를 시간순 ActivityEntry 배열로 수집 |
-| 1-3 | `TurnBlock` 컴포넌트 | 한 턴의 모든 활동을 그룹핑하여 표시 |
-| 1-4 | `ActivityFeed` 컴포넌트 | 완료된 턴 목록 (Static) + 현재 턴 (Dynamic) |
-| 1-5 | `MessageList` → `ActivityFeed` 교체 | App.tsx 레이아웃 재구성 |
-| 1-6 | 도구 호출 이력을 Conversation에 보존 | 세션 저장/복원에 포함 |
+| #   | 작업                                 | 설명                                        |
+| --- | ------------------------------------ | ------------------------------------------- |
+| 1-1 | `TurnActivity` 데이터 모델 정의      | 턴 단위 활동 기록 타입                      |
+| 1-2 | `ActivityCollector` 구현             | 이벤트를 시간순 ActivityEntry 배열로 수집   |
+| 1-3 | `TurnBlock` 컴포넌트                 | 한 턴의 모든 활동을 그룹핑하여 표시         |
+| 1-4 | `ActivityFeed` 컴포넌트              | 완료된 턴 목록 (Static) + 현재 턴 (Dynamic) |
+| 1-5 | `MessageList` → `ActivityFeed` 교체  | App.tsx 레이아웃 재구성                     |
+| 1-6 | 도구 호출 이력을 Conversation에 보존 | 세션 저장/복원에 포함                       |
 
 **목표 레이아웃**:
+
 ```
 ┌─────────────────────────────────────┐
 │ [Static] Logo (한 번 출력)           │
@@ -444,32 +465,32 @@ const onTextDelta = ({ text }: { text: string }) => {
 
 ### Phase 2: Input & Interaction (1-2주)
 
-| # | 작업 |
-|---|------|
-| 2-1 | 멀티라인 입력 (Shift+Enter) |
-| 2-2 | 입력 히스토리 (위/아래 화살표) |
-| 2-3 | 붙여넣기 감지 및 멀티라인 자동 전환 |
+| #   | 작업                                  |
+| --- | ------------------------------------- |
+| 2-1 | 멀티라인 입력 (Shift+Enter)           |
+| 2-2 | 입력 히스토리 (위/아래 화살표)        |
+| 2-3 | 붙여넣기 감지 및 멀티라인 자동 전환   |
 | 2-4 | Tab 자동완성 (파일 경로, 슬래시 명령) |
 
 ### Phase 3: Agent Quality (2-3주)
 
-| # | 작업 |
-|---|------|
-| 3-1 | 프로젝트 생성 후 자동 빌드 검증 |
-| 3-2 | 자기 수정 전략 개선 (점진적 수정) |
-| 3-3 | 프레임워크별 시스템 프롬프트 보강 |
+| #   | 작업                                |
+| --- | ----------------------------------- |
+| 3-1 | 프로젝트 생성 후 자동 빌드 검증     |
+| 3-2 | 자기 수정 전략 개선 (점진적 수정)   |
+| 3-3 | 프레임워크별 시스템 프롬프트 보강   |
 | 3-4 | 파일 일관성 검증 (중복 클래스 감지) |
-| 3-5 | 빌드 타임아웃 단계적 분리 |
+| 3-5 | 빌드 타임아웃 단계적 분리           |
 
 ### Phase 4: Multi-Instance & Context (2-3주)
 
-| # | 작업 |
-|---|------|
+| #   | 작업                                             |
+| --- | ------------------------------------------------ |
 | 4-1 | 인스턴스 레지스트리 (`~/.dbcode/instances.json`) |
-| 4-2 | 세션 파일 잠금 (lockfile) |
-| 4-3 | 같은 디렉토리 다중 접근 경고 |
-| 4-4 | 요약 기반 컨텍스트 압축 |
-| 4-5 | 중요도 기반 메시지 보존 |
+| 4-2 | 세션 파일 잠금 (lockfile)                        |
+| 4-3 | 같은 디렉토리 다중 접근 경고                     |
+| 4-4 | 요약 기반 컨텍스트 압축                          |
+| 4-5 | 중요도 기반 메시지 보존                          |
 
 ---
 
@@ -589,15 +610,15 @@ const validators: BuildValidator[] = [
 
 ## 5. Claude Code와의 핵심 차이 요약
 
-| 영역 | Claude Code | dbcode 현재 | 개선 목표 |
-|------|-------------|-------------|-----------|
-| **턴 표시** | 텍스트+도구 인터리빙 | 텍스트와 도구 분리 | Activity Feed |
-| **도구 이력** | 전체 세션 보존 | 현재 턴만 임시 표시 | 영구 보존 |
-| **렌더링** | 안정적 (자체 터미널 제어) | Ink 기반 깜빡임 | 버퍼링 + Static 최적화 |
-| **입력** | 멀티라인, 히스토리 | 단일라인만 | Phase 2에서 구현 |
-| **빌드 검증** | 자동 빌드/테스트 | 사용자가 요청해야 실행 | 자동 검증 |
-| **다중 인스턴스** | 지원 (세션 격리) | 미지원 | Phase 4에서 구현 |
-| **컨텍스트 관리** | 요약 기반 압축 | 단순 절삭 | 요약 기반으로 전환 |
+| 영역              | Claude Code               | dbcode 현재            | 개선 목표              |
+| ----------------- | ------------------------- | ---------------------- | ---------------------- |
+| **턴 표시**       | 텍스트+도구 인터리빙      | 텍스트와 도구 분리     | Activity Feed          |
+| **도구 이력**     | 전체 세션 보존            | 현재 턴만 임시 표시    | 영구 보존              |
+| **렌더링**        | 안정적 (자체 터미널 제어) | Ink 기반 깜빡임        | 버퍼링 + Static 최적화 |
+| **입력**          | 멀티라인, 히스토리        | 단일라인만             | Phase 2에서 구현       |
+| **빌드 검증**     | 자동 빌드/테스트          | 사용자가 요청해야 실행 | 자동 검증              |
+| **다중 인스턴스** | 지원 (세션 격리)          | 미지원                 | Phase 4에서 구현       |
+| **컨텍스트 관리** | 요약 기반 압축            | 단순 절삭              | 요약 기반으로 전환     |
 
 ---
 

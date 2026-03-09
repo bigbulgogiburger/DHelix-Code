@@ -5,7 +5,11 @@ interface ToolDisplayConfig {
   readonly complete: string;
   readonly extractDetail?: (args?: Record<string, unknown>, output?: string) => string | undefined;
   /** Extract a preview snippet (diff, output preview, etc.) shown below the status line */
-  readonly extractPreview?: (args?: Record<string, unknown>, output?: string, status?: ToolStatus) => string | undefined;
+  readonly extractPreview?: (
+    args?: Record<string, unknown>,
+    output?: string,
+    status?: ToolStatus,
+  ) => string | undefined;
 }
 
 /** Shorten a file path to just filename for display, keep full if short enough */
@@ -38,7 +42,10 @@ function formatContextDiff(
 
   // Before-context lines
   for (let i = 0; i < changeOffset && i < contextLines.length; i++) {
-    if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+    if (count >= maxPreviewLines) {
+      result.push("  …");
+      return result.join("\n");
+    }
     const ln = String(contextStartLine + i).padStart(4, " ");
     result.push(`${ln}   ${contextLines[i]}`);
     count++;
@@ -49,7 +56,10 @@ function formatContextDiff(
     const oldLines = oldStr.split("\n");
     let removedLineNum = changeLineNumber;
     for (const line of oldLines) {
-      if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+      if (count >= maxPreviewLines) {
+        result.push("  …");
+        return result.join("\n");
+      }
       const ln = String(removedLineNum).padStart(4, " ");
       result.push(`${ln} - ${line}`);
       removedLineNum++;
@@ -60,7 +70,10 @@ function formatContextDiff(
   // Added lines (from new_string)
   let addedLineNum = changeLineNumber;
   for (const line of addedLines) {
-    if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+    if (count >= maxPreviewLines) {
+      result.push("  …");
+      return result.join("\n");
+    }
     const ln = String(addedLineNum).padStart(4, " ");
     result.push(`${ln} + ${line}`);
     addedLineNum++;
@@ -69,7 +82,10 @@ function formatContextDiff(
 
   // After-context lines
   for (let i = afterStart; i < contextLines.length; i++) {
-    if (count >= maxPreviewLines) { result.push("  …"); return result.join("\n"); }
+    if (count >= maxPreviewLines) {
+      result.push("  …");
+      return result.join("\n");
+    }
     const ln = String(contextStartLine + i).padStart(4, " ");
     result.push(`${ln}   ${contextLines[i]}`);
     count++;
@@ -85,8 +101,11 @@ function formatEditDiff(args?: Record<string, unknown>, _output?: string): strin
   if (!oldStr && !newStr) return undefined;
 
   const lineNumber = typeof args?._lineNumber === "number" ? args._lineNumber : 1;
-  const contextLines = Array.isArray(args?._contextLines) ? args._contextLines as string[] : undefined;
-  const contextStartLine = typeof args?._contextStartLine === "number" ? args._contextStartLine : undefined;
+  const contextLines = Array.isArray(args?._contextLines)
+    ? (args._contextLines as string[])
+    : undefined;
+  const contextStartLine =
+    typeof args?._contextStartLine === "number" ? args._contextStartLine : undefined;
 
   // If we have context lines from file-edit metadata, build a rich diff
   if (contextLines && contextStartLine) {
@@ -103,7 +122,10 @@ function formatEditDiff(args?: Record<string, unknown>, _output?: string): strin
   const newLines = newStr ? newStr.split("\n") : [];
 
   for (const line of oldLines) {
-    if (count >= maxPreviewLines) { lines.push("  …"); break; }
+    if (count >= maxPreviewLines) {
+      lines.push("  …");
+      break;
+    }
     const ln = String(currentLine).padStart(4, " ");
     lines.push(`${ln} - ${line}`);
     currentLine++;
@@ -112,7 +134,10 @@ function formatEditDiff(args?: Record<string, unknown>, _output?: string): strin
 
   currentLine = lineNumber;
   for (const line of newLines) {
-    if (count >= maxPreviewLines) { lines.push("  …"); break; }
+    if (count >= maxPreviewLines) {
+      lines.push("  …");
+      break;
+    }
     const ln = String(currentLine).padStart(4, " ");
     lines.push(`${ln} + ${line}`);
     currentLine++;
@@ -138,7 +163,11 @@ function formatChangeSummary(args?: Record<string, unknown>): string | undefined
 }
 
 /** Format bash output preview */
-function formatBashPreview(_args?: Record<string, unknown>, output?: string, status?: ToolStatus): string | undefined {
+function formatBashPreview(
+  _args?: Record<string, unknown>,
+  output?: string,
+  status?: ToolStatus,
+): string | undefined {
   if (!output || status === "running") return undefined;
   const lines = output.trim().split("\n");
   if (lines.length === 0) return undefined;
@@ -153,7 +182,8 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     running: "Reading",
     complete: "Read",
     extractDetail: (args, output) => {
-      const filePath = typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+      const filePath =
+        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
       if (!filePath) return undefined;
       if (output) {
         const lines = output.trim().split("\n");
@@ -167,7 +197,8 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     running: "Writing",
     complete: "Wrote",
     extractDetail: (args) => {
-      const filePath = typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+      const filePath =
+        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
       if (!filePath) return undefined;
       const content = typeof args?.content === "string" ? args.content : undefined;
       if (content) {
@@ -183,7 +214,8 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     running: "Editing",
     complete: "Edited",
     extractDetail: (args) => {
-      const filePath = typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+      const filePath =
+        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
       if (!filePath) return undefined;
       const replaceAll = args?.replace_all === true;
       const summary = formatChangeSummary(args);
@@ -216,7 +248,10 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     extractDetail: (args, output) => {
       const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
       if (output) {
-        const lines = output.trim().split("\n").filter((l) => l.length > 0);
+        const lines = output
+          .trim()
+          .split("\n")
+          .filter((l) => l.length > 0);
         const count = `${lines.length} file${lines.length === 1 ? "" : "s"}`;
         return pattern ? `${count} matching ${pattern}` : count;
       }
@@ -229,7 +264,10 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     extractDetail: (args, output) => {
       const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
       if (output) {
-        const lines = output.trim().split("\n").filter((l) => l.length > 0);
+        const lines = output
+          .trim()
+          .split("\n")
+          .filter((l) => l.length > 0);
         const matchInfo = `${lines.length} result${lines.length === 1 ? "" : "s"}`;
         return pattern ? `${pattern} — ${matchInfo}` : matchInfo;
       }
@@ -239,22 +277,23 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   mkdir: {
     running: "Creating directory",
     complete: "Created directory",
-    extractDetail: (args) => typeof args?.path === "string" ? shortenPath(args.path) : undefined,
+    extractDetail: (args) => (typeof args?.path === "string" ? shortenPath(args.path) : undefined),
   },
   web_fetch: {
     running: "Fetching",
     complete: "Fetched",
-    extractDetail: (args) => typeof args?.url === "string" ? args.url : undefined,
+    extractDetail: (args) => (typeof args?.url === "string" ? args.url : undefined),
   },
   list_dir: {
     running: "Listing",
     complete: "Listed",
-    extractDetail: (args) => typeof args?.path === "string" ? shortenPath(args.path) : undefined,
+    extractDetail: (args) => (typeof args?.path === "string" ? shortenPath(args.path) : undefined),
   },
   notebook_edit: {
     running: "Editing notebook",
     complete: "Edited notebook",
-    extractDetail: (args) => typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+    extractDetail: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
   },
   ask_user: {
     running: "Asking",

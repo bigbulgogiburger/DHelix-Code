@@ -8,9 +8,7 @@ import { spawnSubagent, type SubagentType } from "../../subagents/spawner.js";
 
 const paramSchema = z.object({
   prompt: z.string().describe("The task or question for the subagent to work on"),
-  description: z
-    .string()
-    .describe("Brief human-readable description of this subagent's purpose"),
+  description: z.string().describe("Brief human-readable description of this subagent's purpose"),
   subagent_type: z
     .enum(["explore", "plan", "general"])
     .describe(

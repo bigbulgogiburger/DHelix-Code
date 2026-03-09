@@ -33,7 +33,11 @@ function useSpinner(active: boolean): string {
 }
 
 /** Parse a diff line into its components: line number, marker (+/-/space), and content */
-function parseDiffLine(line: string): { lineNum: string; marker: "+" | "-" | " "; content: string } {
+function parseDiffLine(line: string): {
+  lineNum: string;
+  marker: "+" | "-" | " ";
+  content: string;
+} {
   // Match pattern: optional leading spaces + digits + space + marker + space + content
   // e.g. "  107 - old code" or "  108 + new code" or "  …"
   const match = line.match(/^(\s*\d+)\s([+-])\s(.*)$/);
@@ -75,7 +79,7 @@ function DiffPreview({ preview }: { readonly preview: string }) {
         if (lineNum) {
           return (
             <Text key={i}>
-              <Text dimColor>{lineNum}   </Text>
+              <Text dimColor>{lineNum} </Text>
               <Text color="gray">{content}</Text>
             </Text>
           );

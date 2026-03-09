@@ -73,7 +73,11 @@ export function SlashCommandMenu({
 
   return (
     <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1}>
-      {hasMoreAbove && <Text color="gray" dimColor>{"  ↑ more"}</Text>}
+      {hasMoreAbove && (
+        <Text color="gray" dimColor>
+          {"  ↑ more"}
+        </Text>
+      )}
       {visibleItems.map((cmd, idx) => {
         const actualIndex = scrollOffset + idx;
         const isSelected = actualIndex === selectedIndex;
@@ -85,12 +89,20 @@ export function SlashCommandMenu({
             <Text color={isSelected ? "cyan" : "gray"} bold={isSelected} dimColor={!isSelected}>
               {"/" + cmd.name}
             </Text>
-            <Text color="gray" dimColor>{" — "}</Text>
-            <Text color="gray" dimColor>{cmd.description}</Text>
+            <Text color="gray" dimColor>
+              {" — "}
+            </Text>
+            <Text color="gray" dimColor>
+              {cmd.description}
+            </Text>
           </Box>
         );
       })}
-      {hasMoreBelow && <Text color="gray" dimColor>{"  ↓ more"}</Text>}
+      {hasMoreBelow && (
+        <Text color="gray" dimColor>
+          {"  ↓ more"}
+        </Text>
+      )}
     </Box>
   );
 }

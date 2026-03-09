@@ -2,11 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdtemp, rm, mkdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import {
-  SessionManager,
-  atomicWrite,
-  withFileLock,
-} from "../../../src/core/session-manager.js";
+import { SessionManager, atomicWrite, withFileLock } from "../../../src/core/session-manager.js";
 
 describe("SessionManager", () => {
   let tempDir: string;

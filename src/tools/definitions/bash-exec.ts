@@ -38,10 +38,7 @@ function isInteractiveCommand(command: string): boolean {
 
 const paramSchema = z.object({
   command: z.string().describe("Shell command to execute"),
-  description: z
-    .string()
-    .optional()
-    .describe("Brief description of what this command does"),
+  description: z.string().optional().describe("Brief description of what this command does"),
   run_in_background: z
     .boolean()
     .optional()

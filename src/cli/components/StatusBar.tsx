@@ -38,7 +38,7 @@ const MODEL_PRICING: Record<string, readonly [number, number]> = {
   "claude-3-5-haiku-20241022": [0.8, 4],
   "claude-3-opus-20240229": [15, 75],
   // OpenAI reasoning
-  "o1": [15, 60],
+  o1: [15, 60],
   "o1-mini": [3, 12],
   "o3-mini": [1.1, 4.4],
 };
@@ -46,7 +46,9 @@ const MODEL_PRICING: Record<string, readonly [number, number]> = {
 /** Calculate session cost from token counts */
 function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
   // Try exact match, then prefix match
-  const pricing = MODEL_PRICING[model] ?? Object.entries(MODEL_PRICING).find(([key]) => model.startsWith(key))?.[1];
+  const pricing =
+    MODEL_PRICING[model] ??
+    Object.entries(MODEL_PRICING).find(([key]) => model.startsWith(key))?.[1];
   if (!pricing) return 0;
   const [inputPricePerM, outputPricePerM] = pricing;
   return (inputTokens / 1_000_000) * inputPricePerM + (outputTokens / 1_000_000) * outputPricePerM;
@@ -84,12 +86,12 @@ export const StatusBar = React.memo(function StatusBar({
   const usage = maxTokens > 0 ? Math.round((tokenCount / maxTokens) * 100) : 0;
   const ratio = maxTokens > 0 ? tokenCount / maxTokens : 0;
 
-  const usageColor = useMemo(
-    () => (usage > 80 ? "red" : usage > 60 ? "yellow" : "green"),
-    [usage],
-  );
+  const usageColor = useMemo(() => (usage > 80 ? "red" : usage > 60 ? "yellow" : "green"), [usage]);
 
-  const cost = useMemo(() => calculateCost(model, inputTokens, outputTokens), [model, inputTokens, outputTokens]);
+  const cost = useMemo(
+    () => calculateCost(model, inputTokens, outputTokens),
+    [model, inputTokens, outputTokens],
+  );
   const costStr = formatCost(cost);
 
   const displayName = modelName ?? model;
@@ -97,7 +99,12 @@ export const StatusBar = React.memo(function StatusBar({
   const contextWarning = usage > 80;
 
   return (
-    <Box borderStyle="single" borderColor={contextWarning ? "red" : "gray"} paddingX={1} justifyContent="space-between">
+    <Box
+      borderStyle="single"
+      borderColor={contextWarning ? "red" : "gray"}
+      paddingX={1}
+      justifyContent="space-between"
+    >
       <Box gap={1}>
         <Text color="blue">{displayName}</Text>
         <Text color="gray">v{VERSION}</Text>
@@ -107,7 +114,11 @@ export const StatusBar = React.memo(function StatusBar({
         <Text color={usageColor}>
           {usageBar(ratio)} {usage}%
         </Text>
-        {contextWarning && <Text color="red" bold>{"!! Context " + usage + "%"}</Text>}
+        {contextWarning && (
+          <Text color="red" bold>
+            {"!! Context " + usage + "%"}
+          </Text>
+        )}
         {costStr.length > 0 && <Text color="cyan">{costStr}</Text>}
         {effortLevel ? <Text color="magenta">[{effortLevel}]</Text> : null}
         {permissionMode ? <Text color="green">[{permissionMode}]</Text> : null}

@@ -22,10 +22,7 @@ export const keybindingsCommand: SlashCommand = {
     const effective = getEffectiveBindings(userConfig);
     const hasUserConfig = Object.keys(userConfig).length > 0;
 
-    const lines: string[] = [
-      "Keyboard Shortcuts:",
-      "",
-    ];
+    const lines: string[] = ["Keyboard Shortcuts:", ""];
 
     // Display effective bindings grouped by action
     for (const [combo, action] of Object.entries(effective)) {

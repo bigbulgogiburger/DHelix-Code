@@ -41,7 +41,10 @@ vi.mock("react", () => {
 vi.mock("ink", () => ({
   Box: () => null,
   Text: () => null,
-  useInput: (handler: (_input: string, key: Record<string, boolean>) => void, opts?: { isActive?: boolean }) => {
+  useInput: (
+    handler: (_input: string, key: Record<string, boolean>) => void,
+    opts?: { isActive?: boolean },
+  ) => {
     if (opts?.isActive !== false) {
       inputHandler = handler;
     }

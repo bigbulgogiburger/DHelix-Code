@@ -83,10 +83,7 @@ describe("bash_exec tool", () => {
 
   describe("interactive command detection", () => {
     it("should reject git rebase -i", async () => {
-      const result = await bashExecTool.execute(
-        { command: "git rebase -i HEAD~3" },
-        context,
-      );
+      const result = await bashExecTool.execute({ command: "git rebase -i HEAD~3" }, context);
       expect(result.isError).toBe(true);
       expect(result.output).toContain("interactive");
     });
@@ -98,19 +95,13 @@ describe("bash_exec tool", () => {
     });
 
     it("should reject vim", async () => {
-      const result = await bashExecTool.execute(
-        { command: "vim somefile.txt" },
-        context,
-      );
+      const result = await bashExecTool.execute({ command: "vim somefile.txt" }, context);
       expect(result.isError).toBe(true);
       expect(result.output).toContain("interactive");
     });
 
     it("should reject nano", async () => {
-      const result = await bashExecTool.execute(
-        { command: "nano somefile.txt" },
-        context,
-      );
+      const result = await bashExecTool.execute({ command: "nano somefile.txt" }, context);
       expect(result.isError).toBe(true);
       expect(result.output).toContain("interactive");
     });
@@ -122,10 +113,7 @@ describe("bash_exec tool", () => {
     });
 
     it("should allow non-interactive git commands", async () => {
-      const result = await bashExecTool.execute(
-        { command: "git status" },
-        context,
-      );
+      const result = await bashExecTool.execute({ command: "git status" }, context);
       expect(result.output).not.toContain("interactive");
     });
   });

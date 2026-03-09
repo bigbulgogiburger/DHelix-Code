@@ -23,15 +23,15 @@
 
 dbcode는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 있으나, 실 사용 테스트에서 다음의 핵심 문제가 발견됨:
 
-| 구분 | 문제 | 심각도 | 상태 |
-|------|------|--------|------|
-| P0 | Slash command 입력 시 키보드 완전 freeze | Critical | 미수정 |
-| P0 | `/init` 명령어 미등록 | Critical | 미수정 |
-| P1 | Slash command 실시간 필터링 미지원 | High | 미수정 |
-| P1 | Slash menu 스크롤 뷰포트 미지원 (전체 목록 한번에 표시) | High | 미수정 |
-| P1 | Enter 키 newline으로 동작 | High | **수정 완료** |
-| P2 | E2E 테스트 안정성 (타임아웃, 레이트리밋) | Medium | 미수정 |
-| P2 | DBCODE.md 자동 참조 부재 | Medium | 미수정 |
+| 구분 | 문제                                                    | 심각도   | 상태          |
+| ---- | ------------------------------------------------------- | -------- | ------------- |
+| P0   | Slash command 입력 시 키보드 완전 freeze                | Critical | 미수정        |
+| P0   | `/init` 명령어 미등록                                   | Critical | 미수정        |
+| P1   | Slash command 실시간 필터링 미지원                      | High     | 미수정        |
+| P1   | Slash menu 스크롤 뷰포트 미지원 (전체 목록 한번에 표시) | High     | 미수정        |
+| P1   | Enter 키 newline으로 동작                               | High     | **수정 완료** |
+| P2   | E2E 테스트 안정성 (타임아웃, 레이트리밋)                | Medium   | 미수정        |
+| P2   | DBCODE.md 자동 참조 부재                                | Medium   | 미수정        |
 
 ---
 
@@ -42,11 +42,12 @@ dbcode는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 
 **현상**: `/`를 입력하면 SlashCommandMenu가 표시되면서 이후 모든 키 입력이 불가능해짐.
 
 **근본 원인** (`src/cli/App.tsx:479`):
+
 ```tsx
 <UserInput
   onSubmit={handleSubmit}
   onChange={setInputValue}
-  isDisabled={slashMenuVisible}  // ← 이것이 문제
+  isDisabled={slashMenuVisible} // ← 이것이 문제
 />
 ```
 
@@ -56,12 +57,14 @@ dbcode는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 
 **Claude Code 동작**: `/` 입력 후에도 자유롭게 타이핑 가능. 입력한 문자에 따라 메뉴가 실시간 필터링됨. Tab/Enter로 선택, Escape로 취소.
 
 **수정 방안**:
+
 1. `isDisabled={slashMenuVisible}` 제거 — UserInput은 항상 활성 상태 유지
 2. SlashCommandMenu는 `onChange`로 전달되는 `inputValue`에 반응하여 필터링만 수행
 3. SlashCommandMenu의 `useInput`은 navigation(↑↓) 및 selection(Tab/Enter)만 처리
 4. Enter는 UserInput에서 정상적으로 submit → 이미 `commandRegistry.isCommand()`로 라우팅됨
 
 **변경 파일**:
+
 - `src/cli/App.tsx` — `isDisabled` 로직 변경
 - `src/cli/components/SlashCommandMenu.tsx` — 캐릭터 입력 처리 제거 (이미 없음, 구조만 확인)
 - `src/cli/components/UserInput.tsx` — isDisabled 조건 조정 불필요 (항상 활성)
@@ -73,6 +76,7 @@ dbcode는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 
 **근본 원인**: `src/commands/init.ts`는 `initProject()` 함수만 export하며, `SlashCommand` 인터페이스를 구현하지 않음. `src/index.ts:222-247`의 등록 목록에도 없음.
 
 **수정 방안**:
+
 ```typescript
 // src/commands/init.ts 에 추가
 export const initCommand: SlashCommand = {
@@ -97,24 +101,25 @@ export const initCommand: SlashCommand = {
 
 ### 3.1 현재 상태 vs Claude Code
 
-| 기능 | Claude Code | dbcode | Gap |
-|------|-------------|--------|-----|
-| 등록된 명령어 수 | 70+ | 22 | 확장 필요 |
-| 실시간 필터링 | O | X | **필수** |
-| 입력 중 타이핑 | O | X (freeze) | **필수** |
-| 스크롤 뷰포트 (N개만 표시 + 스크롤) | O (5-8개 윈도우) | X (전체 나열) | **필수** |
-| 메뉴 위치 | 입력줄 아래 | 입력줄 위 | **필수** |
-| Tab 자동완성 | O | O | 동일 |
-| Escape 취소 | O | O | 동일 |
-| `/init` | O | X | **필수** |
-| 인자 처리 | O (예: /model sonnet) | O | 동일 |
-| 명령어 별칭 | 일부 지원 | X | P3 |
+| 기능                                | Claude Code           | dbcode        | Gap       |
+| ----------------------------------- | --------------------- | ------------- | --------- |
+| 등록된 명령어 수                    | 70+                   | 22            | 확장 필요 |
+| 실시간 필터링                       | O                     | X             | **필수**  |
+| 입력 중 타이핑                      | O                     | X (freeze)    | **필수**  |
+| 스크롤 뷰포트 (N개만 표시 + 스크롤) | O (5-8개 윈도우)      | X (전체 나열) | **필수**  |
+| 메뉴 위치                           | 입력줄 아래           | 입력줄 위     | **필수**  |
+| Tab 자동완성                        | O                     | O             | 동일      |
+| Escape 취소                         | O                     | O             | 동일      |
+| `/init`                             | O                     | X             | **필수**  |
+| 인자 처리                           | O (예: /model sonnet) | O             | 동일      |
+| 명령어 별칭                         | 일부 지원             | X             | P3        |
 
 ### 3.2 실시간 필터링 구현
 
 **현재**: `prefix`가 `App.tsx`의 `inputValue`에서 전달되지만, `slashMenuVisible` 조건이 `!inputValue.includes(" ")`이므로 오직 `/` 뒤에 공백이 없을 때만 메뉴 표시. 하지만 입력이 freeze되어 필터링 자체가 불가능.
 
 **수정 후 동작 흐름**:
+
 ```
 1. 사용자가 `/` 입력
 2. inputValue = "/" → slashMenuVisible = true → 전체 명령어 목록 표시
@@ -125,6 +130,7 @@ export const initCommand: SlashCommand = {
 ```
 
 **핵심 변경**:
+
 - `App.tsx`: `isDisabled` prop 제거 또는 `false` 고정
 - `SlashCommandMenu.tsx`: `getMatchingCommands()`는 이미 올바르게 필터링함 — 변경 불필요
 - `UserInput`과 `SlashCommandMenu`가 동시에 `useInput` 활성화되는 충돌 해결:
@@ -136,6 +142,7 @@ export const initCommand: SlashCommand = {
 Ink 5.x에서는 여러 컴포넌트가 동시에 `useInput`을 사용할 수 있으나, 키 이벤트가 모든 활성 훅에 브로드캐스트됨.
 
 **해결 패턴** (Claude Code 참조):
+
 ```tsx
 // UserInput에서: slash menu가 보일 때 ↑↓ 키를 무시
 if (slashMenuVisible && (key.upArrow || key.downArrow || key.tab)) {
@@ -145,13 +152,24 @@ if (slashMenuVisible && (key.upArrow || key.downArrow || key.tab)) {
 
 ```tsx
 // SlashCommandMenu에서: 문자 입력은 무시 (UserInput이 처리)
-useInput((_input, key) => {
-  if (key.upArrow) { /* navigate */ }
-  if (key.downArrow) { /* navigate */ }
-  if (key.tab || key.return) { /* select */ }
-  if (key.escape) { /* close */ }
-  // 문자 입력(_input)은 무시 → UserInput으로 흘러감
-}, { isActive: visible });
+useInput(
+  (_input, key) => {
+    if (key.upArrow) {
+      /* navigate */
+    }
+    if (key.downArrow) {
+      /* navigate */
+    }
+    if (key.tab || key.return) {
+      /* select */
+    }
+    if (key.escape) {
+      /* close */
+    }
+    // 문자 입력(_input)은 무시 → UserInput으로 흘러감
+  },
+  { isActive: visible },
+);
 ```
 
 ### 3.4 스크롤 뷰포트 + 메뉴 위치 개선
@@ -228,12 +246,14 @@ function SlashCommandMenu({ commands, prefix, ... }) {
 #### 메뉴 위치 변경 (App.tsx 렌더링 순서)
 
 **현재** (메뉴가 위, 입력이 아래):
+
 ```tsx
 {slashMenuVisible && <SlashCommandMenu ... />}  // ← 위
 <UserInput ... />                                  // ← 아래
 ```
 
 **수정** (입력이 위, 메뉴가 아래 = 드롭다운):
+
 ```tsx
 <UserInput ... />                                  // ← 위 (입력줄)
 {slashMenuVisible && <SlashCommandMenu ... />}  // ← 아래 (드롭다운)
@@ -243,16 +263,16 @@ function SlashCommandMenu({ commands, prefix, ... }) {
 
 Claude Code에 있으나 dbcode에 없는 주요 명령어:
 
-| 명령어 | 설명 | 우선순위 |
-|--------|------|----------|
-| `/init` | 프로젝트 초기화 | P0 — 즉시 |
-| `/status` | 현재 세션 상태 | P2 |
-| `/permissions` | 권한 설정 보기/변경 | P2 |
-| `/logout` | 인증 해제 | P3 |
-| `/memory` | 세션 메모리 관리 | P3 |
-| `/plan` | 구현 계획 모드 | P2 |
-| `/undo` | 마지막 변경 되돌리기 | P2 |
-| `/terminal-setup` | 터미널 설정 가이드 | P3 |
+| 명령어            | 설명                 | 우선순위  |
+| ----------------- | -------------------- | --------- |
+| `/init`           | 프로젝트 초기화      | P0 — 즉시 |
+| `/status`         | 현재 세션 상태       | P2        |
+| `/permissions`    | 권한 설정 보기/변경  | P2        |
+| `/logout`         | 인증 해제            | P3        |
+| `/memory`         | 세션 메모리 관리     | P3        |
+| `/plan`           | 구현 계획 모드       | P2        |
+| `/undo`           | 마지막 변경 되돌리기 | P2        |
+| `/terminal-setup` | 터미널 설정 가이드   | P3        |
 
 ---
 
@@ -263,6 +283,7 @@ Claude Code에 있으나 dbcode에 없는 주요 명령어:
 **문제**: 일부 터미널에서 Enter가 `\n`(linefeed)으로 전달되는데, Ink의 `parseKeypress`가 `\r` → `name='return'`, `\n` → `name='enter'`로 다르게 매핑. `key.return`만 체크하면 `\n` 전송 터미널에서 Enter가 submit되지 않음.
 
 **수정 완료** (`src/cli/components/UserInput.tsx:52`):
+
 ```typescript
 const isEnter = key.return || input === "\n" || input === "\r";
 ```
@@ -271,15 +292,15 @@ const isEnter = key.return || input === "\n" || input === "\r";
 
 ### 4.2 추가 입력 개선 사항
 
-| 항목 | 설명 | 우선순위 |
-|------|------|----------|
-| 한글 조합 입력 | IME 조합 중인 한글이 커서 위치와 맞지 않을 수 있음 | P2 |
-| 붙여넣기 (multi-char) | 한 번에 여러 문자 붙여넣기 시 올바르게 삽입 | P1 — 확인 필요 |
-| Ctrl+W (단어 삭제) | readline 표준 단축키 미지원 | P2 |
-| Ctrl+L (화면 클리어) | 터미널 클리어 미지원 | P3 |
-| Alt+←/→ (단어 이동) | 단어 단위 커서 이동 미지원 | P2 |
-| Ctrl+D (EOF/exit) | 빈 줄에서 exit, 문자 있으면 delete forward | P2 |
-| Home/End 키 | Home → 줄 시작, End → 줄 끝 (Ctrl+A/E와 동일) | P3 |
+| 항목                  | 설명                                               | 우선순위       |
+| --------------------- | -------------------------------------------------- | -------------- |
+| 한글 조합 입력        | IME 조합 중인 한글이 커서 위치와 맞지 않을 수 있음 | P2             |
+| 붙여넣기 (multi-char) | 한 번에 여러 문자 붙여넣기 시 올바르게 삽입        | P1 — 확인 필요 |
+| Ctrl+W (단어 삭제)    | readline 표준 단축키 미지원                        | P2             |
+| Ctrl+L (화면 클리어)  | 터미널 클리어 미지원                               | P3             |
+| Alt+←/→ (단어 이동)   | 단어 단위 커서 이동 미지원                         | P2             |
+| Ctrl+D (EOF/exit)     | 빈 줄에서 exit, 문자 있으면 delete forward         | P2             |
+| Home/End 키           | Home → 줄 시작, End → 줄 끝 (Ctrl+A/E와 동일)      | P3             |
 
 ---
 
@@ -289,17 +310,17 @@ const isEnter = key.return || input === "\n" || input === "\r";
 
 Spring Boot + React E2E 테스트 (9턴) 결과: **5 pass / 4 fail**
 
-| 턴 | 이름 | 결과 | 원인 |
-|----|------|------|------|
-| 0 | DBCODE.md 초기화 | PASS | |
-| 1 | Backend scaffold | FAIL | `gradle init` 사용 → 예상과 다른 디렉토리 구조 |
-| 2 | REST API | PASS | |
-| 3 | Frontend scaffold | PASS | |
-| 4 | Frontend components | PASS | |
-| 5 | Integration | PASS | |
-| 6 | Build validation | FAIL | Turn 1 구조 문제의 연쇄 효과 |
-| 7 | Tests + coverage | FAIL | 300초 타임아웃 (Gradle 테스트 느림) |
-| 8 | DBCODE.md compliance | FAIL | OpenAI 429 레이트 리밋 (65회 API 호출 후) |
+| 턴  | 이름                 | 결과 | 원인                                           |
+| --- | -------------------- | ---- | ---------------------------------------------- |
+| 0   | DBCODE.md 초기화     | PASS |                                                |
+| 1   | Backend scaffold     | FAIL | `gradle init` 사용 → 예상과 다른 디렉토리 구조 |
+| 2   | REST API             | PASS |                                                |
+| 3   | Frontend scaffold    | PASS |                                                |
+| 4   | Frontend components  | PASS |                                                |
+| 5   | Integration          | PASS |                                                |
+| 6   | Build validation     | FAIL | Turn 1 구조 문제의 연쇄 효과                   |
+| 7   | Tests + coverage     | FAIL | 300초 타임아웃 (Gradle 테스트 느림)            |
+| 8   | DBCODE.md compliance | FAIL | OpenAI 429 레이트 리밋 (65회 API 호출 후)      |
 
 ### 5.2 DBCODE.md 자동 참조 부재
 
@@ -308,6 +329,7 @@ Spring Boot + React E2E 테스트 (9턴) 결과: **5 pass / 4 fail**
 프롬프트에 "Refer to DBCODE.md"라고 명시해도 agent가 자발적으로 file_read를 호출하지 않는 경우가 있음.
 
 **수정 방안**:
+
 1. **시스템 프롬프트에 DBCODE.md 내용 삽입**: `buildSystemPrompt()`에서 DBCODE.md가 존재하면 내용을 자동으로 시스템 프롬프트에 포함
 2. **이미 `projectInstructions` 기능 존재** — `loadInstructions()`가 DBCODE.md를 읽어서 `buildSystemPrompt()`에 전달하고 있음
 3. **문제**: E2E 테스트의 `buildSystemPrompt()` 호출에서 `projectInstructions`를 전달하지 않음
@@ -315,13 +337,13 @@ Spring Boot + React E2E 테스트 (9턴) 결과: **5 pass / 4 fail**
 
 ### 5.3 Agent Loop 개선 사항
 
-| 항목 | 설명 | 우선순위 |
-|------|------|----------|
-| 레이트 리밋 재시도 | 429 응답 시 exponential backoff 재시도 | P1 |
-| 컨텍스트 압축 | 긴 세션에서 이전 턴 요약 → 토큰 절약 | P1 |
-| 도구 실행 타임아웃 조정 | Gradle/Maven은 120초 부족할 수 있음 → 설정 가능하게 | P2 |
-| 중간 체크포인트 | 각 턴 완료 후 자동 세이브 → 실패 시 재개 가능 | P2 |
-| maxIterations 제어 | 턴당 25회 반복 제한은 복잡한 빌드 작업에 부족할 수 있음 | P2 |
+| 항목                    | 설명                                                    | 우선순위 |
+| ----------------------- | ------------------------------------------------------- | -------- |
+| 레이트 리밋 재시도      | 429 응답 시 exponential backoff 재시도                  | P1       |
+| 컨텍스트 압축           | 긴 세션에서 이전 턴 요약 → 토큰 절약                    | P1       |
+| 도구 실행 타임아웃 조정 | Gradle/Maven은 120초 부족할 수 있음 → 설정 가능하게     | P2       |
+| 중간 체크포인트         | 각 턴 완료 후 자동 세이브 → 실패 시 재개 가능           | P2       |
+| maxIterations 제어      | 턴당 25회 반복 제한은 복잡한 빌드 작업에 부족할 수 있음 | P2       |
 
 ---
 
@@ -338,23 +360,23 @@ test/e2e/project-6-springboot-react-session.test.ts
 
 ### 6.2 발견된 문제 및 수정
 
-| 문제 | 수정 방안 |
-|------|----------|
+| 문제                                        | 수정 방안                                                                  |
+| ------------------------------------------- | -------------------------------------------------------------------------- |
 | Turn 1에서 `gradle init` 사용 → 비표준 구조 | 프롬프트에 "Do NOT use gradle init. Write build.gradle.kts manually." 명시 |
-| Turn 7 타임아웃 300초 | 빌드+테스트 턴은 600초로 증가 |
-| Turn 8 레이트 리밋 429 | config에 `retryOn429: true, maxRetries: 3` 추가 (agent-loop 수정 필요) |
-| DBCODE.md 미참조 | `projectInstructions`를 시스템 프롬프트에 포함 |
-| 메트릭에 args 누락 | `toolCalls` 배열에 `args` 필드 추가 (이미 test-harness.md에 있으나 미적용) |
+| Turn 7 타임아웃 300초                       | 빌드+테스트 턴은 600초로 증가                                              |
+| Turn 8 레이트 리밋 429                      | config에 `retryOn429: true, maxRetries: 3` 추가 (agent-loop 수정 필요)     |
+| DBCODE.md 미참조                            | `projectInstructions`를 시스템 프롬프트에 포함                             |
+| 메트릭에 args 누락                          | `toolCalls` 배열에 `args` 필드 추가 (이미 test-harness.md에 있으나 미적용) |
 
 ### 6.3 추가 스택 테스트 계획
 
-| ID | 스택 | 상태 |
-|----|------|------|
-| 1 | Spring MVC + JSP + JavaScript | 미작성 |
-| 2 | Spring Boot + React (TypeScript) | 작성 완료, 4/9 실패 |
-| 3 | Spring Boot + Vue 3 (TypeScript) | 미작성 |
-| 4 | Spring Boot + Flutter (Dart) | 미작성 |
-| 5 | Flutter WebView + Spring Boot | 미작성 |
+| ID  | 스택                             | 상태                |
+| --- | -------------------------------- | ------------------- |
+| 1   | Spring MVC + JSP + JavaScript    | 미작성              |
+| 2   | Spring Boot + React (TypeScript) | 작성 완료, 4/9 실패 |
+| 3   | Spring Boot + Vue 3 (TypeScript) | 미작성              |
+| 4   | Spring Boot + Flutter (Dart)     | 미작성              |
+| 5   | Flutter WebView + Spring Boot    | 미작성              |
 
 ---
 
@@ -362,43 +384,43 @@ test/e2e/project-6-springboot-react-session.test.ts
 
 ### 7.1 Core Features
 
-| 기능 | Claude Code | dbcode | Gap 수준 |
-|------|-------------|--------|----------|
-| Slash commands | 70+ | 22 | Medium |
-| `/init` (CLAUDE.md 생성) | O | X (CLI만 가능) | High |
-| 실시간 필터링 메뉴 | O | X (freeze) | Critical |
-| 멀티턴 대화 | O | O | 동일 |
-| 도구 호출 (ReAct) | O | O | 동일 |
-| 스트리밍 출력 | O | O | 동일 |
-| 권한 관리 | O | O | 동일 |
-| 세션 저장/복원 | O | O | 동일 |
-| Context 압축 | O | 기본 구현 | Low |
-| MCP 지원 | O | O | 동일 |
-| Subagent 지원 | O | 기본 구현 | Medium |
+| 기능                     | Claude Code | dbcode         | Gap 수준 |
+| ------------------------ | ----------- | -------------- | -------- |
+| Slash commands           | 70+         | 22             | Medium   |
+| `/init` (CLAUDE.md 생성) | O           | X (CLI만 가능) | High     |
+| 실시간 필터링 메뉴       | O           | X (freeze)     | Critical |
+| 멀티턴 대화              | O           | O              | 동일     |
+| 도구 호출 (ReAct)        | O           | O              | 동일     |
+| 스트리밍 출력            | O           | O              | 동일     |
+| 권한 관리                | O           | O              | 동일     |
+| 세션 저장/복원           | O           | O              | 동일     |
+| Context 압축             | O           | 기본 구현      | Low      |
+| MCP 지원                 | O           | O              | 동일     |
+| Subagent 지원            | O           | 기본 구현      | Medium   |
 
 ### 7.2 UX Features
 
-| 기능 | Claude Code | dbcode | Gap 수준 |
-|------|-------------|--------|----------|
-| Activity Feed | O | O (신규 구현) | 동일 |
-| 도구 실행 표시 | 상세 | 기본 | Medium |
-| Markdown 렌더링 | O | O | 동일 |
-| 코드 하이라이팅 | O | O | 동일 |
-| 토큰 사용량 표시 | O | O | 동일 |
-| 대화 중 입력 큐잉 | O | O | 동일 |
-| 키보드 단축키 | 풍부 | 기본 readline | Medium |
-| 한글 입력 (IME) | O | 미확인 | 확인 필요 |
+| 기능              | Claude Code | dbcode        | Gap 수준  |
+| ----------------- | ----------- | ------------- | --------- |
+| Activity Feed     | O           | O (신규 구현) | 동일      |
+| 도구 실행 표시    | 상세        | 기본          | Medium    |
+| Markdown 렌더링   | O           | O             | 동일      |
+| 코드 하이라이팅   | O           | O             | 동일      |
+| 토큰 사용량 표시  | O           | O             | 동일      |
+| 대화 중 입력 큐잉 | O           | O             | 동일      |
+| 키보드 단축키     | 풍부        | 기본 readline | Medium    |
+| 한글 입력 (IME)   | O           | 미확인        | 확인 필요 |
 
 ### 7.3 Developer Experience
 
-| 기능 | Claude Code | dbcode | Gap 수준 |
-|------|-------------|--------|----------|
-| CLAUDE.md/DBCODE.md | 자동 로드 + 시스템 프롬프트 삽입 | 자동 로드 (구현됨) | 동일 |
-| .claude/rules/ | O | .dbcode/rules/ (구현됨) | 동일 |
-| Hooks 시스템 | O | O | 동일 |
-| Skills 시스템 | O | 미구현 | High |
-| Git 통합 | O | bash_exec로 가능 | Low |
-| `/compact` 지능 | 핵심 정보 보존 | 기본 구현 | Medium |
+| 기능                | Claude Code                      | dbcode                  | Gap 수준 |
+| ------------------- | -------------------------------- | ----------------------- | -------- |
+| CLAUDE.md/DBCODE.md | 자동 로드 + 시스템 프롬프트 삽입 | 자동 로드 (구현됨)      | 동일     |
+| .claude/rules/      | O                                | .dbcode/rules/ (구현됨) | 동일     |
+| Hooks 시스템        | O                                | O                       | 동일     |
+| Skills 시스템       | O                                | 미구현                  | High     |
+| Git 통합            | O                                | bash_exec로 가능        | Low      |
+| `/compact` 지능     | 핵심 정보 보존                   | 기본 구현               | Medium   |
 
 ---
 
@@ -458,37 +480,41 @@ test/e2e/project-6-springboot-react-session.test.ts
 
 ## 부록 A: 파일별 변경 매트릭스
 
-| 파일 | Phase | 변경 내용 |
-|------|-------|----------|
-| `src/cli/App.tsx` | 1 | `isDisabled` 제거, 렌더링 순서 변경 (메뉴를 입력줄 아래로), UserInput과 SlashMenu 공존 |
-| `src/cli/components/UserInput.tsx` | 1 | slash menu 보일 때 ↑↓Tab 키 무시 로직 |
-| `src/cli/components/SlashCommandMenu.tsx` | 1 | 스크롤 뷰포트 (MAX_VISIBLE), `↑↓ more` 표시, 포인터 이동 |
-| `src/commands/init.ts` | 1 | `initCommand: SlashCommand` export 추가 |
-| `src/index.ts` | 1 | commands 배열에 `initCommand` 추가 |
-| `src/llm/client.ts` | 2 | 429 retry 로직 추가 |
-| `src/core/agent-loop.ts` | 2 | retry config 전달, 타임아웃 설정 확장 |
-| `test/e2e/project-6-*.test.ts` | 2 | 프롬프트 개선, 타임아웃 증가 |
-| `test/unit/cli/components/UserInput.test.ts` | 1 | slash menu 공존 테스트 추가 |
+| 파일                                         | Phase | 변경 내용                                                                              |
+| -------------------------------------------- | ----- | -------------------------------------------------------------------------------------- |
+| `src/cli/App.tsx`                            | 1     | `isDisabled` 제거, 렌더링 순서 변경 (메뉴를 입력줄 아래로), UserInput과 SlashMenu 공존 |
+| `src/cli/components/UserInput.tsx`           | 1     | slash menu 보일 때 ↑↓Tab 키 무시 로직                                                  |
+| `src/cli/components/SlashCommandMenu.tsx`    | 1     | 스크롤 뷰포트 (MAX_VISIBLE), `↑↓ more` 표시, 포인터 이동                               |
+| `src/commands/init.ts`                       | 1     | `initCommand: SlashCommand` export 추가                                                |
+| `src/index.ts`                               | 1     | commands 배열에 `initCommand` 추가                                                     |
+| `src/llm/client.ts`                          | 2     | 429 retry 로직 추가                                                                    |
+| `src/core/agent-loop.ts`                     | 2     | retry config 전달, 타임아웃 설정 확장                                                  |
+| `test/e2e/project-6-*.test.ts`               | 2     | 프롬프트 개선, 타임아웃 증가                                                           |
+| `test/unit/cli/components/UserInput.test.ts` | 1     | slash menu 공존 테스트 추가                                                            |
 
 ## 부록 B: 핵심 코드 참조
 
 ### B.1 문제의 코드 — App.tsx:476-480
+
 ```tsx
 <UserInput
   onSubmit={handleSubmit}
   onChange={setInputValue}
-  isDisabled={slashMenuVisible}  // ← 이 줄이 모든 문제의 시작
+  isDisabled={slashMenuVisible} // ← 이 줄이 모든 문제의 시작
 />
 ```
 
 ### B.2 문제의 조건 — App.tsx:111
+
 ```typescript
-const slashMenuVisible = !isProcessing && !pendingPermission
-  && inputValue.startsWith("/") && !inputValue.includes(" ");
+const slashMenuVisible =
+  !isProcessing && !pendingPermission && inputValue.startsWith("/") && !inputValue.includes(" ");
 ```
+
 `/` 입력 → `slashMenuVisible = true` → `isDisabled = true` → 키보드 freeze → 영원히 true 유지
 
 ### B.3 Ink 5.x useInput 키 매핑 — parse-keypress.js
+
 ```
 \r (0x0D) → key.name = 'return'  → key.return = true   ✓ submit 정상
 \n (0x0A) → key.name = 'enter'   → key.return = false  ✗ submit 실패 (수정 완료)

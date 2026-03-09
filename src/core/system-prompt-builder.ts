@@ -206,10 +206,7 @@ export function buildSystemReminder(
 /**
  * Assemble sections: filter by condition, sort by priority, enforce token budget.
  */
-function assembleSections(
-  sections: readonly PromptSection[],
-  totalTokenBudget?: number,
-): string {
+function assembleSections(sections: readonly PromptSection[], totalTokenBudget?: number): string {
   // Filter sections by condition
   const active = sections.filter((s) => !s.condition || s.condition());
 
@@ -417,9 +414,7 @@ function buildEnvironmentSection(cwd: string): string {
 }
 
 /** Safely detect git context — returns null if not a git repo. */
-function detectGitContext(
-  cwd: string,
-): {
+function detectGitContext(cwd: string): {
   readonly branch: string;
   readonly dirty: boolean;
   readonly recentCommits: readonly string[];
@@ -467,8 +462,7 @@ function detectProjectType(cwd: string): string | null {
   if (existsSync(join(cwd, "package.json"))) return "Node.js";
   if (existsSync(join(cwd, "Cargo.toml"))) return "Rust";
   if (existsSync(join(cwd, "go.mod"))) return "Go";
-  if (existsSync(join(cwd, "pyproject.toml")) || existsSync(join(cwd, "setup.py")))
-    return "Python";
+  if (existsSync(join(cwd, "pyproject.toml")) || existsSync(join(cwd, "setup.py"))) return "Python";
   if (existsSync(join(cwd, "pom.xml")) || existsSync(join(cwd, "build.gradle"))) return "Java";
   if (existsSync(join(cwd, "Gemfile"))) return "Ruby";
   return null;
@@ -490,9 +484,7 @@ function loadProjectInstructions(cwd: string): string | null {
   return null;
 }
 
-function buildMCPSection(
-  servers: readonly { name: string; tools: readonly string[] }[],
-): string {
+function buildMCPSection(servers: readonly { name: string; tools: readonly string[] }[]): string {
   const serverLines = servers.map((server) => {
     const toolList = server.tools.map((t) => `  - \`mcp__${server.name}__${t}\``).join("\n");
     return `### ${server.name}\n${toolList}`;

@@ -270,9 +270,7 @@ async function handleJupyter(filePath: string): Promise<ToolResult> {
   const notebook: JupyterNotebook = JSON.parse(content);
 
   const language =
-    notebook.metadata?.kernelspec?.language ??
-    notebook.metadata?.language_info?.name ??
-    "python";
+    notebook.metadata?.kernelspec?.language ?? notebook.metadata?.language_info?.name ?? "python";
 
   const cellOutputs: string[] = [];
 
@@ -285,9 +283,7 @@ async function handleJupyter(filePath: string): Promise<ToolResult> {
       cellOutputs.push(`\`\`\`${language}\n${source}\n\`\`\``);
 
       if (cell.outputs && cell.outputs.length > 0) {
-        const outputTexts = cell.outputs
-          .map(getOutputText)
-          .filter((t) => t.length > 0);
+        const outputTexts = cell.outputs.map(getOutputText).filter((t) => t.length > 0);
         if (outputTexts.length > 0) {
           cellOutputs.push("Output:\n" + outputTexts.join("\n"));
         }
@@ -320,10 +316,7 @@ const paramSchema = z.object({
     .optional()
     .describe("Line number to start reading from (0-based)"),
   limit: z.number().int().min(1).optional().describe("Maximum number of lines to read"),
-  pages: z
-    .string()
-    .optional()
-    .describe("Page range for PDF (e.g. '1-5', '3', '10-20')"),
+  pages: z.string().optional().describe("Page range for PDF (e.g. '1-5', '3', '10-20')"),
 });
 
 type Params = z.infer<typeof paramSchema>;

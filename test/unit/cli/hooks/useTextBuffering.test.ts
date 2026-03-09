@@ -31,10 +31,7 @@ vi.mock("react", () => {
       }
       const setState = (val: unknown) => {
         const current = stateStore.get(idx);
-        const next =
-          typeof val === "function"
-            ? (val as (prev: unknown) => unknown)(current)
-            : val;
+        const next = typeof val === "function" ? (val as (prev: unknown) => unknown)(current) : val;
         stateStore.set(idx, next);
       };
       return [stateStore.get(idx), setState];

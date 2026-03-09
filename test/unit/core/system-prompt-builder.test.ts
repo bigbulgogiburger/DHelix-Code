@@ -306,9 +306,7 @@ describe("custom section conditions", () => {
 describe("token budget", () => {
   it("should trim lowest-priority sections when budget exceeded", () => {
     const prompt = buildSystemPrompt({
-      customSections: [
-        { id: "big-low", content: "A".repeat(5000), priority: 5 },
-      ],
+      customSections: [{ id: "big-low", content: "A".repeat(5000), priority: 5 }],
       totalTokenBudget: 500,
     });
     // The high-priority identity section should be included
@@ -319,9 +317,7 @@ describe("token budget", () => {
 
   it("should keep all sections when under budget", () => {
     const prompt = buildSystemPrompt({
-      customSections: [
-        { id: "small", content: "SMALL_SECTION", priority: 50 },
-      ],
+      customSections: [{ id: "small", content: "SMALL_SECTION", priority: 50 }],
     });
     expect(prompt).toContain("SMALL_SECTION");
   });
@@ -329,9 +325,7 @@ describe("token budget", () => {
   it("should respect per-section tokenBudget", () => {
     const longContent = "Line one\n".repeat(500);
     const prompt = buildSystemPrompt({
-      customSections: [
-        { id: "capped", content: longContent, priority: 50, tokenBudget: 20 },
-      ],
+      customSections: [{ id: "capped", content: longContent, priority: 50, tokenBudget: 20 }],
     });
     // Should be truncated
     expect(prompt).toContain("...(truncated)");

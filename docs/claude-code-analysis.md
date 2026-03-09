@@ -25,16 +25,17 @@
 The system prompt is assembled via `getSystemPrompt()` (29 references in bundle).
 Key sections identified from string analysis:
 
-| Section | Purpose |
-|---------|---------|
-| `# System` | Identity and core behavior rules |
-| `# Doing tasks` | How to approach software engineering tasks |
+| Section              | Purpose                                       |
+| -------------------- | --------------------------------------------- |
+| `# System`           | Identity and core behavior rules              |
+| `# Doing tasks`      | How to approach software engineering tasks    |
 | `# Using your tools` | When/how to use each tool, parallel execution |
-| `# Tone and style` | Communication style guidelines |
-| `# Environment` | Platform, shell, cwd, git status, model info |
-| `# Instructions` | Project-specific CLAUDE.md content |
+| `# Tone and style`   | Communication style guidelines                |
+| `# Environment`      | Platform, shell, cwd, git status, model info  |
+| `# Instructions`     | Project-specific CLAUDE.md content            |
 
 **Key patterns adopted in dbcode**:
+
 - Section-based prompt assembly with priority ordering
 - Auto-loading project instructions from `.dbcode/DBCODE.md`
 - Git context (branch, recent commits) in environment section
@@ -45,20 +46,20 @@ Key sections identified from string analysis:
 Claude Code uses Anthropic's native `tool_use` format (544 occurrences).
 Identified tools:
 
-| Tool | Count | dbcode Equivalent |
-|------|-------|-------------------|
-| Read | 51 | `file_read` |
-| Bash | 22 | `bash_exec` |
-| Write | 19 | `file_write` |
-| Edit | 20 | `file_edit` |
-| Glob | 26 | `glob_search` |
-| Grep | 23 | `grep_search` |
-| Agent | 12 | (subagent system) |
-| WebFetch | 8 | (not yet) |
-| WebSearch | 7 | (not yet) |
-| NotebookEdit | 5 | (not yet) |
-| AskUser | 1 | `ask_user` |
-| TodoWrite | 2 | (task manager) |
+| Tool         | Count | dbcode Equivalent |
+| ------------ | ----- | ----------------- |
+| Read         | 51    | `file_read`       |
+| Bash         | 22    | `bash_exec`       |
+| Write        | 19    | `file_write`      |
+| Edit         | 20    | `file_edit`       |
+| Glob         | 26    | `glob_search`     |
+| Grep         | 23    | `grep_search`     |
+| Agent        | 12    | (subagent system) |
+| WebFetch     | 8     | (not yet)         |
+| WebSearch    | 7     | (not yet)         |
+| NotebookEdit | 5     | (not yet)         |
+| AskUser      | 1     | `ask_user`        |
+| TodoWrite    | 2     | (task manager)    |
 
 **Key insight**: Claude Code's core tool set is very similar to dbcode's P0 tools.
 The main gaps are WebFetch, WebSearch, and NotebookEdit — all non-critical for MVP.
@@ -73,6 +74,7 @@ The main gaps are WebFetch, WebSearch, and NotebookEdit — all non-critical for
 ## Error Handling
 
 Claude Code handles these HTTP errors:
+
 - 400: Invalid request (permanent)
 - 401/403: Auth errors (permanent)
 - 429: Rate limit (retryable with backoff)

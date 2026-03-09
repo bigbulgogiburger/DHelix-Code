@@ -80,8 +80,10 @@ export function App({
   sessionId,
   showStatusBar = true,
 }: AppProps) {
-  const { pendingPermission, handlePermissionResponse, checkPermission } =
-    usePermissionPrompt(permissionManager, toolRegistry);
+  const { pendingPermission, handlePermissionResponse, checkPermission } = usePermissionPrompt(
+    permissionManager,
+    toolRegistry,
+  );
 
   const {
     isProcessing,
@@ -112,7 +114,8 @@ export function App({
 
   // Track current input value for slash command menu
   const [inputValue, setInputValue] = useState("");
-  const slashMenuVisible = !isProcessing && !pendingPermission && inputValue.startsWith("/") && !inputValue.includes(" ");
+  const slashMenuVisible =
+    !isProcessing && !pendingPermission && inputValue.startsWith("/") && !inputValue.includes(" ");
 
   // Verbose mode toggle state
   const [verboseMode, setVerboseMode] = useState(false);
@@ -121,9 +124,7 @@ export function App({
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
 
   // Permission mode state (mirrors permissionManager but drives UI)
-  const [permissionMode, setPermissionMode] = useState<PermissionMode>(
-    permissionManager.getMode(),
-  );
+  const [permissionMode, setPermissionMode] = useState<PermissionMode>(permissionManager.getMode());
 
   // Notification banner for shortcut feedback
   const [notification, setNotification] = useState<string | null>(null);
@@ -186,7 +187,9 @@ export function App({
     <Box flexDirection="column" padding={1}>
       <ActivityFeed completedTurns={completedTurns} currentTurn={liveTurn} />
 
-      {isProcessing && !streamingText && !currentTurn?.entries.some((e) => e.type === "tool-start") ? (
+      {isProcessing &&
+      !streamingText &&
+      !currentTurn?.entries.some((e) => e.type === "tool-start") ? (
         <Box marginY={1}>
           <Spinner label="Thinking..." />
         </Box>

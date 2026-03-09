@@ -48,10 +48,7 @@ describe("file_read tool", () => {
 
   describe("empty file", () => {
     it("should return [Empty file] for empty files", async () => {
-      const result = await fileReadTool.execute(
-        { path: join(fixturesDir, "empty.txt") },
-        context,
-      );
+      const result = await fileReadTool.execute({ path: join(fixturesDir, "empty.txt") }, context);
       expect(result.isError).toBe(false);
       expect(result.output).toBe("[Empty file]");
     });
@@ -176,10 +173,7 @@ describe("file_read tool", () => {
     });
 
     it("should handle non-existent PDF file", async () => {
-      const result = await fileReadTool.execute(
-        { path: "nonexistent.pdf" },
-        context,
-      );
+      const result = await fileReadTool.execute({ path: "nonexistent.pdf" }, context);
       expect(result.isError).toBe(true);
       expect(result.output).toContain("Failed to read file");
     });

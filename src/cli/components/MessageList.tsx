@@ -9,7 +9,10 @@ interface MessageListProps {
 }
 
 /** Display completed conversation messages */
-export const MessageList = React.memo(function MessageList({ messages, enableMarkdown = true }: MessageListProps) {
+export const MessageList = React.memo(function MessageList({
+  messages,
+  enableMarkdown = true,
+}: MessageListProps) {
   return (
     <Static items={messages.map((msg, i) => ({ ...msg, key: `msg-${i}` }))}>
       {(msg) => (

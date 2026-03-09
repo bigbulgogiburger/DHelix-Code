@@ -6,7 +6,11 @@ import { CONFIG_DIR, APP_NAME } from "../constants.js";
 
 /** Available model presets */
 const MODEL_PRESETS = [
-  { name: "GPT-4.1-mini (추천 — 저렴하고 고성능)", model: "gpt-4.1-mini", baseUrl: "https://api.openai.com/v1" },
+  {
+    name: "GPT-4.1-mini (추천 — 저렴하고 고성능)",
+    model: "gpt-4.1-mini",
+    baseUrl: "https://api.openai.com/v1",
+  },
   { name: "GPT-4.1", model: "gpt-4.1", baseUrl: "https://api.openai.com/v1" },
   { name: "GPT-4.1-nano (가장 저렴)", model: "gpt-4.1-nano", baseUrl: "https://api.openai.com/v1" },
   { name: "GPT-4o", model: "gpt-4o", baseUrl: "https://api.openai.com/v1" },
@@ -80,8 +84,7 @@ export async function runSetupWizard(): Promise<SetupConfig> {
       stdout.write(`  Selected: ${preset.name}\n\n`);
     } else {
       model = (await rl.question("  Model name: ")).trim() || "gpt-4.1-mini";
-      baseUrl =
-        (await rl.question("  API base URL: ")).trim() || "https://api.openai.com/v1";
+      baseUrl = (await rl.question("  API base URL: ")).trim() || "https://api.openai.com/v1";
       stdout.write("\n");
     }
 
@@ -122,7 +125,7 @@ export async function runSetupWizard(): Promise<SetupConfig> {
       // No existing config
     }
 
-    const merged = { ...existing, llm: { ...(existing.llm as object ?? {}), ...config.llm } };
+    const merged = { ...existing, llm: { ...((existing.llm as object) ?? {}), ...config.llm } };
     await writeFile(CONFIG_PATH, JSON.stringify(merged, null, 2) + "\n", "utf-8");
 
     stdout.write(`\n  Config saved to ${CONFIG_PATH}\n`);

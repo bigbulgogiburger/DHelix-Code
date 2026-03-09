@@ -64,6 +64,7 @@ Contents of /Users/pyeondohun/development/dbcode/CLAUDE.md
 ```
 
 핵심 관찰:
+
 1. **매 호출마다 포함** — agent가 file_read 없이도 컨벤션 인지
 2. **출처 레이블** — "(user's private global)" vs "(project instructions)" 구분
 3. **Override 명시** — "These instructions OVERRIDE any default behavior"
@@ -72,12 +73,12 @@ Contents of /Users/pyeondohun/development/dbcode/CLAUDE.md
 
 ### 1.3 Claude Code가 CLAUDE.md를 읽지 않아도 되는 이유
 
-| 측면 | 설명 |
-|------|------|
-| 항상 존재 | System prompt에 포함되어 있으므로 매 iteration에서 참조 가능 |
-| 토큰 효율 | file_read tool call = 1 iteration 소모. 시스템 주입은 0 iteration |
-| 일관성 | Agent가 "읽을지 말지" 판단할 필요 없음. 항상 최신 상태 |
-| 컨텍스트 우선순위 | System prompt에 있으므로 compaction에서 절대 제거되지 않음 |
+| 측면              | 설명                                                              |
+| ----------------- | ----------------------------------------------------------------- |
+| 항상 존재         | System prompt에 포함되어 있으므로 매 iteration에서 참조 가능      |
+| 토큰 효율         | file_read tool call = 1 iteration 소모. 시스템 주입은 0 iteration |
+| 일관성            | Agent가 "읽을지 말지" 판단할 필요 없음. 항상 최신 상태            |
+| 컨텍스트 우선순위 | System prompt에 있으므로 compaction에서 절대 제거되지 않음        |
 
 ---
 
@@ -129,6 +130,7 @@ messages.push({ role: "system", content: systemPrompt });
 #### Problem 2: Agent가 DBCODE.md를 자발적으로 읽지 않음
 
 E2E 테스트 로그 증거:
+
 ```json
 {
   "dbcodeReads": 0,
@@ -156,6 +158,7 @@ if (currentTurn > 1 && existsSync(dbcodePath)) {
 ```
 
 이 방식의 문제:
+
 - user message에 삽입 → compaction 시 제거될 수 있음
 - tool call로 추적되지 않음 (dbcodeReads = 0)
 - 실제 프로덕션 동작과 다른 테스트 환경
@@ -163,6 +166,7 @@ if (currentTurn > 1 && existsSync(dbcodePath)) {
 #### Problem 5: 5-layer 병합이 buildSystemPrompt에서는 미작동
 
 `loadInstructions()`는 5계층 병합을 완벽 구현:
+
 ```
 1. ~/.dbcode/DBCODE.md          (global)
 2. ~/.dbcode/rules/*.md         (global rules)
@@ -181,13 +185,13 @@ if (currentTurn > 1 && existsSync(dbcodePath)) {
 
 Claude Code의 접근법을 참고하되 dbcode의 아키텍처에 맞게 적용:
 
-| 원칙 | Claude Code 방식 | dbcode 적용 |
-|------|-----------------|-------------|
-| 항상 존재 | 매 LLM call에 포함 | system message를 동적으로 갱신 |
-| 인프라 주입 | 프레임워크가 로드 | agent loop가 iteration마다 확인 |
-| 변경 감지 | compaction 시 재로드 | 파일 변경 시 즉시 반영 |
-| 출처 표시 | 경로 + 레이블 | 동일하게 구현 |
-| 5-layer 병합 | 계층적 override | 기존 loadInstructions() 활용 |
+| 원칙         | Claude Code 방식     | dbcode 적용                     |
+| ------------ | -------------------- | ------------------------------- |
+| 항상 존재    | 매 LLM call에 포함   | system message를 동적으로 갱신  |
+| 인프라 주입  | 프레임워크가 로드    | agent loop가 iteration마다 확인 |
+| 변경 감지    | compaction 시 재로드 | 파일 변경 시 즉시 반영          |
+| 출처 표시    | 경로 + 레이블        | 동일하게 구현                   |
+| 5-layer 병합 | 계층적 override      | 기존 loadInstructions() 활용    |
 
 ### 3.2 아키텍처
 
@@ -247,7 +251,7 @@ Claude Code의 접근법을 참고하되 dbcode의 아키텍처에 맞게 적용
  */
 export class InstructionManager {
   private cachedInstructions: LoadedInstructions | null;
-  private lastMtimes: Map<string, number>;  // 파일별 mtime 캐시
+  private lastMtimes: Map<string, number>; // 파일별 mtime 캐시
   private readonly workingDirectory: string;
 
   constructor(workingDirectory: string);
@@ -278,43 +282,40 @@ export class InstructionManager {
 ```
 
 **핵심 기능:**
+
 - `isDirty()`: `fs.statSync().mtimeMs` 비교 — I/O 최소화 (파일 읽기 없이 변경 감지)
 - `buildSection()`: 각 계층의 내용을 출처 레이블과 함께 포맷팅
 - `refresh()`: `loadInstructions()` 재호출 + mtime 캐시 갱신
 
 **작업 항목:**
 
-| # | 작업 | 파일 | 난이도 |
-|---|------|------|--------|
-| 1-1 | InstructionManager 클래스 구현 | `src/instructions/instruction-manager.ts` | M |
-| 1-2 | isDirty() — mtime 기반 변경 감지 | 위 파일 내 | S |
-| 1-3 | buildSection() — 레이블 포맷팅 | 위 파일 내 | S |
-| 1-4 | 단위 테스트 | `test/unit/instructions/instruction-manager.test.ts` | M |
+| #   | 작업                             | 파일                                                 | 난이도 |
+| --- | -------------------------------- | ---------------------------------------------------- | ------ |
+| 1-1 | InstructionManager 클래스 구현   | `src/instructions/instruction-manager.ts`            | M      |
+| 1-2 | isDirty() — mtime 기반 변경 감지 | 위 파일 내                                           | S      |
+| 1-3 | buildSection() — 레이블 포맷팅   | 위 파일 내                                           | S      |
+| 1-4 | 단위 테스트                      | `test/unit/instructions/instruction-manager.test.ts` | M      |
 
 ### Phase 2: Agent Loop 연동
 
 **파일**: `src/core/agent-loop.ts`
 
 변경 사항:
+
 ```typescript
 export async function runAgentLoop(config, initialMessages) {
   // NEW: InstructionManager 초기화
-  const instructionManager = new InstructionManager(
-    config.workingDirectory ?? process.cwd()
-  );
+  const instructionManager = new InstructionManager(config.workingDirectory ?? process.cwd());
 
   while (iterations < maxIterations) {
     // NEW: 매 iteration에서 DBCODE.md 변경 확인
     if (instructionManager.isDirty()) {
       await instructionManager.refresh();
       // system message (messages[0]) 갱신
-      const freshSystemPrompt = rebuildSystemPromptWith(
-        instructionManager.buildSection(),
-        config
-      );
+      const freshSystemPrompt = rebuildSystemPromptWith(instructionManager.buildSection(), config);
       updateSystemMessage(messages, freshSystemPrompt);
       config.events.emit("instructions:refreshed", {
-        iteration: iterations
+        iteration: iterations,
       });
     }
 
@@ -324,32 +325,34 @@ export async function runAgentLoop(config, initialMessages) {
 ```
 
 **성능 고려사항:**
+
 - `isDirty()`는 `fs.statSync()` 1회 호출 (< 0.1ms)
 - 실제 파일 읽기(`refresh()`)는 변경 시에만 발생
 - 매 iteration 오버헤드: 무시할 수 있는 수준
 
 **작업 항목:**
 
-| # | 작업 | 파일 | 난이도 |
-|---|------|------|--------|
-| 2-1 | AgentLoopConfig에 instructionManager 옵션 추가 | `agent-loop.ts` | S |
-| 2-2 | iteration 시작 시 isDirty() 체크 + refresh 로직 | `agent-loop.ts` | M |
-| 2-3 | system message 갱신 헬퍼 함수 | `agent-loop.ts` 또는 별도 유틸 | S |
-| 2-4 | `instructions:refreshed` 이벤트 추가 | `events.ts` | S |
-| 2-5 | 기존 테스트 업데이트 | `test/unit/core/agent-loop.test.ts` | M |
+| #   | 작업                                            | 파일                                | 난이도 |
+| --- | ----------------------------------------------- | ----------------------------------- | ------ |
+| 2-1 | AgentLoopConfig에 instructionManager 옵션 추가  | `agent-loop.ts`                     | S      |
+| 2-2 | iteration 시작 시 isDirty() 체크 + refresh 로직 | `agent-loop.ts`                     | M      |
+| 2-3 | system message 갱신 헬퍼 함수                   | `agent-loop.ts` 또는 별도 유틸      | S      |
+| 2-4 | `instructions:refreshed` 이벤트 추가            | `events.ts`                         | S      |
+| 2-5 | 기존 테스트 업데이트                            | `test/unit/core/agent-loop.test.ts` | M      |
 
 ### Phase 3: buildSystemPrompt 개선
 
 **파일**: `src/core/system-prompt-builder.ts`
 
 변경 사항:
+
 - `loadProjectInstructions()` → `InstructionManager.buildSection()` 으로 교체
 - 5-layer 병합을 시스템 프롬프트에 반영
 - 출처 레이블 포함
 
 ```typescript
 export function buildSystemPrompt(options?: {
-  instructionManager?: InstructionManager;  // NEW
+  instructionManager?: InstructionManager; // NEW
   // ... 기존 옵션
 }): string {
   // ...
@@ -367,8 +370,7 @@ export function buildSystemPrompt(options?: {
     }
   } else {
     // fallback: 기존 동작 유지 (하위 호환)
-    const projectInstructions = options?.projectInstructions
-      ?? loadProjectInstructions(cwd);
+    const projectInstructions = options?.projectInstructions ?? loadProjectInstructions(cwd);
     if (projectInstructions) {
       sections.push({
         id: "project",
@@ -382,17 +384,18 @@ export function buildSystemPrompt(options?: {
 
 **작업 항목:**
 
-| # | 작업 | 파일 | 난이도 |
-|---|------|------|--------|
-| 3-1 | buildSystemPrompt에 InstructionManager 연동 | `system-prompt-builder.ts` | S |
-| 3-2 | 출처 레이블 포맷 구현 | `system-prompt-builder.ts` | S |
-| 3-3 | 기존 테스트 호환성 확인 | 관련 테스트 파일들 | S |
+| #   | 작업                                        | 파일                       | 난이도 |
+| --- | ------------------------------------------- | -------------------------- | ------ |
+| 3-1 | buildSystemPrompt에 InstructionManager 연동 | `system-prompt-builder.ts` | S      |
+| 3-2 | 출처 레이블 포맷 구현                       | `system-prompt-builder.ts` | S      |
+| 3-3 | 기존 테스트 호환성 확인                     | 관련 테스트 파일들         | S      |
 
 ### Phase 4: ContextManager 정리
 
 **파일**: `src/core/context-manager.ts`
 
 변경 사항:
+
 - `reloadSystemPrompt()` 내부에서 `InstructionManager.refresh()` 사용
 - 중복 로직 제거
 
@@ -401,9 +404,11 @@ export function buildSystemPrompt(options?: {
 // 변경: InstructionManager를 주입받아 사용
 
 export class ContextManager {
-  constructor(config?: ContextManagerConfig & {
-    instructionManager?: InstructionManager;
-  });
+  constructor(
+    config?: ContextManagerConfig & {
+      instructionManager?: InstructionManager;
+    },
+  );
 
   async compact(messages, focusTopic?) {
     // ...
@@ -418,11 +423,11 @@ export class ContextManager {
 
 **작업 항목:**
 
-| # | 작업 | 파일 | 난이도 |
-|---|------|------|--------|
-| 4-1 | ContextManager에 InstructionManager 주입 | `context-manager.ts` | S |
-| 4-2 | reloadSystemPrompt()을 InstructionManager로 교체 | `context-manager.ts` | M |
-| 4-3 | 기존 테스트 업데이트 | `test/unit/core/context-manager.test.ts` | M |
+| #   | 작업                                             | 파일                                     | 난이도 |
+| --- | ------------------------------------------------ | ---------------------------------------- | ------ |
+| 4-1 | ContextManager에 InstructionManager 주입         | `context-manager.ts`                     | S      |
+| 4-2 | reloadSystemPrompt()을 InstructionManager로 교체 | `context-manager.ts`                     | M      |
+| 4-3 | 기존 테스트 업데이트                             | `test/unit/core/context-manager.test.ts` | M      |
 
 ### Phase 5: /init 연동 + 이벤트 기반 갱신
 
@@ -448,11 +453,11 @@ events.on("instructions:changed", () => {
 
 **작업 항목:**
 
-| # | 작업 | 파일 | 난이도 |
-|---|------|------|--------|
-| 5-1 | initProject에 이벤트 발행 추가 | `commands/init.ts` | S |
-| 5-2 | App.tsx에서 이벤트 수신 + 갱신 | `cli/App.tsx` | S |
-| 5-3 | E2E 테스트에서 주입 로직 제거 | `test/e2e/project-*.test.ts` | M |
+| #   | 작업                           | 파일                         | 난이도 |
+| --- | ------------------------------ | ---------------------------- | ------ |
+| 5-1 | initProject에 이벤트 발행 추가 | `commands/init.ts`           | S      |
+| 5-2 | App.tsx에서 이벤트 수신 + 갱신 | `cli/App.tsx`                | S      |
+| 5-3 | E2E 테스트에서 주입 로직 제거  | `test/e2e/project-*.test.ts` | M      |
 
 ### Phase 6: 출처 레이블 포맷
 
@@ -466,31 +471,31 @@ IMPORTANT: These instructions OVERRIDE any default behavior
 and you MUST follow them exactly as written.
 
 Contents of /Users/user/.dbcode/DBCODE.md
-  (user's global instructions for all projects):
+(user's global instructions for all projects):
 
-  [global DBCODE.md 내용]
+[global DBCODE.md 내용]
 
 ---
 
 Contents of /Users/user/.dbcode/rules/git-workflow.md
-  (user's global rule):
+(user's global rule):
 
-  [rule 내용]
+[rule 내용]
 
 ---
 
 Contents of /Users/user/project/DBCODE.md
-  (project instructions, checked into the codebase):
+(project instructions, checked into the codebase):
 
-  [project DBCODE.md 내용]
+[project DBCODE.md 내용]
 ```
 
 **작업 항목:**
 
-| # | 작업 | 파일 | 난이도 |
-|---|------|------|--------|
-| 6-1 | 레이블 포맷 함수 구현 | `instruction-manager.ts` | S |
-| 6-2 | 계층별 레이블 정의 | 위 파일 내 | S |
+| #   | 작업                  | 파일                     | 난이도 |
+| --- | --------------------- | ------------------------ | ------ |
+| 6-1 | 레이블 포맷 함수 구현 | `instruction-manager.ts` | S      |
+| 6-2 | 계층별 레이블 정의    | 위 파일 내               | S      |
 
 ---
 
@@ -514,15 +519,15 @@ Phase 2 (Agent Loop 연동)  ←── 가장 임팩트 큰 변경
 
 ### 추정 작업량
 
-| Phase | 작업 수 | 핵심 변경 파일 |
-|-------|---------|---------------|
-| 1 | 4 | instruction-manager.ts (NEW) |
-| 2 | 5 | agent-loop.ts |
-| 3 | 3 | system-prompt-builder.ts |
-| 4 | 3 | context-manager.ts |
-| 5 | 3 | init.ts, App.tsx, E2E tests |
-| 6 | 2 | instruction-manager.ts |
-| **합계** | **20** | |
+| Phase    | 작업 수 | 핵심 변경 파일               |
+| -------- | ------- | ---------------------------- |
+| 1        | 4       | instruction-manager.ts (NEW) |
+| 2        | 5       | agent-loop.ts                |
+| 3        | 3       | system-prompt-builder.ts     |
+| 4        | 3       | context-manager.ts           |
+| 5        | 3       | init.ts, App.tsx, E2E tests  |
+| 6        | 2       | instruction-manager.ts       |
+| **합계** | **20**  |                              |
 
 ---
 
@@ -574,14 +579,14 @@ Compaction
 
 ## 7. 성공 지표
 
-| 지표 | 현재 | 목표 |
-|------|------|------|
-| /init 후 첫 턴에서 컨벤션 인식 | NO | YES |
-| Agent의 DBCODE.md file_read 필요 | 의존 (0회 실행) | 불필요 (시스템 주입) |
-| E2E 테스트 user message 주입 필요 | YES (편법) | NO (인프라 수준) |
-| 5-layer 병합 in system prompt | 1-layer만 | 5-layer 전체 |
-| DBCODE.md 변경 반영 시점 | Compaction 시 | 다음 iteration |
-| 레이블/출처 표시 | 없음 | Claude Code 스타일 |
+| 지표                              | 현재            | 목표                 |
+| --------------------------------- | --------------- | -------------------- |
+| /init 후 첫 턴에서 컨벤션 인식    | NO              | YES                  |
+| Agent의 DBCODE.md file_read 필요  | 의존 (0회 실행) | 불필요 (시스템 주입) |
+| E2E 테스트 user message 주입 필요 | YES (편법)      | NO (인프라 수준)     |
+| 5-layer 병합 in system prompt     | 1-layer만       | 5-layer 전체         |
+| DBCODE.md 변경 반영 시점          | Compaction 시   | 다음 iteration       |
+| 레이블/출처 표시                  | 없음            | Claude Code 스타일   |
 
 ---
 
@@ -607,6 +612,7 @@ InstructionManager가 없을 때는 기존 `loadProjectInstructions()` fallback.
 ### 8.4 E2E 테스트 영향
 
 Phase 5 완료 후:
+
 - `sendTurn()`의 DBCODE.md 주입 로직 제거 가능
 - `dbcodeReads` 추적 방식 변경 → `instructions:refreshed` 이벤트 기반
 - 테스트 assertion: `expect(refreshEvents).toBeGreaterThanOrEqual(1)`
@@ -615,14 +621,14 @@ Phase 5 완료 후:
 
 ## 9. 부록: Claude Code vs dbcode 상세 비교
 
-| 항목 | Claude Code | dbcode (현재) | dbcode (개선 후) |
-|------|------------|--------------|----------------|
-| 설정 파일명 | CLAUDE.md | DBCODE.md | DBCODE.md |
-| 로딩 시점 | 대화 시작 전 | buildSystemPrompt() 1회 | InstructionManager 연속 |
-| 갱신 주기 | 매 LLM call | Compaction 시만 | 매 iteration (isDirty) |
-| 계층 수 | 5 | 1 (system-prompt-builder) | 5 (loadInstructions) |
-| 출처 레이블 | 있음 (경로+타입) | 없음 | 있음 |
-| Agent가 읽어야? | 불필요 | 필요 (하지만 안 함) | 불필요 |
-| /init 후 반영 | 즉시 | 반영 안 됨 | 이벤트 → 즉시 |
-| user msg 주입 | 안 함 | E2E에서 필요 | 불필요 |
-| Override 선언 | 명시적 | 없음 | 명시적 |
+| 항목            | Claude Code      | dbcode (현재)             | dbcode (개선 후)        |
+| --------------- | ---------------- | ------------------------- | ----------------------- |
+| 설정 파일명     | CLAUDE.md        | DBCODE.md                 | DBCODE.md               |
+| 로딩 시점       | 대화 시작 전     | buildSystemPrompt() 1회   | InstructionManager 연속 |
+| 갱신 주기       | 매 LLM call      | Compaction 시만           | 매 iteration (isDirty)  |
+| 계층 수         | 5                | 1 (system-prompt-builder) | 5 (loadInstructions)    |
+| 출처 레이블     | 있음 (경로+타입) | 없음                      | 있음                    |
+| Agent가 읽어야? | 불필요           | 필요 (하지만 안 함)       | 불필요                  |
+| /init 후 반영   | 즉시             | 반영 안 됨                | 이벤트 → 즉시           |
+| user msg 주입   | 안 함            | E2E에서 필요              | 불필요                  |
+| Override 선언   | 명시적           | 없음                      | 명시적                  |

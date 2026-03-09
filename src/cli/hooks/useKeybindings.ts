@@ -245,7 +245,10 @@ export function useKeybindings(bindings: readonly Keybinding[], isActive = true)
   const stableBindings = useMemo(() => [...bindings], [bindings]);
 
   const handleInput = useCallback(
-    (input: string, key: { ctrl: boolean; meta: boolean; shift: boolean; escape: boolean; tab: boolean }) => {
+    (
+      input: string,
+      key: { ctrl: boolean; meta: boolean; shift: boolean; escape: boolean; tab: boolean },
+    ) => {
       for (const binding of stableBindings) {
         const ctrlMatch = binding.ctrl ? key.ctrl : !key.ctrl;
         const metaMatch = binding.meta ? key.meta : !key.meta;

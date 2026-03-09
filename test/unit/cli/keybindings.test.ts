@@ -11,7 +11,12 @@ import { keybindingsCommand } from "../../../src/commands/keybindings.js";
 
 describe("parseKeyCombo", () => {
   it("should parse simple keys", () => {
-    expect(parseKeyCombo("escape")).toEqual({ key: "escape", ctrl: false, meta: false, shift: false });
+    expect(parseKeyCombo("escape")).toEqual({
+      key: "escape",
+      ctrl: false,
+      meta: false,
+      shift: false,
+    });
   });
 
   it("should parse ctrl+key", () => {
@@ -27,7 +32,12 @@ describe("parseKeyCombo", () => {
   });
 
   it("should parse shift+tab", () => {
-    expect(parseKeyCombo("shift+tab")).toEqual({ key: "tab", ctrl: false, meta: false, shift: true });
+    expect(parseKeyCombo("shift+tab")).toEqual({
+      key: "tab",
+      ctrl: false,
+      meta: false,
+      shift: true,
+    });
   });
 
   it("should parse ctrl+j", () => {
@@ -91,10 +101,7 @@ describe("getEffectiveBindings", () => {
 describe("buildKeybindings", () => {
   it("should build keybindings from bindings map and handlers", () => {
     const handler = vi.fn();
-    const result = buildKeybindings(
-      { "ctrl+o": "toggle-verbose" },
-      { "toggle-verbose": handler },
-    );
+    const result = buildKeybindings({ "ctrl+o": "toggle-verbose" }, { "toggle-verbose": handler });
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe("o");
     expect(result[0].ctrl).toBe(true);
@@ -104,29 +111,20 @@ describe("buildKeybindings", () => {
   });
 
   it("should skip bindings without a matching handler", () => {
-    const result = buildKeybindings(
-      { "ctrl+o": "toggle-verbose" },
-      {},
-    );
+    const result = buildKeybindings({ "ctrl+o": "toggle-verbose" }, {});
     expect(result).toHaveLength(0);
   });
 
   it("should handle escape key", () => {
     const handler = vi.fn();
-    const result = buildKeybindings(
-      { escape: "cancel" },
-      { cancel: handler },
-    );
+    const result = buildKeybindings({ escape: "cancel" }, { cancel: handler });
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe("escape");
   });
 
   it("should handle shift modifier", () => {
     const handler = vi.fn();
-    const result = buildKeybindings(
-      { "shift+tab": "cycle-mode" },
-      { "cycle-mode": handler },
-    );
+    const result = buildKeybindings({ "shift+tab": "cycle-mode" }, { "cycle-mode": handler });
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe("tab");
     expect(result[0].shift).toBe(true);

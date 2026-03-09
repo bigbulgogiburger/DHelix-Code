@@ -17,15 +17,15 @@ describe("tool-display", () => {
 
     describe("file_read", () => {
       it("should show 'Reading' when running with file path", () => {
-        expect(
-          getToolDisplayText("file_read", "running", { file_path: "/src/index.ts" }),
-        ).toBe("Reading /src/index.ts");
+        expect(getToolDisplayText("file_read", "running", { file_path: "/src/index.ts" })).toBe(
+          "Reading /src/index.ts",
+        );
       });
 
       it("should show 'Read' when complete with file path", () => {
-        expect(
-          getToolDisplayText("file_read", "complete", { file_path: "/src/index.ts" }),
-        ).toBe("Read /src/index.ts");
+        expect(getToolDisplayText("file_read", "complete", { file_path: "/src/index.ts" })).toBe(
+          "Read /src/index.ts",
+        );
       });
 
       it("should show verb only when no args", () => {
@@ -42,9 +42,9 @@ describe("tool-display", () => {
 
     describe("file_write", () => {
       it("should show 'Writing' when running", () => {
-        expect(
-          getToolDisplayText("file_write", "running", { file_path: "/out.ts" }),
-        ).toBe("Writing /out.ts");
+        expect(getToolDisplayText("file_write", "running", { file_path: "/out.ts" })).toBe(
+          "Writing /out.ts",
+        );
       });
 
       it("should show 'Wrote' when complete with line count and size", () => {
@@ -63,15 +63,15 @@ describe("tool-display", () => {
 
     describe("file_edit", () => {
       it("should show 'Editing' when running", () => {
-        expect(
-          getToolDisplayText("file_edit", "running", { file_path: "/a.ts" }),
-        ).toBe("Editing /a.ts");
+        expect(getToolDisplayText("file_edit", "running", { file_path: "/a.ts" })).toBe(
+          "Editing /a.ts",
+        );
       });
 
       it("should show 'Edited' when complete with no old/new_string", () => {
-        expect(
-          getToolDisplayText("file_edit", "complete", { file_path: "/a.ts" }),
-        ).toBe("Edited /a.ts");
+        expect(getToolDisplayText("file_edit", "complete", { file_path: "/a.ts" })).toBe(
+          "Edited /a.ts",
+        );
       });
 
       it("should show change summary when complete with old/new_string", () => {
@@ -93,15 +93,15 @@ describe("tool-display", () => {
 
     describe("bash_exec", () => {
       it("should show 'Running' with command", () => {
-        expect(
-          getToolDisplayText("bash_exec", "running", { command: "npm test" }),
-        ).toBe("Running npm test");
+        expect(getToolDisplayText("bash_exec", "running", { command: "npm test" })).toBe(
+          "Running npm test",
+        );
       });
 
       it("should show 'Ran' when complete", () => {
-        expect(
-          getToolDisplayText("bash_exec", "complete", { command: "npm test" }),
-        ).toBe("Ran npm test");
+        expect(getToolDisplayText("bash_exec", "complete", { command: "npm test" })).toBe(
+          "Ran npm test",
+        );
       });
 
       it("should truncate commands longer than 80 chars", () => {
@@ -123,30 +123,30 @@ describe("tool-display", () => {
 
     describe("glob_search", () => {
       it("should show pattern when running", () => {
-        expect(
-          getToolDisplayText("glob_search", "running", { pattern: "**/*.ts" }),
-        ).toBe('Searching files "**/*.ts"');
+        expect(getToolDisplayText("glob_search", "running", { pattern: "**/*.ts" })).toBe(
+          'Searching files "**/*.ts"',
+        );
       });
 
       it("should show file count with pattern when complete", () => {
         const output = "file1.ts\nfile2.ts\nfile3.ts";
-        expect(
-          getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }, output),
-        ).toBe('Found 3 files matching "**/*.ts"');
+        expect(getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }, output)).toBe(
+          'Found 3 files matching "**/*.ts"',
+        );
       });
 
       it("should show singular 'file' for one result", () => {
-        expect(
-          getToolDisplayText("glob_search", "complete", { pattern: "*.md" }, "file1.ts"),
-        ).toBe('Found 1 file matching "*.md"');
+        expect(getToolDisplayText("glob_search", "complete", { pattern: "*.md" }, "file1.ts")).toBe(
+          'Found 1 file matching "*.md"',
+        );
       });
     });
 
     describe("grep_search", () => {
       it("should show pattern when running", () => {
-        expect(
-          getToolDisplayText("grep_search", "running", { pattern: "TODO" }),
-        ).toBe('Searching "TODO"');
+        expect(getToolDisplayText("grep_search", "running", { pattern: "TODO" })).toBe(
+          'Searching "TODO"',
+        );
       });
 
       it("should show result count when complete with output", () => {
@@ -158,15 +158,15 @@ describe("tool-display", () => {
 
     describe("mkdir", () => {
       it("should show 'Creating directory' when running", () => {
-        expect(
-          getToolDisplayText("mkdir", "running", { path: "/src/new" }),
-        ).toBe("Creating directory /src/new");
+        expect(getToolDisplayText("mkdir", "running", { path: "/src/new" })).toBe(
+          "Creating directory /src/new",
+        );
       });
 
       it("should show 'Created directory' when complete", () => {
-        expect(
-          getToolDisplayText("mkdir", "complete", { path: "/src/new" }),
-        ).toBe("Created directory /src/new");
+        expect(getToolDisplayText("mkdir", "complete", { path: "/src/new" })).toBe(
+          "Created directory /src/new",
+        );
       });
     });
   });
@@ -318,9 +318,9 @@ describe("tool-display", () => {
     });
 
     it("should append duration for completed unknown tools", () => {
-      expect(
-        getToolDisplayText("custom_tool", "complete", undefined, undefined, 250),
-      ).toBe("Completed custom_tool (250ms)");
+      expect(getToolDisplayText("custom_tool", "complete", undefined, undefined, 250)).toBe(
+        "Completed custom_tool (250ms)",
+      );
     });
 
     it("should not append duration when running", () => {
@@ -330,9 +330,9 @@ describe("tool-display", () => {
     });
 
     it("should not append duration when undefined", () => {
-      expect(
-        getToolDisplayText("file_read", "complete", { file_path: "/a.ts" }),
-      ).toBe("Read /a.ts");
+      expect(getToolDisplayText("file_read", "complete", { file_path: "/a.ts" })).toBe(
+        "Read /a.ts",
+      );
     });
   });
 });

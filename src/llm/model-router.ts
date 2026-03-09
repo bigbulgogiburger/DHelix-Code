@@ -271,11 +271,7 @@ export function resolveProvider(modelName: string, opts: ResolveProviderOptions 
     });
   }
 
-  if (
-    modelName.startsWith("gpt-") ||
-    modelName.startsWith("o1-") ||
-    modelName.startsWith("o3-")
-  ) {
+  if (modelName.startsWith("gpt-") || modelName.startsWith("o1-") || modelName.startsWith("o3-")) {
     return new OpenAICompatibleClient({
       baseURL: opts.baseUrl ?? "https://api.openai.com/v1",
       apiKey: opts.apiKey ?? process.env.OPENAI_API_KEY,

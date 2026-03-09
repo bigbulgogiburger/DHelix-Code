@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  applyInputGuardrails,
-  applyOutputGuardrails,
-} from "../../src/guardrails/index.js";
+import { applyInputGuardrails, applyOutputGuardrails } from "../../src/guardrails/index.js";
 
 describe("Guardrails Pipeline Integration", () => {
   describe("applyInputGuardrails", () => {
@@ -151,7 +148,7 @@ describe("Guardrails Pipeline Integration", () => {
     });
 
     it("should redact passwords", () => {
-      const output = 'database config: password=supersecret123';
+      const output = "database config: password=supersecret123";
       const result = applyOutputGuardrails(output);
 
       expect(result.passed).toBe(true);

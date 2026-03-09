@@ -1,7 +1,19 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { runAgentLoop, groupToolCalls, type AgentLoopConfig } from "../../../src/core/agent-loop.js";
-import { type ChatMessage, type ChatResponse, type LLMProvider, type ChatChunk } from "../../../src/llm/provider.js";
-import { type ToolCallStrategy, type PreparedRequest } from "../../../src/llm/tool-call-strategy.js";
+import {
+  runAgentLoop,
+  groupToolCalls,
+  type AgentLoopConfig,
+} from "../../../src/core/agent-loop.js";
+import {
+  type ChatMessage,
+  type ChatResponse,
+  type LLMProvider,
+  type ChatChunk,
+} from "../../../src/llm/provider.js";
+import {
+  type ToolCallStrategy,
+  type PreparedRequest,
+} from "../../../src/llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../../../src/tools/registry.js";
 import { type ExtractedToolCall, type ToolCallResult } from "../../../src/tools/types.js";
 import { type AppEventEmitter } from "../../../src/utils/events.js";
@@ -96,10 +108,12 @@ function createErrorClient(errors: Error[], successResponse?: ChatResponse): LLM
 function createMockStrategy(): ToolCallStrategy {
   return {
     name: "native",
-    prepareRequest: vi.fn((messages: readonly ChatMessage[]): PreparedRequest => ({
-      messages,
-      tools: [],
-    })),
+    prepareRequest: vi.fn(
+      (messages: readonly ChatMessage[]): PreparedRequest => ({
+        messages,
+        tools: [],
+      }),
+    ),
     extractToolCalls: vi.fn(() => []),
     formatToolResults: vi.fn(() => []),
   };
@@ -160,9 +174,7 @@ describe("runAgentLoop", () => {
       events,
     };
 
-    const result = await runAgentLoop(config, [
-      { role: "user", content: "Hello" },
-    ]);
+    const result = await runAgentLoop(config, [{ role: "user", content: "Hello" }]);
 
     expect(result.iterations).toBe(1);
     expect(result.aborted).toBe(false);
@@ -187,9 +199,9 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      await expect(
-        runAgentLoop(config, [{ role: "user", content: "Hi" }]),
-      ).rejects.toThrow("Rate limit");
+      await expect(runAgentLoop(config, [{ role: "user", content: "Hi" }])).rejects.toThrow(
+        "Rate limit",
+      );
 
       expect(client.chat).toHaveBeenCalledTimes(1);
     });
@@ -207,9 +219,7 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      await expect(
-        runAgentLoop(config, [{ role: "user", content: "Hi" }]),
-      ).rejects.toThrow();
+      await expect(runAgentLoop(config, [{ role: "user", content: "Hi" }])).rejects.toThrow();
     }, 15000);
 
     it("should retry transient errors at agent-loop level", async () => {
@@ -225,9 +235,7 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      const result = await runAgentLoop(config, [
-        { role: "user", content: "Hi" },
-      ]);
+      const result = await runAgentLoop(config, [{ role: "user", content: "Hi" }]);
 
       expect(result.iterations).toBe(1);
       expect(result.messages[result.messages.length - 1].content).toBe("Hello!");
@@ -247,9 +255,7 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      const result = await runAgentLoop(config, [
-        { role: "user", content: "Hi" },
-      ]);
+      const result = await runAgentLoop(config, [{ role: "user", content: "Hi" }]);
 
       expect(result.messages[result.messages.length - 1].content).toBe("Hello!");
       expect(client.chat).toHaveBeenCalledTimes(2);
@@ -268,9 +274,9 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      await expect(
-        runAgentLoop(config, [{ role: "user", content: "Hi" }]),
-      ).rejects.toThrow("Invalid request format");
+      await expect(runAgentLoop(config, [{ role: "user", content: "Hi" }])).rejects.toThrow(
+        "Invalid request format",
+      );
 
       expect(client.chat).toHaveBeenCalledTimes(1);
     });
@@ -288,9 +294,9 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      await expect(
-        runAgentLoop(config, [{ role: "user", content: "Hi" }]),
-      ).rejects.toThrow("Request too large");
+      await expect(runAgentLoop(config, [{ role: "user", content: "Hi" }])).rejects.toThrow(
+        "Request too large",
+      );
 
       expect(client.chat).toHaveBeenCalledTimes(1);
     });
@@ -310,9 +316,9 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      await expect(
-        runAgentLoop(config, [{ role: "user", content: "Hi" }]),
-      ).rejects.toThrow("Authentication failed");
+      await expect(runAgentLoop(config, [{ role: "user", content: "Hi" }])).rejects.toThrow(
+        "Authentication failed",
+      );
 
       expect(client.chat).toHaveBeenCalledTimes(1);
     });
@@ -330,9 +336,7 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      await expect(
-        runAgentLoop(config, [{ role: "user", content: "Hi" }]),
-      ).rejects.toThrow();
+      await expect(runAgentLoop(config, [{ role: "user", content: "Hi" }])).rejects.toThrow();
 
       expect(client.chat).toHaveBeenCalledTimes(3);
     }, 15000);
@@ -445,9 +449,7 @@ describe("runAgentLoop", () => {
         events,
       };
 
-      const result = await runAgentLoop(config, [
-        { role: "user", content: "Read files" },
-      ]);
+      const result = await runAgentLoop(config, [{ role: "user", content: "Read files" }]);
 
       // Both tools should have been executed
       expect(mockExecuteToolCall).toHaveBeenCalledTimes(2);
@@ -499,15 +501,14 @@ describe("runAgentLoop", () => {
         }),
       };
 
-      await runAgentLoop(config, [
-        { role: "user", content: "Work" },
-      ]);
+      await runAgentLoop(config, [{ role: "user", content: "Work" }]);
 
       // Only file_read should have been executed; file_write was denied
       expect(mockExecuteToolCall).toHaveBeenCalledTimes(1);
 
       // formatToolResults should have received 2 results (1 denied + 1 executed)
-      const formatCall = (strategy.formatToolResults as ReturnType<typeof vi.fn>).mock.calls[0][0] as ToolCallResult[];
+      const formatCall = (strategy.formatToolResults as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ToolCallResult[];
       expect(formatCall).toHaveLength(2);
       expect(formatCall.find((r: ToolCallResult) => r.name === "file_write")?.isError).toBe(true);
       expect(formatCall.find((r: ToolCallResult) => r.name === "file_read")?.isError).toBe(false);
@@ -556,14 +557,13 @@ describe("runAgentLoop", () => {
       };
 
       // Should not throw - rejected promises are handled
-      const result = await runAgentLoop(config, [
-        { role: "user", content: "Read" },
-      ]);
+      const result = await runAgentLoop(config, [{ role: "user", content: "Read" }]);
 
       expect(result.aborted).toBe(false);
 
       // Check that the rejected result was captured as an error
-      const formatCall = (strategy.formatToolResults as ReturnType<typeof vi.fn>).mock.calls[0][0] as ToolCallResult[];
+      const formatCall = (strategy.formatToolResults as ReturnType<typeof vi.fn>).mock
+        .calls[0][0] as ToolCallResult[];
       const errorResult = formatCall.find((r: ToolCallResult) => r.isError);
       expect(errorResult).toBeDefined();
       expect(errorResult!.output).toContain("Unexpected executor crash");
@@ -661,8 +661,8 @@ describe("groupToolCalls", () => {
     expect(groups).toHaveLength(2);
     expect(groups[0]).toHaveLength(2);
     expect(groups[1]).toHaveLength(2);
-    expect(groups[0].map(c => c.id)).toEqual(["1", "2"]);
-    expect(groups[1].map(c => c.id)).toEqual(["3", "4"]);
+    expect(groups[0].map((c) => c.id)).toEqual(["1", "2"]);
+    expect(groups[1].map((c) => c.id)).toEqual(["3", "4"]);
   });
 
   it("should handle file_write without a file_path argument", () => {

@@ -92,10 +92,7 @@ async function restoreCheckpoint(
 ): Promise<CommandResult> {
   // Show diff before restoring
   try {
-    const diff = await checkpointManager.diffFromCheckpoint(
-      checkpointId,
-      context.workingDirectory,
-    );
+    const diff = await checkpointManager.diffFromCheckpoint(checkpointId, context.workingDirectory);
 
     const changesToRevert = diff.filter((d) => d.status !== "unchanged");
 

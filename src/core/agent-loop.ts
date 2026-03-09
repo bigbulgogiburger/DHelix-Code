@@ -222,8 +222,7 @@ function truncateToolResult(
     return {
       ...result,
       output:
-        truncated +
-        `\n\n[... truncated, showing ~${truncatedTokens} of ${tokenCount} tokens]`,
+        truncated + `\n\n[... truncated, showing ~${truncatedTokens} of ${tokenCount} tokens]`,
     };
   }
 
@@ -421,7 +420,10 @@ export async function runAgentLoop(
 
         // Apply input guardrails
         if (config.enableGuardrails !== false) {
-          const guardrailCheck = applyInputGuardrails(call.name, call.arguments as Record<string, unknown>);
+          const guardrailCheck = applyInputGuardrails(
+            call.name,
+            call.arguments as Record<string, unknown>,
+          );
           if (guardrailCheck.severity === "block") {
             const blocked: ToolCallResult = {
               id: call.id,
@@ -450,9 +452,7 @@ export async function runAgentLoop(
 
       // Auto-checkpoint: snapshot files before file-modifying tools execute
       if (config.checkpointManager) {
-        const fileModifyingCalls = executableCalls.filter(
-          (c) => FILE_WRITE_TOOLS.has(c.name),
-        );
+        const fileModifyingCalls = executableCalls.filter((c) => FILE_WRITE_TOOLS.has(c.name));
         if (fileModifyingCalls.length > 0) {
           const trackedFiles = fileModifyingCalls
             .map((c) => extractFilePath(c))
@@ -526,9 +526,10 @@ export async function runAgentLoop(
           });
         } else {
           // Promise.allSettled rejected — unexpected execution error
-          const errorMessage = settledResult.reason instanceof Error
-            ? settledResult.reason.message
-            : String(settledResult.reason);
+          const errorMessage =
+            settledResult.reason instanceof Error
+              ? settledResult.reason.message
+              : String(settledResult.reason);
           const errorResult: ToolCallResult = {
             id: call.id,
             name: call.name,

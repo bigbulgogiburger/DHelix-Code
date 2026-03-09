@@ -44,11 +44,7 @@ export function usePermissionPrompt(
         return { allowed: false, reason: "Unknown tool" };
       }
 
-      const check = permissionManager.check(
-        call.name,
-        tool.permissionLevel,
-        call.arguments,
-      );
+      const check = permissionManager.check(call.name, tool.permissionLevel, call.arguments);
       if (check.allowed) {
         return { allowed: true };
       }

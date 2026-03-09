@@ -155,9 +155,7 @@ describe("spawnSubagent", () => {
   });
 
   it("should store message history for resume", async () => {
-    const { spawnSubagent, getAgentHistory } = await import(
-      "../../../src/subagents/spawner.js"
-    );
+    const { spawnSubagent, getAgentHistory } = await import("../../../src/subagents/spawner.js");
 
     const result = await spawnSubagent({
       type: "explore",

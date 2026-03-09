@@ -54,15 +54,21 @@ function renderEntry(
         : undefined;
       const startTime =
         entry.type === "tool-start"
-          ? (typeof entry.data.startTime === "number" ? entry.data.startTime : undefined)
-          : (typeof startEntry?.data.startTime === "number" ? startEntry.data.startTime : undefined);
+          ? typeof entry.data.startTime === "number"
+            ? entry.data.startTime
+            : undefined
+          : typeof startEntry?.data.startTime === "number"
+            ? startEntry.data.startTime
+            : undefined;
 
       const status =
         entry.type === "tool-start"
-          ? "running" as const
+          ? ("running" as const)
           : entry.type === "tool-denied"
-            ? "denied" as const
-            : (entry.data.isError ? "error" as const : "complete" as const);
+            ? ("denied" as const)
+            : entry.data.isError
+              ? ("error" as const)
+              : ("complete" as const);
 
       return (
         <ToolCallBlock
@@ -139,7 +145,10 @@ export const ActivityFeed = React.memo(function ActivityFeed({
       }
       // Add spacing between turns
       const spacerId = nextIdRef.current++;
-      newItems.push({ key: `spacer-${spacerId}`, node: <Text key={`spacer-${spacerId}`}>{""}</Text> });
+      newItems.push({
+        key: `spacer-${spacerId}`,
+        node: <Text key={`spacer-${spacerId}`}>{""}</Text>,
+      });
     }
 
     processedTurnCountRef.current = completedTurns.length;
@@ -177,7 +186,9 @@ export const ActivityFeed = React.memo(function ActivityFeed({
         entry.type === "tool-denied" ||
         (entry.type === "assistant-text" && entry.data.isComplete === true) ||
         // tool-start whose tool has already completed
-        (entry.type === "tool-start" && typeof entry.data.id === "string" && completedToolIds.has(entry.data.id));
+        (entry.type === "tool-start" &&
+          typeof entry.data.id === "string" &&
+          completedToolIds.has(entry.data.id));
 
       if (isComplete) {
         flushedSetRef.current.add(entry);
@@ -198,14 +209,16 @@ export const ActivityFeed = React.memo(function ActivityFeed({
   const liveEntries = useMemo(() => {
     if (!currentTurn) return [];
     return currentTurn.entries.filter((entry) => !flushedSetRef.current.has(entry));
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTurn, staticItems]); // staticItems dependency ensures re-filter after flush
 
   return (
     <>
       <Static items={staticItems}>
         {(item) => (
-          <Box key={item.key} flexDirection="column">{item.node}</Box>
+          <Box key={item.key} flexDirection="column">
+            {item.node}
+          </Box>
         )}
       </Static>
       {liveEntries.length > 0 && (

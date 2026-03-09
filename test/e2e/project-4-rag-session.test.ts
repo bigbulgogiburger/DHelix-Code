@@ -31,10 +31,7 @@ async function sendTurn(
   config: Omit<AgentLoopConfig, "maxIterations" | "maxTokens">,
 ): Promise<ChatMessage[]> {
   messages.push({ role: "user", content: userMessage });
-  const result = await runAgentLoop(
-    { ...config, maxIterations: 25, maxTokens: 16384 },
-    messages,
-  );
+  const result = await runAgentLoop({ ...config, maxIterations: 25, maxTokens: 16384 }, messages);
   messages.length = 0;
   messages.push(...result.messages);
   return messages;
@@ -59,12 +56,18 @@ describe.skipIf(!hasApiKey)("Project 4: RAG System Multi-turn Session", () => {
 
     const toolRegistry = new ToolRegistry();
     toolRegistry.registerAll([
-      fileReadTool, fileWriteTool, fileEditTool,
-      bashExecTool, globSearchTool, grepSearchTool,
+      fileReadTool,
+      fileWriteTool,
+      fileEditTool,
+      bashExecTool,
+      globSearchTool,
+      grepSearchTool,
     ]);
 
     const events = createEventEmitter();
-    events.on("tool:complete", () => { totalToolCalls++; });
+    events.on("tool:complete", () => {
+      totalToolCalls++;
+    });
 
     config = {
       client,
@@ -93,35 +96,31 @@ Rules:
   });
 
   afterAll(() => {
-    console.log(`\n[Project 4 Stats] Total tool calls: ${totalToolCalls}, Final messages: ${messages.length}`);
+    console.log(
+      `\n[Project 4 Stats] Total tool calls: ${totalToolCalls}, Final messages: ${messages.length}`,
+    );
   });
 
-  it(
-    "Turn 1: Initialize Node.js TypeScript project",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create a Node.js TypeScript project in ${projectDir}:
+  it("Turn 1: Initialize Node.js TypeScript project", async () => {
+    await sendTurn(
+      messages,
+      `Create a Node.js TypeScript project in ${projectDir}:
 1. package.json with name "rag-system", type "module", scripts: { "build": "tsc", "test": "vitest run", "start": "node dist/cli.js" }, devDependencies: typescript, vitest, @types/node
 2. tsconfig.json with target ES2022, module NodeNext, moduleResolution NodeNext, outDir dist, rootDir src, strict true, esModuleInterop true
 3. Create src/ directory
 
 Just create the files directly, then run npm install.`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "package.json"))).toBe(true);
-      expect(existsSync(join(projectDir, "tsconfig.json"))).toBe(true);
-    },
-    180_000,
-  );
+    expect(existsSync(join(projectDir, "package.json"))).toBe(true);
+    expect(existsSync(join(projectDir, "tsconfig.json"))).toBe(true);
+  }, 180_000);
 
-  it(
-    "Turn 2: Create AcmeDB documentation files",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create docs/ folder in ${projectDir} with 3 markdown files about a fictional product "AcmeDB" (a high-performance database):
+  it("Turn 2: Create AcmeDB documentation files", async () => {
+    await sendTurn(
+      messages,
+      `Create docs/ folder in ${projectDir} with 3 markdown files about a fictional product "AcmeDB" (a high-performance database):
 
 1. docs/installation.md — Installation guide: system requirements (Linux/macOS, 4GB RAM, Node.js 18+), installation via npm (npm install -g acmedb), configuration file location (~/.acmedb/config.yml), first-time setup steps, starting the server (acmedb start --port 5432).
 
@@ -130,22 +129,18 @@ Just create the files directly, then run npm install.`,
 3. docs/faq.md — FAQ: 5 questions about AcmeDB — max data size (unlimited with sharding), supported data types (string, number, boolean, date, array, object, binary), backup methods (acmedb backup --output file.bak), performance tuning (cache_size, worker_threads config), comparison to PostgreSQL.
 
 Each file should be at least 200 words with realistic technical content.`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "docs", "installation.md"))).toBe(true);
-      expect(existsSync(join(projectDir, "docs", "api-reference.md"))).toBe(true);
-      expect(existsSync(join(projectDir, "docs", "faq.md"))).toBe(true);
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "docs", "installation.md"))).toBe(true);
+    expect(existsSync(join(projectDir, "docs", "api-reference.md"))).toBe(true);
+    expect(existsSync(join(projectDir, "docs", "faq.md"))).toBe(true);
+  }, 120_000);
 
-  it(
-    "Turn 3: Create text chunking module",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/chunker.ts:
+  it("Turn 3: Create text chunking module", async () => {
+    await sendTurn(
+      messages,
+      `Create src/chunker.ts:
 - Export interface ChunkOptions { chunkSize: number; overlap: number; }
 - Export interface Chunk { text: string; source: string; index: number; }
 - Export function chunkText(text: string, source: string, options?: ChunkOptions): Chunk[]
@@ -155,23 +150,19 @@ Each file should be at least 200 words with realistic technical content.`,
   - Handle edge cases: text shorter than chunkSize returns single chunk, empty text returns empty array
 - Export function chunkFile(filePath: string, options?: ChunkOptions): Promise<Chunk[]>
   - Read the file and call chunkText with the filename as source`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "chunker.ts"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "chunker.ts"), "utf-8");
-      expect(content).toContain("chunkText");
-      expect(content).toContain("ChunkOptions");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "chunker.ts"))).toBe(true);
+    const content = readFileSync(join(projectDir, "src", "chunker.ts"), "utf-8");
+    expect(content).toContain("chunkText");
+    expect(content).toContain("ChunkOptions");
+  }, 120_000);
 
-  it(
-    "Turn 4: Create cosine similarity function",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/similarity.ts:
+  it("Turn 4: Create cosine similarity function", async () => {
+    await sendTurn(
+      messages,
+      `Create src/similarity.ts:
 - Export function dotProduct(a: number[], b: number[]): number — sum of element-wise products
 - Export function magnitude(v: number[]): number — sqrt of sum of squares
 - Export function cosineSimilarity(a: number[], b: number[]): number
@@ -179,24 +170,20 @@ Each file should be at least 200 words with realistic technical content.`,
   - Handle zero-magnitude vectors: return 0
   - Both vectors must have same length (throw Error if not)
 - All pure math, no external dependencies`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "similarity.ts"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "similarity.ts"), "utf-8");
-      expect(content).toContain("cosineSimilarity");
-      expect(content).toContain("dotProduct");
-      expect(content).toContain("magnitude");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "similarity.ts"))).toBe(true);
+    const content = readFileSync(join(projectDir, "src", "similarity.ts"), "utf-8");
+    expect(content).toContain("cosineSimilarity");
+    expect(content).toContain("dotProduct");
+    expect(content).toContain("magnitude");
+  }, 120_000);
 
-  it(
-    "Turn 5: Create in-memory vector store",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/vector-store.ts:
+  it("Turn 5: Create in-memory vector store", async () => {
+    await sendTurn(
+      messages,
+      `Create src/vector-store.ts:
 - Export interface VectorEntry { text: string; source: string; embedding: number[]; metadata?: Record<string, unknown>; }
 - Export interface SearchResult { text: string; source: string; score: number; metadata?: Record<string, unknown>; }
 - Export class VectorStore:
@@ -206,23 +193,19 @@ Each file should be at least 200 words with realistic technical content.`,
   - size(): number — returns count of entries
   - clear(): void — empty the store
 Import cosineSimilarity from ./similarity.js`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "vector-store.ts"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "vector-store.ts"), "utf-8");
-      expect(content).toContain("VectorStore");
-      expect(content).toContain("cosineSimilarity");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "vector-store.ts"))).toBe(true);
+    const content = readFileSync(join(projectDir, "src", "vector-store.ts"), "utf-8");
+    expect(content).toContain("VectorStore");
+    expect(content).toContain("cosineSimilarity");
+  }, 120_000);
 
-  it(
-    "Turn 6: Create embedder module",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/embedder.ts:
+  it("Turn 6: Create embedder module", async () => {
+    await sendTurn(
+      messages,
+      `Create src/embedder.ts:
 - Export interface EmbedderConfig { apiKey: string; model?: string; baseURL?: string; }
 - Export class Embedder:
   - constructor takes EmbedderConfig, default model "text-embedding-3-small", default baseURL "https://api.openai.com/v1"
@@ -230,47 +213,39 @@ Import cosineSimilarity from ./similarity.js`,
   - Use native fetch (no axios). Parse the response JSON and extract data[].embedding.
   - Handle API errors: throw Error with status code and message
 - Export async function createEmbedder(apiKey: string): Promise<Embedder> — convenience factory`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "embedder.ts"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "embedder.ts"), "utf-8");
-      expect(content).toContain("Embedder");
-      expect(content).toContain("text-embedding-3-small");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "embedder.ts"))).toBe(true);
+    const content = readFileSync(join(projectDir, "src", "embedder.ts"), "utf-8");
+    expect(content).toContain("Embedder");
+    expect(content).toContain("text-embedding-3-small");
+  }, 120_000);
 
-  it(
-    "Turn 7: Create retriever pipeline",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/retriever.ts:
+  it("Turn 7: Create retriever pipeline", async () => {
+    await sendTurn(
+      messages,
+      `Create src/retriever.ts:
 - Export interface RetrieverConfig { embedder: Embedder (from ./embedder.js); vectorStore: VectorStore (from ./vector-store.js); topK?: number; }
 - Export class Retriever:
   - constructor(config: RetrieverConfig), default topK=3
   - async ingest(chunks: Chunk[]): Promise<void> — embed all chunk texts via embedder, then add to vectorStore as VectorEntries
   - async retrieve(query: string): Promise<SearchResult[]> — embed the query, search vectorStore with topK
 Import types from the appropriate modules.`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "retriever.ts"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "retriever.ts"), "utf-8");
-      expect(content).toContain("Retriever");
-      expect(content).toContain("ingest");
-      expect(content).toContain("retrieve");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "retriever.ts"))).toBe(true);
+    const content = readFileSync(join(projectDir, "src", "retriever.ts"), "utf-8");
+    expect(content).toContain("Retriever");
+    expect(content).toContain("ingest");
+    expect(content).toContain("retrieve");
+  }, 120_000);
 
-  it(
-    "Turn 8: Create generator module",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/generator.ts:
+  it("Turn 8: Create generator module", async () => {
+    await sendTurn(
+      messages,
+      `Create src/generator.ts:
 - Export interface GeneratorConfig { apiKey: string; model?: string; baseURL?: string; }
 - Export interface GeneratedAnswer { answer: string; sources: string[]; }
 - Export class Generator:
@@ -282,23 +257,19 @@ Import types from the appropriate modules.`,
     - Extract the answer text and collect unique source filenames
     - Use native fetch. Handle API errors.
 Import SearchResult from ./vector-store.js`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "generator.ts"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "generator.ts"), "utf-8");
-      expect(content).toContain("Generator");
-      expect(content).toContain("GeneratedAnswer");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "generator.ts"))).toBe(true);
+    const content = readFileSync(join(projectDir, "src", "generator.ts"), "utf-8");
+    expect(content).toContain("Generator");
+    expect(content).toContain("GeneratedAnswer");
+  }, 120_000);
 
-  it(
-    "Turn 9: Create CLI interface",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/cli.ts:
+  it("Turn 9: Create CLI interface", async () => {
+    await sendTurn(
+      messages,
+      `Create src/cli.ts:
 - Parse command line args: first arg is the query string, --docs-dir (default "./docs"), --api-key (or OPENAI_API_KEY env var)
 - Load all .md files from the docs directory using fs.readdir + chunkFile from ./chunker.js
 - Create Embedder, VectorStore, Retriever, Generator instances
@@ -310,21 +281,17 @@ Import SearchResult from ./vector-store.js`,
 - Use process.argv for args parsing (no external lib). Make it the main entry point.
 
 Also create src/index.ts that re-exports the main modules: chunker, similarity, vector-store, embedder, retriever, generator.`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "cli.ts"))).toBe(true);
-      expect(existsSync(join(projectDir, "src", "index.ts"))).toBe(true);
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "cli.ts"))).toBe(true);
+    expect(existsSync(join(projectDir, "src", "index.ts"))).toBe(true);
+  }, 120_000);
 
-  it(
-    "Turn 10: Write tests for chunker, similarity, and vector store",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/__tests__/chunker.test.ts:
+  it("Turn 10: Write tests for chunker, similarity, and vector store", async () => {
+    await sendTurn(
+      messages,
+      `Create src/__tests__/chunker.test.ts:
 - Test chunkText: empty text returns [], short text returns single chunk, long text returns multiple chunks with correct overlap, source and index are set correctly
 - Test with custom chunkSize and overlap
 
@@ -337,49 +304,47 @@ Create src/__tests__/vector-store.test.ts:
 - Test VectorStore: add entries, search returns correct topK, scores are sorted descending, clear empties the store, size returns correct count
 
 Use vitest (import { describe, it, expect } from "vitest"). Import from the source files using relative paths.`,
-        config,
-      );
+      config,
+    );
 
-      const hasChunkerTest = existsSync(join(projectDir, "src", "__tests__", "chunker.test.ts"));
-      const hasSimilarityTest = existsSync(join(projectDir, "src", "__tests__", "similarity.test.ts"));
-      const hasVectorStoreTest = existsSync(join(projectDir, "src", "__tests__", "vector-store.test.ts"));
+    const hasChunkerTest = existsSync(join(projectDir, "src", "__tests__", "chunker.test.ts"));
+    const hasSimilarityTest = existsSync(
+      join(projectDir, "src", "__tests__", "similarity.test.ts"),
+    );
+    const hasVectorStoreTest = existsSync(
+      join(projectDir, "src", "__tests__", "vector-store.test.ts"),
+    );
 
-      expect(hasChunkerTest || hasSimilarityTest || hasVectorStoreTest).toBe(true);
-    },
-    120_000,
-  );
+    expect(hasChunkerTest || hasSimilarityTest || hasVectorStoreTest).toBe(true);
+  }, 120_000);
 
-  it(
-    "Turn 11: Build and run tests, fix failures",
-    async () => {
-      await sendTurn(
-        messages,
-        `In ${projectDir}:
+  it("Turn 11: Build and run tests, fix failures", async () => {
+    await sendTurn(
+      messages,
+      `In ${projectDir}:
 1. Run: npm run build
 2. If build errors, fix them and rebuild
 3. Run: npm test
 4. If any tests fail, fix them and re-run
 5. Keep fixing until both build and tests succeed completely.`,
-        config,
-      );
+      config,
+    );
 
-      // Verify build works
-      try {
-        execSync("npm run build 2>&1", {
-          cwd: projectDir,
-          timeout: 60_000,
-        });
-      } catch {
-        // Build might have minor issues — check if dist exists
-      }
-
-      // Verify tests pass
-      const testResult = execSync("npm test 2>&1", {
+    // Verify build works
+    try {
+      execSync("npm run build 2>&1", {
         cwd: projectDir,
         timeout: 60_000,
-      }).toString();
-      expect(testResult).toContain("passed");
-    },
-    300_000,
-  );
+      });
+    } catch {
+      // Build might have minor issues — check if dist exists
+    }
+
+    // Verify tests pass
+    const testResult = execSync("npm test 2>&1", {
+      cwd: projectDir,
+      timeout: 60_000,
+    }).toString();
+    expect(testResult).toContain("passed");
+  }, 300_000);
 });

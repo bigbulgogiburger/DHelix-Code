@@ -61,9 +61,7 @@ describe("ContextManager LLM Compaction", () => {
 
   it("should fall back to local summarization when LLM call fails", async () => {
     const mockProvider = createMockProvider();
-    (mockProvider.chat as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("LLM API error"),
-    );
+    (mockProvider.chat as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("LLM API error"));
 
     const manager = new ContextManager({
       maxContextTokens: 500,

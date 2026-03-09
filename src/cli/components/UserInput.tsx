@@ -19,7 +19,10 @@ function extractCompletionToken(value: string, cursorOffset: number): string {
 }
 
 /** Extract the @ mention token being typed at the cursor */
-function extractMentionToken(value: string, cursorOffset: number): { token: string; start: number } | null {
+function extractMentionToken(
+  value: string,
+  cursorOffset: number,
+): { token: string; start: number } | null {
   const beforeCursor = value.slice(0, cursorOffset);
   const atIndex = beforeCursor.lastIndexOf("@");
   if (atIndex === -1) return null;
@@ -76,7 +79,13 @@ export function UserInput({
     if (mention && mention.token.length > 0) {
       setIsMentioning(true);
       const pattern = `**/${mention.token}*`;
-      fg(pattern, { dot: false, onlyFiles: true, cwd: process.cwd(), deep: 3, suppressErrors: true })
+      fg(pattern, {
+        dot: false,
+        onlyFiles: true,
+        cwd: process.cwd(),
+        deep: 3,
+        suppressErrors: true,
+      })
         .then((results) => {
           setMentionSuggestions(results.slice(0, 10));
           setMentionIndex(0);
@@ -224,7 +233,10 @@ export function UserInput({
       }
 
       // When completing/mentioning, Enter or Space confirms selection
-      if ((isCompleting || isMentioning) && (key.return || input === "\n" || input === "\r" || input === " ")) {
+      if (
+        (isCompleting || isMentioning) &&
+        (key.return || input === "\n" || input === "\r" || input === " ")
+      ) {
         if (isMentioning && mentionSuggestions.length > 0) {
           const selected = mentionSuggestions[mentionIndex];
           const mention = extractMentionToken(value, cursorOffset);
@@ -357,7 +369,7 @@ export function UserInput({
       // Show cursor at start with placeholder faded after it
       return (
         <>
-          <Text inverse>{" "}</Text>
+          <Text inverse> </Text>
           <Text color="gray">{placeholder}</Text>
         </>
       );
@@ -433,7 +445,11 @@ export function UserInput({
       {activeSuggestions.length > 0 && (
         <Box flexDirection="column" marginLeft={2}>
           {activeSuggestions.map((item, idx) => (
-            <Text key={item} color={idx === activeIndex ? "blue" : "gray"} bold={idx === activeIndex}>
+            <Text
+              key={item}
+              color={idx === activeIndex ? "blue" : "gray"}
+              bold={idx === activeIndex}
+            >
               {idx === activeIndex ? "> " : "  "}
               {isMentioning ? `@file:${item}` : item}
             </Text>

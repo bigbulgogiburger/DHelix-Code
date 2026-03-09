@@ -338,13 +338,14 @@ program
         });
       }
 
-      const [{ render }, React, { App }, { printStartupLogo }, { patchInkRendering }] = await Promise.all([
-        import("ink"),
-        import("react"),
-        import("./cli/App.js"),
-        import("./cli/components/Logo.js"),
-        import("./cli/renderer/synchronized-output.js"),
-      ]);
+      const [{ render }, React, { App }, { printStartupLogo }, { patchInkRendering }] =
+        await Promise.all([
+          import("ink"),
+          import("react"),
+          import("./cli/App.js"),
+          import("./cli/components/Logo.js"),
+          import("./cli/renderer/synchronized-output.js"),
+        ]);
 
       // Print logo to stdout BEFORE Ink render — prevents flickering
       printStartupLogo(config.llm.model);

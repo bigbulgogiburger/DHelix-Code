@@ -161,7 +161,10 @@ describe("web_fetch tool", () => {
   });
 
   it("should handle HTTP 500 error", async () => {
-    const mockResponse = new Response("Error", { status: 500, statusText: "Internal Server Error" });
+    const mockResponse = new Response("Error", {
+      status: 500,
+      statusText: "Internal Server Error",
+    });
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(mockResponse);
 
     const result = await webFetchTool.execute(
@@ -262,10 +265,7 @@ describe("web_fetch tool", () => {
         status: 200,
       }),
     );
-    await webFetchTool.execute(
-      { url: "https://example.com/page-50", maxLength: 50_000 },
-      context,
-    );
+    await webFetchTool.execute({ url: "https://example.com/page-50", maxLength: 50_000 }, context);
 
     // page-0 should now be evicted — fetch will be called again
     fetchSpy.mockResolvedValueOnce(

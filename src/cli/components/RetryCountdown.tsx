@@ -34,7 +34,8 @@ export function RetryCountdown({ seconds, label = "재시도까지" }: RetryCoun
 
   return (
     <Text dimColor>
-      {"\u23F3"} {label} {remaining}{"\uCD08"}...
+      {"\u23F3"} {label} {remaining}
+      {"\uCD08"}...
     </Text>
   );
 }

@@ -10,15 +10,15 @@ import {
 describe("getToolDisplayText", () => {
   describe("file_read", () => {
     it("should show 'Reading' with file path when running", () => {
-      expect(
-        getToolDisplayText("file_read", "running", { file_path: "/src/index.ts" }),
-      ).toBe("Reading /src/index.ts");
+      expect(getToolDisplayText("file_read", "running", { file_path: "/src/index.ts" })).toBe(
+        "Reading /src/index.ts",
+      );
     });
 
     it("should show 'Read' with file path when complete", () => {
-      expect(
-        getToolDisplayText("file_read", "complete", { file_path: "/src/index.ts" }),
-      ).toBe("Read /src/index.ts");
+      expect(getToolDisplayText("file_read", "complete", { file_path: "/src/index.ts" })).toBe(
+        "Read /src/index.ts",
+      );
     });
 
     it("should show verb only when no args", () => {
@@ -32,29 +32,29 @@ describe("getToolDisplayText", () => {
 
   describe("file_write", () => {
     it("should show 'Writing' when running", () => {
-      expect(
-        getToolDisplayText("file_write", "running", { file_path: "/out.txt" }),
-      ).toBe("Writing /out.txt");
+      expect(getToolDisplayText("file_write", "running", { file_path: "/out.txt" })).toBe(
+        "Writing /out.txt",
+      );
     });
 
     it("should show 'Wrote' when complete", () => {
-      expect(
-        getToolDisplayText("file_write", "complete", { file_path: "/out.txt" }),
-      ).toBe("Wrote /out.txt");
+      expect(getToolDisplayText("file_write", "complete", { file_path: "/out.txt" })).toBe(
+        "Wrote /out.txt",
+      );
     });
   });
 
   describe("file_edit", () => {
     it("should show 'Editing' when running", () => {
-      expect(
-        getToolDisplayText("file_edit", "running", { file_path: "/app.ts" }),
-      ).toBe("Editing /app.ts");
+      expect(getToolDisplayText("file_edit", "running", { file_path: "/app.ts" })).toBe(
+        "Editing /app.ts",
+      );
     });
 
     it("should show 'Edited' when complete without old/new_string", () => {
-      expect(
-        getToolDisplayText("file_edit", "complete", { file_path: "/app.ts" }),
-      ).toBe("Edited /app.ts");
+      expect(getToolDisplayText("file_edit", "complete", { file_path: "/app.ts" })).toBe(
+        "Edited /app.ts",
+      );
     });
 
     it("should show change summary when complete with old/new_string", () => {
@@ -70,15 +70,15 @@ describe("getToolDisplayText", () => {
 
   describe("bash_exec", () => {
     it("should show 'Running' with command when running", () => {
-      expect(
-        getToolDisplayText("bash_exec", "running", { command: "npm test" }),
-      ).toBe("Running npm test");
+      expect(getToolDisplayText("bash_exec", "running", { command: "npm test" })).toBe(
+        "Running npm test",
+      );
     });
 
     it("should show 'Ran' with command when complete", () => {
-      expect(
-        getToolDisplayText("bash_exec", "complete", { command: "npm test" }),
-      ).toBe("Ran npm test");
+      expect(getToolDisplayText("bash_exec", "complete", { command: "npm test" })).toBe(
+        "Ran npm test",
+      );
     });
 
     it("should truncate commands longer than 80 characters", () => {
@@ -100,43 +100,43 @@ describe("getToolDisplayText", () => {
 
   describe("glob_search", () => {
     it("should show pattern when running", () => {
-      expect(
-        getToolDisplayText("glob_search", "running", { pattern: "**/*.ts" }),
-      ).toBe('Searching files "**/*.ts"');
+      expect(getToolDisplayText("glob_search", "running", { pattern: "**/*.ts" })).toBe(
+        'Searching files "**/*.ts"',
+      );
     });
 
     it("should show file count with pattern when complete", () => {
       const output = "/src/a.ts\n/src/b.ts\n/src/c.ts\n";
-      expect(
-        getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }, output),
-      ).toBe('Found 3 files matching "**/*.ts"');
+      expect(getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }, output)).toBe(
+        'Found 3 files matching "**/*.ts"',
+      );
     });
 
     it("should show singular 'file' for single result", () => {
       const output = "/src/index.ts\n";
-      expect(
-        getToolDisplayText("glob_search", "complete", { pattern: "index.ts" }, output),
-      ).toBe('Found 1 file matching "index.ts"');
+      expect(getToolDisplayText("glob_search", "complete", { pattern: "index.ts" }, output)).toBe(
+        'Found 1 file matching "index.ts"',
+      );
     });
 
     it("should fall back to pattern when no output", () => {
-      expect(
-        getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" }),
-      ).toBe('Found "**/*.ts"');
+      expect(getToolDisplayText("glob_search", "complete", { pattern: "**/*.ts" })).toBe(
+        'Found "**/*.ts"',
+      );
     });
 
     it("should handle empty output by falling back to pattern", () => {
-      expect(
-        getToolDisplayText("glob_search", "complete", { pattern: "*.xyz" }, ""),
-      ).toBe('Found "*.xyz"');
+      expect(getToolDisplayText("glob_search", "complete", { pattern: "*.xyz" }, "")).toBe(
+        'Found "*.xyz"',
+      );
     });
   });
 
   describe("grep_search", () => {
     it("should show pattern when running", () => {
-      expect(
-        getToolDisplayText("grep_search", "running", { pattern: "TODO" }),
-      ).toBe('Searching "TODO"');
+      expect(getToolDisplayText("grep_search", "running", { pattern: "TODO" })).toBe(
+        'Searching "TODO"',
+      );
     });
 
     it("should show result count when complete with output", () => {
@@ -146,23 +146,23 @@ describe("getToolDisplayText", () => {
     });
 
     it("should show pattern only when complete without output", () => {
-      expect(
-        getToolDisplayText("grep_search", "complete", { pattern: "TODO" }),
-      ).toBe('Searched "TODO"');
+      expect(getToolDisplayText("grep_search", "complete", { pattern: "TODO" })).toBe(
+        'Searched "TODO"',
+      );
     });
   });
 
   describe("mkdir", () => {
     it("should show 'Creating directory' with path when running", () => {
-      expect(
-        getToolDisplayText("mkdir", "running", { path: "/src/utils" }),
-      ).toBe("Creating directory /src/utils");
+      expect(getToolDisplayText("mkdir", "running", { path: "/src/utils" })).toBe(
+        "Creating directory /src/utils",
+      );
     });
 
     it("should show 'Created directory' with path when complete", () => {
-      expect(
-        getToolDisplayText("mkdir", "complete", { path: "/src/utils" }),
-      ).toBe("Created directory /src/utils");
+      expect(getToolDisplayText("mkdir", "complete", { path: "/src/utils" })).toBe(
+        "Created directory /src/utils",
+      );
     });
   });
 
@@ -180,15 +180,15 @@ describe("getToolDisplayText", () => {
 
   describe("error and denied statuses use complete verb", () => {
     it("should use complete verb for error status", () => {
-      expect(
-        getToolDisplayText("file_read", "error", { file_path: "/fail.ts" }),
-      ).toBe("Read /fail.ts");
+      expect(getToolDisplayText("file_read", "error", { file_path: "/fail.ts" })).toBe(
+        "Read /fail.ts",
+      );
     });
 
     it("should use complete verb for denied status", () => {
-      expect(
-        getToolDisplayText("file_write", "denied", { file_path: "/secret.ts" }),
-      ).toBe("Wrote /secret.ts");
+      expect(getToolDisplayText("file_write", "denied", { file_path: "/secret.ts" })).toBe(
+        "Wrote /secret.ts",
+      );
     });
   });
 });
@@ -248,7 +248,7 @@ describe("getToolPreview", () => {
     });
     // Before context
     expect(preview).toContain(" 105   <MessageList />");
-    expect(preview).toContain(" 106   <Box flexDirection=\"column\">");
+    expect(preview).toContain(' 106   <Box flexDirection="column">');
     expect(preview).toContain(" 107     // inner");
     // Removed
     expect(preview).toContain(" 108 - <Logo />");
@@ -263,10 +263,12 @@ describe("getToolPreview", () => {
   });
 
   it("should return undefined for file_edit when running", () => {
-    expect(getToolPreview("file_edit", "running", {
-      old_string: "a",
-      new_string: "b",
-    })).toBeUndefined();
+    expect(
+      getToolPreview("file_edit", "running", {
+        old_string: "a",
+        new_string: "b",
+      }),
+    ).toBeUndefined();
   });
 
   it("should return undefined for tools without preview", () => {

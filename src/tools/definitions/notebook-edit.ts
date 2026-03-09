@@ -11,7 +11,9 @@ const paramSchema = z.object({
     .int()
     .min(0)
     .optional()
-    .describe("Cell index (0-based). For 'add': insertion position (default: end). For 'replace'/'delete': required."),
+    .describe(
+      "Cell index (0-based). For 'add': insertion position (default: end). For 'replace'/'delete': required.",
+    ),
   cellType: z
     .enum(["code", "markdown"])
     .optional()
@@ -41,9 +43,9 @@ interface Notebook {
 }
 
 function createCell(cellType: string, source: string): NotebookCell {
-  const sourceLines = source.split("\n").map((line, i, arr) =>
-    i < arr.length - 1 ? `${line}\n` : line,
-  );
+  const sourceLines = source
+    .split("\n")
+    .map((line, i, arr) => (i < arr.length - 1 ? `${line}\n` : line));
 
   const cell: NotebookCell = {
     cell_type: cellType,

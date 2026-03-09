@@ -13,13 +13,15 @@ function createMockMCPClient(
 ): MCPClient {
   const client = {
     listTools: vi.fn(async () => tools),
-    callTool: vi.fn(async (name: string, _args: Record<string, unknown>): Promise<MCPToolCallResult> => {
-      const result = callResults?.get(name);
-      if (result) return result;
-      return {
-        content: [{ type: "text" as const, text: `result from ${name}` }],
-      };
-    }),
+    callTool: vi.fn(
+      async (name: string, _args: Record<string, unknown>): Promise<MCPToolCallResult> => {
+        const result = callResults?.get(name);
+        if (result) return result;
+        return {
+          content: [{ type: "text" as const, text: `result from ${name}` }],
+        };
+      },
+    ),
     setToolsChangedCallback: vi.fn(),
     getState: vi.fn(() => "connected" as const),
     getCapabilities: vi.fn(() => null),
@@ -63,10 +65,7 @@ describe("MCPToolBridge Integration", () => {
     const registeredNames = await bridge.registerTools(client, "filesystem");
 
     // Verify namespacing: mcp__<serverName>__<toolName>
-    expect(registeredNames).toEqual([
-      "mcp__filesystem__read_file",
-      "mcp__filesystem__list_dir",
-    ]);
+    expect(registeredNames).toEqual(["mcp__filesystem__read_file", "mcp__filesystem__list_dir"]);
 
     // Verify tools are in the registry
     expect(registry.has("mcp__filesystem__read_file")).toBe(true);
@@ -185,9 +184,7 @@ describe("MCPToolBridge Integration", () => {
 
     const client = createMockMCPClient(tools);
     // Override callTool to throw
-    (client.callTool as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("Connection lost"),
-    );
+    (client.callTool as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("Connection lost"));
 
     const registry = new ToolRegistry();
     const bridge = new MCPToolBridge(registry);

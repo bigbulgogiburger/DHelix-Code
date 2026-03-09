@@ -81,10 +81,7 @@ function writeProgress(
 // HELPERS
 // ============================================================
 
-function validateBuild(
-  command: string,
-  cwd: string,
-): { success: boolean; output: string } {
+function validateBuild(command: string, cwd: string): { success: boolean; output: string } {
   try {
     const output = execSync(command, {
       cwd,
@@ -147,19 +144,9 @@ describe.skipIf(!hasApiKey)(
       // Monitor DBCODE.md reads and all tool calls
       events.on(
         "tool:start",
-        ({
-          name,
-          args,
-        }: {
-          name: string;
-          id: string;
-          args?: Record<string, unknown>;
-        }) => {
+        ({ name, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
           metrics.toolCalls.push({ turn: currentTurn, tool: name });
-          if (
-            name === "file_read" &&
-            args?.file_path?.toString().includes("DBCODE.md")
-          ) {
+          if (name === "file_read" && args?.file_path?.toString().includes("DBCODE.md")) {
             metrics.dbcodeReads.push(`Turn ${currentTurn}`);
           }
         },
@@ -233,16 +220,10 @@ describe.skipIf(!hasApiKey)(
             break;
           } catch (error) {
             lastError = error;
-            const msg =
-              error instanceof Error ? error.message : String(error);
-            if (
-              msg.toLowerCase().includes("rate limit") ||
-              msg.includes("429")
-            ) {
+            const msg = error instanceof Error ? error.message : String(error);
+            if (msg.toLowerCase().includes("rate limit") || msg.includes("429")) {
               const wait = 15_000 * (retry + 1); // 15s, 30s, 45s
-              console.log(
-                `  Rate limited, waiting ${wait / 1000}s before retry ${retry + 1}/3...`,
-              );
+              console.log(`  Rate limited, waiting ${wait / 1000}s before retry ${retry + 1}/3...`);
               await new Promise((resolve) => setTimeout(resolve, wait));
               continue;
             }
@@ -274,8 +255,7 @@ describe.skipIf(!hasApiKey)(
           lastContent: lastMsg?.content ?? "",
         };
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : String(error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
         metrics.errors.push(`Turn ${currentTurn} (${name}): ${errorMsg}`);
         writeProgress(metrics, currentTurn, name, "failed");
         throw error;
@@ -287,148 +267,103 @@ describe.skipIf(!hasApiKey)(
     // ================================================================
 
     // ---- Turn 0: /init — Create DBCODE.md ----
-    it(
-      "Turn 0: Initialize project with DBCODE.md",
-      async () => {
-        await sendTurn(
-          `Run /init to initialize this project at ${projectDir}. Create a DBCODE.md for a Task Board application using Spring Boot 3.2 (Gradle Kotlin DSL, Java 17, H2, Spring Data JPA) as backend and React 18 (TypeScript 5, Vite, Tailwind CSS) as frontend. Monorepo with backend/ and frontend/. Testing: JUnit 5 + JaCoCo (backend), Vitest + React Testing Library (frontend). Target 80% coverage. Include directory structure, build commands, test commands, and coding conventions (RESTful under /api/v1/, functional components only, TypeScript strict, typed fetch wrapper, Tailwind only).`,
-          "Initialize DBCODE.md",
-        );
+    it("Turn 0: Initialize project with DBCODE.md", async () => {
+      await sendTurn(
+        `Run /init to initialize this project at ${projectDir}. Create a DBCODE.md for a Task Board application using Spring Boot 3.2 (Gradle Kotlin DSL, Java 17, H2, Spring Data JPA) as backend and React 18 (TypeScript 5, Vite, Tailwind CSS) as frontend. Monorepo with backend/ and frontend/. Testing: JUnit 5 + JaCoCo (backend), Vitest + React Testing Library (frontend). Target 80% coverage. Include directory structure, build commands, test commands, and coding conventions (RESTful under /api/v1/, functional components only, TypeScript strict, typed fetch wrapper, Tailwind only).`,
+        "Initialize DBCODE.md",
+      );
 
-        expect(existsSync(resolve(projectDir, "DBCODE.md"))).toBe(true);
-        const content = readFileSync(
-          resolve(projectDir, "DBCODE.md"),
-          "utf-8",
-        );
-        expect(content.toLowerCase()).toContain("task board");
-        expect(content.toLowerCase()).toContain("spring boot");
-        expect(content.toLowerCase()).toContain("react");
-      },
-      180_000,
-    );
+      expect(existsSync(resolve(projectDir, "DBCODE.md"))).toBe(true);
+      const content = readFileSync(resolve(projectDir, "DBCODE.md"), "utf-8");
+      expect(content.toLowerCase()).toContain("task board");
+      expect(content.toLowerCase()).toContain("spring boot");
+      expect(content.toLowerCase()).toContain("react");
+    }, 180_000);
 
     // ---- Turn 1: Backend scaffold ----
-    it(
-      "Turn 1: Create Spring Boot backend scaffold",
-      async () => {
-        await sendTurn(
-          `Create the backend/ directory with a Spring Boot 3.2 Gradle (Kotlin DSL) project. Include dependencies: spring-boot-starter-web, spring-boot-starter-data-jpa, h2, lombok. Add JaCoCo plugin. Create application.yml with H2 in-memory config (spring.datasource.url=jdbc:h2:mem:taskboard). Follow DBCODE.md directory structure exactly.
+    it("Turn 1: Create Spring Boot backend scaffold", async () => {
+      await sendTurn(
+        `Create the backend/ directory with a Spring Boot 3.2 Gradle (Kotlin DSL) project. Include dependencies: spring-boot-starter-web, spring-boot-starter-data-jpa, h2, lombok. Add JaCoCo plugin. Create application.yml with H2 in-memory config (spring.datasource.url=jdbc:h2:mem:taskboard). Follow DBCODE.md directory structure exactly.
 
 IMPORTANT: Do NOT use \`gradle init\` or interactive Gradle commands. Write build.gradle.kts and settings.gradle.kts files manually. You may run \`gradle wrapper\` AFTER writing build.gradle.kts to generate the Gradle wrapper.`,
-          "Backend scaffold",
-        );
+        "Backend scaffold",
+      );
 
-        expect(existsSync(resolve(projectDir, "backend/build.gradle.kts"))).toBe(true);
-        expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
-      },
-      180_000,
-    );
+      expect(existsSync(resolve(projectDir, "backend/build.gradle.kts"))).toBe(true);
+      expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
+    }, 180_000);
 
     // ---- Turn 2: Backend REST API ----
-    it(
-      "Turn 2: Implement Task REST API",
-      async () => {
-        await sendTurn(
-          `Implement the REST API for a Task entity with fields: id (Long, auto-generated), title (String, required), description (String), status (enum: TODO, IN_PROGRESS, DONE, default TODO), priority (enum: LOW, MEDIUM, HIGH, default MEDIUM), createdAt (LocalDateTime), updatedAt (LocalDateTime). Create: entity, repository (Spring Data JPA), service, DTOs (CreateTaskDTO, UpdateTaskDTO, TaskResponseDTO), and @RestController with full CRUD under /api/v1/tasks. Refer to DBCODE.md — use @RestController, not @Controller.`,
-          "Backend REST API",
-        );
+    it("Turn 2: Implement Task REST API", async () => {
+      await sendTurn(
+        `Implement the REST API for a Task entity with fields: id (Long, auto-generated), title (String, required), description (String), status (enum: TODO, IN_PROGRESS, DONE, default TODO), priority (enum: LOW, MEDIUM, HIGH, default MEDIUM), createdAt (LocalDateTime), updatedAt (LocalDateTime). Create: entity, repository (Spring Data JPA), service, DTOs (CreateTaskDTO, UpdateTaskDTO, TaskResponseDTO), and @RestController with full CRUD under /api/v1/tasks. Refer to DBCODE.md — use @RestController, not @Controller.`,
+        "Backend REST API",
+      );
 
-        expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
-      },
-      180_000,
-    );
+      expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
+    }, 180_000);
 
     // ---- Turn 3: Frontend scaffold ----
-    it(
-      "Turn 3: Create React + TypeScript frontend scaffold",
-      async () => {
-        await sendTurn(
-          `Create frontend/ with Vite + React + TypeScript project. Create it manually (don't use npm create vite — write the files directly). Install dependencies: react, react-dom, typescript, @vitejs/plugin-react, tailwindcss, postcss, autoprefixer, vitest, @testing-library/react, @testing-library/jest-dom, jsdom. Configure TypeScript strict mode in tsconfig.json. Set up Vitest in vite.config.ts. Add vite proxy: '/api' -> 'http://localhost:8080'. Follow DBCODE.md directory structure: src/components/, src/hooks/, src/services/, src/types/, src/pages/.`,
-          "Frontend scaffold",
-        );
+    it("Turn 3: Create React + TypeScript frontend scaffold", async () => {
+      await sendTurn(
+        `Create frontend/ with Vite + React + TypeScript project. Create it manually (don't use npm create vite — write the files directly). Install dependencies: react, react-dom, typescript, @vitejs/plugin-react, tailwindcss, postcss, autoprefixer, vitest, @testing-library/react, @testing-library/jest-dom, jsdom. Configure TypeScript strict mode in tsconfig.json. Set up Vitest in vite.config.ts. Add vite proxy: '/api' -> 'http://localhost:8080'. Follow DBCODE.md directory structure: src/components/, src/hooks/, src/services/, src/types/, src/pages/.`,
+        "Frontend scaffold",
+      );
 
-        expect(existsSync(resolve(projectDir, "frontend/package.json"))).toBe(true);
-        expect(existsSync(resolve(projectDir, "frontend/tsconfig.json"))).toBe(true);
-      },
-      180_000,
-    );
+      expect(existsSync(resolve(projectDir, "frontend/package.json"))).toBe(true);
+      expect(existsSync(resolve(projectDir, "frontend/tsconfig.json"))).toBe(true);
+    }, 180_000);
 
     // ---- Turn 4: Frontend components ----
-    it(
-      "Turn 4: Build Task Board UI components",
-      async () => {
-        await sendTurn(
-          `Build the Task Board UI components in frontend/src/: 1) types/task.ts — TypeScript interfaces matching backend DTOs. 2) services/api.ts — typed fetch wrapper (not raw fetch) for /api/v1/tasks CRUD. 3) components/TaskCard.tsx — displays one task with status badge and priority indicator. 4) components/TaskList.tsx — renders list of TaskCards grouped by status columns. 5) components/TaskForm.tsx — form for creating/editing tasks. 6) components/StatusFilter.tsx — filter tasks by status. Use Tailwind CSS only (no CSS modules per DBCODE.md). Functional components only.`,
-          "Frontend components",
-        );
+    it("Turn 4: Build Task Board UI components", async () => {
+      await sendTurn(
+        `Build the Task Board UI components in frontend/src/: 1) types/task.ts — TypeScript interfaces matching backend DTOs. 2) services/api.ts — typed fetch wrapper (not raw fetch) for /api/v1/tasks CRUD. 3) components/TaskCard.tsx — displays one task with status badge and priority indicator. 4) components/TaskList.tsx — renders list of TaskCards grouped by status columns. 5) components/TaskForm.tsx — form for creating/editing tasks. 6) components/StatusFilter.tsx — filter tasks by status. Use Tailwind CSS only (no CSS modules per DBCODE.md). Functional components only.`,
+        "Frontend components",
+      );
 
-        expect(existsSync(resolve(projectDir, "frontend/src/components"))).toBe(true);
-        expect(existsSync(resolve(projectDir, "frontend/src/services"))).toBe(true);
-      },
-      180_000,
-    );
+      expect(existsSync(resolve(projectDir, "frontend/src/components"))).toBe(true);
+      expect(existsSync(resolve(projectDir, "frontend/src/services"))).toBe(true);
+    }, 180_000);
 
     // ---- Turn 5: Integration ----
-    it(
-      "Turn 5: Connect frontend to backend + state management",
-      async () => {
-        await sendTurn(
-          `Connect the frontend to the backend API. 1) Create a custom hook useTaskBoard() in hooks/ that manages task CRUD state. 2) Wire up TaskList to fetch tasks on mount and refresh after mutations. 3) TaskForm should POST/PUT to the API. 4) Add a simple status change dropdown on each TaskCard (no drag-drop needed). 5) Handle loading spinner and error states. 6) Update App.tsx to compose the full page. Refer to DBCODE.md for conventions.`,
-          "Frontend integration",
-        );
+    it("Turn 5: Connect frontend to backend + state management", async () => {
+      await sendTurn(
+        `Connect the frontend to the backend API. 1) Create a custom hook useTaskBoard() in hooks/ that manages task CRUD state. 2) Wire up TaskList to fetch tasks on mount and refresh after mutations. 3) TaskForm should POST/PUT to the API. 4) Add a simple status change dropdown on each TaskCard (no drag-drop needed). 5) Handle loading spinner and error states. 6) Update App.tsx to compose the full page. Refer to DBCODE.md for conventions.`,
+        "Frontend integration",
+      );
 
-        expect(existsSync(resolve(projectDir, "frontend/src/hooks"))).toBe(true);
-      },
-      180_000,
-    );
+      expect(existsSync(resolve(projectDir, "frontend/src/hooks"))).toBe(true);
+    }, 180_000);
 
     // ---- Turn 6: Build both ----
-    it(
-      "Turn 6: Build backend and frontend",
-      async () => {
-        await sendTurn(
-          `Build both projects and fix any errors:
+    it("Turn 6: Build backend and frontend", async () => {
+      await sendTurn(
+        `Build both projects and fix any errors:
 1. cd ${projectDir}/backend && ./gradlew build -x test
 2. cd ${projectDir}/frontend && npm install && npm run build
 If any build fails, analyze the error, fix the code, and rebuild. Repeat until both succeed.`,
-          "Build validation",
-        );
+        "Build validation",
+      );
 
-        // Verify backend build
-        const backendBuild = validateBuild(
-          "./gradlew build -x test",
-          resolve(projectDir, "backend"),
-        );
-        if (!backendBuild.success) {
-          console.log(
-            "Backend build failed:",
-            backendBuild.output.slice(0, 500),
-          );
-        }
-        expect(backendBuild.success).toBe(true);
+      // Verify backend build
+      const backendBuild = validateBuild("./gradlew build -x test", resolve(projectDir, "backend"));
+      if (!backendBuild.success) {
+        console.log("Backend build failed:", backendBuild.output.slice(0, 500));
+      }
+      expect(backendBuild.success).toBe(true);
 
-        // Verify frontend build
-        const frontendBuild = validateBuild(
-          "npm run build",
-          resolve(projectDir, "frontend"),
-        );
-        if (!frontendBuild.success) {
-          console.log(
-            "Frontend build failed:",
-            frontendBuild.output.slice(0, 500),
-          );
-        }
-        expect(frontendBuild.success).toBe(true);
-      },
-      600_000,
-    );
+      // Verify frontend build
+      const frontendBuild = validateBuild("npm run build", resolve(projectDir, "frontend"));
+      if (!frontendBuild.success) {
+        console.log("Frontend build failed:", frontendBuild.output.slice(0, 500));
+      }
+      expect(frontendBuild.success).toBe(true);
+    }, 600_000);
 
     // ---- Turn 7: Tests + Coverage ----
-    it(
-      "Turn 7: Write tests and achieve 80% coverage",
-      async () => {
-        await sendTurn(
-          `Write comprehensive tests targeting 80%+ coverage for BOTH projects:
+    it("Turn 7: Write tests and achieve 80% coverage", async () => {
+      await sendTurn(
+        `Write comprehensive tests targeting 80%+ coverage for BOTH projects:
 
 Backend (JUnit 5 + Mockito + MockMvc):
 - TaskControllerTest: MockMvc tests for all CRUD endpoints (GET, POST, PUT, DELETE)
@@ -443,32 +378,22 @@ Frontend (Vitest + React Testing Library):
 Run: cd ${projectDir}/frontend && npx vitest run --coverage
 
 Fix any failing tests and re-run until all pass with 80%+ coverage.`,
-          "Tests + coverage",
-        );
+        "Tests + coverage",
+      );
 
-        // Verify backend tests pass
-        const backendTest = validateBuild(
-          "./gradlew test",
-          resolve(projectDir, "backend"),
-        );
-        expect(backendTest.success).toBe(true);
+      // Verify backend tests pass
+      const backendTest = validateBuild("./gradlew test", resolve(projectDir, "backend"));
+      expect(backendTest.success).toBe(true);
 
-        // Verify frontend tests pass
-        const frontendTest = validateBuild(
-          "npx vitest run",
-          resolve(projectDir, "frontend"),
-        );
-        expect(frontendTest.success).toBe(true);
-      },
-      600_000,
-    );
+      // Verify frontend tests pass
+      const frontendTest = validateBuild("npx vitest run", resolve(projectDir, "frontend"));
+      expect(frontendTest.success).toBe(true);
+    }, 600_000);
 
     // ---- Turn 8: DBCODE.md compliance ----
-    it(
-      "Turn 8: DBCODE.md compliance review",
-      async () => {
-        await sendTurn(
-          `Read DBCODE.md and review the entire project for compliance. Check and fix:
+    it("Turn 8: DBCODE.md compliance review", async () => {
+      await sendTurn(
+        `Read DBCODE.md and review the entire project for compliance. Check and fix:
 1. All REST endpoints are under /api/v1/
 2. Frontend uses functional components only (no class components)
 3. TypeScript strict mode is enabled
@@ -476,14 +401,12 @@ Fix any failing tests and re-run until all pass with 80%+ coverage.`,
 5. Styling uses Tailwind CSS only (no CSS modules, no .css imports except Tailwind)
 6. Directory structure matches DBCODE.md specification
 List any violations found and fix them.`,
-          "DBCODE.md compliance",
-        );
+        "DBCODE.md compliance",
+      );
 
-        // Verify agent actually read DBCODE.md during the session
-        expect(metrics.dbcodeReads.length).toBeGreaterThanOrEqual(2);
-      },
-      180_000,
-    );
+      // Verify agent actually read DBCODE.md during the session
+      expect(metrics.dbcodeReads.length).toBeGreaterThanOrEqual(2);
+    }, 180_000);
 
     // ---- Final Evaluation ----
     afterAll(() => {

@@ -26,21 +26,29 @@ function loadEnvConfig(): Partial<AppConfig> {
   const env: Partial<AppConfig> = {};
   const llm: Record<string, unknown> = {};
 
+  // Base URL: DBCODE_BASE_URL > OPENAI_BASE_URL > default
   if (process.env.DBCODE_BASE_URL) {
     llm.baseUrl = process.env.DBCODE_BASE_URL;
+  } else if (process.env.OPENAI_BASE_URL) {
+    llm.baseUrl = process.env.OPENAI_BASE_URL;
   }
+
+  // API Key: DBCODE_API_KEY > OPENAI_API_KEY
   if (process.env.DBCODE_API_KEY) {
     llm.apiKey = process.env.DBCODE_API_KEY;
   } else if (process.env.OPENAI_API_KEY) {
     llm.apiKey = process.env.OPENAI_API_KEY;
-    // Auto-set OpenAI base URL if not explicitly configured
-    if (!process.env.DBCODE_BASE_URL) {
+    // Auto-set OpenAI base URL only if no base URL is configured at all
+    if (!process.env.DBCODE_BASE_URL && !process.env.OPENAI_BASE_URL) {
       llm.baseUrl = "https://api.openai.com/v1";
-      llm.model = process.env.DBCODE_MODEL ?? "gpt-4.1-mini";
     }
   }
+
+  // Model: DBCODE_MODEL > OPENAI_MODEL > default
   if (process.env.DBCODE_MODEL) {
     llm.model = process.env.DBCODE_MODEL;
+  } else if (process.env.OPENAI_MODEL) {
+    llm.model = process.env.OPENAI_MODEL;
   }
 
   if (Object.keys(llm).length > 0) {

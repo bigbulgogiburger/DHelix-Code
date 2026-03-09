@@ -23,7 +23,7 @@ export const PROJECT_CONFIG_DIR = `.${APP_NAME}`;
  */
 export function getProjectConfigPaths(cwd: string): readonly string[] {
   return [
-    join(cwd, PROJECT_CONFIG_FILE),                     // DBCODE.md (project root — primary)
+    join(cwd, PROJECT_CONFIG_FILE), // DBCODE.md (project root — primary)
     join(cwd, PROJECT_CONFIG_DIR, PROJECT_CONFIG_FILE), // .dbcode/DBCODE.md (fallback)
   ];
 }

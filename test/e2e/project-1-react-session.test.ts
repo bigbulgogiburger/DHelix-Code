@@ -32,10 +32,7 @@ async function sendTurn(
   config: Omit<AgentLoopConfig, "maxIterations" | "maxTokens">,
 ): Promise<ChatMessage[]> {
   messages.push({ role: "user", content: userMessage });
-  const result = await runAgentLoop(
-    { ...config, maxIterations: 25, maxTokens: 16384 },
-    messages,
-  );
+  const result = await runAgentLoop({ ...config, maxIterations: 25, maxTokens: 16384 }, messages);
   // Replace messages array with result to maintain conversation context
   messages.length = 0;
   messages.push(...result.messages);
@@ -73,7 +70,9 @@ describe.skipIf(!hasApiKey)("Project 1: React Dashboard Multi-turn Session", () 
     ]);
 
     const events = createEventEmitter();
-    events.on("tool:complete", () => { totalToolCalls++; });
+    events.on("tool:complete", () => {
+      totalToolCalls++;
+    });
 
     const strategy = selectStrategy("gpt-4o");
 
@@ -103,15 +102,15 @@ Rules:
 
   afterAll(() => {
     // Log stats
-    console.log(`\n[Project 1 Stats] Total tool calls: ${totalToolCalls}, Final messages: ${messages.length}`);
+    console.log(
+      `\n[Project 1 Stats] Total tool calls: ${totalToolCalls}, Final messages: ${messages.length}`,
+    );
   });
 
-  it(
-    "Turn 1: Initialize React + TypeScript + Vite project with Tailwind",
-    async () => {
-      await sendTurn(
-        messages,
-        `In ${projectDir}, run these commands:
+  it("Turn 1: Initialize React + TypeScript + Vite project with Tailwind", async () => {
+    await sendTurn(
+      messages,
+      `In ${projectDir}, run these commands:
 1. npm create vite@latest . -- --template react-ts (use . for current dir)
 2. npm install
 3. npm install react-router-dom
@@ -120,80 +119,64 @@ Rules:
 Then update vite.config.ts to include tailwindcss plugin and vitest config with happy-dom.
 Update src/index.css to just contain: @import "tailwindcss";
 Do NOT explain, just execute.`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "package.json"))).toBe(true);
-      expect(existsSync(join(projectDir, "vite.config.ts"))).toBe(true);
-      expect(existsSync(join(projectDir, "src", "main.tsx"))).toBe(true);
-    },
-    300_000,
-  );
+    expect(existsSync(join(projectDir, "package.json"))).toBe(true);
+    expect(existsSync(join(projectDir, "vite.config.ts"))).toBe(true);
+    expect(existsSync(join(projectDir, "src", "main.tsx"))).toBe(true);
+  }, 300_000);
 
-  it(
-    "Turn 2: Create Sidebar navigation component",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/components/Sidebar.tsx — a sidebar navigation with 3 menu items: Dashboard (/), Users (/users), Settings (/settings). Use NavLink from react-router-dom. Style with Tailwind: dark sidebar (bg-gray-900), active item highlighted with bg-indigo-600. Named export only.`,
-        config,
-      );
+  it("Turn 2: Create Sidebar navigation component", async () => {
+    await sendTurn(
+      messages,
+      `Create src/components/Sidebar.tsx — a sidebar navigation with 3 menu items: Dashboard (/), Users (/users), Settings (/settings). Use NavLink from react-router-dom. Style with Tailwind: dark sidebar (bg-gray-900), active item highlighted with bg-indigo-600. Named export only.`,
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "components", "Sidebar.tsx"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "components", "Sidebar.tsx"), "utf-8");
-      expect(content).toContain("NavLink");
-      expect(content).toContain("Dashboard");
-      expect(content).toContain("Users");
-      expect(content).toContain("Settings");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "components", "Sidebar.tsx"))).toBe(true);
+    const content = readFileSync(join(projectDir, "src", "components", "Sidebar.tsx"), "utf-8");
+    expect(content).toContain("NavLink");
+    expect(content).toContain("Dashboard");
+    expect(content).toContain("Users");
+    expect(content).toContain("Settings");
+  }, 120_000);
 
-  it(
-    "Turn 3: Set up React Router with layout",
-    async () => {
-      await sendTurn(
-        messages,
-        `Update src/App.tsx to use the Sidebar component (from Turn 2) and React Router. Layout: flex row with Sidebar on left and Routes on right. Define 3 routes: / → Dashboard, /users → Users, /settings → Settings. Create placeholder page components in src/pages/ (Dashboard.tsx, Users.tsx, Settings.tsx) that just show the page name. Update src/main.tsx to wrap App with BrowserRouter. Named exports only.`,
-        config,
-      );
+  it("Turn 3: Set up React Router with layout", async () => {
+    await sendTurn(
+      messages,
+      `Update src/App.tsx to use the Sidebar component (from Turn 2) and React Router. Layout: flex row with Sidebar on left and Routes on right. Define 3 routes: / → Dashboard, /users → Users, /settings → Settings. Create placeholder page components in src/pages/ (Dashboard.tsx, Users.tsx, Settings.tsx) that just show the page name. Update src/main.tsx to wrap App with BrowserRouter. Named exports only.`,
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "App.tsx"))).toBe(true);
-      expect(existsSync(join(projectDir, "src", "pages", "Dashboard.tsx"))).toBe(true);
-      expect(existsSync(join(projectDir, "src", "pages", "Users.tsx"))).toBe(true);
-      expect(existsSync(join(projectDir, "src", "pages", "Settings.tsx"))).toBe(true);
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "App.tsx"))).toBe(true);
+    expect(existsSync(join(projectDir, "src", "pages", "Dashboard.tsx"))).toBe(true);
+    expect(existsSync(join(projectDir, "src", "pages", "Users.tsx"))).toBe(true);
+    expect(existsSync(join(projectDir, "src", "pages", "Settings.tsx"))).toBe(true);
+  }, 120_000);
 
-  it(
-    "Turn 4: Create Dashboard page with stat cards",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/components/StatCard.tsx — a card component that takes label, value, change (number), icon (string emoji). Shows value prominently, change as green (+) or red (-) percentage. Tailwind styling.
+  it("Turn 4: Create Dashboard page with stat cards", async () => {
+    await sendTurn(
+      messages,
+      `Create src/components/StatCard.tsx — a card component that takes label, value, change (number), icon (string emoji). Shows value prominently, change as green (+) or red (-) percentage. Tailwind styling.
 
 Create src/types.ts with StatData interface (label, value, change, icon) and User interface (name, email, role, status).
 
 Create src/data/mock.ts with dashboardStats array (4 items: Total Users 12345 +12.5%, Active Sessions 1234 -3.2%, Revenue $45678 +8.1%, Conversion 3.24% +1.2%).
 
 Update src/pages/Dashboard.tsx to show a 4-column grid of StatCards using mock data. Named exports only.`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "components", "StatCard.tsx"))).toBe(true);
-      expect(existsSync(join(projectDir, "src", "types.ts"))).toBe(true);
-      expect(existsSync(join(projectDir, "src", "data", "mock.ts"))).toBe(true);
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "components", "StatCard.tsx"))).toBe(true);
+    expect(existsSync(join(projectDir, "src", "types.ts"))).toBe(true);
+    expect(existsSync(join(projectDir, "src", "data", "mock.ts"))).toBe(true);
+  }, 120_000);
 
-  it(
-    "Turn 5: Create sortable Users table",
-    async () => {
-      await sendTurn(
-        messages,
-        `Create src/components/SortableTable.tsx with:
+  it("Turn 5: Create sortable Users table", async () => {
+    await sendTurn(
+      messages,
+      `Create src/components/SortableTable.tsx with:
 1. A generic sortData<T> function (exported, named export) that sorts an array by a key in asc/desc/null direction using localeCompare.
 2. A SortableTable<T> component with columns config, data, and optional renderCell prop. Clicking headers toggles sort (asc → desc → null).
 
@@ -201,44 +184,39 @@ Add mockUsers (5 users with name, email, role, status) to src/data/mock.ts.
 Update src/pages/Users.tsx to render SortableTable with user data and columns: name, email, role, status. Use renderCell for status to show a colored badge.
 
 IMPORTANT: Use Record<string, any> as the generic constraint for T to avoid TypeScript index signature issues with interfaces. Named exports only.`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "components", "SortableTable.tsx"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "components", "SortableTable.tsx"), "utf-8");
-      expect(content).toContain("sortData");
-      expect(content).toContain("SortableTable");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "components", "SortableTable.tsx"))).toBe(true);
+    const content = readFileSync(
+      join(projectDir, "src", "components", "SortableTable.tsx"),
+      "utf-8",
+    );
+    expect(content).toContain("sortData");
+    expect(content).toContain("SortableTable");
+  }, 120_000);
 
-  it(
-    "Turn 6: Create Settings page with form",
-    async () => {
-      await sendTurn(
-        messages,
-        `Update src/pages/Settings.tsx with a form containing:
+  it("Turn 6: Create Settings page with form", async () => {
+    await sendTurn(
+      messages,
+      `Update src/pages/Settings.tsx with a form containing:
 - Dark mode toggle (custom switch button)
 - Email notifications checkbox
 - Push notifications checkbox
 - Save Changes button (indigo colored)
 Use React useState for all form state. Tailwind styling. Named export.`,
-        config,
-      );
+      config,
+    );
 
-      const content = readFileSync(join(projectDir, "src", "pages", "Settings.tsx"), "utf-8");
-      expect(content).toContain("useState");
-      expect(content.toLowerCase()).toContain("dark");
-    },
-    120_000,
-  );
+    const content = readFileSync(join(projectDir, "src", "pages", "Settings.tsx"), "utf-8");
+    expect(content).toContain("useState");
+    expect(content.toLowerCase()).toContain("dark");
+  }, 120_000);
 
-  it(
-    "Turn 7: Write Vitest tests for sortable table (context retention test)",
-    async () => {
-      await sendTurn(
-        messages,
-        `Write src/__tests__/SortableTable.test.tsx with Vitest tests for the sortData function and SortableTable component you created in Turn 5.
+  it("Turn 7: Write Vitest tests for sortable table (context retention test)", async () => {
+    await sendTurn(
+      messages,
+      `Write src/__tests__/SortableTable.test.tsx with Vitest tests for the sortData function and SortableTable component you created in Turn 5.
 
 Test sortData:
 - Returns copy when config is null
@@ -252,77 +230,68 @@ Test SortableTable:
 - Sorts on header click
 
 Use @testing-library/react for component tests. Import from the correct path "../components/SortableTable".`,
-        config,
-      );
+      config,
+    );
 
-      expect(existsSync(join(projectDir, "src", "__tests__", "SortableTable.test.tsx"))).toBe(true);
-      const content = readFileSync(join(projectDir, "src", "__tests__", "SortableTable.test.tsx"), "utf-8");
-      expect(content).toContain("sortData");
-      expect(content).toContain("describe");
-    },
-    120_000,
-  );
+    expect(existsSync(join(projectDir, "src", "__tests__", "SortableTable.test.tsx"))).toBe(true);
+    const content = readFileSync(
+      join(projectDir, "src", "__tests__", "SortableTable.test.tsx"),
+      "utf-8",
+    );
+    expect(content).toContain("sortData");
+    expect(content).toContain("describe");
+  }, 120_000);
 
-  it(
-    "Turn 8: Build the project and fix errors",
-    async () => {
-      await sendTurn(
-        messages,
-        `Run 'npm run build' in ${projectDir}. If there are TypeScript or build errors, fix them and rebuild until it succeeds. Common issues: missing vitest reference types in vite.config.ts, index signature problems. Fix all of them.`,
-        config,
-      );
+  it("Turn 8: Build the project and fix errors", async () => {
+    await sendTurn(
+      messages,
+      `Run 'npm run build' in ${projectDir}. If there are TypeScript or build errors, fix them and rebuild until it succeeds. Common issues: missing vitest reference types in vite.config.ts, index signature problems. Fix all of them.`,
+      config,
+    );
 
-      // Verify build actually works
-      const buildResult = execSync("npm run build 2>&1", {
-        cwd: projectDir,
-        timeout: 60_000,
-        env: { ...process.env, NODE_NO_WARNINGS: "1" },
-      }).toString();
-      expect(buildResult).not.toContain("error TS");
-    },
-    300_000,
-  );
+    // Verify build actually works
+    const buildResult = execSync("npm run build 2>&1", {
+      cwd: projectDir,
+      timeout: 60_000,
+      env: { ...process.env, NODE_NO_WARNINGS: "1" },
+    }).toString();
+    expect(buildResult).not.toContain("error TS");
+  }, 300_000);
 
-  it(
-    "Turn 9: Run tests and fix failures",
-    async () => {
-      await sendTurn(
-        messages,
-        `Run 'npx vitest run' in ${projectDir}. If tests fail, read the error, fix the test or source code, and re-run until all tests pass.`,
-        config,
-      );
+  it("Turn 9: Run tests and fix failures", async () => {
+    await sendTurn(
+      messages,
+      `Run 'npx vitest run' in ${projectDir}. If tests fail, read the error, fix the test or source code, and re-run until all tests pass.`,
+      config,
+    );
 
-      // Verify tests actually pass
-      const testResult = execSync("npx vitest run 2>&1", {
-        cwd: projectDir,
-        timeout: 60_000,
-        env: { ...process.env, NODE_NO_WARNINGS: "1" },
-      }).toString();
-      expect(testResult).toContain("passed");
-      expect(testResult).not.toContain("failed");
-    },
-    300_000,
-  );
+    // Verify tests actually pass
+    const testResult = execSync("npx vitest run 2>&1", {
+      cwd: projectDir,
+      timeout: 60_000,
+      env: { ...process.env, NODE_NO_WARNINGS: "1" },
+    }).toString();
+    expect(testResult).toContain("passed");
+    expect(testResult).not.toContain("failed");
+  }, 300_000);
 
-  it(
-    "Turn 10: Show project structure and verify completeness",
-    async () => {
-      await sendTurn(
-        messages,
-        `List all .tsx and .ts files in ${projectDir}/src/ recursively. Count the total files. The project should have at least 12 source files.`,
-        config,
-      );
+  it("Turn 10: Show project structure and verify completeness", async () => {
+    await sendTurn(
+      messages,
+      `List all .tsx and .ts files in ${projectDir}/src/ recursively. Count the total files. The project should have at least 12 source files.`,
+      config,
+    );
 
-      // Final verification: count files
-      const output = execSync("find src -name '*.tsx' -o -name '*.ts' | wc -l", {
-        cwd: projectDir,
-      }).toString().trim();
-      const fileCount = parseInt(output, 10);
-      expect(fileCount).toBeGreaterThanOrEqual(10);
+    // Final verification: count files
+    const output = execSync("find src -name '*.tsx' -o -name '*.ts' | wc -l", {
+      cwd: projectDir,
+    })
+      .toString()
+      .trim();
+    const fileCount = parseInt(output, 10);
+    expect(fileCount).toBeGreaterThanOrEqual(10);
 
-      // Verify context was maintained: check that the agent's messages reference earlier turns
-      expect(messages.length).toBeGreaterThanOrEqual(20); // system + 10 user + 10+ assistant + tool calls
-    },
-    120_000,
-  );
+    // Verify context was maintained: check that the agent's messages reference earlier turns
+    expect(messages.length).toBeGreaterThanOrEqual(20); // system + 10 user + 10+ assistant + tool calls
+  }, 120_000);
 });

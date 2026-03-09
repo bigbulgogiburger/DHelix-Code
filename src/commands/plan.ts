@@ -24,10 +24,7 @@ export const planCommand: SlashCommand = {
     if (arg === "off") {
       planModeEnabled = false;
       return {
-        output: [
-          "Plan mode disabled.",
-          "Tools will execute normally.",
-        ].join("\n"),
+        output: ["Plan mode disabled.", "Tools will execute normally."].join("\n"),
         success: true,
       };
     }

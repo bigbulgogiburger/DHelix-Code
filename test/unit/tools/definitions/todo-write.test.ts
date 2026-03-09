@@ -177,20 +177,14 @@ describe("todo_write tool", () => {
     });
 
     it("should return current state after execute", async () => {
-      await todoWriteTool.execute(
-        { todos: [{ content: "Task", status: "in_progress" }] },
-        context,
-      );
+      await todoWriteTool.execute({ todos: [{ content: "Task", status: "in_progress" }] }, context);
       const todos = getTodos();
       expect(todos).toHaveLength(1);
       expect(todos[0]).toEqual({ content: "Task", status: "in_progress" });
     });
 
     it("should clear state on resetTodos", async () => {
-      await todoWriteTool.execute(
-        { todos: [{ content: "Task", status: "in_progress" }] },
-        context,
-      );
+      await todoWriteTool.execute({ todos: [{ content: "Task", status: "in_progress" }] }, context);
       expect(getTodos()).toHaveLength(1);
       resetTodos();
       expect(getTodos()).toEqual([]);

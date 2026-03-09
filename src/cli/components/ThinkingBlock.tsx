@@ -50,7 +50,8 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
   }
 
   const lines = content.split("\n");
-  const displayLines = lines.length > 20 ? [...lines.slice(0, 20), `... (${lines.length - 20} more lines)`] : lines;
+  const displayLines =
+    lines.length > 20 ? [...lines.slice(0, 20), `... (${lines.length - 20} more lines)`] : lines;
 
   return (
     <Box flexDirection="column">
@@ -60,7 +61,9 @@ export const ThinkingBlock = React.memo(function ThinkingBlock({
       </Text>
       <Box marginLeft={2} flexDirection="column">
         {displayLines.map((line, i) => (
-          <Text key={i} dimColor>{line}</Text>
+          <Text key={i} dimColor>
+            {line}
+          </Text>
         ))}
       </Box>
     </Box>

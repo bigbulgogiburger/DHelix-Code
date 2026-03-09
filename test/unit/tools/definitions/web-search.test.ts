@@ -91,13 +91,13 @@ describe("web_search tool", () => {
     });
 
     it("should handle Brave API errors", async () => {
-      const mockResponse = new Response("Unauthorized", { status: 401, statusText: "Unauthorized" });
+      const mockResponse = new Response("Unauthorized", {
+        status: 401,
+        statusText: "Unauthorized",
+      });
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(mockResponse);
 
-      const result = await webSearchTool.execute(
-        { query: "test query", max_results: 5 },
-        context,
-      );
+      const result = await webSearchTool.execute({ query: "test query", max_results: 5 }, context);
 
       expect(result.isError).toBe(true);
       expect(result.output).toContain("Search failed");
@@ -120,10 +120,7 @@ describe("web_search tool", () => {
       });
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(mockResponse);
 
-      const result = await webSearchTool.execute(
-        { query: "ESM modules", max_results: 5 },
-        context,
-      );
+      const result = await webSearchTool.execute({ query: "ESM modules", max_results: 5 }, context);
 
       expect(result.isError).toBe(false);
       expect(result.output).toContain("ESM Guide");
@@ -139,10 +136,7 @@ describe("web_search tool", () => {
       });
       vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(mockResponse);
 
-      const result = await webSearchTool.execute(
-        { query: "test", max_results: 5 },
-        context,
-      );
+      const result = await webSearchTool.execute({ query: "test", max_results: 5 }, context);
 
       expect(result.isError).toBe(true);
       expect(result.output).toContain("Search failed");
@@ -167,10 +161,7 @@ describe("web_search tool", () => {
   it("should handle network errors gracefully", async () => {
     vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(new Error("Network error"));
 
-    const result = await webSearchTool.execute(
-      { query: "test", max_results: 5 },
-      context,
-    );
+    const result = await webSearchTool.execute({ query: "test", max_results: 5 }, context);
 
     expect(result.isError).toBe(true);
     expect(result.output).toContain("Search failed");
@@ -181,10 +172,7 @@ describe("web_search tool", () => {
     const abortError = new DOMException("The operation was aborted", "AbortError");
     vi.spyOn(globalThis, "fetch").mockRejectedValueOnce(abortError);
 
-    const result = await webSearchTool.execute(
-      { query: "slow query", max_results: 5 },
-      context,
-    );
+    const result = await webSearchTool.execute({ query: "slow query", max_results: 5 }, context);
 
     expect(result.isError).toBe(true);
     expect(result.output).toContain("Search timed out");
@@ -206,10 +194,7 @@ describe("web_search tool", () => {
     });
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(mockResponse);
 
-    const result = await webSearchTool.execute(
-      { query: "test", max_results: 3 },
-      context,
-    );
+    const result = await webSearchTool.execute({ query: "test", max_results: 3 }, context);
 
     expect(result.isError).toBe(false);
     expect(result.metadata?.resultCount).toBe(3);
@@ -233,10 +218,7 @@ describe("web_search tool", () => {
     });
     vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(mockResponse);
 
-    const result = await webSearchTool.execute(
-      { query: "test", max_results: 5 },
-      context,
-    );
+    const result = await webSearchTool.execute({ query: "test", max_results: 5 }, context);
 
     expect(result.output).toContain('Web search results for "test"');
     expect(result.output).toContain("1. [First](https://first.com)");

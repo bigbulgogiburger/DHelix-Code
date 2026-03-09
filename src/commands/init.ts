@@ -12,24 +12,14 @@ const LOCAL_INSTRUCTIONS_FILE = `${APP_NAME.toUpperCase()}.local.md`;
 /** Default settings */
 const DEFAULT_SETTINGS = {
   model: "gpt-4.1-mini",
-  allowedTools: [
-    "file_read",
-    "file_write",
-    "file_edit",
-    "bash_exec",
-    "glob_search",
-    "grep_search",
-  ],
+  allowedTools: ["file_read", "file_write", "file_edit", "bash_exec", "glob_search", "grep_search"],
 };
 
 /**
  * Detect project info from common config files and generate a DBCODE.md template.
  */
 async function generateTemplate(cwd: string): Promise<string> {
-  const lines: string[] = [
-    `# ${APP_NAME.toUpperCase()}.md — Project Instructions`,
-    "",
-  ];
+  const lines: string[] = [`# ${APP_NAME.toUpperCase()}.md — Project Instructions`, ""];
 
   // Detect package.json
   let projectName = "";

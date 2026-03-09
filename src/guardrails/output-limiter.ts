@@ -5,7 +5,10 @@ export interface OutputLimitResult {
   readonly result: string;
 }
 
-export function limitOutput(output: string, maxChars: number = DEFAULT_MAX_CHARS): OutputLimitResult {
+export function limitOutput(
+  output: string,
+  maxChars: number = DEFAULT_MAX_CHARS,
+): OutputLimitResult {
   if (output.length <= maxChars) {
     return { limited: false, result: output };
   }

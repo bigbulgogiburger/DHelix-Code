@@ -81,10 +81,7 @@ function writeProgress(
 // HELPERS
 // ============================================================
 
-function validateBuild(
-  command: string,
-  cwd: string,
-): { success: boolean; output: string } {
+function validateBuild(command: string, cwd: string): { success: boolean; output: string } {
   try {
     const output = execSync(command, {
       cwd,
@@ -147,19 +144,9 @@ describe.skipIf(!hasApiKey)(
       // Monitor DBCODE.md reads and all tool calls
       events.on(
         "tool:start",
-        ({
-          name,
-          args,
-        }: {
-          name: string;
-          id: string;
-          args?: Record<string, unknown>;
-        }) => {
+        ({ name, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
           metrics.toolCalls.push({ turn: currentTurn, tool: name });
-          if (
-            name === "file_read" &&
-            args?.file_path?.toString().includes("DBCODE.md")
-          ) {
+          if (name === "file_read" && args?.file_path?.toString().includes("DBCODE.md")) {
             metrics.dbcodeReads.push(`Turn ${currentTurn}`);
           }
         },
@@ -233,16 +220,10 @@ describe.skipIf(!hasApiKey)(
             break;
           } catch (error) {
             lastError = error;
-            const msg =
-              error instanceof Error ? error.message : String(error);
-            if (
-              msg.toLowerCase().includes("rate limit") ||
-              msg.includes("429")
-            ) {
+            const msg = error instanceof Error ? error.message : String(error);
+            if (msg.toLowerCase().includes("rate limit") || msg.includes("429")) {
               const wait = 15_000 * (retry + 1); // 15s, 30s, 45s
-              console.log(
-                `  Rate limited, waiting ${wait / 1000}s before retry ${retry + 1}/3...`,
-              );
+              console.log(`  Rate limited, waiting ${wait / 1000}s before retry ${retry + 1}/3...`);
               await new Promise((resolve) => setTimeout(resolve, wait));
               continue;
             }
@@ -274,8 +255,7 @@ describe.skipIf(!hasApiKey)(
           lastContent: lastMsg?.content ?? "",
         };
       } catch (error) {
-        const errorMsg =
-          error instanceof Error ? error.message : String(error);
+        const errorMsg = error instanceof Error ? error.message : String(error);
         metrics.errors.push(`Turn ${currentTurn} (${name}): ${errorMsg}`);
         writeProgress(metrics, currentTurn, name, "failed");
         throw error;
@@ -287,88 +267,67 @@ describe.skipIf(!hasApiKey)(
     // ================================================================
 
     // ---- Turn 0: /init — Create DBCODE.md ----
-    it(
-      "Turn 0: Initialize project with DBCODE.md",
-      async () => {
-        await sendTurn(
-          `Run /init to initialize this project at ${projectDir}. Create a DBCODE.md for a Task Manager application using Spring Boot 3.2 (Gradle Kotlin DSL, Java 17, H2, Spring Data JPA) as backend and Vue 3 (TypeScript, Vite, Pinia, Tailwind CSS) as frontend. Monorepo structure with backend/ and frontend/ directories. Testing: JUnit 5 + JaCoCo (backend), Vitest + Vue Test Utils (frontend). Target 80% coverage. Include:
+    it("Turn 0: Initialize project with DBCODE.md", async () => {
+      await sendTurn(
+        `Run /init to initialize this project at ${projectDir}. Create a DBCODE.md for a Task Manager application using Spring Boot 3.2 (Gradle Kotlin DSL, Java 17, H2, Spring Data JPA) as backend and Vue 3 (TypeScript, Vite, Pinia, Tailwind CSS) as frontend. Monorepo structure with backend/ and frontend/ directories. Testing: JUnit 5 + JaCoCo (backend), Vitest + Vue Test Utils (frontend). Target 80% coverage. Include:
 - Directory structure for both backend and frontend
 - Build commands (./gradlew build, npm run build)
 - Test commands (./gradlew test jacocoTestReport, npx vitest run --coverage)
 - Coding conventions: RESTful endpoints under /api/v1/, Vue 3 Composition API with <script setup>, TypeScript strict mode, Pinia for state management, Tailwind CSS only (no scoped styles)`,
-          "Initialize DBCODE.md",
-        );
+        "Initialize DBCODE.md",
+      );
 
-        expect(existsSync(resolve(projectDir, "DBCODE.md"))).toBe(true);
-        const content = readFileSync(
-          resolve(projectDir, "DBCODE.md"),
-          "utf-8",
-        );
-        expect(content.toLowerCase()).toContain("task manager");
-        expect(content.toLowerCase()).toContain("spring boot");
-        expect(content.toLowerCase()).toContain("vue");
-      },
-      180_000,
-    );
+      expect(existsSync(resolve(projectDir, "DBCODE.md"))).toBe(true);
+      const content = readFileSync(resolve(projectDir, "DBCODE.md"), "utf-8");
+      expect(content.toLowerCase()).toContain("task manager");
+      expect(content.toLowerCase()).toContain("spring boot");
+      expect(content.toLowerCase()).toContain("vue");
+    }, 180_000);
 
     // ---- Turn 1: Backend scaffold ----
-    it(
-      "Turn 1: Create Spring Boot backend scaffold",
-      async () => {
-        await sendTurn(
-          `Create the backend/ directory with a Spring Boot 3.2 Gradle (Kotlin DSL) project. Include dependencies: spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-validation, h2, lombok. Add JaCoCo plugin for coverage. Create application.yml with H2 in-memory config (spring.datasource.url=jdbc:h2:mem:taskmanager). Add a main application class. Follow DBCODE.md directory structure exactly.
+    it("Turn 1: Create Spring Boot backend scaffold", async () => {
+      await sendTurn(
+        `Create the backend/ directory with a Spring Boot 3.2 Gradle (Kotlin DSL) project. Include dependencies: spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-validation, h2, lombok. Add JaCoCo plugin for coverage. Create application.yml with H2 in-memory config (spring.datasource.url=jdbc:h2:mem:taskmanager). Add a main application class. Follow DBCODE.md directory structure exactly.
 
 IMPORTANT: Do NOT use \`gradle init\` or interactive Gradle commands. Write build.gradle.kts and settings.gradle.kts files manually. You may run \`gradle wrapper\` AFTER writing build.gradle.kts to generate the Gradle wrapper.`,
-          "Backend scaffold",
-        );
+        "Backend scaffold",
+      );
 
-        expect(existsSync(resolve(projectDir, "backend/build.gradle.kts"))).toBe(true);
-        expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
-      },
-      300_000,
-    );
+      expect(existsSync(resolve(projectDir, "backend/build.gradle.kts"))).toBe(true);
+      expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
+    }, 300_000);
 
     // ---- Turn 2: Backend REST API ----
-    it(
-      "Turn 2: Implement Task REST API",
-      async () => {
-        await sendTurn(
-          `Implement the Task Management REST API. Create a Task entity with fields: id (Long, auto-generated), title (String, required, max 100), description (String, max 500), status (enum: TODO, IN_PROGRESS, DONE, default TODO), priority (enum: LOW, MEDIUM, HIGH, default MEDIUM), dueDate (LocalDate, nullable), createdAt (LocalDateTime, auto-set), updatedAt (LocalDateTime, auto-set). Create: entity with JPA annotations, repository (Spring Data JPA), service layer, DTOs (CreateTaskRequest, UpdateTaskRequest, TaskResponse), and @RestController with full CRUD under /api/v1/tasks. Add @Valid on request bodies. Refer to DBCODE.md for API conventions.`,
-          "Backend REST API",
-        );
+    it("Turn 2: Implement Task REST API", async () => {
+      await sendTurn(
+        `Implement the Task Management REST API. Create a Task entity with fields: id (Long, auto-generated), title (String, required, max 100), description (String, max 500), status (enum: TODO, IN_PROGRESS, DONE, default TODO), priority (enum: LOW, MEDIUM, HIGH, default MEDIUM), dueDate (LocalDate, nullable), createdAt (LocalDateTime, auto-set), updatedAt (LocalDateTime, auto-set). Create: entity with JPA annotations, repository (Spring Data JPA), service layer, DTOs (CreateTaskRequest, UpdateTaskRequest, TaskResponse), and @RestController with full CRUD under /api/v1/tasks. Add @Valid on request bodies. Refer to DBCODE.md for API conventions.`,
+        "Backend REST API",
+      );
 
-        expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
-      },
-      300_000,
-    );
+      expect(existsSync(resolve(projectDir, "backend/src/main/java"))).toBe(true);
+    }, 300_000);
 
     // ---- Turn 3: Frontend scaffold ----
-    it(
-      "Turn 3: Create Vue 3 + TypeScript frontend scaffold",
-      async () => {
-        await sendTurn(
-          `Create frontend/ with a Vue 3 + TypeScript + Vite project. Create it manually (do NOT use npm create vite or any scaffolding CLI — write all files directly). Install dependencies: vue, vue-router, pinia, typescript, vite, @vitejs/plugin-vue, tailwindcss, postcss, autoprefixer, vitest, @vue/test-utils, jsdom, @vitest/coverage-v8. Configure:
+    it("Turn 3: Create Vue 3 + TypeScript frontend scaffold", async () => {
+      await sendTurn(
+        `Create frontend/ with a Vue 3 + TypeScript + Vite project. Create it manually (do NOT use npm create vite or any scaffolding CLI — write all files directly). Install dependencies: vue, vue-router, pinia, typescript, vite, @vitejs/plugin-vue, tailwindcss, postcss, autoprefixer, vitest, @vue/test-utils, jsdom, @vitest/coverage-v8. Configure:
 - tsconfig.json with strict mode, paths alias (@/ -> src/)
 - vite.config.ts with Vue plugin, Vitest setup, and proxy '/api' -> 'http://localhost:8080'
 - tailwind.config.js scanning src/**/*.{vue,ts}
 - postcss.config.js with tailwindcss and autoprefixer
 - src/main.ts mounting the Vue app with router and Pinia
 Follow DBCODE.md directory structure: src/components/, src/composables/, src/services/, src/types/, src/views/, src/stores/.`,
-          "Frontend scaffold",
-        );
+        "Frontend scaffold",
+      );
 
-        expect(existsSync(resolve(projectDir, "frontend/package.json"))).toBe(true);
-        expect(existsSync(resolve(projectDir, "frontend/tsconfig.json"))).toBe(true);
-      },
-      300_000,
-    );
+      expect(existsSync(resolve(projectDir, "frontend/package.json"))).toBe(true);
+      expect(existsSync(resolve(projectDir, "frontend/tsconfig.json"))).toBe(true);
+    }, 300_000);
 
     // ---- Turn 4: Frontend components ----
-    it(
-      "Turn 4: Build Task Manager Vue components",
-      async () => {
-        await sendTurn(
-          `Build the Task Manager Vue 3 components in frontend/src/ using Composition API with <script setup lang="ts">:
+    it("Turn 4: Build Task Manager Vue components", async () => {
+      await sendTurn(
+        `Build the Task Manager Vue 3 components in frontend/src/ using Composition API with <script setup lang="ts">:
 1) types/task.ts — TypeScript interfaces matching backend DTOs (Task, CreateTaskRequest, UpdateTaskRequest, TaskStatus, TaskPriority)
 2) services/api.ts — typed fetch wrapper for /api/v1/tasks CRUD operations (getAll, getById, create, update, delete)
 3) stores/taskStore.ts — Pinia store for task state management (tasks array, loading, error, CRUD actions)
@@ -378,21 +337,17 @@ Follow DBCODE.md directory structure: src/components/, src/composables/, src/ser
 7) components/TaskFilter.vue — filter bar with status and priority dropdowns
 8) views/TaskBoard.vue — main page composing TaskFilter, TaskList, and TaskForm
 Use Tailwind CSS only (no scoped styles per DBCODE.md). All components must use Composition API.`,
-          "Frontend components",
-        );
+        "Frontend components",
+      );
 
-        expect(existsSync(resolve(projectDir, "frontend/src/components"))).toBe(true);
-        expect(existsSync(resolve(projectDir, "frontend/src/stores"))).toBe(true);
-      },
-      300_000,
-    );
+      expect(existsSync(resolve(projectDir, "frontend/src/components"))).toBe(true);
+      expect(existsSync(resolve(projectDir, "frontend/src/stores"))).toBe(true);
+    }, 300_000);
 
     // ---- Turn 5: Integration ----
-    it(
-      "Turn 5: Wire up routing, state management, and API integration",
-      async () => {
-        await sendTurn(
-          `Complete the frontend integration:
+    it("Turn 5: Wire up routing, state management, and API integration", async () => {
+      await sendTurn(
+        `Complete the frontend integration:
 1) Set up vue-router in src/router/index.ts with routes: / -> TaskBoard view, /tasks/:id -> TaskDetail view (create this view)
 2) Create views/TaskDetail.vue — shows full task details with edit/delete capabilities
 3) Wire the Pinia taskStore to the API service — all CRUD operations should call the API and update store state
@@ -400,62 +355,42 @@ Use Tailwind CSS only (no scoped styles per DBCODE.md). All components must use 
 5) Update App.vue with <RouterView /> and a navigation header with app title
 6) Ensure all API calls use the typed fetch wrapper from services/api.ts
 Refer to DBCODE.md for conventions.`,
-          "Frontend integration",
-        );
+        "Frontend integration",
+      );
 
-        expect(existsSync(resolve(projectDir, "frontend/src/router"))).toBe(true);
-        expect(existsSync(resolve(projectDir, "frontend/src/views"))).toBe(true);
-      },
-      300_000,
-    );
+      expect(existsSync(resolve(projectDir, "frontend/src/router"))).toBe(true);
+      expect(existsSync(resolve(projectDir, "frontend/src/views"))).toBe(true);
+    }, 300_000);
 
     // ---- Turn 6: Build both ----
-    it(
-      "Turn 6: Build backend and frontend",
-      async () => {
-        await sendTurn(
-          `Build both projects and fix any errors:
+    it("Turn 6: Build backend and frontend", async () => {
+      await sendTurn(
+        `Build both projects and fix any errors:
 1. cd ${projectDir}/backend && ./gradlew build -x test
 2. cd ${projectDir}/frontend && npm install && npm run build
 If any build fails, analyze the error, fix the code, and rebuild. Repeat until both succeed.`,
-          "Build validation",
-        );
+        "Build validation",
+      );
 
-        // Verify backend build
-        const backendBuild = validateBuild(
-          "./gradlew build -x test",
-          resolve(projectDir, "backend"),
-        );
-        if (!backendBuild.success) {
-          console.log(
-            "Backend build failed:",
-            backendBuild.output.slice(0, 500),
-          );
-        }
-        expect(backendBuild.success).toBe(true);
+      // Verify backend build
+      const backendBuild = validateBuild("./gradlew build -x test", resolve(projectDir, "backend"));
+      if (!backendBuild.success) {
+        console.log("Backend build failed:", backendBuild.output.slice(0, 500));
+      }
+      expect(backendBuild.success).toBe(true);
 
-        // Verify frontend build
-        const frontendBuild = validateBuild(
-          "npm run build",
-          resolve(projectDir, "frontend"),
-        );
-        if (!frontendBuild.success) {
-          console.log(
-            "Frontend build failed:",
-            frontendBuild.output.slice(0, 500),
-          );
-        }
-        expect(frontendBuild.success).toBe(true);
-      },
-      600_000,
-    );
+      // Verify frontend build
+      const frontendBuild = validateBuild("npm run build", resolve(projectDir, "frontend"));
+      if (!frontendBuild.success) {
+        console.log("Frontend build failed:", frontendBuild.output.slice(0, 500));
+      }
+      expect(frontendBuild.success).toBe(true);
+    }, 600_000);
 
     // ---- Turn 7: Tests + Coverage ----
-    it(
-      "Turn 7: Write tests and achieve 80% coverage",
-      async () => {
-        await sendTurn(
-          `Write comprehensive tests targeting 80%+ coverage for BOTH projects:
+    it("Turn 7: Write tests and achieve 80% coverage", async () => {
+      await sendTurn(
+        `Write comprehensive tests targeting 80%+ coverage for BOTH projects:
 
 Backend (JUnit 5 + Mockito + MockMvc):
 - TaskControllerTest: MockMvc tests for all CRUD endpoints (GET list, GET by id, POST, PUT, DELETE, validation errors)
@@ -471,32 +406,22 @@ Frontend (Vitest + Vue Test Utils):
 Run: cd ${projectDir}/frontend && npx vitest run --coverage
 
 Fix any failing tests and re-run until all pass with 80%+ coverage.`,
-          "Tests + coverage",
-        );
+        "Tests + coverage",
+      );
 
-        // Verify backend tests pass
-        const backendTest = validateBuild(
-          "./gradlew test",
-          resolve(projectDir, "backend"),
-        );
-        expect(backendTest.success).toBe(true);
+      // Verify backend tests pass
+      const backendTest = validateBuild("./gradlew test", resolve(projectDir, "backend"));
+      expect(backendTest.success).toBe(true);
 
-        // Verify frontend tests pass
-        const frontendTest = validateBuild(
-          "npx vitest run",
-          resolve(projectDir, "frontend"),
-        );
-        expect(frontendTest.success).toBe(true);
-      },
-      600_000,
-    );
+      // Verify frontend tests pass
+      const frontendTest = validateBuild("npx vitest run", resolve(projectDir, "frontend"));
+      expect(frontendTest.success).toBe(true);
+    }, 600_000);
 
     // ---- Turn 8: DBCODE.md compliance ----
-    it(
-      "Turn 8: DBCODE.md compliance review",
-      async () => {
-        await sendTurn(
-          `Read DBCODE.md and review the entire project for compliance. Check and fix:
+    it("Turn 8: DBCODE.md compliance review", async () => {
+      await sendTurn(
+        `Read DBCODE.md and review the entire project for compliance. Check and fix:
 1. All REST endpoints are under /api/v1/
 2. Frontend uses Vue 3 Composition API with <script setup> only (no Options API)
 3. TypeScript strict mode is enabled
@@ -505,14 +430,12 @@ Fix any failing tests and re-run until all pass with 80%+ coverage.`,
 6. Styling uses Tailwind CSS only (no scoped styles, no .css imports except Tailwind)
 7. Directory structure matches DBCODE.md specification
 List any violations found and fix them.`,
-          "DBCODE.md compliance",
-        );
+        "DBCODE.md compliance",
+      );
 
-        // Verify agent actually read DBCODE.md during the session
-        expect(metrics.dbcodeReads.length).toBeGreaterThanOrEqual(2);
-      },
-      300_000,
-    );
+      // Verify agent actually read DBCODE.md during the session
+      expect(metrics.dbcodeReads.length).toBeGreaterThanOrEqual(2);
+    }, 300_000);
 
     // ---- Final Evaluation ----
     afterAll(() => {

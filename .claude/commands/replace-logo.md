@@ -25,6 +25,7 @@ TERM=xterm-256color chafa --format symbols --symbols block --size <SIZE> --color
 ```
 
 Key chafa options:
+
 - `--format symbols` — force text character output (not image protocol)
 - `--symbols block` — use Unicode block characters (▀▄█▌▐ etc.)
 - `--color-space rgb` — RGB color matching for accuracy
@@ -39,6 +40,7 @@ python3 /tmp/dbcode-logo/generate_logo_tsx.py /tmp/dbcode-logo/logo-output.txt
 ```
 
 The parser script (`generate_logo_tsx.py`) does:
+
 1. Read ANSI escape codes from chafa output
 2. Parse each character's foreground/background colors (24-bit RGB)
 3. Handle reverse video mode (`\e[7m`)
@@ -47,6 +49,7 @@ The parser script (`generate_logo_tsx.py`) does:
 6. Output TypeScript `const DB_LOGO` array
 
 If the script is missing, recreate it with this core logic:
+
 - Parse `\e[38;2;R;G;Bm` for foreground colors
 - Parse `\e[48;2;R;G;Bm` for background colors
 - Parse `\e[7m` for reverse video (swap fg/bg)
@@ -58,6 +61,7 @@ If the script is missing, recreate it with this core logic:
 Replace the `DB_LOGO` constant in `src/cli/components/Logo.tsx` with the generated output. Keep everything else (imports, Segment interface, LogoProps, Logo component) unchanged.
 
 The Segment interface must include `bgColor`:
+
 ```typescript
 interface Segment {
   readonly text: string;
@@ -67,8 +71,11 @@ interface Segment {
 ```
 
 The Logo component renders segments with:
+
 ```tsx
-<Text color={seg.color} backgroundColor={seg.bgColor}>{seg.text}</Text>
+<Text color={seg.color} backgroundColor={seg.bgColor}>
+  {seg.text}
+</Text>
 ```
 
 ### 6. Preview for user confirmation

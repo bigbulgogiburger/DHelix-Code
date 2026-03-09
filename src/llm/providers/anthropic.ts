@@ -123,9 +123,10 @@ export interface AnthropicProviderConfig {
 }
 
 /** Extract system messages and convert remaining to Anthropic format */
-function extractSystemAndMessages(
-  messages: readonly ChatMessage[],
-): { system: string | undefined; messages: Array<Record<string, unknown>> } {
+function extractSystemAndMessages(messages: readonly ChatMessage[]): {
+  system: string | undefined;
+  messages: Array<Record<string, unknown>>;
+} {
   let system: string | undefined;
   const converted: Array<Record<string, unknown>> = [];
 
@@ -232,22 +233,25 @@ function classifyHttpError(status: number, body: string, model: string): LLMErro
   }
 
   if (status === 401) {
-    return new LLMError(
-      "Authentication failed. Check your ANTHROPIC_API_KEY.",
-      { model, cause: detail, status },
-    );
+    return new LLMError("Authentication failed. Check your ANTHROPIC_API_KEY.", {
+      model,
+      cause: detail,
+      status,
+    });
   }
   if (status === 403) {
-    return new LLMError(
-      "Permission denied. Your API key may lack access to this model.",
-      { model, cause: detail, status },
-    );
+    return new LLMError("Permission denied. Your API key may lack access to this model.", {
+      model,
+      cause: detail,
+      status,
+    });
   }
   if (status === 429 || status === 529) {
-    return new LLMError(
-      "Rate limit exceeded. Please wait before retrying.",
-      { model, cause: detail, status },
-    );
+    return new LLMError("Rate limit exceeded. Please wait before retrying.", {
+      model,
+      cause: detail,
+      status,
+    });
   }
 
   return new LLMError(`Anthropic API error (${status}): ${detail}`, {
@@ -342,9 +346,7 @@ export class AnthropicProvider implements LLMProvider {
           const status = error.context.status as number | undefined;
           if (!status || !isRetryableStatus(status)) throw error;
 
-          const limit = isRateLimitStatus(status)
-            ? MAX_RETRIES_RATE_LIMIT
-            : MAX_RETRIES_TRANSIENT;
+          const limit = isRateLimitStatus(status) ? MAX_RETRIES_RATE_LIMIT : MAX_RETRIES_TRANSIENT;
           if (attempt >= limit) throw error;
 
           const delay = isRateLimitStatus(status)
@@ -446,9 +448,7 @@ export class AnthropicProvider implements LLMProvider {
           const status = error.context.status as number | undefined;
           if (!status || !isRetryableStatus(status)) throw error;
 
-          const limit = isRateLimitStatus(status)
-            ? MAX_RETRIES_RATE_LIMIT
-            : MAX_RETRIES_TRANSIENT;
+          const limit = isRateLimitStatus(status) ? MAX_RETRIES_RATE_LIMIT : MAX_RETRIES_TRANSIENT;
           if (attempt >= limit) throw error;
 
           const delay = isRateLimitStatus(status)
@@ -513,10 +513,7 @@ export class AnthropicProvider implements LLMProvider {
     }
 
     // Track tool calls and thinking blocks being assembled during streaming
-    const toolCallsInProgress = new Map<
-      number,
-      { id: string; name: string; arguments: string }
-    >();
+    const toolCallsInProgress = new Map<number, { id: string; name: string; arguments: string }>();
     const thinkingBlocks = new Set<number>();
 
     let inputTokens = 0;

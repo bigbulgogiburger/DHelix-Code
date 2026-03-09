@@ -97,41 +97,31 @@ describe("ToolCallBlock", () => {
     });
 
     it("should return checkmark for complete", async () => {
-      const { getToolStatusIcon } = await import(
-        "../../../../src/cli/renderer/tool-display.js"
-      );
+      const { getToolStatusIcon } = await import("../../../../src/cli/renderer/tool-display.js");
       expect(getToolStatusIcon("complete")).toBe("\u2713");
     });
 
     it("should return X for error", async () => {
-      const { getToolStatusIcon } = await import(
-        "../../../../src/cli/renderer/tool-display.js"
-      );
+      const { getToolStatusIcon } = await import("../../../../src/cli/renderer/tool-display.js");
       expect(getToolStatusIcon("error")).toBe("\u2717");
     });
 
     it("should return ! for denied", async () => {
-      const { getToolStatusIcon } = await import(
-        "../../../../src/cli/renderer/tool-display.js"
-      );
+      const { getToolStatusIcon } = await import("../../../../src/cli/renderer/tool-display.js");
       expect(getToolStatusIcon("denied")).toBe("!");
     });
   });
 
   describe("tool display text integration", () => {
     it("should generate display text for file_read running", async () => {
-      const { getToolDisplayText } = await import(
-        "../../../../src/cli/renderer/tool-display.js"
-      );
+      const { getToolDisplayText } = await import("../../../../src/cli/renderer/tool-display.js");
       expect(getToolDisplayText("file_read", "running", { file_path: "/a.ts" })).toBe(
         "Reading /a.ts",
       );
     });
 
     it("should generate display text for bash_exec complete", async () => {
-      const { getToolDisplayText } = await import(
-        "../../../../src/cli/renderer/tool-display.js"
-      );
+      const { getToolDisplayText } = await import("../../../../src/cli/renderer/tool-display.js");
       expect(getToolDisplayText("bash_exec", "complete", { command: "ls" })).toBe("Ran ls");
     });
   });

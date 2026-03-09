@@ -179,16 +179,12 @@ export async function executeSandboxed(config: SandboxConfig): Promise<{
   await writeFile(profilePath, profile, "utf-8");
 
   try {
-    const result = await execFileAsync(
-      "sandbox-exec",
-      ["-f", profilePath, command, ...args],
-      {
-        cwd,
-        timeout: timeoutMs,
-        env: env ? { ...process.env, ...env } : undefined,
-        maxBuffer: 10 * 1024 * 1024, // 10MB
-      },
-    );
+    const result = await execFileAsync("sandbox-exec", ["-f", profilePath, command, ...args], {
+      cwd,
+      timeout: timeoutMs,
+      env: env ? { ...process.env, ...env } : undefined,
+      maxBuffer: 10 * 1024 * 1024, // 10MB
+    });
 
     return { stdout: result.stdout, stderr: result.stderr };
   } catch (error) {

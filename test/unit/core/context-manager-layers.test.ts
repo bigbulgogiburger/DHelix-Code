@@ -6,7 +6,11 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 /** Create a message with predictable content */
-function msg(role: ChatMessage["role"], content: string, extra?: Partial<ChatMessage>): ChatMessage {
+function msg(
+  role: ChatMessage["role"],
+  content: string,
+  extra?: Partial<ChatMessage>,
+): ChatMessage {
   return { role, content, ...extra };
 }
 
