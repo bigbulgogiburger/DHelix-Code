@@ -286,6 +286,11 @@ Customizable via `~/.dbcode/keybindings.json`.
 - One logical change per commit
 - All checks pass before commit: `npm run typecheck && npm run lint && npm test && npm run build`
 
+## Gap Analysis & Roadmap
+
+See `docs/dbcode-vs-claude-code-v2.md` for comprehensive comparison with Claude Code (7.5/10 overall).
+Key gaps: persistent permissions, auto-memory, Windows sandbox (WSL2/Git Bash), MCP integration depth.
+
 ## Compact Instructions
 
 When compacting, always preserve:
