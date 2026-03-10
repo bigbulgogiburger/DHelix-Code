@@ -120,13 +120,15 @@ export function useAgentLoop({
       name,
       isError,
       output,
+      metadata,
     }: {
       name: string;
       id: string;
       isError: boolean;
       output?: string;
+      metadata?: Readonly<Record<string, unknown>>;
     }) => {
-      activityRef.current.addEntry("tool-complete", { name, id, isError, output });
+      activityRef.current.addEntry("tool-complete", { name, id, isError, output, metadata });
       syncCurrentTurn();
     };
     const onTextDelta = ({ text }: { text: string }) => {

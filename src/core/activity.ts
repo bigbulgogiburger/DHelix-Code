@@ -48,7 +48,7 @@ export class ActivityCollector {
     if (!this._currentTurn) {
       this.startTurn();
     }
-    this._currentTurn.entries.push({
+    this._currentTurn!.entries.push({
       type,
       timestamp: new Date(),
       data,

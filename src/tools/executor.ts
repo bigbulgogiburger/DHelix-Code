@@ -85,6 +85,7 @@ export async function executeToolCall(
     name: call.name,
     output: result.output,
     isError: result.isError,
+    metadata: result.metadata,
   };
 }
 

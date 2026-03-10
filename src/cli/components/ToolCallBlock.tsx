@@ -13,6 +13,7 @@ interface ToolCallBlockProps {
   readonly status: "running" | "complete" | "error" | "denied";
   readonly args?: Record<string, unknown>;
   readonly output?: string;
+  readonly metadata?: Readonly<Record<string, unknown>>;
   readonly isExpanded?: boolean;
   readonly startTime?: number;
 }
@@ -100,14 +101,15 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   status,
   args,
   output,
+  metadata,
   isExpanded = false,
   startTime,
 }: ToolCallBlockProps) {
   const spinnerChar = useSpinner(status === "running");
   const icon = status === "running" ? spinnerChar : getToolStatusIcon(status);
   const duration = startTime && status !== "running" ? Date.now() - startTime : undefined;
-  const displayText = getToolDisplayText(name, status, args, output, duration);
-  const preview = getToolPreview(name, status, args, output);
+  const displayText = getToolDisplayText(name, status, args, output, duration, metadata);
+  const preview = getToolPreview(name, status, args, output, metadata);
 
   const statusColor = {
     running: "yellow",

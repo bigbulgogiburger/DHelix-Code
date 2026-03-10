@@ -523,6 +523,7 @@ export async function runAgentLoop(
             id: call.id,
             isError: result.isError,
             output: result.output,
+            metadata: result.metadata,
           });
         } else {
           // Promise.allSettled rejected — unexpected execution error

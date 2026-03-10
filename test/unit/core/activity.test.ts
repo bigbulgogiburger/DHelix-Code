@@ -192,4 +192,70 @@ describe("ActivityCollector", () => {
     expect(current!.entries[1].data.iteration).toBe(1);
     expect(current!.entries[1].data.toolCalls).toEqual([{ id: "tc-1", name: "file_read" }]);
   });
+
+  it("should preserve metadata in tool-complete entries", () => {
+    const collector = new ActivityCollector();
+    collector.startTurn();
+    collector.addEntry("tool-start", { name: "file_read", id: "tc-1" });
+    collector.addEntry("tool-complete", {
+      name: "file_read",
+      id: "tc-1",
+      isError: false,
+      metadata: { path: "src/index.ts", totalLines: 100 },
+    });
+
+    const current = collector.getCurrentTurn();
+    expect(current).not.toBeNull();
+    expect(current!.entries).toHaveLength(2);
+    expect(current!.entries[1].type).toBe("tool-complete");
+    expect(current!.entries[1].data.metadata).toEqual({
+      path: "src/index.ts",
+      totalLines: 100,
+    });
+  });
+
+  it("should preserve metadata across tool-start and tool-complete pairs", () => {
+    const collector = new ActivityCollector();
+    collector.startTurn();
+    collector.addEntry("tool-start", { name: "bash_exec", id: "tc-1" });
+    collector.addEntry("tool-complete", {
+      name: "bash_exec",
+      id: "tc-1",
+      isError: false,
+      metadata: { exitCode: 0, command: "npm test" },
+    });
+    collector.addEntry("tool-start", { name: "file_edit", id: "tc-2" });
+    collector.addEntry("tool-complete", {
+      name: "file_edit",
+      id: "tc-2",
+      isError: false,
+      metadata: { path: "src/utils.ts", linesAdded: 5, linesRemoved: 2 },
+    });
+
+    const current = collector.getCurrentTurn();
+    expect(current!.entries).toHaveLength(4);
+    expect(current!.entries[1].data.metadata).toEqual({
+      exitCode: 0,
+      command: "npm test",
+    });
+    expect(current!.entries[3].data.metadata).toEqual({
+      path: "src/utils.ts",
+      linesAdded: 5,
+      linesRemoved: 2,
+    });
+  });
+
+  it("should handle tool-complete without metadata", () => {
+    const collector = new ActivityCollector();
+    collector.startTurn();
+    collector.addEntry("tool-start", { name: "file_read", id: "tc-1" });
+    collector.addEntry("tool-complete", {
+      name: "file_read",
+      id: "tc-1",
+      isError: false,
+    });
+
+    const current = collector.getCurrentTurn();
+    expect(current!.entries[1].data.metadata).toBeUndefined();
+  });
 });

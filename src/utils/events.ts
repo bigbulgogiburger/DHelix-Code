@@ -26,7 +26,13 @@ export type AppEvents = {
   /** Tool execution started */
   "tool:start": { name: string; id: string; args?: Record<string, unknown> };
   /** Tool execution completed */
-  "tool:complete": { name: string; id: string; isError: boolean; output?: string };
+  "tool:complete": {
+    name: string;
+    id: string;
+    isError: boolean;
+    output?: string;
+    metadata?: Readonly<Record<string, unknown>>;
+  };
 
   /** Context compaction is about to start */
   "context:pre-compact": { compactionNumber: number };
