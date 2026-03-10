@@ -1,5 +1,6 @@
 ---
 name: dbcode-e2e-test
+disabled: true
 description: |
   E2E validation skill for the dbcode CLI AI coding assistant. Two test modes:
   (1) Project E2E — multi-turn tests creating real projects across 5+ tech stacks, validating

@@ -28,13 +28,10 @@ argument-hint: "[선택사항: 특정 스킬 이름 또는 집중할 영역]"
 
 현재 프로젝트에 등록된 검증 스킬 목록입니다. 새 스킬 생성/삭제 시 이 목록을 업데이트합니다.
 
-(아직 등록된 검증 스킬이 없습니다)
-
-<!-- 스킬이 추가되면 아래 형식으로 등록:
-| 스킬 | 설명 | 커버 파일 패턴 |
-|------|------|---------------|
-| `verify-example` | 예시 검증 | `src/example/**/*.ts` |
--->
+| 스킬                            | 설명                                       | 커버 파일 패턴                                                                                                                                     |
+| ------------------------------- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verify-tool-metadata-pipeline` | Tool metadata 전달 일관성 검증             | `src/tools/**/*.ts`, `src/core/agent-loop.ts`, `src/cli/renderer/tool-display.ts`, `src/cli/components/Tool*.tsx`, `src/cli/hooks/useAgentLoop.ts` |
+| `verify-model-capabilities`     | ModelCapabilities 및 기본 모델 동기화 검증 | `src/llm/*.ts`, `src/constants.ts`, `src/config/defaults.ts`, `src/config/schema.ts`                                                               |
 
 ## 워크플로우
 
