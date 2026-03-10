@@ -19,6 +19,7 @@ import { loadInstructions } from "../../instructions/loader.js";
 import { getModelCapabilities } from "../../llm/model-capabilities.js";
 import { createEventEmitter } from "../../utils/events.js";
 import { ActivityCollector, type TurnActivity } from "../../core/activity.js";
+import { MemoryManager } from "../../core/auto-memory.js";
 
 export interface UseAgentLoopOptions {
   readonly client: LLMProvider;
@@ -75,11 +76,25 @@ export function useAgentLoop({
   // Project instructions
   const [projectInstructions, setProjectInstructions] = useState<string | undefined>(undefined);
 
+  // Auto-memory content
+  const [autoMemoryContent, setAutoMemoryContent] = useState<string | undefined>(undefined);
+
   useEffect(() => {
     loadInstructions(process.cwd())
       .then((result) => {
         if (result.combined) {
           setProjectInstructions(result.combined);
+        }
+      })
+      .catch(() => {});
+
+    // Load auto-memory for the current project
+    const memoryManager = new MemoryManager(process.cwd());
+    memoryManager
+      .loadMainMemory()
+      .then((content) => {
+        if (content) {
+          setAutoMemoryContent(content);
         }
       })
       .catch(() => {});
@@ -202,6 +217,7 @@ export function useAgentLoop({
         workingDirectory: process.cwd(),
         projectInstructions,
         skillsPromptSection: skillManager?.buildPromptSection() ?? undefined,
+        autoMemoryContent,
       });
 
       let messages: ChatMessage[] = [
@@ -343,6 +359,7 @@ export function useAgentLoop({
       sessionId,
       events,
       projectInstructions,
+      autoMemoryContent,
       flushText,
       resetText,
       syncCurrentTurn,

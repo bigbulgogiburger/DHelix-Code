@@ -6,6 +6,7 @@ import { buildSystemPrompt } from "../core/system-prompt-builder.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { createEventEmitter } from "../utils/events.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
+import { MemoryManager } from "../core/auto-memory.js";
 
 /** Output format for headless mode */
 export type HeadlessOutputFormat = "text" | "json" | "stream-json";
@@ -56,11 +57,18 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
   } = options;
 
   const events = createEventEmitter();
-  const instructions = await loadInstructions(workingDirectory ?? process.cwd()).catch(() => null);
+  const cwd = workingDirectory ?? process.cwd();
+  const instructions = await loadInstructions(cwd).catch(() => null);
+
+  // Load auto-memory for the current project
+  const memoryManager = new MemoryManager(cwd);
+  const autoMemoryContent = await memoryManager.loadMainMemory().catch(() => "");
+
   const systemPrompt = buildSystemPrompt({
     toolRegistry,
     workingDirectory,
     projectInstructions: instructions?.combined,
+    autoMemoryContent: autoMemoryContent || undefined,
   });
 
   const initialMessages: ChatMessage[] = [
