@@ -4,7 +4,7 @@ import { z } from "zod";
 export const llmConfigSchema = z.object({
   baseUrl: z.string().url().default("https://api.openai.com/v1"),
   apiKey: z.string().optional(),
-  model: z.string().default("gpt-4.1-mini"),
+  model: z.string().default("gpt-5-mini"),
   temperature: z.number().min(0).max(2).default(0.0),
   maxTokens: z.number().positive().default(32768),
   contextWindow: z.number().positive().default(1_000_000),
@@ -44,10 +44,19 @@ export const uiConfigSchema = z.object({
   statusBar: z.boolean().default(true),
 });
 
+/** Persistent permission rules configuration */
+export const permissionsConfigSchema = z
+  .object({
+    allow: z.array(z.string()).default([]),
+    deny: z.array(z.string()).default([]),
+  })
+  .default({ allow: [], deny: [] });
+
 /** Full application configuration schema */
 export const configSchema = z.object({
   llm: llmConfigSchema.default({}),
   permissionMode: permissionModeSchema.default("default"),
+  permissions: permissionsConfigSchema,
   security: securityConfigSchema.default({}),
   ui: uiConfigSchema.default({}),
   workingDirectory: z.string().optional(),

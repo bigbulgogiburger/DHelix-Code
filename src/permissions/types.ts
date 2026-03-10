@@ -24,3 +24,14 @@ export interface PermissionRequest {
   readonly permissionLevel: PermissionLevel;
   readonly args: Readonly<Record<string, unknown>>;
 }
+
+/** A persistent permission rule saved across sessions */
+export interface PersistentPermissionRule {
+  readonly tool: string;
+  readonly pattern?: string;
+  readonly type: "allow" | "deny";
+  readonly scope: "project" | "user";
+}
+
+/** Result of checking persistent rules: allow, deny, or no match */
+export type PersistentCheckResult = "allow" | "deny" | "none";

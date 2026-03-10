@@ -58,25 +58,54 @@ function isExcluded(fileName: string, excludePatterns: readonly string[]): boole
 }
 
 /**
- * Find the project root by searching upward for DBCODE.md.
- * Returns the directory containing DBCODE.md, or null if not found.
+ * Find the project root by searching upward for DBCODE.md or .dbcode/ directory.
+ *
+ * Detection order per directory (first match wins):
+ * 1. DBCODE.md at directory root (primary convention)
+ * 2. .dbcode/DBCODE.md (backward compatible fallback)
+ * 3. .dbcode/ directory exists (project indicator even without DBCODE.md)
+ *
+ * Returns the directory that qualifies as the project root, or null if not found.
  */
 async function findProjectRoot(startDir: string): Promise<string | null> {
   let current = startDir;
   const root = dirname(current) === current ? current : undefined;
 
   while (true) {
-    const configPath = join(current, PROJECT_CONFIG_FILE);
+    // 1. Check for DBCODE.md at root (primary)
+    const rootConfigPath = join(current, PROJECT_CONFIG_FILE);
     try {
-      await stat(configPath);
+      await stat(rootConfigPath);
       return current;
     } catch {
-      const parent = dirname(current);
-      if (parent === current || parent === root) {
-        return null;
-      }
-      current = parent;
+      // Not found at root, try fallback
     }
+
+    // 2. Check for .dbcode/DBCODE.md (backward compatible)
+    const fallbackConfigPath = join(current, `.${APP_NAME}`, PROJECT_CONFIG_FILE);
+    try {
+      await stat(fallbackConfigPath);
+      return current;
+    } catch {
+      // Not found in .dbcode/ either
+    }
+
+    // 3. Check for .dbcode/ directory (project indicator)
+    const configDir = join(current, `.${APP_NAME}`);
+    try {
+      const dirStat = await stat(configDir);
+      if (dirStat.isDirectory()) {
+        return current;
+      }
+    } catch {
+      // No .dbcode/ directory
+    }
+
+    const parent = dirname(current);
+    if (parent === current || parent === root) {
+      return null;
+    }
+    current = parent;
   }
 }
 
@@ -202,11 +231,19 @@ export async function loadInstructions(
     excludePatterns,
   );
 
-  // 3b. Project root DBCODE.md
+  // 3b. Project root DBCODE.md (with .dbcode/DBCODE.md fallback)
   let projectInstructions = "";
   if (projectRoot && !isExcluded(PROJECT_CONFIG_FILE, excludePatterns)) {
-    const configPath = join(projectRoot, PROJECT_CONFIG_FILE);
-    const rawContent = await safeReadFile(configPath);
+    // Primary: DBCODE.md at project root
+    const rootConfigPath = join(projectRoot, PROJECT_CONFIG_FILE);
+    let rawContent = await safeReadFile(rootConfigPath);
+
+    // Fallback: .dbcode/DBCODE.md (backward compatible)
+    if (!rawContent) {
+      const fallbackPath = join(projectRoot, `.${APP_NAME}`, PROJECT_CONFIG_FILE);
+      rawContent = await safeReadFile(fallbackPath);
+    }
+
     if (rawContent) {
       projectInstructions = await parseInstructions(rawContent, projectRoot);
     }

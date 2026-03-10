@@ -1,6 +1,12 @@
 import { z } from "zod";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
-import { getShellCommand, getShellArgs } from "../../utils/platform.js";
+import {
+  getShellCommand,
+  getShellArgs,
+  isWindows,
+  hasGitBash,
+  getShellType,
+} from "../../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../../constants.js";
 import { backgroundProcessManager } from "../executor.js";
 import { spawn } from "node:child_process";
@@ -98,12 +104,24 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
   const shell = getShellCommand();
   const args = getShellArgs(params.command);
 
+  // For Git Bash on Windows, set environment variables for POSIX-like behavior
+  const env: Record<string, string | undefined> = {
+    ...process.env,
+    ...(isWindows() && hasGitBash()
+      ? {
+          MSYS: "winsymlinks:nativestrict",
+          CHERE_INVOKING: "1",
+        }
+      : {}),
+  };
+
   return new Promise<ToolResult>((resolve) => {
     const chunks: Buffer[] = [];
     const errChunks: Buffer[] = [];
 
     const proc = spawn(shell, [...args], {
       cwd: context.workingDirectory,
+      env,
       signal: context.abortSignal,
       stdio: ["ignore", "pipe", "pipe"],
     });
@@ -143,10 +161,22 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
   });
 }
 
+function buildDescription(): string {
+  const base =
+    "Execute a shell command and return stdout/stderr. Use for running builds, tests, git commands, etc. Commands time out after 120 seconds by default.";
+  const shellType = getShellType();
+  if (shellType === "git-bash") {
+    return `${base} Shell: Git Bash (POSIX commands available).`;
+  }
+  if (isWindows()) {
+    return `${base} WARNING: Git Bash not found — using cmd.exe. Install Git for Windows for better POSIX command compatibility.`;
+  }
+  return base;
+}
+
 export const bashExecTool: ToolDefinition<Params> = {
   name: "bash_exec",
-  description:
-    "Execute a shell command and return stdout/stderr. Use for running builds, tests, git commands, etc. Commands time out after 120 seconds by default.",
+  description: buildDescription(),
   parameterSchema: paramSchema,
   permissionLevel: "confirm",
   timeoutMs: TOOL_TIMEOUTS.bash,

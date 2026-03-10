@@ -70,9 +70,29 @@ export const LLM_DEFAULTS = {
   /** Default API base URL (OpenAI-compatible) */
   baseUrl: "https://api.openai.com/v1",
   /** Default model name */
-  model: "gpt-4.1-mini",
+  model: "gpt-5-mini",
   /** Default temperature */
   temperature: 0.0,
   /** Default max tokens for response */
   maxTokens: 32768,
 } as const;
+
+/** Auto-Memory — directory and file naming */
+export const MEMORY_DIR = "memory" as const;
+export const MEMORY_MAIN_FILE = "MEMORY.md" as const;
+
+/** Auto-Memory — limits */
+export const MEMORY_MAX_MAIN_LINES = 200;
+export const MEMORY_MAX_TOPIC_LINES = 500;
+export const MEMORY_MAX_ENTRIES_PER_SESSION = 20;
+export const MEMORY_MIN_CONFIDENCE = 0.7;
+
+/** Get the project-level memory directory (.dbcode/memory/) */
+export function getProjectMemoryDir(projectDir: string): string {
+  return join(projectDir, PROJECT_CONFIG_DIR, MEMORY_DIR);
+}
+
+/** Get the global user memory directory (~/.dbcode/memory/) */
+export function getGlobalMemoryDir(): string {
+  return join(CONFIG_DIR, MEMORY_DIR);
+}

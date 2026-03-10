@@ -8,6 +8,8 @@ import {
   getTempDir,
   getShellCommand,
   getShellArgs,
+  hasGitBash,
+  getShellType,
 } from "../../../src/utils/platform.js";
 
 describe("platform", () => {
@@ -44,20 +46,43 @@ describe("platform", () => {
   it("should return shell command based on platform", () => {
     const shell = getShellCommand();
     if (isWindows()) {
-      expect(shell).toBe("cmd.exe");
+      if (hasGitBash()) {
+        // Git Bash found — shell should point to bash.exe
+        expect(shell).toContain("bash.exe");
+      } else {
+        expect(shell).toBe("cmd.exe");
+      }
     } else {
-      expect(shell).toBe("/bin/bash");
+      // On Unix, returns SHELL env var or /bin/bash
+      expect(shell.length).toBeGreaterThan(0);
     }
   });
 
   it("should return shell args for command execution", () => {
     const args = getShellArgs("echo hello");
     expect(args.length).toBe(2);
-    if (isWindows()) {
+    if (isWindows() && !hasGitBash()) {
       expect(args[0]).toBe("/c");
     } else {
+      // bash and git-bash both use -c
       expect(args[0]).toBe("-c");
     }
     expect(args[1]).toBe("echo hello");
+  });
+
+  it("should report hasGitBash consistently with getShellType", () => {
+    if (!isWindows()) {
+      expect(hasGitBash()).toBe(false);
+      expect(getShellType()).toBe("bash");
+    } else if (hasGitBash()) {
+      expect(getShellType()).toBe("git-bash");
+    } else {
+      expect(getShellType()).toBe("cmd");
+    }
+  });
+
+  it("should return a valid shell type", () => {
+    const shellType = getShellType();
+    expect(["bash", "git-bash", "cmd", "powershell"]).toContain(shellType);
   });
 });

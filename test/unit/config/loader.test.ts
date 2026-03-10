@@ -88,7 +88,7 @@ describe("loadConfig", () => {
     const resolved = await loadConfig();
     expect(resolved.config.llm.apiKey).toBe("sk-test-openai-key");
     expect(resolved.config.llm.baseUrl).toBe("https://api.openai.com/v1");
-    expect(resolved.config.llm.model).toBe("gpt-4.1-mini");
+    expect(resolved.config.llm.model).toBe("gpt-5-mini");
     delete process.env.OPENAI_API_KEY;
   });
 
