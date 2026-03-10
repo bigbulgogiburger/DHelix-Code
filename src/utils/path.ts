@@ -44,3 +44,72 @@ export function relativePath(from: string, to: string): string {
 export function isAbsolutePath(p: string): boolean {
   return /^[a-zA-Z]:[\\/]/.test(p) || p.startsWith("/");
 }
+
+/**
+ * Convert a Git Bash path to a Windows path.
+ * Example: /c/Users/name/file.txt → C:\Users\name\file.txt
+ * Passes through paths that are not in Git Bash format.
+ */
+export function gitBashToWindows(p: string): string {
+  // Match /c/... or /d/... (single drive letter after leading slash)
+  const match = p.match(/^\/([a-zA-Z])(\/.*)?$/);
+  if (!match) return p;
+  const driveLetter = match[1].toUpperCase();
+  const rest = match[2] ?? "";
+  return `${driveLetter}:${rest.replace(/\//g, "\\")}`;
+}
+
+/**
+ * Convert a Windows path to a Git Bash path.
+ * Example: C:\Users\name\file.txt → /c/Users/name/file.txt
+ * Passes through paths that are not in Windows format.
+ */
+export function windowsToGitBash(p: string): string {
+  // Match C:\... or C:/...
+  const match = p.match(/^([a-zA-Z]):[/\\](.*)$/);
+  if (!match) return p;
+  const driveLetter = match[1].toLowerCase();
+  const rest = match[2] ?? "";
+  const normalized = rest.replace(/\\/g, "/");
+  return `/${driveLetter}/${normalized}`;
+}
+
+/**
+ * Expand Windows environment variables in a path.
+ * Example: %USERPROFILE%\Documents → C:\Users\name\Documents
+ * Unresolved variables are left as-is.
+ */
+export function expandWindowsEnvVars(p: string): string {
+  return p.replace(/%([^%]+)%/g, (_match, varName: string) => {
+    const value = process.env[varName];
+    return value ?? `%${varName}%`;
+  });
+}
+
+/**
+ * Check if a path is a UNC (Universal Naming Convention) path.
+ * UNC paths start with \\ or //.
+ * Example: \\server\share\folder
+ */
+export function isUNCPath(p: string): boolean {
+  return /^[\\/]{2}[^\\/]/.test(p);
+}
+
+/**
+ * Normalize a UNC path by ensuring consistent forward slashes
+ * and removing trailing slashes.
+ * Example: \\server\share\folder\ → //server/share/folder
+ */
+export function normalizeUNCPath(p: string): string {
+  if (!isUNCPath(p)) return p;
+  // Convert all backslashes to forward slashes, collapse duplicates (except leading //),
+  // and remove trailing slash
+  const normalized = p.replace(/\\/g, "/");
+  // Preserve the leading // but collapse any extra slashes in the rest
+  const withoutPrefix = normalized.slice(2).replace(/\/+/g, "/");
+  const result = `//${withoutPrefix}`;
+  // Remove trailing slash (but don't reduce to just "//")
+  return result.length > 2 && result.endsWith("/")
+    ? result.slice(0, -1)
+    : result;
+}

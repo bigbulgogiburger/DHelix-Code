@@ -242,6 +242,24 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     },
     extractPreview: formatBashPreview,
   },
+  bash_output: {
+    running: "Reading output",
+    complete: "Read output",
+    extractDetail: (args) => {
+      const processId = typeof args?.processId === "string" ? args.processId : undefined;
+      return processId ? `from ${processId}` : undefined;
+    },
+    extractPreview: formatBashPreview,
+  },
+  kill_shell: {
+    running: "Terminating",
+    complete: "Terminated",
+    extractDetail: (args) => {
+      const processId = typeof args?.processId === "string" ? args.processId : undefined;
+      const signal = typeof args?.signal === "string" ? args.signal : "SIGTERM";
+      return processId ? `${processId} (${signal})` : undefined;
+    },
+  },
   glob_search: {
     running: "Searching files",
     complete: "Found",

@@ -7,10 +7,10 @@ import {
 } from "./types.js";
 import { type ToolRegistry } from "./registry.js";
 import { parseToolArguments } from "./validation.js";
-import { getPlatform, getShellCommand, getShellArgs } from "../utils/platform.js";
+import { getPlatform, getShellCommandSync, getShellArgs } from "../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../constants.js";
 import { spawn, type ChildProcess } from "node:child_process";
-import { createWriteStream } from "node:fs";
+import { createWriteStream, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
@@ -91,33 +91,50 @@ export async function executeToolCall(
 /** Status of a background process */
 export interface BackgroundProcessStatus {
   readonly pid: number;
+  readonly processId: string;
   readonly command: string;
   readonly running: boolean;
   readonly exitCode: number | null;
   readonly outputFile: string;
 }
 
+/** Info for listing background processes */
+export interface BackgroundProcessInfo {
+  readonly processId: string;
+  readonly pid: number;
+  readonly command: string;
+  readonly running: boolean;
+  readonly exitCode: number | null;
+}
+
 interface BackgroundProcess {
   readonly pid: number;
+  readonly processId: string;
   readonly command: string;
   readonly outputFile: string;
   readonly proc: ChildProcess;
   running: boolean;
   exitCode: number | null;
   completionCallbacks: Array<(exitCode: number) => void>;
+  /** Byte offset for incremental output reads */
+  lastReadOffset: number;
 }
 
 /**
  * Manages background shell processes with detached execution.
  * Processes run independently and their output is written to temp files.
+ * Each process is assigned a human-readable ID (e.g., "bg-1", "bg-2").
  */
 export class BackgroundProcessManager {
   private readonly processes = new Map<number, BackgroundProcess>();
+  private readonly processIdMap = new Map<string, BackgroundProcess>();
+  private nextId = 1;
 
-  start(command: string, cwd: string): { pid: number; outputFile: string } {
-    const id = randomUUID().slice(0, 8);
-    const outputFile = join(tmpdir(), `dbcode-bg-${id}.log`);
-    const shell = getShellCommand();
+  start(command: string, cwd: string): { pid: number; processId: string; outputFile: string } {
+    const fileId = randomUUID().slice(0, 8);
+    const processId = `bg-${this.nextId++}`;
+    const outputFile = join(tmpdir(), `dbcode-bg-${fileId}.log`);
+    const shell = getShellCommandSync();
     const args = getShellArgs(command);
 
     const outStream = createWriteStream(outputFile, { flags: "a" });
@@ -135,12 +152,14 @@ export class BackgroundProcessManager {
 
     const entry: BackgroundProcess = {
       pid,
+      processId,
       command,
       outputFile,
       proc,
       running: true,
       exitCode: null,
       completionCallbacks: [],
+      lastReadOffset: 0,
     };
 
     proc.on("close", (code) => {
@@ -161,14 +180,33 @@ export class BackgroundProcessManager {
     proc.unref();
 
     this.processes.set(pid, entry);
-    return { pid, outputFile };
+    this.processIdMap.set(processId, entry);
+    return { pid, processId, outputFile };
   }
 
-  getStatus(pid: number): BackgroundProcessStatus | undefined {
-    const entry = this.processes.get(pid);
+  /** Resolve a process by either human-readable ID ("bg-1") or numeric PID */
+  private resolve(idOrPid: string | number): BackgroundProcess | undefined {
+    if (typeof idOrPid === "string") {
+      return this.processIdMap.get(idOrPid) ?? this.findByPidString(idOrPid);
+    }
+    return this.processes.get(idOrPid);
+  }
+
+  /** Try to parse a string as a numeric PID and look it up */
+  private findByPidString(str: string): BackgroundProcess | undefined {
+    const num = parseInt(str, 10);
+    if (!isNaN(num)) {
+      return this.processes.get(num);
+    }
+    return undefined;
+  }
+
+  getStatus(idOrPid: string | number): BackgroundProcessStatus | undefined {
+    const entry = this.resolve(idOrPid);
     if (!entry) return undefined;
     return {
       pid: entry.pid,
+      processId: entry.processId,
       command: entry.command,
       running: entry.running,
       exitCode: entry.exitCode,
@@ -176,39 +214,95 @@ export class BackgroundProcessManager {
     };
   }
 
-  getOutput(pid: number): string {
-    const entry = this.processes.get(pid);
+  /** Read all output from a background process (full contents) */
+  getOutput(idOrPid: string | number): string {
+    const entry = this.resolve(idOrPid);
     if (!entry) return "";
     try {
-      const { readFileSync } = require("node:fs") as typeof import("node:fs");
       return readFileSync(entry.outputFile, "utf-8");
     } catch {
       return "";
     }
   }
 
-  kill(pid: number): void {
-    const entry = this.processes.get(pid);
-    if (!entry || !entry.running) return;
+  /** Read only new output since the last incremental read */
+  getIncrementalOutput(idOrPid: string | number): { output: string; running: boolean; exitCode: number | null } {
+    const entry = this.resolve(idOrPid);
+    if (!entry) {
+      return { output: "", running: false, exitCode: null };
+    }
     try {
-      process.kill(-entry.pid, "SIGTERM");
+      const stats = statSync(entry.outputFile);
+      const totalBytes = stats.size;
+      if (totalBytes <= entry.lastReadOffset) {
+        return { output: "", running: entry.running, exitCode: entry.exitCode };
+      }
+      const fd = openSync(entry.outputFile, "r");
+      const buffer = Buffer.alloc(totalBytes - entry.lastReadOffset);
+      readSync(fd, buffer, 0, buffer.length, entry.lastReadOffset);
+      closeSync(fd);
+      entry.lastReadOffset = totalBytes;
+      return { output: buffer.toString("utf-8"), running: entry.running, exitCode: entry.exitCode };
+    } catch {
+      return { output: "", running: entry.running, exitCode: entry.exitCode };
+    }
+  }
+
+  /** Kill a background process with a specific signal */
+  kill(idOrPid: string | number, signal: NodeJS.Signals = "SIGTERM"): boolean {
+    const entry = this.resolve(idOrPid);
+    if (!entry) return false;
+    if (!entry.running) return false;
+    try {
+      process.kill(-entry.pid, signal);
+      return true;
     } catch {
       try {
-        entry.proc.kill("SIGTERM");
+        entry.proc.kill(signal);
+        return true;
       } catch {
         // Process already exited
+        return false;
       }
     }
   }
 
-  onComplete(pid: number, callback: (exitCode: number) => void): void {
-    const entry = this.processes.get(pid);
+  onComplete(idOrPid: string | number, callback: (exitCode: number) => void): void {
+    const entry = this.resolve(idOrPid);
     if (!entry) return;
     if (!entry.running) {
       callback(entry.exitCode ?? 1);
       return;
     }
     entry.completionCallbacks.push(callback);
+  }
+
+  /** List all tracked background processes */
+  list(): readonly BackgroundProcessInfo[] {
+    return [...this.processIdMap.values()].map((entry) => ({
+      processId: entry.processId,
+      pid: entry.pid,
+      command: entry.command,
+      running: entry.running,
+      exitCode: entry.exitCode,
+    }));
+  }
+
+  /** Terminate all running background processes */
+  cleanup(): void {
+    for (const entry of this.processes.values()) {
+      if (entry.running) {
+        try {
+          process.kill(-entry.pid, "SIGTERM");
+        } catch {
+          try {
+            entry.proc.kill("SIGTERM");
+          } catch {
+            // Process already exited
+          }
+        }
+      }
+    }
   }
 }
 

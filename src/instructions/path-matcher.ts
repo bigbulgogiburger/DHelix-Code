@@ -4,14 +4,36 @@
  * or file paths being operated on.
  */
 
-/** A path-based rule condition */
+/** A path-based rule condition (multi-glob) */
 export interface PathRule {
-  /** Glob pattern to match against paths */
+  /** Glob patterns to match against paths (matches if ANY pattern matches) */
+  readonly patterns: readonly string[];
+  /** Content to include when pattern matches */
+  readonly content: string;
+  /** Optional description for the rule */
+  readonly description?: string;
+}
+
+/**
+ * @deprecated Use PathRule with `patterns` array instead.
+ * Kept for backward compatibility with code that constructs rules with a single pattern.
+ */
+export interface LegacyPathRule {
+  /** Single glob pattern to match against paths */
   readonly pattern: string;
   /** Content to include when pattern matches */
   readonly content: string;
   /** Optional description for the rule */
   readonly description?: string;
+}
+
+/** Convert a legacy single-pattern rule to the multi-pattern format */
+export function normalizeLegacyRule(rule: LegacyPathRule): PathRule {
+  return {
+    patterns: [rule.pattern],
+    content: rule.content,
+    description: rule.description,
+  };
 }
 
 /**
@@ -70,13 +92,21 @@ export function matchPath(path: string, pattern: string): boolean {
 }
 
 /**
+ * Check if a path matches ANY of the given glob patterns.
+ */
+export function matchAnyPattern(path: string, patterns: readonly string[]): boolean {
+  return patterns.some((pattern) => matchPath(path, pattern));
+}
+
+/**
  * Filter path rules that match the given path.
+ * A rule matches if ANY of its patterns match.
  */
 export function filterMatchingRules(
   rules: readonly PathRule[],
   currentPath: string,
 ): readonly PathRule[] {
-  return rules.filter((rule) => matchPath(currentPath, rule.pattern));
+  return rules.filter((rule) => matchAnyPattern(currentPath, rule.patterns));
 }
 
 /**

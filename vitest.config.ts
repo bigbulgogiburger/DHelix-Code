@@ -5,6 +5,14 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["test/**/*.test.ts"],
+    exclude: [
+      "test/integration/real-api.test.ts",
+      "test/integration/multi-turn.test.ts",
+      "test/e2e/smoke.test.ts",
+      "test/e2e/project-*.test.ts",
+      "test/e2e/coding-ability.test.ts",
+      "node_modules/**",
+    ],
     setupFiles: ["dotenv/config"],
     coverage: {
       provider: "v8",

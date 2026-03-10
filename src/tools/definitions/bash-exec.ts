@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
-import { getShellCommand, getShellArgs } from "../../utils/platform.js";
+import { getShellCommand, getShellArgs, isWSL1 } from "../../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../../constants.js";
 import { backgroundProcessManager } from "../executor.js";
 import { spawn } from "node:child_process";
@@ -64,19 +64,25 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     };
   }
 
+  // WSL1 warning — WSL1 has known limitations with file I/O performance and path translation
+  const wsl1Warning = isWSL1()
+    ? "[Warning: Running under WSL1. File I/O performance may be degraded. Consider upgrading to WSL2.]\n"
+    : "";
+
   // Background execution
   if (params.run_in_background) {
     try {
-      const { pid, outputFile } = backgroundProcessManager.start(
+      const { pid, processId, outputFile } = backgroundProcessManager.start(
         params.command,
         context.workingDirectory,
       );
       const desc = params.description ? ` (${params.description})` : "";
       return {
-        output: `Background process started${desc}.\nPID: ${pid}\nOutput file: ${outputFile}\nUse "cat ${outputFile}" to check output later.`,
+        output: `${wsl1Warning}Background process started${desc}.\nProcess ID: ${processId}\nPID: ${pid}\nOutput file: ${outputFile}\nUse bash_output to check progress, kill_shell to terminate.`,
         isError: false,
         metadata: {
           pid,
+          processId,
           status: "background",
           output_file: outputFile,
           command: params.command,
@@ -95,8 +101,8 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
 
   // Normal foreground execution
   const timeoutMs = params.timeout ?? TOOL_TIMEOUTS.bash;
-  const shell = getShellCommand();
-  const args = getShellArgs(params.command);
+  const shell = await getShellCommand();
+  const args = getShellArgs(params.command, shell);
 
   return new Promise<ToolResult>((resolve) => {
     const chunks: Buffer[] = [];
@@ -122,7 +128,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       const output = [stdout, stderr].filter(Boolean).join("\n");
 
       resolve({
-        output: output || "(no output)",
+        output: `${wsl1Warning}${output}` || "(no output)",
         isError: code !== 0,
         metadata: {
           exitCode: code,

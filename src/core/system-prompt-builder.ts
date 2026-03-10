@@ -35,6 +35,8 @@ export interface BuildSystemPromptOptions {
   readonly mcpServers?: readonly { name: string; tools: readonly string[] }[];
   readonly customSections?: readonly PromptSection[];
   readonly skillsPromptSection?: string;
+  /** Auto-memory content loaded from MEMORY.md (if any) */
+  readonly autoMemoryContent?: string;
   /** Session state for conditional section inclusion */
   readonly sessionState?: SessionState;
   /** Total token budget for the system prompt. Lowest-priority sections trimmed if exceeded. */
@@ -145,6 +147,15 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
       id: "project",
       content: `# Project Instructions\n\n${projectInstructions}`,
       priority: 70,
+    });
+  }
+
+  // Auto-memory section: inject project memory between project instructions and extended thinking
+  if (options?.autoMemoryContent) {
+    sections.push({
+      id: "auto-memory",
+      content: `# Auto Memory\n\n${options.autoMemoryContent}`,
+      priority: 72,
     });
   }
 

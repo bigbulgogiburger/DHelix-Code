@@ -1,5 +1,5 @@
-import { readFile, readdir, stat } from "node:fs/promises";
-import { join, dirname } from "node:path";
+import { readFile, readdir, stat, realpath } from "node:fs/promises";
+import { join, dirname, relative } from "node:path";
 import { homedir } from "node:os";
 import { PROJECT_CONFIG_FILE, APP_NAME } from "../constants.js";
 import { parseInstructions } from "./parser.js";
@@ -40,10 +40,13 @@ export interface LoadInstructionsOptions {
 
 /**
  * Read a file safely, returning empty string if not found.
+ * Resolves symlinks before reading to support shared instruction files
+ * across projects via symlinks.
  */
 async function safeReadFile(filePath: string): Promise<string> {
   try {
-    return await readFile(filePath, "utf-8");
+    const resolvedPath = await realpath(filePath);
+    return await readFile(resolvedPath, "utf-8");
   } catch {
     return "";
   }
@@ -121,6 +124,60 @@ async function loadParentInstructions(
 }
 
 /**
+ * Regex to match frontmatter block (--- ... ---) at the start of a file.
+ * Captures the entire frontmatter block including delimiters.
+ */
+const FRONTMATTER_REGEX = /^---\s*\n([\s\S]*?)\n---/;
+
+/**
+ * Parse frontmatter from a rule file to extract path patterns.
+ *
+ * Supports two formats:
+ * - Legacy single pattern: pattern: "src/wildcard"
+ * - Multi-glob paths array with YAML list items
+ *
+ * The paths field takes precedence if both are present.
+ * Returns a catch-all pattern if no frontmatter is found.
+ */
+function parseFrontmatterPatterns(content: string): { readonly patterns: readonly string[]; readonly ruleContent: string } {
+  const frontmatterMatch = content.match(FRONTMATTER_REGEX);
+
+  if (!frontmatterMatch) {
+    return { patterns: ["**"], ruleContent: content };
+  }
+
+  const frontmatterBody = frontmatterMatch[1];
+  const ruleContent = content.slice(frontmatterMatch[0].length).trim();
+
+  // Try to extract `paths:` array (takes precedence)
+  const pathsMatch = frontmatterBody.match(/paths:\s*\n((?:\s*-\s*"?[^"\n]+"?\s*\n?)+)/);
+  if (pathsMatch) {
+    const pathLines = pathsMatch[1];
+    const patterns: string[] = [];
+    const lineRegex = /\s*-\s*"?([^"\n]+?)"?\s*$/gm;
+    let lineMatch: RegExpExecArray | null;
+    while ((lineMatch = lineRegex.exec(pathLines)) !== null) {
+      const trimmed = lineMatch[1].trim();
+      if (trimmed) {
+        patterns.push(trimmed);
+      }
+    }
+    if (patterns.length > 0) {
+      return { patterns, ruleContent };
+    }
+  }
+
+  // Fall back to legacy single `pattern:` field
+  const patternMatch = frontmatterBody.match(/pattern:\s*"?([^"\n]+?)"?\s*$/m);
+  if (patternMatch) {
+    return { patterns: [patternMatch[1].trim()], ruleContent };
+  }
+
+  // Frontmatter present but no pattern/paths — match everything
+  return { patterns: ["**"], ruleContent };
+}
+
+/**
  * Load path-based rules from a rules directory (*.md files).
  */
 async function loadPathRules(
@@ -140,14 +197,10 @@ async function loadPathRules(
       if (!fileStat.isFile()) continue;
 
       const content = await readFile(filePath, "utf-8");
-
-      // Extract optional frontmatter pattern
-      const patternMatch = content.match(/^---\s*\npattern:\s*"?([^"\n]+)"?\s*\n---/);
-      const pattern = patternMatch ? patternMatch[1] : "**";
-      const ruleContent = patternMatch ? content.slice(patternMatch[0].length).trim() : content;
+      const { patterns, ruleContent } = parseFrontmatterPatterns(content);
 
       rules.push({
-        pattern,
+        patterns,
         content: ruleContent,
         description: entry.replace(/\.md$/, ""),
       });
@@ -257,4 +310,102 @@ export async function loadInstructions(
     localInstructions,
     combined: parts.join("\n\n---\n\n"),
   };
+}
+
+/**
+ * Lazy instruction loader — loads subdirectory DBCODE.md files on demand
+ * when files in that directory are accessed.
+ *
+ * Instead of loading all instruction files at startup, subdirectory
+ * instructions are loaded only when a tool accesses a file in that
+ * directory (or any child directory).
+ */
+export class LazyInstructionLoader {
+  private readonly cache = new Map<string, string>();
+  private readonly projectRoot: string;
+
+  constructor(projectRoot: string) {
+    this.projectRoot = projectRoot;
+  }
+
+  /**
+   * Get instructions relevant to a specific file path.
+   *
+   * Walks from the file's directory up to the project root, collecting
+   * DBCODE.md content from each directory that has one. Results are
+   * cached per directory for subsequent lookups.
+   *
+   * Returns concatenated instructions from all matching directories,
+   * ordered from closest ancestor to the project root (closest first).
+   */
+  async getInstructionsForFile(filePath: string): Promise<string> {
+    const normalizedFile = filePath.replace(/\\/g, "/");
+    const normalizedRoot = this.projectRoot.replace(/\\/g, "/");
+
+    // Ensure the file is within the project root
+    const rel = relative(normalizedRoot, normalizedFile);
+    if (rel.startsWith("..") || rel.startsWith("/")) {
+      return "";
+    }
+
+    const instructions: string[] = [];
+    let current = dirname(normalizedFile);
+
+    while (true) {
+      // Stop when we go above the project root
+      const relDir = relative(normalizedRoot, current);
+      if (relDir.startsWith("..") || relDir.startsWith("/")) {
+        break;
+      }
+
+      const dirInstructions = await this.loadDirectoryInstructions(current);
+      if (dirInstructions) {
+        instructions.push(dirInstructions);
+      }
+
+      // Stop at the project root
+      if (current === normalizedRoot || current === this.projectRoot) {
+        break;
+      }
+
+      const parent = dirname(current);
+      if (parent === current) break; // filesystem root
+      current = parent;
+    }
+
+    return instructions.filter(Boolean).join("\n\n");
+  }
+
+  /** Invalidate cached instructions for a specific directory */
+  invalidate(dirPath: string): void {
+    const normalized = dirPath.replace(/\\/g, "/");
+    this.cache.delete(normalized);
+  }
+
+  /** Clear all cached instructions */
+  clearCache(): void {
+    this.cache.clear();
+  }
+
+  /**
+   * Load DBCODE.md from a specific directory, using cache if available.
+   */
+  private async loadDirectoryInstructions(dirPath: string): Promise<string> {
+    const normalized = dirPath.replace(/\\/g, "/");
+
+    if (this.cache.has(normalized)) {
+      return this.cache.get(normalized)!;
+    }
+
+    const configPath = join(dirPath, PROJECT_CONFIG_FILE);
+    const content = await safeReadFile(configPath);
+
+    let parsed = "";
+    if (content) {
+      parsed = await parseInstructions(content, dirPath);
+    }
+
+    this.cache.set(normalized, parsed);
+    return parsed;
+  }
 }

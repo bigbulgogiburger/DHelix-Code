@@ -11,6 +11,10 @@ export const DEFAULT_CONFIG: AppConfig = {
     timeout: 60_000,
   },
   permissionMode: "default",
+  permissions: {
+    allow: [],
+    deny: [],
+  },
   security: {
     mode: "local",
     secretScanning: true,

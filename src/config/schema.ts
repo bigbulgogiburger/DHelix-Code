@@ -44,10 +44,19 @@ export const uiConfigSchema = z.object({
   statusBar: z.boolean().default(true),
 });
 
+/** Persistent permission rules configuration */
+export const permissionsConfigSchema = z.object({
+  /** Allowed tool patterns, e.g. ["Bash(npm *)", "Edit(/src/**)"] */
+  allow: z.array(z.string()).default([]),
+  /** Denied tool patterns, e.g. ["Bash(rm -rf *)"] — deny always takes priority */
+  deny: z.array(z.string()).default([]),
+}).default({});
+
 /** Full application configuration schema */
 export const configSchema = z.object({
   llm: llmConfigSchema.default({}),
   permissionMode: permissionModeSchema.default("default"),
+  permissions: permissionsConfigSchema,
   security: securityConfigSchema.default({}),
   ui: uiConfigSchema.default({}),
   workingDirectory: z.string().optional(),

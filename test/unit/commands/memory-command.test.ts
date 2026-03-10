@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { memoryCommand } from "../../../src/commands/memory.js";
-import { mkdir, rm, readFile } from "node:fs/promises";
+import { mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 
 const tmpDir = join(process.cwd(), "test", "tmp", "memory-command");
@@ -31,53 +31,69 @@ describe("/memory command", () => {
     expect(memoryCommand.usage).toContain("/memory");
   });
 
-  it("should list no memory files when directory does not exist", async () => {
+  it("should show no memory when directory does not exist", async () => {
     const result = await memoryCommand.execute("", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("No memory files found");
+    expect(result.output).toContain("No project memory found");
   });
 
-  it("should write a memory file", async () => {
-    const result = await memoryCommand.execute("notes Hello world", baseContext);
+  it("should save a memory entry with topic", async () => {
+    const result = await memoryCommand.execute("save debugging: Found the auth bug", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("notes.md");
-
-    // Verify the file was actually written
-    const content = await readFile(join(tmpDir, ".dbcode", "memory", "notes.md"), "utf-8");
-    expect(content).toBe("Hello world");
+    expect(result.output).toContain("debugging");
   });
 
-  it("should read a memory file", async () => {
-    // Write first
-    await memoryCommand.execute("notes Some content here", baseContext);
+  it("should save a memory entry without topic (defaults to General)", async () => {
+    const result = await memoryCommand.execute("save Hello world", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("General");
+  });
 
-    // Read
-    const result = await memoryCommand.execute("notes", baseContext);
+  it("should show memory content after saving", async () => {
+    await memoryCommand.execute("save notes: Some content here", baseContext);
+
+    const result = await memoryCommand.execute("", baseContext);
     expect(result.success).toBe(true);
     expect(result.output).toContain("Some content here");
   });
 
-  it("should return error for non-existent memory file", async () => {
-    const result = await memoryCommand.execute("nonexistent", baseContext);
+  it("should detect duplicate entries", async () => {
+    await memoryCommand.execute("save notes: Hello world", baseContext);
+    const result = await memoryCommand.execute("save notes: Hello world", baseContext);
+    expect(result.success).toBe(true);
+    expect(result.output).toContain("duplicate");
+  });
+
+  it("should list topic files", async () => {
+    const result = await memoryCommand.execute("topics", baseContext);
+    expect(result.success).toBe(true);
+    // No topic files initially (only MEMORY.md exists, topics are separate)
+  });
+
+  it("should return error for non-existent topic file", async () => {
+    const result = await memoryCommand.execute("read nonexistent", baseContext);
     expect(result.success).toBe(false);
     expect(result.output).toContain("not found");
   });
 
-  it("should list memory files after writing", async () => {
-    await memoryCommand.execute("alpha First", baseContext);
-    await memoryCommand.execute("beta Second", baseContext);
-
-    const result = await memoryCommand.execute("", baseContext);
+  it("should clear all memory", async () => {
+    await memoryCommand.execute("save notes: data to clear", baseContext);
+    const result = await memoryCommand.execute("clear", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("alpha.md");
-    expect(result.output).toContain("beta.md");
+    expect(result.output).toContain("cleared");
+
+    // Verify memory is empty
+    const showResult = await memoryCommand.execute("", baseContext);
+    expect(showResult.output).toContain("No project memory found");
   });
 
-  it("should handle .md extension in name", async () => {
-    await memoryCommand.execute("test.md Some data", baseContext);
+  it("should require text for save subcommand", async () => {
+    const result = await memoryCommand.execute("save", baseContext);
+    expect(result.success).toBe(false);
+  });
 
-    const result = await memoryCommand.execute("test.md", baseContext);
-    expect(result.success).toBe(true);
-    expect(result.output).toContain("Some data");
+  it("should require topic for read subcommand", async () => {
+    const result = await memoryCommand.execute("read", baseContext);
+    expect(result.success).toBe(false);
   });
 });
