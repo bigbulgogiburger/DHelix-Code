@@ -9,9 +9,13 @@ describe("ActivityCollector", () => {
     expect(typeof id).toBe("string");
   });
 
-  it("should throw when adding entry without active turn", () => {
+  it("should auto-start turn when adding entry without active turn", () => {
     const collector = new ActivityCollector();
-    expect(() => collector.addEntry("user-message")).toThrow("No active turn");
+    collector.addEntry("user-message");
+    const turn = collector.getCurrentTurn();
+    expect(turn).not.toBeNull();
+    expect(turn!.entries).toHaveLength(1);
+    expect(turn!.entries[0].type).toBe("user-message");
   });
 
   it("should add entries to the current turn", () => {

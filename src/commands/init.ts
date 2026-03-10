@@ -190,9 +190,8 @@ function buildAnalysisPrompt(isUpdate: boolean, configDirCreated: boolean): stri
 1. Read project config files (package.json, tsconfig.json, Cargo.toml, go.mod, pyproject.toml, pom.xml, build.gradle, Makefile, Gemfile, etc.)
 2. Explore the top-level directory structure to understand the architecture
 3. Check for README.md and incorporate important, non-obvious parts
-4. Check for existing AI assistant rules (.cursorrules, .cursor/rules/, .github/copilot-instructions.md) and incorporate their important parts
-5. Read a few key source files to understand patterns and conventions
-6. Check git history for commit conventions if available
+4. Read a few key source files to understand patterns and conventions
+5. Check git history for commit conventions if available
 
 ## Guidelines
 

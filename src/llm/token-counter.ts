@@ -4,11 +4,11 @@ let encoder: ReturnType<typeof getEncoding> | undefined;
 
 /**
  * Get or create the tiktoken encoder instance.
- * Uses cl100k_base encoding (GPT-4, GPT-3.5-turbo).
+ * Uses o200k_base encoding (GPT-5, GPT-4.1, GPT-4o and newer models).
  */
 function getEncoder(): ReturnType<typeof getEncoding> {
   if (!encoder) {
-    encoder = getEncoding("cl100k_base");
+    encoder = getEncoding("o200k_base");
   }
   return encoder;
 }

@@ -279,8 +279,13 @@ export class OpenAICompatibleClient implements LLMProvider {
     const params: Record<string, unknown> = {
       model: request.model,
       messages: toOpenAIMessages(request.messages, caps),
-      max_tokens: request.maxTokens,
     };
+    // Use max_completion_tokens for modern models, max_tokens for legacy
+    if (caps.useMaxCompletionTokens) {
+      params.max_completion_tokens = request.maxTokens;
+    } else {
+      params.max_tokens = request.maxTokens;
+    }
     // Only include temperature for models that support it
     if (caps.supportsTemperature && request.temperature !== undefined) {
       params.temperature = request.temperature;
@@ -348,10 +353,15 @@ export class OpenAICompatibleClient implements LLMProvider {
     const params: Record<string, unknown> = {
       model: request.model,
       messages: toOpenAIMessages(request.messages, caps),
-      max_tokens: request.maxTokens,
       stream: true,
       stream_options: { include_usage: true },
     };
+    // Use max_completion_tokens for modern models, max_tokens for legacy
+    if (caps.useMaxCompletionTokens) {
+      params.max_completion_tokens = request.maxTokens;
+    } else {
+      params.max_tokens = request.maxTokens;
+    }
     if (caps.supportsTemperature && request.temperature !== undefined) {
       params.temperature = request.temperature;
     }

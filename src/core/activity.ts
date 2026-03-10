@@ -43,10 +43,10 @@ export class ActivityCollector {
     return id;
   }
 
-  /** Add an entry to the current turn. Throws if no turn is active. */
+  /** Add an entry to the current turn. Auto-starts a turn if none is active. */
   addEntry(type: ActivityEntryType, data: Readonly<Record<string, unknown>> = {}): void {
     if (!this._currentTurn) {
-      throw new Error("No active turn. Call startTurn() first.");
+      this.startTurn();
     }
     this._currentTurn.entries.push({
       type,

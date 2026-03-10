@@ -60,7 +60,7 @@ export const TOOL_TIMEOUTS = {
 /** Token counter defaults */
 export const TOKEN_DEFAULTS = {
   /** Default model for token counting */
-  defaultModel: "gpt-4",
+  defaultModel: "gpt-5-mini",
   /** Maximum context window size (tokens) */
   maxContextWindow: 1_000_000,
 } as const;
