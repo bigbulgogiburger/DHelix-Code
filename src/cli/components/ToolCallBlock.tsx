@@ -2,9 +2,9 @@ import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 
 import {
-  getToolDisplayText,
-  getToolStatusIcon,
+  getToolHeaderInfo,
   getToolPreview,
+  formatDuration,
   SPINNER_FRAMES,
 } from "../renderer/tool-display.js";
 
@@ -22,7 +22,6 @@ function useSpinner(active: boolean): string {
 
   useEffect(() => {
     if (!active) return;
-    // 500ms interval to reduce re-render frequency (was 200ms)
     const timer = setInterval(() => {
       setFrame((prev) => (prev + 1) % SPINNER_FRAMES.length);
     }, 500);
@@ -32,19 +31,16 @@ function useSpinner(active: boolean): string {
   return SPINNER_FRAMES[frame];
 }
 
-/** Parse a diff line into its components: line number, marker (+/-/space), and content */
+/** Parse a diff line into its components */
 function parseDiffLine(line: string): {
   lineNum: string;
   marker: "+" | "-" | " ";
   content: string;
 } {
-  // Match pattern: optional leading spaces + digits + space + marker + space + content
-  // e.g. "  107 - old code" or "  108 + new code" or "  …"
   const match = line.match(/^(\s*\d+)\s([+-])\s(.*)$/);
   if (match) {
     return { lineNum: match[1], marker: match[2] as "+" | "-", content: match[3] };
   }
-  // Context line with line number: "  109   code"
   const ctxMatch = line.match(/^(\s*\d+)\s{2}(.*)$/);
   if (ctxMatch) {
     return { lineNum: ctxMatch[1], marker: " ", content: ctxMatch[2] };
@@ -52,11 +48,11 @@ function parseDiffLine(line: string): {
   return { lineNum: "", marker: " ", content: line };
 }
 
-/** Render a diff-like preview with line numbers and colored +/- lines */
+/** Render a diff preview with colored +/- lines */
 function DiffPreview({ preview }: { readonly preview: string }) {
   const lines = preview.split("\n");
   return (
-    <Box flexDirection="column" marginLeft={4} marginTop={0}>
+    <Box flexDirection="column" marginLeft={5}>
       {lines.map((line, i) => {
         const { lineNum, marker, content } = parseDiffLine(line);
         if (marker === "+") {
@@ -75,7 +71,6 @@ function DiffPreview({ preview }: { readonly preview: string }) {
             </Text>
           );
         }
-        // Context or overflow line
         if (lineNum) {
           return (
             <Text key={i}>
@@ -94,7 +89,7 @@ function DiffPreview({ preview }: { readonly preview: string }) {
   );
 }
 
-/** Display a tool call with status indicator, detail text, and optional diff preview */
+/** Rich tool call display with semantic header and tree connector */
 export const ToolCallBlock = React.memo(function ToolCallBlock({
   name,
   status,
@@ -104,28 +99,46 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   startTime,
 }: ToolCallBlockProps) {
   const spinnerChar = useSpinner(status === "running");
-  const icon = status === "running" ? spinnerChar : getToolStatusIcon(status);
   const duration = startTime && status !== "running" ? Date.now() - startTime : undefined;
-  const displayText = getToolDisplayText(name, status, args, output, duration);
+  const headerInfo = getToolHeaderInfo(name, status, args, output, duration);
   const preview = getToolPreview(name, status, args, output);
 
-  const statusColor = {
-    running: "yellow",
-    complete: "green",
-    error: "red",
-    denied: "red",
-  }[status] as "yellow" | "green" | "red";
+  // Determine header color override for error/denied
+  const effectiveColor =
+    status === "error" || status === "denied" ? "red" : headerInfo.color;
 
   return (
     <Box flexDirection="column" marginLeft={2}>
+      {/* Header row: [spinner/icon] Verb(arg) */}
       <Box>
-        <Text color={statusColor}>[{icon}]</Text>
-        <Text> </Text>
-        <Text bold>{displayText}</Text>
+        {status === "running" && <Text color="yellow">{spinnerChar} </Text>}
+        {status === "error" && <Text color="red">{"\u2717"} </Text>}
+        {status === "denied" && <Text color="red">! </Text>}
+        <Text bold color={effectiveColor}>
+          {headerInfo.header}
+        </Text>
+        {duration && status !== "running" && (
+          <Text dimColor> ({formatDuration(duration)})</Text>
+        )}
       </Box>
-      {preview ? <DiffPreview preview={preview} /> : null}
+
+      {/* Subtext row with tree connector ⎿ */}
+      {headerInfo.subtext && (
+        <Box marginLeft={1}>
+          <Text dimColor>{"⎿  "}</Text>
+          <Text>{headerInfo.subtext}</Text>
+          {!isExpanded && preview && (
+            <Text dimColor italic>{" (ctrl+o to expand)"}</Text>
+          )}
+        </Box>
+      )}
+
+      {/* Diff preview — only when expanded */}
+      {isExpanded && preview ? <DiffPreview preview={preview} /> : null}
+
+      {/* Raw output fallback — only when expanded and no diff */}
       {isExpanded && output && !preview ? (
-        <Box marginLeft={4} marginTop={0}>
+        <Box marginLeft={4}>
           <Text color="gray" wrap="truncate-end">
             {output.length > 500 ? output.slice(0, 500) + "..." : output}
           </Text>

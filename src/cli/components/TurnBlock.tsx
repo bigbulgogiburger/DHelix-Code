@@ -7,6 +7,7 @@ import { StreamingMessage } from "./StreamingMessage.js";
 interface TurnBlockProps {
   readonly turn: TurnActivity;
   readonly isLive?: boolean;
+  readonly isExpanded?: boolean;
 }
 
 function getToolStatus(entry: ActivityEntry): "running" | "complete" | "error" | "denied" {
@@ -36,6 +37,7 @@ function renderEntry(
   index: number,
   isLive: boolean,
   allEntries: readonly ActivityEntry[],
+  isExpanded?: boolean,
 ): React.ReactNode {
   switch (entry.type) {
     case "user-message":
@@ -83,6 +85,7 @@ function renderEntry(
           status={getToolStatus(entry)}
           args={entry.data.args as Record<string, unknown> | undefined}
           output={typeof entry.data.output === "string" ? entry.data.output : undefined}
+          isExpanded={isExpanded}
           startTime={startTime}
         />
       );
@@ -101,10 +104,10 @@ function renderEntry(
 }
 
 /** Renders a single turn: user message + assistant responses + tool calls */
-export const TurnBlock = React.memo(function TurnBlock({ turn, isLive = false }: TurnBlockProps) {
+export const TurnBlock = React.memo(function TurnBlock({ turn, isLive = false, isExpanded }: TurnBlockProps) {
   return (
     <Box flexDirection="column" marginBottom={1}>
-      {turn.entries.map((entry, i) => renderEntry(entry, i, isLive, turn.entries))}
+      {turn.entries.map((entry, i) => renderEntry(entry, i, isLive, turn.entries, isExpanded))}
     </Box>
   );
 });

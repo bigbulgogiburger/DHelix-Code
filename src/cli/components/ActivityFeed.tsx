@@ -2,20 +2,69 @@ import { Box, Static, Text } from "ink";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { type TurnActivity, type ActivityEntry } from "../../core/activity.js";
 import { ToolCallBlock } from "./ToolCallBlock.js";
+import { ReadGroupBlock, type ReadGroupEntry } from "./ReadGroupBlock.js";
 import { StreamingMessage } from "./StreamingMessage.js";
 
 interface ActivityFeedProps {
   readonly completedTurns: readonly TurnActivity[];
   readonly currentTurn?: TurnActivity | null;
+  readonly isExpanded?: boolean;
+}
+
+/** Group consecutive file_read tool-complete entries for compact display */
+export function groupConsecutiveReads(
+  entries: readonly ActivityEntry[],
+): readonly (ActivityEntry | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] })[] {
+  const result: (ActivityEntry | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] })[] = [];
+  let readBuffer: ActivityEntry[] = [];
+
+  const flushReads = () => {
+    if (readBuffer.length >= 2) {
+      result.push({ type: "read-group", entries: [...readBuffer] });
+    } else {
+      result.push(...readBuffer);
+    }
+    readBuffer = [];
+  };
+
+  for (const entry of entries) {
+    const isReadTool =
+      entry.type === "tool-complete" &&
+      entry.data.name === "file_read";
+
+    if (isReadTool) {
+      readBuffer.push(entry);
+    } else {
+      flushReads();
+      result.push(entry);
+    }
+  }
+  flushReads();
+  return result;
 }
 
 /** Render a single activity entry */
 function renderEntry(
-  entry: ActivityEntry,
+  entry: ActivityEntry | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] },
   isLive: boolean,
   allEntries: readonly ActivityEntry[],
   keyPrefix: string,
+  isExpanded?: boolean,
 ): React.ReactNode {
+  // Handle grouped reads
+  if ("type" in entry && (entry as { readonly type: string }).type === "read-group") {
+    const groupEntries = (entry as { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] }).entries;
+    const readEntries: ReadGroupEntry[] = groupEntries.map((e) => {
+      const filePath = typeof (e.data.args as Record<string, unknown>)?.file_path === "string"
+        ? (e.data.args as Record<string, unknown>).file_path as string
+        : "unknown";
+      const outputStr = typeof e.data.output === "string" ? e.data.output : "";
+      const lineCount = outputStr.trim().split("\n").filter((l: string) => l.length > 0).length;
+      return { filePath, lineCount: lineCount > 0 ? lineCount : undefined };
+    });
+    return <ReadGroupBlock key={keyPrefix} entries={readEntries} isExpanded={isExpanded} />;
+  }
+
   switch (entry.type) {
     case "user-message":
       return (
@@ -77,6 +126,7 @@ function renderEntry(
           status={status}
           args={entry.data.args as Record<string, unknown> | undefined}
           output={typeof entry.data.output === "string" ? entry.data.output : undefined}
+          isExpanded={isExpanded}
           startTime={startTime}
         />
       );
@@ -111,6 +161,7 @@ interface FlushedItem {
 export const ActivityFeed = React.memo(function ActivityFeed({
   completedTurns,
   currentTurn,
+  isExpanded,
 }: ActivityFeedProps) {
   // Monotonically increasing ID for Static items — ensures append-only
   const nextIdRef = useRef(0);
@@ -138,7 +189,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({
         flushedSetRef.current.add(entry);
 
         const id = nextIdRef.current++;
-        const node = renderEntry(entry, false, turn.entries, `s-${id}`);
+        const node = renderEntry(entry, false, turn.entries, `s-${id}`, isExpanded);
         if (node) {
           newItems.push({ key: `s-${id}`, node });
         }
@@ -193,7 +244,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({
       if (isComplete) {
         flushedSetRef.current.add(entry);
         const id = nextIdRef.current++;
-        const node = renderEntry(entry, false, currentTurn.entries, `s-${id}`);
+        const node = renderEntry(entry, false, currentTurn.entries, `s-${id}`, isExpanded);
         if (node) {
           newItems.push({ key: `s-${id}`, node });
         }
@@ -224,7 +275,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({
       {liveEntries.length > 0 && (
         <Box flexDirection="column" marginBottom={1}>
           {liveEntries.map((entry, i) =>
-            renderEntry(entry, true, currentTurn?.entries ?? [], `live-${i}`),
+            renderEntry(entry, true, currentTurn?.entries ?? [], `live-${i}`, isExpanded),
           )}
         </Box>
       )}

@@ -1,14 +1,29 @@
 type ToolStatus = "running" | "complete" | "error" | "denied";
 
+export interface ToolHeaderInfo {
+  readonly header: string;
+  readonly color: string;
+  readonly subtext?: string;
+}
+
 interface ToolDisplayConfig {
   readonly running: string;
   readonly complete: string;
+  readonly headerVerb: string;
+  readonly runningHeaderVerb: string;
+  readonly headerColor: string;
   readonly extractDetail?: (args?: Record<string, unknown>, output?: string) => string | undefined;
   /** Extract a preview snippet (diff, output preview, etc.) shown below the status line */
   readonly extractPreview?: (
     args?: Record<string, unknown>,
     output?: string,
     status?: ToolStatus,
+  ) => string | undefined;
+  readonly extractHeaderArg?: (args?: Record<string, unknown>) => string | undefined;
+  readonly extractSubtext?: (
+    args?: Record<string, unknown>,
+    output?: string,
+    duration?: number,
   ) => string | undefined;
 }
 
@@ -177,10 +192,28 @@ function formatBashPreview(
   return preview.join("\n");
 }
 
+/** Format a duration string for subtext, returning undefined if not meaningful */
+function formatDurationSubtext(duration?: number): string | undefined {
+  if (duration === undefined || duration <= 0) return undefined;
+  return formatDuration(duration);
+}
+
+/** Count non-empty lines in output */
+function countNonEmptyLines(output?: string): number {
+  if (!output) return 0;
+  return output
+    .trim()
+    .split("\n")
+    .filter((l) => l.length > 0).length;
+}
+
 const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   file_read: {
     running: "Reading",
     complete: "Read",
+    headerVerb: "Read",
+    runningHeaderVerb: "Reading",
+    headerColor: "blue",
     extractDetail: (args, output) => {
       const filePath =
         typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
@@ -192,10 +225,20 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       }
       return filePath;
     },
+    extractHeaderArg: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+    extractSubtext: (_args, output, duration) => {
+      const lineCount = countNonEmptyLines(output);
+      if (lineCount > 0) return `${lineCount} line${lineCount === 1 ? "" : "s"}`;
+      return formatDurationSubtext(duration);
+    },
   },
   file_write: {
     running: "Writing",
     complete: "Wrote",
+    headerVerb: "Write",
+    runningHeaderVerb: "Writing",
+    headerColor: "cyan",
     extractDetail: (args) => {
       const filePath =
         typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
@@ -209,10 +252,23 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       }
       return filePath;
     },
+    extractHeaderArg: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+    extractSubtext: (args) => {
+      const content = typeof args?.content === "string" ? args.content : undefined;
+      if (!content) return undefined;
+      const lineCount = content.split("\n").length;
+      const bytes = new TextEncoder().encode(content).byteLength;
+      if (bytes < 1024) return `${lineCount} line${lineCount === 1 ? "" : "s"}, ${bytes} B`;
+      return `${lineCount} line${lineCount === 1 ? "" : "s"}, ${(bytes / 1024).toFixed(1)} KB`;
+    },
   },
   file_edit: {
     running: "Editing",
     complete: "Edited",
+    headerVerb: "Update",
+    runningHeaderVerb: "Updating",
+    headerColor: "cyan",
     extractDetail: (args) => {
       const filePath =
         typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
@@ -227,10 +283,16 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       if (status === "running") return undefined;
       return formatEditDiff(args, output);
     },
+    extractHeaderArg: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+    extractSubtext: (args) => formatChangeSummary(args),
   },
   bash_exec: {
     running: "Running",
     complete: "Ran",
+    headerVerb: "Bash",
+    runningHeaderVerb: "Running",
+    headerColor: "yellow",
     extractDetail: (args) => {
       const cmd = typeof args?.command === "string" ? args.command : undefined;
       if (!cmd) return undefined;
@@ -241,28 +303,60 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       return lineCount > 1 ? `${display} (+${lineCount - 1} lines)` : display;
     },
     extractPreview: formatBashPreview,
+    extractHeaderArg: (args) => {
+      const cmd = typeof args?.command === "string" ? args.command : undefined;
+      if (!cmd) return undefined;
+      const firstLine = cmd.split("\n")[0];
+      return firstLine.length > 60 ? firstLine.slice(0, 57) + "…" : firstLine;
+    },
+    extractSubtext: (_args, output, duration) => {
+      if (output) {
+        const lines = output.trim().split("\n");
+        const firstNonEmpty = lines.find((l) => l.trim().length > 0);
+        if (firstNonEmpty) {
+          const trimmed = firstNonEmpty.trim();
+          return trimmed.length > 80 ? trimmed.slice(0, 77) + "…" : trimmed;
+        }
+      }
+      return formatDurationSubtext(duration);
+    },
   },
   bash_output: {
     running: "Reading output",
     complete: "Read output",
+    headerVerb: "BashOutput",
+    runningHeaderVerb: "Reading output",
+    headerColor: "yellow",
     extractDetail: (args) => {
       const processId = typeof args?.processId === "string" ? args.processId : undefined;
       return processId ? `from ${processId}` : undefined;
     },
     extractPreview: formatBashPreview,
+    extractHeaderArg: (args) =>
+      typeof args?.processId === "string" ? args.processId : undefined,
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   kill_shell: {
     running: "Terminating",
     complete: "Terminated",
+    headerVerb: "Kill",
+    runningHeaderVerb: "Terminating",
+    headerColor: "red",
     extractDetail: (args) => {
       const processId = typeof args?.processId === "string" ? args.processId : undefined;
       const signal = typeof args?.signal === "string" ? args.signal : "SIGTERM";
       return processId ? `${processId} (${signal})` : undefined;
     },
+    extractHeaderArg: (args) =>
+      typeof args?.processId === "string" ? args.processId : undefined,
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   glob_search: {
     running: "Searching files",
     complete: "Found",
+    headerVerb: "Search",
+    runningHeaderVerb: "Searching",
+    headerColor: "magenta",
     extractDetail: (args, output) => {
       const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
       if (output) {
@@ -275,10 +369,20 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       }
       return pattern;
     },
+    extractHeaderArg: (args) =>
+      typeof args?.pattern === "string" ? args.pattern : undefined,
+    extractSubtext: (_args, output) => {
+      const count = countNonEmptyLines(output);
+      if (count > 0) return `${count} file${count === 1 ? "" : "s"}`;
+      return undefined;
+    },
   },
   grep_search: {
     running: "Searching",
     complete: "Searched",
+    headerVerb: "Search",
+    runningHeaderVerb: "Searching",
+    headerColor: "magenta",
     extractDetail: (args, output) => {
       const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
       if (output) {
@@ -291,36 +395,76 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       }
       return pattern;
     },
+    extractHeaderArg: (args) =>
+      typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined,
+    extractSubtext: (_args, output) => {
+      const count = countNonEmptyLines(output);
+      if (count > 0) return `${count} result${count === 1 ? "" : "s"}`;
+      return undefined;
+    },
   },
   mkdir: {
     running: "Creating directory",
     complete: "Created directory",
+    headerVerb: "Mkdir",
+    runningHeaderVerb: "Creating",
+    headerColor: "cyan",
     extractDetail: (args) => (typeof args?.path === "string" ? shortenPath(args.path) : undefined),
+    extractHeaderArg: (args) =>
+      typeof args?.path === "string" ? shortenPath(args.path) : undefined,
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   web_fetch: {
     running: "Fetching",
     complete: "Fetched",
+    headerVerb: "Fetch",
+    runningHeaderVerb: "Fetching",
+    headerColor: "magenta",
     extractDetail: (args) => (typeof args?.url === "string" ? args.url : undefined),
+    extractHeaderArg: (args) =>
+      typeof args?.url === "string" ? args.url : undefined,
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   list_dir: {
     running: "Listing",
     complete: "Listed",
+    headerVerb: "List",
+    runningHeaderVerb: "Listing",
+    headerColor: "blue",
     extractDetail: (args) => (typeof args?.path === "string" ? shortenPath(args.path) : undefined),
+    extractHeaderArg: (args) =>
+      typeof args?.path === "string" ? shortenPath(args.path) : undefined,
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   notebook_edit: {
     running: "Editing notebook",
     complete: "Edited notebook",
+    headerVerb: "EditNotebook",
+    runningHeaderVerb: "Editing",
+    headerColor: "cyan",
     extractDetail: (args) =>
       typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+    extractHeaderArg: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   ask_user: {
     running: "Asking",
     complete: "Asked",
+    headerVerb: "Ask",
+    runningHeaderVerb: "Asking",
+    headerColor: "yellow",
     extractDetail: (args) => {
       const question = typeof args?.question === "string" ? args.question : undefined;
       if (!question) return undefined;
       return question.length > 60 ? question.slice(0, 57) + "…" : question;
     },
+    extractHeaderArg: (args) => {
+      const question = typeof args?.question === "string" ? args.question : undefined;
+      if (!question) return undefined;
+      return question.length > 40 ? question.slice(0, 37) + "…" : question;
+    },
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
 };
 
@@ -331,6 +475,30 @@ export function formatDuration(ms: number): string {
   const minutes = Math.floor(ms / 60_000);
   const seconds = Math.round((ms % 60_000) / 1000);
   return `${minutes}m ${seconds}s`;
+}
+
+export function getToolHeaderInfo(
+  name: string,
+  status: ToolStatus,
+  args?: Record<string, unknown>,
+  output?: string,
+  duration?: number,
+): ToolHeaderInfo {
+  const config = toolDisplayMap[name];
+  if (!config) {
+    return {
+      header: status === "running" ? `Running(${name})` : `Tool(${name})`,
+      color: "gray",
+      subtext: duration ? formatDuration(duration) : undefined,
+    };
+  }
+
+  const verb = status === "running" ? config.runningHeaderVerb : config.headerVerb;
+  const arg = config.extractHeaderArg?.(args);
+  const header = arg ? `${verb}(${arg})` : verb;
+  const subtext = config.extractSubtext?.(args, output, duration);
+
+  return { header, color: config.headerColor, subtext };
 }
 
 export function getToolDisplayText(

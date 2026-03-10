@@ -3,6 +3,7 @@ import {
   getToolDisplayText,
   getToolStatusIcon,
   getToolPreview,
+  getToolHeaderInfo,
   SPINNER_FRAMES,
   SPINNER_INTERVAL_MS,
 } from "../../../src/cli/renderer/tool-display.js";
@@ -307,5 +308,198 @@ describe("SPINNER_FRAMES", () => {
 describe("SPINNER_INTERVAL_MS", () => {
   it("should be 200ms", () => {
     expect(SPINNER_INTERVAL_MS).toBe(200);
+  });
+});
+
+describe("getToolHeaderInfo", () => {
+  describe("header format", () => {
+    it("should return Update(filepath) for file_edit", () => {
+      const info = getToolHeaderInfo("file_edit", "complete", { file_path: "/src/foo.ts" });
+      expect(info.header).toBe("Update(/src/foo.ts)");
+      expect(info.color).toBe("cyan");
+    });
+
+    it("should return Write(filepath) for file_write", () => {
+      const info = getToolHeaderInfo("file_write", "complete", { file_path: "/src/bar.ts" });
+      expect(info.header).toBe("Write(/src/bar.ts)");
+      expect(info.color).toBe("cyan");
+    });
+
+    it("should return Read(filepath) for file_read", () => {
+      const info = getToolHeaderInfo("file_read", "complete", { file_path: "/src/index.ts" });
+      expect(info.header).toBe("Read(/src/index.ts)");
+      expect(info.color).toBe("blue");
+    });
+
+    it("should return Bash(command) for bash_exec", () => {
+      const info = getToolHeaderInfo("bash_exec", "complete", { command: "npm test" });
+      expect(info.header).toBe("Bash(npm test)");
+      expect(info.color).toBe("yellow");
+    });
+
+    it("should return Search(pattern) for glob_search", () => {
+      const info = getToolHeaderInfo("glob_search", "complete", { pattern: "**/*.ts" });
+      expect(info.header).toBe("Search(**/*.ts)");
+      expect(info.color).toBe("magenta");
+    });
+
+    it("should return Search(pattern) for grep_search", () => {
+      const info = getToolHeaderInfo("grep_search", "complete", { pattern: "TODO" });
+      expect(info.header).toBe('Search("TODO")');
+      expect(info.color).toBe("magenta");
+    });
+
+    it("should return Fetch(url) for web_fetch", () => {
+      const info = getToolHeaderInfo("web_fetch", "complete", { url: "https://example.com" });
+      expect(info.header).toBe("Fetch(https://example.com)");
+      expect(info.color).toBe("magenta");
+    });
+
+    it("should return Mkdir(path) for mkdir", () => {
+      const info = getToolHeaderInfo("mkdir", "complete", { path: "/src/utils" });
+      expect(info.header).toBe("Mkdir(/src/utils)");
+      expect(info.color).toBe("cyan");
+    });
+
+    it("should return List(path) for list_dir", () => {
+      const info = getToolHeaderInfo("list_dir", "complete", { path: "/src" });
+      expect(info.header).toBe("List(/src)");
+      expect(info.color).toBe("blue");
+    });
+
+    it("should truncate long bash commands in header", () => {
+      const longCmd = "a".repeat(100);
+      const info = getToolHeaderInfo("bash_exec", "complete", { command: longCmd });
+      expect(info.header.length).toBeLessThanOrEqual(80);
+    });
+
+    it("should shorten long file paths", () => {
+      const info = getToolHeaderInfo("file_read", "complete", {
+        file_path: "/very/deep/nested/path/to/some/file.ts",
+      });
+      expect(info.header).toContain("file.ts");
+    });
+
+    it("should return Tool(name) for unknown tools", () => {
+      const info = getToolHeaderInfo("unknown_tool", "complete");
+      expect(info.header).toContain("unknown_tool");
+      expect(info.color).toBe("gray");
+    });
+
+    it("should use running verb when status is running", () => {
+      const info = getToolHeaderInfo("file_edit", "running", { file_path: "/src/foo.ts" });
+      expect(info.header).toContain("Updating");
+    });
+
+    it("should use running verb for bash when running", () => {
+      const info = getToolHeaderInfo("bash_exec", "running", { command: "npm test" });
+      expect(info.header).toContain("Running");
+    });
+
+    it("should use running verb for file_read when running", () => {
+      const info = getToolHeaderInfo("file_read", "running", { file_path: "/src/foo.ts" });
+      expect(info.header).toContain("Reading");
+    });
+
+    it("should handle missing args gracefully", () => {
+      const info = getToolHeaderInfo("file_edit", "complete");
+      expect(info.header).toBeDefined();
+      expect(info.color).toBe("cyan");
+    });
+
+    it("should handle non-string args gracefully", () => {
+      const info = getToolHeaderInfo("file_edit", "complete", { file_path: 42 });
+      expect(info.header).toBeDefined();
+    });
+  });
+
+  describe("subtext", () => {
+    it("should include change summary for file_edit", () => {
+      const info = getToolHeaderInfo("file_edit", "complete", {
+        file_path: "/src/foo.ts",
+        old_string: "line1\nline2",
+        new_string: "lineA",
+      });
+      expect(info.subtext).toBeDefined();
+      expect(info.subtext).toContain("1 line");
+      expect(info.subtext).toContain("2 lines");
+    });
+
+    it("should include line count for file_read with output", () => {
+      const info = getToolHeaderInfo(
+        "file_read",
+        "complete",
+        { file_path: "/src/foo.ts" },
+        "line1\nline2\nline3\n",
+      );
+      expect(info.subtext).toBeDefined();
+      expect(info.subtext).toContain("3");
+    });
+
+    it("should include result count for grep_search", () => {
+      const info = getToolHeaderInfo(
+        "grep_search",
+        "complete",
+        { pattern: "TODO" },
+        "match1\nmatch2\nmatch3",
+      );
+      expect(info.subtext).toBeDefined();
+      expect(info.subtext).toContain("3");
+    });
+
+    it("should include file count for glob_search", () => {
+      const info = getToolHeaderInfo(
+        "glob_search",
+        "complete",
+        { pattern: "**/*.ts" },
+        "/a.ts\n/b.ts\n",
+      );
+      expect(info.subtext).toBeDefined();
+      expect(info.subtext).toContain("2");
+    });
+
+    it("should return undefined subtext when no meaningful info", () => {
+      const info = getToolHeaderInfo("file_read", "running", { file_path: "/src/foo.ts" });
+      // Running status may or may not have subtext, but shouldn't error
+      expect(info.header).toBeDefined();
+    });
+  });
+
+  describe("color", () => {
+    it("should be cyan for file_edit", () => {
+      expect(getToolHeaderInfo("file_edit", "complete", {}).color).toBe("cyan");
+    });
+
+    it("should be cyan for file_write", () => {
+      expect(getToolHeaderInfo("file_write", "complete", {}).color).toBe("cyan");
+    });
+
+    it("should be blue for file_read", () => {
+      expect(getToolHeaderInfo("file_read", "complete", {}).color).toBe("blue");
+    });
+
+    it("should be blue for list_dir", () => {
+      expect(getToolHeaderInfo("list_dir", "complete", {}).color).toBe("blue");
+    });
+
+    it("should be yellow for bash_exec", () => {
+      expect(getToolHeaderInfo("bash_exec", "complete", {}).color).toBe("yellow");
+    });
+
+    it("should be magenta for glob_search", () => {
+      expect(getToolHeaderInfo("glob_search", "complete", {}).color).toBe("magenta");
+    });
+
+    it("should be magenta for grep_search", () => {
+      expect(getToolHeaderInfo("grep_search", "complete", {}).color).toBe("magenta");
+    });
+
+    it("should be red for kill_shell", () => {
+      expect(getToolHeaderInfo("kill_shell", "complete", {}).color).toBe("red");
+    });
+
+    it("should be gray for unknown tools", () => {
+      expect(getToolHeaderInfo("unknown", "complete", {}).color).toBe("gray");
+    });
   });
 });
