@@ -144,6 +144,8 @@ export async function consumeStream(
     onToolCallDelta?: (toolCall: Partial<ToolCallRequest>) => void;
     onThinkingDelta?: (text: string) => void;
     onComplete?: (accumulator: StreamAccumulator) => void;
+    /** Called when token usage is reported by the API (via stream_options.include_usage) */
+    onUsage?: (usage: TokenUsage) => void;
   },
   backpressure?: BackpressureConfig,
 ): Promise<StreamAccumulator> {
@@ -162,8 +164,13 @@ export async function consumeStream(
       if (chunk.type === "tool-call-delta" && chunk.toolCall && callbacks?.onToolCallDelta) {
         callbacks.onToolCallDelta(chunk.toolCall);
       }
-      if (chunk.type === "done" && callbacks?.onComplete) {
-        callbacks.onComplete(state);
+      if (chunk.type === "done") {
+        if (state.usage && callbacks?.onUsage) {
+          callbacks.onUsage(state.usage);
+        }
+        if (callbacks?.onComplete) {
+          callbacks.onComplete(state);
+        }
       }
     }
   } catch (error) {

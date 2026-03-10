@@ -11,6 +11,11 @@ const BLOCK_PATTERNS: readonly CommandPattern[] = [
   { regex: /mkfs/, description: "Filesystem format command" },
   { regex: /dd\s+if=/, description: "Low-level disk write (dd)" },
   { regex: /:\(\)\{\s*:\|:&\s*\};:/, description: "Fork bomb" },
+  { regex: /curl\s+[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh/, description: "Curl piped to shell execution" },
+  { regex: /wget\s+[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh/, description: "Wget piped to shell execution" },
+  { regex: /\bnc\b.*\s-e\s+\/bin\/(?:ba)?sh/, description: "Netcat reverse shell" },
+  { regex: /\bnetcat\b.*\s-e\s+\/bin\/(?:ba)?sh/, description: "Netcat reverse shell" },
+  { regex: /\bncat\b.*\s-e\s+\/bin\/(?:ba)?sh/, description: "Ncat reverse shell" },
 ];
 
 const WARN_PATTERNS: readonly CommandPattern[] = [
@@ -18,6 +23,13 @@ const WARN_PATTERNS: readonly CommandPattern[] = [
   { regex: /DELETE\s+FROM/i, description: "SQL DELETE FROM" },
   { regex: /chmod\s+777/, description: "Overly permissive chmod" },
   { regex: /sudo\s+rm/, description: "Sudo remove" },
+  { regex: /git\s+push\s+.*--force(?!-)/, description: "Git force push" },
+  { regex: /git\s+push\s+.*-f(?:\s|$)/, description: "Git force push (-f)" },
+  { regex: /git\s+reset\s+--hard/, description: "Git hard reset" },
+  { regex: /\bnpm\s+publish\b/, description: "npm publish to registry" },
+  { regex: /docker\s+run\s+.*--privileged/, description: "Docker privileged container" },
+  { regex: /\beval\s+["`$]/, description: "Eval with variable expansion" },
+  { regex: /\bexec\s+["`$]/, description: "Exec with variable expansion" },
 ];
 
 export function checkCommand(command: string): GuardrailResult {

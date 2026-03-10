@@ -49,11 +49,22 @@ export interface PermissionResult {
   readonly reason?: string;
 }
 
+/** Aggregated token usage across all iterations of an agent loop run */
+export interface AggregatedUsage {
+  readonly totalPromptTokens: number;
+  readonly totalCompletionTokens: number;
+  readonly totalTokens: number;
+  readonly iterationCount: number;
+  readonly toolCallCount: number;
+  readonly retriedCount: number;
+}
+
 /** Result of the agent loop */
 export interface AgentLoopResult {
   readonly messages: readonly ChatMessage[];
   readonly iterations: number;
   readonly aborted: boolean;
+  readonly usage?: AggregatedUsage;
 }
 
 /** Error classification for retry decisions */
@@ -112,6 +123,49 @@ function waitWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
       reject(new LLMError("Aborted"));
     });
   });
+}
+
+/**
+ * Tracks cumulative token usage and execution metrics across agent loop iterations.
+ * Immutable snapshot via `snapshot()` — internal state is mutable for performance.
+ */
+class UsageAggregator {
+  private _totalPromptTokens = 0;
+  private _totalCompletionTokens = 0;
+  private _totalTokens = 0;
+  private _iterationCount = 0;
+  private _toolCallCount = 0;
+  private _retriedCount = 0;
+
+  /** Record token usage from a single LLM call */
+  recordLLMUsage(usage: { readonly promptTokens: number; readonly completionTokens: number; readonly totalTokens: number }): void {
+    this._totalPromptTokens += usage.promptTokens;
+    this._totalCompletionTokens += usage.completionTokens;
+    this._totalTokens += usage.totalTokens;
+    this._iterationCount++;
+  }
+
+  /** Record tool calls executed in this iteration */
+  recordToolCalls(count: number): void {
+    this._toolCallCount += count;
+  }
+
+  /** Record a retry attempt */
+  recordRetry(): void {
+    this._retriedCount++;
+  }
+
+  /** Return an immutable snapshot of the current aggregated usage */
+  snapshot(): AggregatedUsage {
+    return {
+      totalPromptTokens: this._totalPromptTokens,
+      totalCompletionTokens: this._totalCompletionTokens,
+      totalTokens: this._totalTokens,
+      iterationCount: this._iterationCount,
+      toolCallCount: this._toolCallCount,
+      retriedCount: this._retriedCount,
+    };
+  }
 }
 
 /** Tools that are always safe to run in parallel (read-only, no side effects) */
@@ -254,6 +308,7 @@ export async function runAgentLoop(
   const maxToolResultChars = config.maxToolResultChars ?? 12_000;
   const messages: ChatMessage[] = [...initialMessages];
   let iterations = 0;
+  const usageAggregator = new UsageAggregator();
 
   // Context manager for auto-compaction when token budget is exceeded
   const contextManager = new ContextManager({
@@ -267,7 +322,14 @@ export async function runAgentLoop(
 
   while (iterations < maxIterations) {
     if (config.signal?.aborted) {
-      return { messages, iterations, aborted: true };
+      const usage = usageAggregator.snapshot();
+      config.events.emit("agent:complete", {
+        iterations,
+        totalTokens: usage.totalTokens,
+        toolCallCount: usage.toolCallCount,
+        aborted: true,
+      });
+      return { messages, iterations, aborted: true, usage };
     }
 
     iterations++;
@@ -304,6 +366,9 @@ export async function runAgentLoop(
             onTextDelta: (text) => {
               config.events.emit("llm:text-delta", { text });
             },
+            onUsage: (usage) => {
+              config.events.emit("llm:usage", { usage, model: config.model });
+            },
           });
 
           if (accumulated.partial) {
@@ -321,7 +386,7 @@ export async function runAgentLoop(
           response = {
             content: accumulated.text,
             toolCalls: accumulated.toolCalls,
-            usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+            usage: accumulated.usage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
             finishReason: accumulated.partial ? "length" : "stop",
           };
         } else {
@@ -339,6 +404,7 @@ export async function runAgentLoop(
 
         // Transient only: retry with backoff
         if (attempt < maxRetries) {
+          usageAggregator.recordRetry();
           const delay = 1000 * Math.pow(2, attempt);
           config.events.emit("llm:error", {
             error: error instanceof Error ? error : new Error(String(error)),
@@ -361,6 +427,16 @@ export async function runAgentLoop(
       tokenCount: response.usage.totalTokens,
     });
 
+    // Record usage in aggregator and emit running totals
+    usageAggregator.recordLLMUsage(response.usage);
+    const runningUsage = usageAggregator.snapshot();
+    config.events.emit("agent:usage-update", {
+      promptTokens: runningUsage.totalPromptTokens,
+      completionTokens: runningUsage.totalCompletionTokens,
+      totalTokens: runningUsage.totalTokens,
+      iteration: iterations,
+    });
+
     // Append assistant message
     const assistantMessage: ChatMessage = {
       role: "assistant",
@@ -381,7 +457,15 @@ export async function runAgentLoop(
     });
 
     if (extractedCalls.length === 0) {
-      break; // No tool calls — conversation turn complete
+      // No tool calls — conversation turn complete
+      const doneUsage = usageAggregator.snapshot();
+      config.events.emit("agent:complete", {
+        iterations,
+        totalTokens: doneUsage.totalTokens,
+        toolCallCount: doneUsage.toolCallCount,
+        aborted: false,
+      });
+      return { messages, iterations, aborted: false, usage: doneUsage };
     }
 
     // Execute tool calls in parallel groups
@@ -423,6 +507,7 @@ export async function runAgentLoop(
           const guardrailCheck = applyInputGuardrails(
             call.name,
             call.arguments as Record<string, unknown>,
+            config.workingDirectory,
           );
           if (guardrailCheck.severity === "block") {
             const blocked: ToolCallResult = {
@@ -547,6 +632,9 @@ export async function runAgentLoop(
       }
     }
 
+    // Record executed tool calls in usage aggregator
+    usageAggregator.recordToolCalls(extractedCalls.length);
+
     // Track file accesses for context manager rehydration
     for (const call of extractedCalls) {
       if (call.name === "file_read" || call.name === "file_edit" || call.name === "file_write") {
@@ -567,5 +655,13 @@ export async function runAgentLoop(
     messages.push(...toolMessages);
   }
 
-  return { messages, iterations, aborted: false };
+  const finalUsage = usageAggregator.snapshot();
+  config.events.emit("agent:complete", {
+    iterations,
+    totalTokens: finalUsage.totalTokens,
+    toolCallCount: finalUsage.toolCallCount,
+    aborted: false,
+  });
+
+  return { messages, iterations, aborted: false, usage: finalUsage };
 }

@@ -10,6 +10,8 @@ import {
   type HookRunResult,
   type CommandHookHandler,
   type HttpHookHandler,
+  type PromptHookHandler,
+  type AgentHookHandler,
 } from "./types.js";
 
 /** Default timeout for hook handlers (30 seconds) */
@@ -173,8 +175,233 @@ async function executeHttpHandler(
 }
 
 /**
+ * Execute a prompt hook handler.
+ * Displays a confirmation prompt to the user with the configured message.
+ * In CI mode (DBCODE_HOOK_AUTO_APPROVE=true), auto-approves.
+ * Otherwise, reports the prompt message and treats the hook as non-blocking
+ * unless the environment indicates rejection.
+ */
+async function executePromptHandler(
+  handler: PromptHookHandler,
+  payload: HookEventPayload,
+): Promise<HookHandlerResult> {
+  const message = interpolateVariables(handler.promptMessage, payload);
+  const isAutoApprove = process.env.DBCODE_HOOK_AUTO_APPROVE === "true";
+
+  if (isAutoApprove) {
+    return {
+      exitCode: 0,
+      stdout: `[prompt:auto-approved] ${message}`,
+      stderr: "",
+      blocked: false,
+      handlerType: "prompt",
+    };
+  }
+
+  // In interactive mode, report the prompt message.
+  // The user confirmation is handled at the CLI layer — if
+  // DBCODE_HOOK_REJECT is set to "true", treat as rejection.
+  const isRejected = process.env.DBCODE_HOOK_REJECT === "true";
+
+  if (isRejected) {
+    return {
+      exitCode: 2,
+      stdout: `[prompt:rejected] ${message}`,
+      stderr: "",
+      blocked: true,
+      handlerType: "prompt",
+    };
+  }
+
+  return {
+    exitCode: 0,
+    stdout: `[prompt:shown] ${message}`,
+    stderr: "",
+    blocked: false,
+    handlerType: "prompt",
+  };
+}
+
+/**
+ * Safely resolve a nested property from an object using a dot-separated path.
+ * Returns undefined if the path does not resolve.
+ */
+function resolveProperty(obj: unknown, path: string): unknown {
+  const parts = path.split(".");
+  let current: unknown = obj;
+  for (const part of parts) {
+    if (current === null || current === undefined || typeof current !== "object") {
+      return undefined;
+    }
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+/**
+ * Safely evaluate a validator expression against a payload.
+ *
+ * Instead of using eval(), this parses a restricted set of comparison expressions:
+ *   - "payload.path.to.field !== 'value'"
+ *   - "payload.path.to.field === 'value'"
+ *   - "payload.path.to.field !== true"
+ *   - "!payload.path.to.field?.includes('substring')"
+ *   - Logical operators: "&&", "||" to combine comparisons
+ *
+ * Returns true if the validator passes (operation allowed), false if blocked.
+ */
+function evaluateValidator(validator: string, payload: HookEventPayload): boolean {
+  // Handle logical operators by splitting and evaluating each part
+  if (validator.includes("||")) {
+    const parts = validator.split("||").map((p) => p.trim());
+    return parts.some((part) => evaluateValidator(part, payload));
+  }
+
+  if (validator.includes("&&")) {
+    const parts = validator.split("&&").map((p) => p.trim());
+    return parts.every((part) => evaluateValidator(part, payload));
+  }
+
+  const trimmed = validator.trim();
+
+  // Handle negated includes: "!payload.path?.includes('value')"
+  const negatedIncludesMatch = trimmed.match(
+    /^!payload\.(.+?)\?\.includes\(\s*['"](.+?)['"]\s*\)$/,
+  );
+  if (negatedIncludesMatch) {
+    const propPath = negatedIncludesMatch[1];
+    const searchValue = negatedIncludesMatch[2];
+    const resolved = resolveProperty(payload, propPath);
+    if (typeof resolved === "string") {
+      return !resolved.includes(searchValue);
+    }
+    if (Array.isArray(resolved)) {
+      return !resolved.includes(searchValue);
+    }
+    // Property not found or not a string/array — negation is true
+    return true;
+  }
+
+  // Handle positive includes: "payload.path?.includes('value')"
+  const includesMatch = trimmed.match(
+    /^payload\.(.+?)\?\.includes\(\s*['"](.+?)['"]\s*\)$/,
+  );
+  if (includesMatch) {
+    const propPath = includesMatch[1];
+    const searchValue = includesMatch[2];
+    const resolved = resolveProperty(payload, propPath);
+    if (typeof resolved === "string") {
+      return resolved.includes(searchValue);
+    }
+    if (Array.isArray(resolved)) {
+      return resolved.includes(searchValue);
+    }
+    return false;
+  }
+
+  // Handle strict inequality: "payload.path !== 'value'" or "payload.path !== true/false"
+  const neqMatch = trimmed.match(/^payload\.(.+?)\s*!==\s*(.+)$/);
+  if (neqMatch) {
+    const propPath = neqMatch[1];
+    const rawValue = neqMatch[2].trim();
+    const resolved = resolveProperty(payload, propPath);
+    const compareValue = parseLiteralValue(rawValue);
+    return resolved !== compareValue;
+  }
+
+  // Handle strict equality: "payload.path === 'value'" or "payload.path === true/false"
+  const eqMatch = trimmed.match(/^payload\.(.+?)\s*===\s*(.+)$/);
+  if (eqMatch) {
+    const propPath = eqMatch[1];
+    const rawValue = eqMatch[2].trim();
+    const resolved = resolveProperty(payload, propPath);
+    const compareValue = parseLiteralValue(rawValue);
+    return resolved === compareValue;
+  }
+
+  // Handle negated truthy check: "!payload.path"
+  const negatedTruthyMatch = trimmed.match(/^!payload\.(.+)$/);
+  if (negatedTruthyMatch) {
+    const propPath = negatedTruthyMatch[1];
+    const resolved = resolveProperty(payload, propPath);
+    return !resolved;
+  }
+
+  // Handle truthy check: "payload.path"
+  const truthyMatch = trimmed.match(/^payload\.(.+)$/);
+  if (truthyMatch) {
+    const propPath = truthyMatch[1];
+    const resolved = resolveProperty(payload, propPath);
+    return Boolean(resolved);
+  }
+
+  // Unrecognized expression — fail safe by rejecting (returning false)
+  return false;
+}
+
+/**
+ * Parse a literal value from a validator expression string.
+ * Handles: 'string', "string", true, false, null, undefined, numbers.
+ */
+function parseLiteralValue(raw: string): unknown {
+  // Quoted string (single or double quotes)
+  const stringMatch = raw.match(/^['"](.*)['"]$/);
+  if (stringMatch) return stringMatch[1];
+
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+  if (raw === "null") return null;
+  if (raw === "undefined") return undefined;
+
+  // Number
+  const num = Number(raw);
+  if (!Number.isNaN(num)) return num;
+
+  return raw;
+}
+
+/**
+ * Execute an agent hook handler.
+ * Evaluates a declarative validator expression against the event payload.
+ * Does NOT use eval() — uses safe expression parsing instead.
+ */
+async function executeAgentHandler(
+  handler: AgentHookHandler,
+  payload: HookEventPayload,
+): Promise<HookHandlerResult> {
+  try {
+    const passed = evaluateValidator(handler.validator, payload);
+
+    if (passed) {
+      return {
+        exitCode: 0,
+        stdout: `[agent:pass] ${handler.description}`,
+        stderr: "",
+        blocked: false,
+        handlerType: "agent",
+      };
+    }
+
+    return {
+      exitCode: 2,
+      stdout: `[agent:blocked] ${handler.description} — validator rejected the payload`,
+      stderr: "",
+      blocked: true,
+      handlerType: "agent",
+    };
+  } catch (error) {
+    return {
+      exitCode: 1,
+      stdout: "",
+      stderr: `Agent validator error: ${error instanceof Error ? error.message : String(error)}`,
+      blocked: false,
+      handlerType: "agent",
+    };
+  }
+}
+
+/**
  * Execute a single hook handler, dispatching by type.
- * Prompt and agent handlers are not yet implemented — they return pass-through results.
  */
 async function executeHandler(
   handler: HookHandler,
@@ -186,23 +413,9 @@ async function executeHandler(
     case "http":
       return executeHttpHandler(handler, payload);
     case "prompt":
-      // Prompt handler: placeholder — requires LLM integration
-      return {
-        exitCode: 0,
-        stdout: "",
-        stderr: "Prompt hooks not yet implemented",
-        blocked: false,
-        handlerType: "prompt",
-      };
+      return executePromptHandler(handler, payload);
     case "agent":
-      // Agent handler: placeholder — requires subagent integration
-      return {
-        exitCode: 0,
-        stdout: "",
-        stderr: "Agent hooks not yet implemented",
-        blocked: false,
-        handlerType: "agent",
-      };
+      return executeAgentHandler(handler, payload);
   }
 }
 

@@ -1,6 +1,9 @@
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { randomUUID } from "node:crypto";
+import { mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
+import { homedir } from "node:os";
+import { join } from "node:path";
 import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { ToolRegistry } from "../tools/registry.js";
@@ -8,8 +11,15 @@ import { runAgentLoop, type AgentLoopResult } from "../core/agent-loop.js";
 import { buildSystemPrompt, type SessionState } from "../core/system-prompt-builder.js";
 import { createEventEmitter, type AppEventEmitter } from "../utils/events.js";
 import { BaseError } from "../utils/error.js";
+import { type SharedAgentState, createSharedAgentState } from "./shared-state.js";
 
 const execFileAsync = promisify(execFile);
+
+/** Directory for persisted agent history files */
+const AGENT_HISTORY_DIR = join(homedir(), ".dbcode", "agent-history");
+
+/** Maximum number of agent history files kept on disk */
+const MAX_PERSISTED_HISTORIES = 20;
 
 /** Subagent execution error */
 export class SubagentError extends BaseError {
@@ -51,6 +61,8 @@ export interface SubagentConfig {
   readonly isolation?: "worktree";
   /** Resume from a previous subagent's message history by agent ID */
   readonly resume?: string;
+  /** Shared state for inter-agent communication */
+  readonly sharedState?: SharedAgentState;
 }
 
 /** Result from a subagent execution */
@@ -69,26 +81,110 @@ export interface SubagentResult {
   readonly messages: readonly ChatMessage[];
   /** Working directory used (may differ if worktree isolation was used) */
   readonly workingDirectory?: string;
+  /** Shared state instance used during execution (if any) */
+  readonly sharedState?: SharedAgentState;
 }
 
 /** In-memory store for completed subagent histories (for resume) */
 const agentHistoryStore = new Map<string, readonly ChatMessage[]>();
 
-/** Store a completed agent's message history */
-function storeAgentHistory(agentId: string, messages: readonly ChatMessage[]): void {
+/**
+ * Persist agent history to disk at ~/.dbcode/agent-history/{agentId}.json.
+ * Keeps at most MAX_PERSISTED_HISTORIES files; the oldest are removed.
+ */
+async function persistAgentHistory(
+  agentId: string,
+  messages: readonly ChatMessage[],
+): Promise<void> {
+  try {
+    await mkdir(AGENT_HISTORY_DIR, { recursive: true });
+    const filePath = join(AGENT_HISTORY_DIR, `${agentId}.json`);
+    await writeFile(filePath, JSON.stringify(messages), "utf-8");
+
+    // Prune oldest files beyond the limit
+    const entries = await readdir(AGENT_HISTORY_DIR);
+    const jsonFiles = entries.filter((f) => f.endsWith(".json"));
+
+    if (jsonFiles.length > MAX_PERSISTED_HISTORIES) {
+      // Resolve modification times so we can sort oldest-first
+      const fileStats = await Promise.all(
+        jsonFiles.map(async (name) => {
+          const fp = join(AGENT_HISTORY_DIR, name);
+          const s = await stat(fp);
+          return { name, mtimeMs: s.mtimeMs, path: fp };
+        }),
+      );
+      fileStats.sort((a, b) => a.mtimeMs - b.mtimeMs);
+
+      const toRemove = fileStats.slice(0, fileStats.length - MAX_PERSISTED_HISTORIES);
+      const { unlink } = await import("node:fs/promises");
+      await Promise.all(toRemove.map((f) => unlink(f.path).catch(() => {})));
+    }
+  } catch {
+    // Best-effort persistence — do not fail the agent run
+  }
+}
+
+/**
+ * Load agent history from disk if available.
+ * Returns undefined when the file does not exist or cannot be parsed.
+ */
+async function loadAgentHistoryFromDisk(
+  agentId: string,
+): Promise<readonly ChatMessage[] | undefined> {
+  try {
+    const filePath = join(AGENT_HISTORY_DIR, `${agentId}.json`);
+    const raw = await readFile(filePath, "utf-8");
+    const parsed: unknown = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed as ChatMessage[];
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** Store a completed agent's message history (in-memory + disk) */
+async function storeAgentHistory(
+  agentId: string,
+  messages: readonly ChatMessage[],
+): Promise<void> {
   agentHistoryStore.set(agentId, messages);
-  // Keep store bounded
+
+  // Keep in-memory store bounded
   if (agentHistoryStore.size > 50) {
     const firstKey = agentHistoryStore.keys().next().value;
     if (firstKey !== undefined) {
       agentHistoryStore.delete(firstKey);
     }
   }
+
+  // Persist to disk asynchronously
+  await persistAgentHistory(agentId, messages);
 }
 
-/** Retrieve a previous agent's message history for resume */
-export function getAgentHistory(agentId: string): readonly ChatMessage[] | undefined {
-  return agentHistoryStore.get(agentId);
+/**
+ * Retrieve a previous agent's message history for resume.
+ * Checks in-memory cache first, then falls back to disk.
+ */
+export async function getAgentHistory(
+  agentId: string,
+): Promise<readonly ChatMessage[] | undefined> {
+  const cached = agentHistoryStore.get(agentId);
+  if (cached) {
+    return cached;
+  }
+
+  // Attempt to load from disk
+  const fromDisk = await loadAgentHistoryFromDisk(agentId);
+  if (fromDisk) {
+    // Re-populate in-memory cache
+    agentHistoryStore.set(agentId, fromDisk);
+    return fromDisk;
+  }
+
+  return undefined;
 }
 
 /**
@@ -190,6 +286,7 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
     run_in_background,
     isolation,
     resume,
+    sharedState,
   } = config;
 
   const agentId = randomUUID();
@@ -211,6 +308,7 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
       allowedTools,
       isolation,
       resume,
+      sharedState,
     });
 
     // Run in background, emit event on completion
@@ -240,6 +338,7 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
       iterations: 0,
       aborted: false,
       messages: [],
+      sharedState,
     };
   }
 
@@ -258,6 +357,7 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
     allowedTools,
     isolation,
     resume,
+    sharedState,
   });
 }
 
@@ -277,6 +377,7 @@ async function executeSubagent(params: {
   allowedTools?: readonly string[];
   isolation?: "worktree";
   resume?: string;
+  sharedState?: SharedAgentState;
 }): Promise<SubagentResult> {
   const {
     agentId,
@@ -292,6 +393,7 @@ async function executeSubagent(params: {
     allowedTools,
     isolation,
     resume,
+    sharedState,
   } = params;
 
   let effectiveWorkingDir = params.workingDirectory;
@@ -308,6 +410,11 @@ async function executeSubagent(params: {
     // Notify parent that subagent is starting
     parentEvents?.emit("agent:iteration", { iteration: 0 });
 
+    // Report initial progress via shared state if available
+    if (sharedState) {
+      sharedState.reportProgress(agentId, 0, "starting");
+    }
+
     // Create filtered registry if tool restrictions apply
     const agentRegistry = allowedTools
       ? createFilteredRegistry(toolRegistry, allowedTools)
@@ -323,7 +430,7 @@ async function executeSubagent(params: {
     const initialMessages: ChatMessage[] = [];
 
     if (resume) {
-      const previousHistory = getAgentHistory(resume);
+      const previousHistory = await getAgentHistory(resume);
       if (previousHistory) {
         // Carry over previous conversation, then add new system prompt and user message
         initialMessages.push(...previousHistory);
@@ -359,22 +466,47 @@ async function executeSubagent(params: {
       initialMessages,
     );
 
-    // Store message history for potential future resume
-    storeAgentHistory(agentId, result.messages);
+    // Store message history for potential future resume (in-memory + disk)
+    await storeAgentHistory(agentId, result.messages);
 
     // Extract the final assistant response
     const lastAssistantMessage = [...result.messages].reverse().find((m) => m.role === "assistant");
 
+    const response = lastAssistantMessage?.content ?? "";
+
+    // Publish result to shared state if available
+    if (sharedState) {
+      sharedState.reportProgress(agentId, 1, "completed");
+      sharedState.send({
+        fromAgentId: agentId,
+        type: "result",
+        content: response,
+        timestamp: Date.now(),
+      });
+    }
+
     return {
       agentId,
       type,
-      response: lastAssistantMessage?.content ?? "",
+      response,
       iterations: result.iterations,
       aborted: result.aborted,
       messages: result.messages,
       workingDirectory: effectiveWorkingDir,
+      sharedState,
     };
   } catch (error) {
+    // Report error to shared state if available
+    if (sharedState) {
+      sharedState.reportProgress(agentId, 0, "failed");
+      sharedState.send({
+        fromAgentId: agentId,
+        type: "error",
+        content: error instanceof Error ? error.message : String(error),
+        timestamp: Date.now(),
+      });
+    }
+
     throw new SubagentError(`Subagent (${type}) failed`, {
       agentId,
       type,
@@ -391,9 +523,21 @@ async function executeSubagent(params: {
 /**
  * Spawn multiple subagents in parallel and collect their results.
  * All subagents share the same abort signal for coordinated cancellation.
+ *
+ * A SharedAgentState instance is automatically created and injected into
+ * every config that does not already carry one, enabling inter-agent
+ * communication and shared key-value storage across the parallel group.
  */
 export async function spawnParallelSubagents(
   configs: readonly SubagentConfig[],
 ): Promise<readonly SubagentResult[]> {
-  return Promise.all(configs.map(spawnSubagent));
+  // Create a single shared state for the entire parallel group
+  const groupSharedState = createSharedAgentState();
+
+  const enrichedConfigs = configs.map((cfg) => ({
+    ...cfg,
+    sharedState: cfg.sharedState ?? groupSharedState,
+  }));
+
+  return Promise.all(enrichedConfigs.map(spawnSubagent));
 }

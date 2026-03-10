@@ -1,3 +1,9 @@
+/** Cost per million tokens (USD) */
+export interface ModelPricingInfo {
+  readonly inputPerMillion: number;
+  readonly outputPerMillion: number;
+}
+
 /** Model capability flags — determines how requests are shaped */
 export interface ModelCapabilities {
   readonly supportsTools: boolean;
@@ -8,7 +14,15 @@ export interface ModelCapabilities {
   readonly maxOutputTokens: number;
   readonly tokenizer: "cl100k" | "o200k" | "llama";
   readonly useDeveloperRole: boolean;
+  /** Pricing per million tokens (USD). Undefined for models with unknown pricing. */
+  readonly pricing?: ModelPricingInfo;
 }
+
+/** Default pricing fallback for unknown/local models ($1/M input, $3/M output) */
+const DEFAULT_PRICING: ModelPricingInfo = {
+  inputPerMillion: 1,
+  outputPerMillion: 3,
+};
 
 const DEFAULTS: ModelCapabilities = {
   supportsTools: true,
@@ -19,15 +33,38 @@ const DEFAULTS: ModelCapabilities = {
   maxOutputTokens: 4096,
   tokenizer: "o200k",
   useDeveloperRole: false,
+  pricing: DEFAULT_PRICING,
 };
 
 /** Known model capability overrides (partial, merged with defaults) */
 const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
-  // OpenAI GPT
-  [/^gpt-4o/i, { maxOutputTokens: 16384, tokenizer: "o200k" }],
+  // OpenAI GPT — note: gpt-4o-mini must precede gpt-4o to match correctly
+  [
+    /^gpt-4o-mini/i,
+    {
+      maxOutputTokens: 16384,
+      tokenizer: "o200k",
+      pricing: { inputPerMillion: 0.15, outputPerMillion: 0.6 },
+    },
+  ],
+  [
+    /^gpt-4o/i,
+    {
+      maxOutputTokens: 16384,
+      tokenizer: "o200k",
+      pricing: { inputPerMillion: 2.5, outputPerMillion: 10 },
+    },
+  ],
   [/^gpt-4\.1/i, { maxContextTokens: 1_000_000, maxOutputTokens: 32768, tokenizer: "o200k" }],
   [/^gpt-3\.5/i, { maxContextTokens: 16385, tokenizer: "cl100k" }],
-  [/^gpt-4-turbo/i, { maxContextTokens: 128_000, tokenizer: "cl100k" }],
+  [
+    /^gpt-4-turbo/i,
+    {
+      maxContextTokens: 128_000,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 10, outputPerMillion: 30 },
+    },
+  ],
   [/^gpt-4(?!o|\.)/i, { maxContextTokens: 8192, tokenizer: "cl100k" }],
 
   // OpenAI reasoning (o-series) — no system message, no temperature, use developer role
@@ -54,7 +91,34 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
     },
   ],
 
-  // Claude (via proxy)
+  // Claude (via proxy) — specific variants must precede the generic /^claude/ pattern
+  [
+    /^claude-3-opus/i,
+    {
+      maxContextTokens: 200_000,
+      maxOutputTokens: 8192,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 15, outputPerMillion: 75 },
+    },
+  ],
+  [
+    /^claude-3-haiku/i,
+    {
+      maxContextTokens: 200_000,
+      maxOutputTokens: 8192,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0.25, outputPerMillion: 1.25 },
+    },
+  ],
+  [
+    /^claude-3\.5-sonnet/i,
+    {
+      maxContextTokens: 200_000,
+      maxOutputTokens: 8192,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 3, outputPerMillion: 15 },
+    },
+  ],
   [/^claude/i, { maxContextTokens: 200_000, maxOutputTokens: 8192, tokenizer: "cl100k" }],
 
   // Llama (base models via Ollama — no tools for base llama3)

@@ -1,4 +1,4 @@
-import { mkdir, writeFile, readFile } from "node:fs/promises";
+import { mkdir, writeFile, readFile, readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
 import { type ChatMessage, type LLMProvider } from "../llm/provider.js";
@@ -24,6 +24,15 @@ const HOT_TAIL_SIZE = 5;
 /** Number of most recently accessed files to re-read after compaction */
 const REHYDRATION_FILE_COUNT = 5;
 
+/** Default cold storage TTL in milliseconds (24 hours) */
+const COLD_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** Run garbage collection every N compactions */
+const GC_COMPACTION_INTERVAL = 10;
+
+/** Tools that produce write/mutation results (higher priority in hot tail) */
+const WRITE_TOOLS = new Set(["file_edit", "file_write"]);
+
 /** Context window usage statistics */
 export interface ContextUsage {
   readonly totalTokens: number;
@@ -31,6 +40,25 @@ export interface ContextUsage {
   readonly usageRatio: number;
   readonly messageCount: number;
 }
+
+/** Result of cold storage garbage collection */
+export interface CleanupResult {
+  readonly removedFiles: number;
+  readonly bytesFreed: number;
+}
+
+/** Metrics about compaction effectiveness */
+export interface CompactionMetrics {
+  readonly compactionCount: number;
+  readonly totalTokensSaved: number;
+  readonly coldStorageEntries: number;
+  readonly coldStorageSizeBytes: number;
+  readonly averageCompressionRatio: number;
+  readonly lastCompactionAt: string | null;
+}
+
+/** Rehydration strategy for post-compaction file re-reading */
+export type RehydrationStrategy = "recency" | "frequency" | "mixed";
 
 /** Configuration for context management */
 export interface ContextManagerConfig {
@@ -52,6 +80,10 @@ export interface ContextManagerConfig {
   readonly sessionId?: string;
   /** Event emitter for PreCompact events */
   readonly onPreCompact?: () => void;
+  /** Cold storage TTL in milliseconds (default: 24 hours) */
+  readonly coldStorageTtlMs?: number;
+  /** Strategy for selecting files to re-read after compaction */
+  readonly rehydrationStrategy?: RehydrationStrategy;
 }
 
 /** Result of a compaction operation */
@@ -74,17 +106,24 @@ export interface ColdStorageRef {
  *
  * Layer 1 — Microcompaction (continuous):
  *   Saves bulky tool outputs to disk as "cold storage".
- *   Keeps a "hot tail" of the last N tool results inline.
+ *   Keeps a "hot tail" of the last N tool results inline,
+ *   prioritized by content type (errors first, writes over reads).
  *   Older results become cold references.
  *
  * Layer 2 — Auto-compaction (threshold-based):
  *   Triggers at ~83.5% context usage (down from 95%).
  *   Structured summarization preserving user intent, decisions,
  *   files touched, errors/resolutions, and pending tasks.
+ *   Tracks compaction metrics for observability.
  *
  * Layer 3 — Post-compaction rehydration:
- *   After compaction, re-reads the 5 most recently accessed files.
- *   Restores todo list state. Adds a boundary marker.
+ *   After compaction, re-reads files based on configurable strategy
+ *   (recency, frequency, or mixed). Restores todo list state.
+ *   Adds a boundary marker.
+ *
+ * Garbage Collection:
+ *   Periodically cleans up stale cold storage files that exceed TTL
+ *   or are orphaned (no longer referenced in memory).
  */
 export class ContextManager {
   private readonly maxContextTokens: number;
@@ -96,6 +135,8 @@ export class ContextManager {
   private readonly summaryModel?: string;
   private readonly sessionId: string;
   private readonly onPreCompact?: () => void;
+  private readonly coldStorageTtlMs: number;
+  private readonly rehydrationStrategy: RehydrationStrategy;
 
   /** Track cold storage references for potential re-read */
   private readonly coldRefs: Map<string, ColdStorageRef> = new Map();
@@ -103,8 +144,20 @@ export class ContextManager {
   /** Track recently accessed file paths (for rehydration) */
   private readonly recentFiles: string[] = [];
 
+  /** Track file access frequency (for frequency-based rehydration) */
+  private readonly fileAccessFrequency: Map<string, number> = new Map();
+
+  /** Track cold storage ref access frequency (for smart hot tail) */
+  private readonly coldRefAccessCount: Map<string, number> = new Map();
+
   /** Number of compactions performed (for boundary markers) */
   private compactionCount = 0;
+
+  /** --- Compaction metrics tracking --- */
+  private totalTokensSaved = 0;
+  private totalCompressionRatios: number[] = [];
+  private lastCompactionAt: string | null = null;
+  private lastGcCompactionCount = 0;
 
   constructor(config?: ContextManagerConfig) {
     this.maxContextTokens = config?.maxContextTokens ?? TOKEN_DEFAULTS.maxContextWindow;
@@ -116,6 +169,8 @@ export class ContextManager {
     this.summaryModel = config?.summaryModel;
     this.sessionId = config?.sessionId ?? "default";
     this.onPreCompact = config?.onPreCompact;
+    this.coldStorageTtlMs = config?.coldStorageTtlMs ?? COLD_STORAGE_TTL_MS;
+    this.rehydrationStrategy = config?.rehydrationStrategy ?? "recency";
   }
 
   /** Get the effective token budget (accounting for response reserve) */
@@ -146,8 +201,10 @@ export class ContextManager {
 
   /**
    * Track a file path as recently accessed (for rehydration after compaction).
+   * Also increments the frequency counter for frequency-based rehydration.
    */
   trackFileAccess(filePath: string): void {
+    // Update recency list
     const idx = this.recentFiles.indexOf(filePath);
     if (idx !== -1) {
       this.recentFiles.splice(idx, 1);
@@ -156,11 +213,92 @@ export class ContextManager {
     if (this.recentFiles.length > REHYDRATION_FILE_COUNT * 2) {
       this.recentFiles.length = REHYDRATION_FILE_COUNT * 2;
     }
+
+    // Update frequency counter
+    const currentCount = this.fileAccessFrequency.get(filePath) ?? 0;
+    this.fileAccessFrequency.set(filePath, currentCount + 1);
+  }
+
+  /**
+   * Get compaction and cold storage metrics for observability.
+   */
+  getCompactionMetrics(): CompactionMetrics {
+    let coldStorageSizeBytes = 0;
+    this.coldRefs.forEach((ref) => {
+      // Approximate bytes from token count (4 chars per token average)
+      coldStorageSizeBytes += ref.originalTokens * 4;
+    });
+
+    const averageCompressionRatio =
+      this.totalCompressionRatios.length > 0
+        ? this.totalCompressionRatios.reduce((a, b) => a + b, 0) /
+          this.totalCompressionRatios.length
+        : 0;
+
+    return {
+      compactionCount: this.compactionCount,
+      totalTokensSaved: this.totalTokensSaved,
+      coldStorageEntries: this.coldRefs.size,
+      coldStorageSizeBytes,
+      averageCompressionRatio,
+      lastCompactionAt: this.lastCompactionAt,
+    };
+  }
+
+  /**
+   * Clean up stale and orphaned cold storage files.
+   * Removes files older than the configured TTL and files not referenced
+   * by any cold ref in memory.
+   */
+  async cleanupColdStorage(): Promise<CleanupResult> {
+    const coldStorageDir = join(SESSIONS_DIR, this.sessionId, "cold-storage");
+    let removedFiles = 0;
+    let bytesFreed = 0;
+
+    let entries: string[];
+    try {
+      entries = await readdir(coldStorageDir);
+    } catch {
+      // Directory doesn't exist — nothing to clean
+      return { removedFiles: 0, bytesFreed: 0 };
+    }
+
+    const now = Date.now();
+    const activeHashes = new Set(Array.from(this.coldRefs.keys()));
+
+    for (const entry of entries) {
+      if (!entry.endsWith(".txt")) continue;
+
+      const filePath = join(coldStorageDir, entry);
+      const hash = entry.replace(/\.txt$/, "");
+
+      try {
+        const fileStat = await stat(filePath);
+        const ageMs = now - fileStat.mtimeMs;
+        const isOrphaned = !activeHashes.has(hash);
+        const isExpired = ageMs > this.coldStorageTtlMs;
+
+        if (isOrphaned || isExpired) {
+          await unlink(filePath);
+          removedFiles++;
+          bytesFreed += fileStat.size;
+
+          // Remove from tracking maps if present
+          this.coldRefs.delete(hash);
+          this.coldRefAccessCount.delete(hash);
+        }
+      } catch {
+        // File may have been deleted concurrently — skip
+      }
+    }
+
+    return { removedFiles, bytesFreed };
   }
 
   /**
    * Layer 1: Microcompaction — move bulky tool outputs to cold storage.
-   * Keeps the last HOT_TAIL_SIZE tool results inline; older ones become cold refs.
+   * Keeps the HOT_TAIL_SIZE highest-priority tool results inline using
+   * content-aware prioritization (errors > writes > reads).
    * Returns a new message array (never mutates input).
    */
   async microcompact(messages: readonly ChatMessage[]): Promise<readonly ChatMessage[]> {
@@ -177,11 +315,31 @@ export class ContextManager {
       return messages;
     }
 
-    // Indices to potentially cold-store (everything except the hot tail)
-    const coldCandidateIndices = new Set(toolIndices.slice(0, -HOT_TAIL_SIZE));
+    // Score each tool message for hot tail priority
+    const scored = toolIndices.map((idx) => ({
+      idx,
+      priority: this.hotTailPriority(messages[idx]),
+    }));
+
+    // Sort by priority descending; for equal priority, prefer later (more recent) messages
+    const sorted = [...scored].sort((a, b) => {
+      if (b.priority !== a.priority) return b.priority - a.priority;
+      return b.idx - a.idx;
+    });
+
+    // The top HOT_TAIL_SIZE indices stay hot
+    const hotIndices = new Set(sorted.slice(0, HOT_TAIL_SIZE).map((s) => s.idx));
+
+    // Everything else is a cold candidate
+    const coldCandidateIndices = new Set(
+      toolIndices.filter((idx) => !hotIndices.has(idx)),
+    );
+
     const coldStorageDir = await this.ensureColdStorageDir();
 
     const result: ChatMessage[] = [];
+    let microcompactTokensSaved = 0;
+
     for (let i = 0; i < messages.length; i++) {
       const msg = messages[i];
 
@@ -202,6 +360,7 @@ export class ContextManager {
       // Store to disk and replace with cold reference
       const ref = await this.writeColdStorage(coldStorageDir, msg.content);
       this.coldRefs.set(ref.hash, ref);
+      microcompactTokensSaved += ref.originalTokens;
 
       result.push({
         ...msg,
@@ -209,12 +368,16 @@ export class ContextManager {
       });
     }
 
+    // Track microcompaction token savings in overall metrics
+    this.totalTokensSaved += microcompactTokensSaved;
+
     return result;
   }
 
   /**
    * Prepare messages for the LLM by applying microcompaction and auto-compaction.
    * Layer 1 runs first (continuous), then Layer 2 checks threshold.
+   * Periodically triggers cold storage garbage collection.
    * Returns a new message array (never mutates input).
    */
   async prepare(messages: readonly ChatMessage[]): Promise<readonly ChatMessage[]> {
@@ -225,6 +388,18 @@ export class ContextManager {
     if (this.needsCompaction(result)) {
       const { messages: compacted } = await this.compact(result);
       result = [...compacted];
+    }
+
+    // Periodic cold storage garbage collection
+    if (
+      this.compactionCount > 0 &&
+      this.compactionCount - this.lastGcCompactionCount >= GC_COMPACTION_INTERVAL
+    ) {
+      this.lastGcCompactionCount = this.compactionCount;
+      // Run GC in the background — don't block prepare()
+      this.cleanupColdStorage().catch(() => {
+        // Swallow GC errors — cleanup is best-effort
+      });
     }
 
     return result;
@@ -245,6 +420,7 @@ export class ContextManager {
 
     const originalTokens = countMessageTokens(messages);
     this.compactionCount++;
+    this.lastCompactionAt = new Date().toISOString();
 
     // Re-read DBCODE.md from disk to pick up changes made during session
     const freshSystemMessage = await this.reloadSystemPrompt();
@@ -261,11 +437,14 @@ export class ContextManager {
     // If few enough turns, just truncate tool results
     if (turns.length <= this.preserveRecentTurns) {
       const truncated = this.truncateToolResults([...systemMessages, ...conversationMessages]);
+      const compactedTokens = countMessageTokens(truncated);
+      this.trackCompactionRatio(originalTokens, compactedTokens);
+
       return {
         messages: truncated,
         result: {
           originalTokens,
-          compactedTokens: countMessageTokens(truncated),
+          compactedTokens,
           removedMessages: messages.length - truncated.length,
           summary: "Truncated large tool results",
         },
@@ -304,6 +483,9 @@ export class ContextManager {
     const rehydrated = await this.rehydrate(truncatedResult);
     const compactedTokens = countMessageTokens(rehydrated);
 
+    // Track metrics
+    this.trackCompactionRatio(originalTokens, compactedTokens);
+
     return {
       messages: rehydrated,
       result: {
@@ -327,12 +509,65 @@ export class ContextManager {
   }
 
   /**
+   * Calculate a priority score for keeping a tool message in the hot tail.
+   * Higher scores mean higher priority to stay inline (not moved to cold storage).
+   *
+   * Priority tiers:
+   *   100 — Error results (always keep for debugging context)
+   *    80 — Write/edit tool results (mutation context is critical)
+   *    60 — Frequently accessed cold refs (access count > 2)
+   *    40 — Other tool results (reads, searches, etc.)
+   *    +N — Recency bonus (0-10 based on position)
+   */
+  private hotTailPriority(msg: ChatMessage): number {
+    let score = 40; // Base score for generic tool results
+
+    const content = msg.content;
+    const toolName = this.extractToolName(msg);
+
+    // Error results get highest priority — always keep for debugging
+    if (content.startsWith("Error:") || content.includes("STDERR:") || content.includes("error:")) {
+      score = 100;
+    }
+    // Write/edit results are high priority — mutation context matters
+    else if (WRITE_TOOLS.has(toolName)) {
+      score = 80;
+    }
+    // Check if this is a frequently re-accessed cold storage ref
+    else {
+      const refMatch = content.match(/\[Tool output stored at: .+?\/([a-f0-9]+)\.txt/);
+      if (refMatch) {
+        const hash = refMatch[1];
+        const accessCount = this.coldRefAccessCount.get(hash) ?? 0;
+        if (accessCount > 2) {
+          score = 60;
+        }
+      }
+    }
+
+    return score;
+  }
+
+  /**
+   * Track a cold storage reference access (when the LLM or user re-reads cold content).
+   * Increments the access counter used for smart hot tail prioritization.
+   */
+  trackColdRefAccess(hash: string): void {
+    const currentCount = this.coldRefAccessCount.get(hash) ?? 0;
+    this.coldRefAccessCount.set(hash, currentCount + 1);
+  }
+
+  /**
    * Layer 3: Post-compaction rehydration.
-   * Re-reads the N most recently accessed files and appends their content
-   * as a system message so the LLM has fresh context after compaction.
+   * Selects files to re-read based on the configured rehydration strategy:
+   * - "recency": N most recently accessed files (original behavior)
+   * - "frequency": N most frequently accessed files
+   * - "mixed": 3 most recent + 2 most frequent (deduplicated)
+   *
+   * Appends file content as a system message so the LLM has fresh context.
    */
   private async rehydrate(messages: readonly ChatMessage[]): Promise<readonly ChatMessage[]> {
-    const filesToRehydrate = this.recentFiles.slice(0, REHYDRATION_FILE_COUNT);
+    const filesToRehydrate = this.selectRehydrationFiles();
     if (filesToRehydrate.length === 0) {
       return messages;
     }
@@ -356,17 +591,74 @@ export class ContextManager {
       return messages;
     }
 
+    const strategyLabel = this.rehydrationStrategy === "recency"
+      ? "recently accessed"
+      : this.rehydrationStrategy === "frequency"
+        ? "frequently accessed"
+        : "recent + frequent";
+
     const rehydrationMessage: ChatMessage = {
       role: "system",
       content: [
         "[Post-compaction rehydration]",
-        `Re-read ${fileContents.length} recently accessed files:`,
+        `Re-read ${fileContents.length} ${strategyLabel} files:`,
         "",
         ...fileContents,
       ].join("\n"),
     };
 
     return [...messages, rehydrationMessage];
+  }
+
+  /**
+   * Select files for rehydration based on the configured strategy.
+   */
+  private selectRehydrationFiles(): readonly string[] {
+    switch (this.rehydrationStrategy) {
+      case "frequency":
+        return this.selectByFrequency(REHYDRATION_FILE_COUNT);
+
+      case "mixed": {
+        // 3 most recent + 2 most frequent, deduplicated
+        const recent = this.recentFiles.slice(0, 3);
+        const recentSet = new Set(recent);
+        const frequent = this.selectByFrequency(REHYDRATION_FILE_COUNT)
+          .filter((f) => !recentSet.has(f))
+          .slice(0, 2);
+        return [...recent, ...frequent];
+      }
+
+      case "recency":
+      default:
+        return this.recentFiles.slice(0, REHYDRATION_FILE_COUNT);
+    }
+  }
+
+  /**
+   * Select the top N most frequently accessed files.
+   */
+  private selectByFrequency(count: number): readonly string[] {
+    if (this.fileAccessFrequency.size === 0) {
+      // Fall back to recency if no frequency data
+      return this.recentFiles.slice(0, count);
+    }
+
+    return Array.from(this.fileAccessFrequency.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, count)
+      .map(([filePath]) => filePath);
+  }
+
+  /**
+   * Track compression ratio for compaction metrics.
+   */
+  private trackCompactionRatio(originalTokens: number, compactedTokens: number): void {
+    const saved = originalTokens - compactedTokens;
+    this.totalTokensSaved += saved;
+
+    if (originalTokens > 0) {
+      this.totalCompressionRatios.push(compactedTokens / originalTokens);
+    }
   }
 
   /**
@@ -546,7 +838,7 @@ export class ContextManager {
     if (modifiedFiles.size > 0) {
       parts.push("");
       parts.push("## Files Touched");
-      for (const f of [...modifiedFiles].slice(0, 20)) {
+      for (const f of Array.from(modifiedFiles).slice(0, 20)) {
         parts.push(`  - ${f}`);
       }
     }

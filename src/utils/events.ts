@@ -10,6 +10,8 @@ export type AppEvents = {
   "llm:tool-delta": { toolName: string; args: string };
   /** LLM streaming completed */
   "llm:complete": { tokenCount: number };
+  /** LLM token usage reported during streaming (via stream_options.include_usage) */
+  "llm:usage": { usage: { readonly promptTokens: number; readonly completionTokens: number; readonly totalTokens: number }; model: string };
   /** LLM streaming errored */
   "llm:error": { error: Error };
 
@@ -60,6 +62,22 @@ export type AppEvents = {
     checkpointId: string;
     restoredFiles: number;
     skippedFiles: number;
+  };
+
+  /** Agent loop usage update emitted after each LLM call with running totals */
+  "agent:usage-update": {
+    readonly promptTokens: number;
+    readonly completionTokens: number;
+    readonly totalTokens: number;
+    readonly iteration: number;
+  };
+
+  /** Agent loop completed with full summary */
+  "agent:complete": {
+    readonly iterations: number;
+    readonly totalTokens: number;
+    readonly toolCallCount: number;
+    readonly aborted: boolean;
   };
 };
 

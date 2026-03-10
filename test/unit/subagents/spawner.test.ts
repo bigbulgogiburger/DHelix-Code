@@ -31,6 +31,16 @@ vi.mock("node:child_process", () => ({
   }),
 }));
 
+// Mock node:fs/promises for disk persistence (no-op in tests)
+vi.mock("node:fs/promises", () => ({
+  mkdir: vi.fn().mockResolvedValue(undefined),
+  writeFile: vi.fn().mockResolvedValue(undefined),
+  readFile: vi.fn().mockRejectedValue(new Error("not found")),
+  readdir: vi.fn().mockResolvedValue([]),
+  stat: vi.fn().mockResolvedValue({ mtimeMs: 0 }),
+  unlink: vi.fn().mockResolvedValue(undefined),
+}));
+
 // Mock the ToolRegistry
 const mockToolRegistry = {
   getAll: vi.fn().mockReturnValue([]),
@@ -93,8 +103,8 @@ describe("SubagentError", () => {
 });
 
 describe("getAgentHistory", () => {
-  it("should return undefined for unknown agent ID", () => {
-    const history = getAgentHistory("nonexistent-id");
+  it("should return undefined for unknown agent ID", async () => {
+    const history = await getAgentHistory("nonexistent-id");
     expect(history).toBeUndefined();
   });
 });
@@ -166,7 +176,7 @@ describe("spawnSubagent", () => {
       toolRegistry: mockToolRegistry,
     });
 
-    const history = getAgentHistory(result.agentId);
+    const history = await getAgentHistory(result.agentId);
     expect(history).toBeDefined();
     expect(history!.length).toBeGreaterThan(0);
   });

@@ -29,6 +29,8 @@ const hookHandlerSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("prompt"),
     prompt: z.string().min(1),
+    promptMessage: z.string().min(1),
+    timeout: z.number().positive().optional(),
     model: z.string().optional(),
     timeoutMs: z.number().positive().optional(),
     blocking: z.boolean().optional(),
@@ -36,6 +38,8 @@ const hookHandlerSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("agent"),
     prompt: z.string().min(1),
+    validator: z.string().min(1),
+    description: z.string().min(1),
     allowedTools: z.array(z.string()).optional(),
     model: z.string().optional(),
     timeoutMs: z.number().positive().optional(),

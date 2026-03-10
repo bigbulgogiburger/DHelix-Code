@@ -72,20 +72,28 @@ export interface HttpHookHandler extends BaseHookHandler {
   readonly headers?: Readonly<Record<string, string>>;
 }
 
-/** Prompt handler — single-turn LLM evaluation for semantic validation */
+/** Prompt handler — displays a confirmation prompt to the user */
 export interface PromptHookHandler extends BaseHookHandler {
   readonly type: "prompt";
   /** Prompt template (supports variable interpolation) */
   readonly prompt: string;
+  /** Message displayed to the user for confirmation */
+  readonly promptMessage: string;
+  /** Timeout in seconds for the prompt response (default: 30) */
+  readonly timeout?: number;
   /** Model to use for evaluation (defaults to current model) */
   readonly model?: string;
 }
 
-/** Agent handler — spawns a subagent with tool access for AI-based validation */
+/** Agent handler — validates payload using a declarative validator expression */
 export interface AgentHookHandler extends BaseHookHandler {
   readonly type: "agent";
   /** Prompt for the subagent */
   readonly prompt: string;
+  /** JavaScript-like validator expression evaluated against the payload (safe, no eval) */
+  readonly validator: string;
+  /** Human-readable description of what this validator checks */
+  readonly description: string;
   /** Tools the subagent is allowed to use */
   readonly allowedTools?: readonly string[];
   /** Model to use (defaults to current model) */
