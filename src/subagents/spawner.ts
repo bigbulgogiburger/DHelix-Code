@@ -12,6 +12,13 @@ import { buildSystemPrompt, type SessionState } from "../core/system-prompt-buil
 import { createEventEmitter, type AppEventEmitter } from "../utils/events.js";
 import { BaseError } from "../utils/error.js";
 import { type SharedAgentState, createSharedAgentState } from "./shared-state.js";
+import {
+  type AgentDefinition,
+  type AgentModel,
+  type AgentPermissionMode,
+  type AgentMemoryScope,
+} from "./definition-types.js";
+import { resolveProvider } from "../llm/model-router.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -28,8 +35,8 @@ export class SubagentError extends BaseError {
   }
 }
 
-/** Subagent type */
-export type SubagentType = "explore" | "plan" | "general";
+/** Subagent type — built-in types or custom agent definition names */
+export type SubagentType = "explore" | "plan" | "general" | (string & {});
 
 /** Configuration for spawning a subagent */
 export interface SubagentConfig {
@@ -63,6 +70,20 @@ export interface SubagentConfig {
   readonly resume?: string;
   /** Shared state for inter-agent communication */
   readonly sharedState?: SharedAgentState;
+  /** Model override: "sonnet"|"opus"|"haiku"|"inherit" (default: inherit from parent) */
+  readonly modelOverride?: AgentModel;
+  /** Permission mode for subagent */
+  readonly permissionMode?: AgentPermissionMode;
+  /** Maximum context tokens (enables auto-compaction in subagent loop) */
+  readonly maxContextTokens?: number;
+  /** Custom agent definition from .dbcode/agents/*.md */
+  readonly agentDefinition?: AgentDefinition;
+  /** Tools to disallow (blacklist, removed from available tools) */
+  readonly disallowedTools?: readonly string[];
+  /** Skill names to preload into subagent context */
+  readonly skills?: readonly string[];
+  /** Memory scope for persistent learning */
+  readonly memory?: AgentMemoryScope;
 }
 
 /** Result from a subagent execution */
@@ -204,15 +225,68 @@ function createFilteredRegistry(
 }
 
 /**
+ * Map model alias to actual model identifier.
+ */
+const MODEL_ALIAS_MAP: Readonly<Record<string, string>> = {
+  sonnet: "claude-sonnet-4-5-20250514",
+  opus: "claude-opus-4-5-20250514",
+  haiku: "claude-haiku-4-5-20251001",
+};
+
+/**
+ * Resolve the model and LLM provider for a subagent based on the override setting.
+ * Returns the parent model/client when override is absent or "inherit".
+ */
+function resolveModelForSubagent(
+  parentModel: string,
+  parentClient: LLMProvider,
+  override?: AgentModel,
+): { readonly model: string; readonly client: LLMProvider } {
+  if (!override || override === "inherit") {
+    return { model: parentModel, client: parentClient };
+  }
+
+  const resolvedModel = MODEL_ALIAS_MAP[override] ?? override;
+  const resolvedClient = resolveProvider(resolvedModel);
+  return { model: resolvedModel, client: resolvedClient };
+}
+
+/**
+ * Create a filtered tool registry with both allowlist and denylist support.
+ * Allowlist is applied first (if provided), then denylist removes from the result.
+ */
+function createFilteredRegistryWithBlacklist(
+  source: ToolRegistry,
+  allowedTools?: readonly string[],
+  disallowedTools?: readonly string[],
+): ToolRegistry {
+  const afterAllow = allowedTools ? createFilteredRegistry(source, allowedTools) : source;
+
+  if (!disallowedTools || disallowedTools.length === 0) {
+    return afterAllow;
+  }
+
+  const denySet = new Set(disallowedTools);
+  const result = new ToolRegistry();
+  for (const tool of afterAllow.getAll()) {
+    if (!denySet.has(tool.name)) {
+      result.register(tool);
+    }
+  }
+  return result;
+}
+
+/**
  * Build a system prompt tailored to the subagent type.
  * Uses SessionState-based conditional sections for type-specific instructions.
  */
 function buildSubagentSystemPrompt(type: SubagentType, toolRegistry: ToolRegistry): string {
   const toolNames = toolRegistry.getAll().map((t) => t.name);
+  const builtinTypes = new Set<string>(["explore", "plan", "general"]);
   const sessionState: SessionState = {
     mode: "normal",
     isSubagent: true,
-    subagentType: type,
+    subagentType: builtinTypes.has(type) ? (type as "explore" | "plan" | "general") : undefined,
     availableTools: toolNames,
     extendedThinkingEnabled: false,
     features: {},
@@ -284,29 +358,45 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
     isolation,
     resume,
     sharedState,
+    modelOverride,
+    permissionMode,
+    maxContextTokens,
+    agentDefinition,
+    disallowedTools,
+    skills,
+    memory,
   } = config;
 
   const agentId = randomUUID();
 
+  const executeParams = {
+    agentId,
+    type,
+    prompt,
+    client,
+    model,
+    strategy,
+    toolRegistry,
+    workingDirectory,
+    maxIterations,
+    signal,
+    parentEvents,
+    allowedTools,
+    isolation,
+    resume,
+    sharedState,
+    modelOverride,
+    permissionMode,
+    maxContextTokens,
+    agentDefinition,
+    disallowedTools,
+    skills,
+    memory,
+  };
+
   // Background mode: fire-and-forget with event notification
   if (run_in_background) {
-    const backgroundPromise = executeSubagent({
-      agentId,
-      type,
-      prompt,
-      client,
-      model,
-      strategy,
-      toolRegistry,
-      workingDirectory,
-      maxIterations,
-      signal,
-      parentEvents,
-      allowedTools,
-      isolation,
-      resume,
-      sharedState,
-    });
+    const backgroundPromise = executeSubagent(executeParams);
 
     // Run in background, emit event on completion
     void backgroundPromise
@@ -339,23 +429,7 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
     };
   }
 
-  return executeSubagent({
-    agentId,
-    type,
-    prompt,
-    client,
-    model,
-    strategy,
-    toolRegistry,
-    workingDirectory,
-    maxIterations,
-    signal,
-    parentEvents,
-    allowedTools,
-    isolation,
-    resume,
-    sharedState,
-  });
+  return executeSubagent(executeParams);
 }
 
 /** Internal execution logic for subagent (used by both sync and background modes) */
@@ -375,13 +449,18 @@ async function executeSubagent(params: {
   isolation?: "worktree";
   resume?: string;
   sharedState?: SharedAgentState;
+  modelOverride?: AgentModel;
+  permissionMode?: AgentPermissionMode;
+  maxContextTokens?: number;
+  agentDefinition?: AgentDefinition;
+  disallowedTools?: readonly string[];
+  skills?: readonly string[];
+  memory?: AgentMemoryScope;
 }): Promise<SubagentResult> {
   const {
     agentId,
     type,
     prompt,
-    client,
-    model,
     strategy,
     toolRegistry,
     maxIterations,
@@ -391,7 +470,18 @@ async function executeSubagent(params: {
     isolation,
     resume,
     sharedState,
+    modelOverride,
+    maxContextTokens,
+    agentDefinition,
+    disallowedTools,
   } = params;
+
+  // Resolve model override — may switch provider
+  const { model: effectiveModel, client: effectiveClient } = resolveModelForSubagent(
+    params.model,
+    params.client,
+    modelOverride,
+  );
 
   let effectiveWorkingDir = params.workingDirectory;
   let worktreeCleanup: (() => Promise<void>) | undefined;
@@ -412,13 +502,17 @@ async function executeSubagent(params: {
       sharedState.reportProgress(agentId, 0, "starting");
     }
 
-    // Create filtered registry if tool restrictions apply
-    const agentRegistry = allowedTools
-      ? createFilteredRegistry(toolRegistry, allowedTools)
-      : toolRegistry;
+    // Create filtered registry with both allowlist and denylist
+    const agentRegistry = createFilteredRegistryWithBlacklist(
+      toolRegistry,
+      allowedTools,
+      disallowedTools,
+    );
 
-    // Build subagent-specific system prompt
-    const systemPrompt = buildSubagentSystemPrompt(type, agentRegistry);
+    // Build system prompt: use agent definition body if provided, otherwise default
+    const systemPrompt = agentDefinition
+      ? agentDefinition.systemPrompt
+      : buildSubagentSystemPrompt(type, agentRegistry);
 
     // Create isolated event emitter
     const events = createEventEmitter();
@@ -451,14 +545,15 @@ async function executeSubagent(params: {
 
     const result: AgentLoopResult = await runAgentLoop(
       {
-        client,
-        model,
+        client: effectiveClient,
+        model: effectiveModel,
         toolRegistry: agentRegistry,
         strategy,
         events,
         maxIterations,
         signal,
         workingDirectory: effectiveWorkingDir,
+        maxContextTokens,
       },
       initialMessages,
     );

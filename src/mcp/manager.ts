@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { MCPClient } from "./client.js";
+import { MCPScopeManager } from "./scope-manager.js";
 import { MCPToolBridge } from "./tool-bridge.js";
 import { type MCPServerConfig } from "./types.js";
 import { type ToolRegistry } from "../tools/registry.js";
@@ -19,6 +20,8 @@ const DEFAULT_CONFIG_PATH = join(homedir(), ".dbcode", "mcp.json");
 
 export interface MCPManagerConfig {
   readonly configPath?: string;
+  /** Working directory for scope-based config resolution */
+  readonly workingDirectory?: string;
   readonly toolRegistry: ToolRegistry;
 }
 
@@ -35,10 +38,14 @@ export class MCPManager {
   private readonly clients = new Map<string, MCPClient>();
   private readonly bridge: MCPToolBridge;
   private readonly configPath: string;
+  private readonly scopeManager: MCPScopeManager | null;
 
   constructor(config: MCPManagerConfig) {
     this.configPath = config.configPath ?? DEFAULT_CONFIG_PATH;
     this.bridge = new MCPToolBridge(config.toolRegistry);
+    this.scopeManager = config.workingDirectory
+      ? new MCPScopeManager(config.workingDirectory)
+      : null;
   }
 
   /** Load MCP server configuration from the config file */
@@ -78,9 +85,26 @@ export class MCPManager {
     }
   }
 
+  /**
+   * Load MCP server configs from scoped config files (local > project > user).
+   * Falls back to legacy loadConfig() if no working directory was provided.
+   */
+  async loadScopedConfigs(): Promise<Record<string, MCPServerConfig>> {
+    if (!this.scopeManager) {
+      return this.loadConfig();
+    }
+
+    const scopedConfigs = await this.scopeManager.loadAllConfigs();
+    const result: Record<string, MCPServerConfig> = {};
+    for (const [name, config] of scopedConfigs) {
+      result[name] = config;
+    }
+    return result;
+  }
+
   /** Connect to all configured MCP servers in parallel and register their tools */
   async connectAll(): Promise<ConnectAllResult> {
-    const serverConfigs = await this.loadConfig();
+    const serverConfigs = await this.loadScopedConfigs();
     const entries = Object.entries(serverConfigs);
 
     if (entries.length === 0) {

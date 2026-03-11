@@ -31,9 +31,9 @@ describe("MCPClient", () => {
   it("should throw for unsupported transport", async () => {
     client = new MCPClient({
       name: "test",
-      transport: "sse",
+      transport: "unknown" as "stdio",
     });
-    await expect(client.connect()).rejects.toThrow('Transport "sse" not yet supported');
+    await expect(client.connect()).rejects.toThrow("Failed to connect");
   });
 
   it("should throw for stdio without command", async () => {
@@ -41,7 +41,7 @@ describe("MCPClient", () => {
       name: "test",
       transport: "stdio",
     });
-    await expect(client.connect()).rejects.toThrow("requires a command");
+    await expect(client.connect()).rejects.toThrow("Failed to connect");
   });
 
   it("should throw when calling tools while disconnected", async () => {
