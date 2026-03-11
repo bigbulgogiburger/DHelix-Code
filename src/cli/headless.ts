@@ -6,7 +6,7 @@ import { buildSystemPrompt } from "../core/system-prompt-builder.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { createEventEmitter } from "../utils/events.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
-import { MemoryManager } from "../core/auto-memory.js";
+import { MemoryManager } from "../memory/manager.js";
 
 /** Output format for headless mode */
 export type HeadlessOutputFormat = "text" | "json" | "stream-json";
@@ -62,7 +62,8 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
 
   // Load auto-memory for the current project
   const memoryManager = new MemoryManager(cwd);
-  const autoMemoryContent = await memoryManager.loadMainMemory().catch(() => "");
+  const memoryResult = await memoryManager.loadMemory().catch(() => null);
+  const autoMemoryContent = memoryResult?.content ?? "";
 
   const systemPrompt = buildSystemPrompt({
     toolRegistry,

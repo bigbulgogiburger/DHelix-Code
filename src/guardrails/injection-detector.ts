@@ -18,17 +18,20 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
   // Direct instruction override attempts — block
   {
     name: "instruction_override",
-    regex: /ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|prompts?|rules?|guidelines?)/i,
+    regex:
+      /ignore\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|prompts?|rules?|guidelines?)/i,
     severity: "block",
   },
   {
     name: "instruction_override",
-    regex: /disregard\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|prompts?|rules?|guidelines?)/i,
+    regex:
+      /disregard\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|prompts?|rules?|guidelines?)/i,
     severity: "block",
   },
   {
     name: "instruction_override",
-    regex: /forget\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|prompts?|rules?|guidelines?)/i,
+    regex:
+      /forget\s+(?:all\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|prompts?|rules?|guidelines?)/i,
     severity: "block",
   },
 

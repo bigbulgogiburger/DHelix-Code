@@ -118,19 +118,14 @@ export function checkPath(path: string, workingDirectory: string): PathFilterRes
  * Returns a reason string if matched, or undefined if safe.
  */
 function checkSensitivePath(resolvedPath: string): string | undefined {
-  const homeDir = normalizePath(
-    process.env["HOME"] ?? process.env["USERPROFILE"] ?? "",
-  );
+  const homeDir = normalizePath(process.env["HOME"] ?? process.env["USERPROFILE"] ?? "");
   if (!homeDir) {
     return undefined;
   }
 
   for (const sensitive of SENSITIVE_HOME_PATHS) {
     const fullSensitivePath = homeDir + sensitive;
-    if (
-      resolvedPath === fullSensitivePath ||
-      resolvedPath.startsWith(fullSensitivePath + "/")
-    ) {
+    if (resolvedPath === fullSensitivePath || resolvedPath.startsWith(fullSensitivePath + "/")) {
       return `Access to sensitive path blocked: ~${sensitive}`;
     }
   }

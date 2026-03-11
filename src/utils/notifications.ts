@@ -37,14 +37,9 @@ function execCommand(
 ): Promise<boolean> {
   return new Promise((resolve) => {
     try {
-      const child = execFile(
-        command,
-        args as string[],
-        { timeout: timeoutMs },
-        (error) => {
-          resolve(error === null);
-        },
-      );
+      const child = execFile(command, args as string[], { timeout: timeoutMs }, (error) => {
+        resolve(error === null);
+      });
       // Ensure the child process doesn't keep the event loop alive
       child.unref();
     } catch {

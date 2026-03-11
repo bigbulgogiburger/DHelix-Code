@@ -61,10 +61,7 @@ export async function loadProjectMemory(
  * Returns the full content of the topic file.
  * Returns null if the topic file doesn't exist.
  */
-export async function loadTopicMemory(
-  projectRoot: string,
-  topic: string,
-): Promise<string | null> {
+export async function loadTopicMemory(projectRoot: string, topic: string): Promise<string | null> {
   const memoryDir = getMemoryDir(projectRoot);
   const topicFileName = normalizeTopicFileName(topic);
   const topicFilePath = `${memoryDir}/${topicFileName}`;
@@ -98,9 +95,7 @@ export async function listTopicFiles(projectRoot: string): Promise<readonly stri
 
   try {
     const entries = await readdir(memoryDir);
-    return entries
-      .filter((e) => e.endsWith(".md") && e !== "MEMORY.md")
-      .sort();
+    return entries.filter((e) => e.endsWith(".md") && e !== "MEMORY.md").sort();
   } catch {
     return [];
   }

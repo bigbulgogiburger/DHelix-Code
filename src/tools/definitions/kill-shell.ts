@@ -5,11 +5,7 @@ import { backgroundProcessManager } from "../executor.js";
 const signalSchema = z.enum(["SIGTERM", "SIGKILL", "SIGINT"]);
 
 const paramSchema = z.object({
-  processId: z
-    .string()
-    .describe(
-      'The process ID to terminate (e.g., "bg-1")',
-    ),
+  processId: z.string().describe('The process ID to terminate (e.g., "bg-1")'),
   signal: signalSchema
     .optional()
     .default("SIGTERM")

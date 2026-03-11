@@ -17,11 +17,7 @@ import { scanForSecrets } from "./secret-scanner.js";
 import { limitOutput } from "./output-limiter.js";
 
 /** Tools that operate on file paths and should be checked for path traversal. */
-const FILE_TOOLS: ReadonlySet<string> = new Set([
-  "file_read",
-  "file_write",
-  "file_edit",
-]);
+const FILE_TOOLS: ReadonlySet<string> = new Set(["file_read", "file_write", "file_edit"]);
 
 export function applyInputGuardrails(
   toolName: string,

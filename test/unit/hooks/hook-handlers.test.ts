@@ -303,7 +303,9 @@ describe("HookRunner: matcher patterns", () => {
 describe("HookRunner: utility methods", () => {
   it("hasHooks should return true for configured events", () => {
     const config: HookConfig = {
-      PreToolUse: [{ hooks: [{ type: "prompt", prompt: "p", promptMessage: "m" } as PromptHookHandler] }],
+      PreToolUse: [
+        { hooks: [{ type: "prompt", prompt: "p", promptMessage: "m" } as PromptHookHandler] },
+      ],
     };
     const runner = new HookRunner(config);
 
@@ -313,8 +315,12 @@ describe("HookRunner: utility methods", () => {
 
   it("getConfiguredEvents should list events with hooks", () => {
     const config: HookConfig = {
-      PreToolUse: [{ hooks: [{ type: "prompt", prompt: "p", promptMessage: "m" } as PromptHookHandler] }],
-      PostToolUse: [{ hooks: [{ type: "prompt", prompt: "p", promptMessage: "m" } as PromptHookHandler] }],
+      PreToolUse: [
+        { hooks: [{ type: "prompt", prompt: "p", promptMessage: "m" } as PromptHookHandler] },
+      ],
+      PostToolUse: [
+        { hooks: [{ type: "prompt", prompt: "p", promptMessage: "m" } as PromptHookHandler] },
+      ],
     };
     const runner = new HookRunner(config);
 
@@ -388,9 +394,7 @@ describe("parseHookConfig: hook handler validation", () => {
 
   it("should reject unknown event names", () => {
     const raw = {
-      InvalidEventName: [
-        { hooks: [{ type: "command", command: "echo test" }] },
-      ],
+      InvalidEventName: [{ hooks: [{ type: "command", command: "echo test" }] }],
     };
 
     expect(() => parseHookConfig(raw)).toThrow(HookLoadError);

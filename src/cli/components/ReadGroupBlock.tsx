@@ -44,16 +44,14 @@ export const ReadGroupBlock = React.memo(function ReadGroupBlock({
             <Box key={i}>
               <Text dimColor>{i === 0 ? "⎿  " : "   "}</Text>
               <Text>{shortenPath(entry.filePath)}</Text>
-              {entry.lineCount != null && (
-                <Text dimColor> ({entry.lineCount} lines)</Text>
-              )}
+              {entry.lineCount != null && <Text dimColor> ({entry.lineCount} lines)</Text>}
             </Box>
           ))}
         </Box>
       ) : (
         // Collapsed: compact list
         <Box marginLeft={1}>
-          <Text dimColor>⎿  </Text>
+          <Text dimColor>⎿ </Text>
           <Text>
             {entries.length <= 3
               ? entries.map((e) => shortenPath(e.filePath, 30)).join(", ")

@@ -92,7 +92,9 @@ describe("parseHookConfig", () => {
     const config = parseHookConfig({
       PreToolUse: [
         {
-          hooks: [{ type: "prompt", prompt: "Are you sure?", promptMessage: "Confirm this action?" }],
+          hooks: [
+            { type: "prompt", prompt: "Are you sure?", promptMessage: "Confirm this action?" },
+          ],
         },
       ],
     });
@@ -103,7 +105,14 @@ describe("parseHookConfig", () => {
     const config = parseHookConfig({
       PreToolUse: [
         {
-          hooks: [{ type: "agent", prompt: "Check security", validator: "payload.toolCall?.name !== 'bash_exec'", description: "Block bash_exec" }],
+          hooks: [
+            {
+              type: "agent",
+              prompt: "Check security",
+              validator: "payload.toolCall?.name !== 'bash_exec'",
+              description: "Block bash_exec",
+            },
+          ],
         },
       ],
     });

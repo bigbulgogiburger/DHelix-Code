@@ -3,7 +3,7 @@ import { isWindows } from "./platform.js";
 
 /**
  * Normalize a path to use forward slashes consistently.
- * Ensures cross-platform compatibility (Windows backslashes → forward slashes).
+ * Ensures cross-platform compatibility (Windows backslashes -> forward slashes).
  */
 export function normalizePath(p: string): string {
   const normalized = normalize(p);
@@ -47,7 +47,7 @@ export function isAbsolutePath(p: string): boolean {
 
 /**
  * Convert a Git Bash path to a Windows path.
- * Example: /c/Users/name/file.txt → C:\Users\name\file.txt
+ * Example: /c/Users/name/file.txt -> C:\Users\name\file.txt
  * Passes through paths that are not in Git Bash format.
  */
 export function gitBashToWindows(p: string): string {
@@ -61,7 +61,7 @@ export function gitBashToWindows(p: string): string {
 
 /**
  * Convert a Windows path to a Git Bash path.
- * Example: C:\Users\name\file.txt → /c/Users/name/file.txt
+ * Example: C:\Users\name\file.txt -> /c/Users/name/file.txt
  * Passes through paths that are not in Windows format.
  */
 export function windowsToGitBash(p: string): string {
@@ -74,9 +74,15 @@ export function windowsToGitBash(p: string): string {
   return `/${driveLetter}/${normalized}`;
 }
 
+/** Alias for windowsToGitBash for backward compatibility */
+export const toGitBashPath = windowsToGitBash;
+
+/** Alias for gitBashToWindows for backward compatibility */
+export const fromGitBashPath = gitBashToWindows;
+
 /**
  * Expand Windows environment variables in a path.
- * Example: %USERPROFILE%\Documents → C:\Users\name\Documents
+ * Example: %USERPROFILE%\Documents -> C:\Users\name\Documents
  * Unresolved variables are left as-is.
  */
 export function expandWindowsEnvVars(p: string): string {
@@ -87,18 +93,31 @@ export function expandWindowsEnvVars(p: string): string {
 }
 
 /**
+ * Normalize drive letter casing to uppercase.
+ * Ensures c:\foo and C:\foo are treated identically.
+ */
+export function normalizeDriveLetter(path: string): string {
+  if (!path) return path;
+  const match = path.match(/^([a-zA-Z]):/);
+  if (match) {
+    return path[0].toUpperCase() + path.slice(1);
+  }
+  return path;
+}
+
+/**
  * Check if a path is a UNC (Universal Naming Convention) path.
  * UNC paths start with \\ or //.
  * Example: \\server\share\folder
  */
 export function isUNCPath(p: string): boolean {
-  return /^[\\/]{2}[^\\/]/.test(p);
+  return /^\\\\[^\\]+\\[^\\]+/.test(p) || /^\/\/[^/]+\/[^/]+/.test(p);
 }
 
 /**
  * Normalize a UNC path by ensuring consistent forward slashes
  * and removing trailing slashes.
- * Example: \\server\share\folder\ → //server/share/folder
+ * Example: \\server\share\folder\ -> //server/share/folder
  */
 export function normalizeUNCPath(p: string): string {
   if (!isUNCPath(p)) return p;
@@ -109,7 +128,20 @@ export function normalizeUNCPath(p: string): string {
   const withoutPrefix = normalized.slice(2).replace(/\/+/g, "/");
   const result = `//${withoutPrefix}`;
   // Remove trailing slash (but don't reduce to just "//")
-  return result.length > 2 && result.endsWith("/")
-    ? result.slice(0, -1)
-    : result;
+  return result.length > 2 && result.endsWith("/") ? result.slice(0, -1) : result;
+}
+
+/** Check if a path exceeds the Windows MAX_PATH limit (260 characters) */
+export function isLongPath(path: string): boolean {
+  return path.length > 260;
+}
+
+/**
+ * Add the Windows long path prefix (\\\\?\\) if the path exceeds MAX_PATH.
+ * Already-prefixed paths are returned unchanged.
+ */
+export function ensureLongPathSupport(path: string): string {
+  if (!isLongPath(path)) return path;
+  if (path.startsWith("\\\\?\\")) return path;
+  return "\\\\?\\" + path;
 }

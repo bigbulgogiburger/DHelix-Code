@@ -109,9 +109,7 @@ export function matchesPermissionPattern(
   }
 
   const argRegex = globToRegex(pattern.argPattern);
-  const stringValues = Object.values(args).filter(
-    (v): v is string => typeof v === "string",
-  );
+  const stringValues = Object.values(args).filter((v): v is string => typeof v === "string");
 
   return stringValues.some((v) => argRegex.test(v));
 }

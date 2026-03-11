@@ -94,11 +94,7 @@ describe("instructions/loader", () => {
     await mkdir(rulesDir, { recursive: true });
 
     // Rule with no frontmatter (matches everything with **)
-    await writeFile(
-      join(rulesDir, "global.md"),
-      "Global rule content",
-      "utf-8",
-    );
+    await writeFile(join(rulesDir, "global.md"), "Global rule content", "utf-8");
 
     // Rule with paths that won't match the tmpDir
     const restrictedRule = [
@@ -234,11 +230,7 @@ describe("instructions/loader", () => {
     // Create a real file in a separate directory
     const realDir = join(tmpDir, "real-source");
     await mkdir(realDir, { recursive: true });
-    await writeFile(
-      join(realDir, "DBCODE.md"),
-      "Symlinked project instructions",
-      "utf-8",
-    );
+    await writeFile(join(realDir, "DBCODE.md"), "Symlinked project instructions", "utf-8");
 
     // Create a project directory with a symlinked DBCODE.md
     const projectDir = join(tmpDir, "project");
@@ -253,11 +245,7 @@ describe("instructions/loader", () => {
     const rulesDir = join(tmpDir, "rules");
     await mkdir(rulesDir, { recursive: true });
     await writeFile(join(rulesDir, "security.md"), "Always validate inputs", "utf-8");
-    await writeFile(
-      join(tmpDir, "DBCODE.md"),
-      "# Project\n@./rules/security.md\nEnd",
-      "utf-8",
-    );
+    await writeFile(join(tmpDir, "DBCODE.md"), "# Project\n@./rules/security.md\nEnd", "utf-8");
 
     const result = await loadInstructions(tmpDir);
     expect(result.projectInstructions).toContain("Always validate inputs");

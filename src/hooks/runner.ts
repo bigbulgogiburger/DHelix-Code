@@ -283,9 +283,7 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
   }
 
   // Handle positive includes: "payload.path?.includes('value')"
-  const includesMatch = trimmed.match(
-    /^payload\.(.+?)\?\.includes\(\s*['"](.+?)['"]\s*\)$/,
-  );
+  const includesMatch = trimmed.match(/^payload\.(.+?)\?\.includes\(\s*['"](.+?)['"]\s*\)$/);
   if (includesMatch) {
     const propPath = includesMatch[1];
     const searchValue = includesMatch[2];

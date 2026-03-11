@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { mkdir, readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { appendMemory, saveMemory, writeTopicFile, clearMemory } from "../../../src/memory/writer.js";
+import {
+  appendMemory,
+  saveMemory,
+  writeTopicFile,
+  clearMemory,
+} from "../../../src/memory/writer.js";
 import { getMemoryDir, getMemoryFilePath } from "../../../src/memory/paths.js";
 
 const tmpProjectRoot = join(process.cwd(), "test", "tmp", "memory-writer");
@@ -64,14 +69,20 @@ describe("memory/writer", () => {
 
     it("should deduplicate identical content", async () => {
       await appendMemory(tmpProjectRoot, { topic: "general", content: "Duplicate check" });
-      const result = await appendMemory(tmpProjectRoot, { topic: "general", content: "Duplicate check" });
+      const result = await appendMemory(tmpProjectRoot, {
+        topic: "general",
+        content: "Duplicate check",
+      });
 
       expect(result.written).toBe(false);
     });
 
     it("should be case-insensitive for deduplication", async () => {
       await appendMemory(tmpProjectRoot, { topic: "general", content: "Use TypeScript" });
-      const result = await appendMemory(tmpProjectRoot, { topic: "general", content: "use typescript" });
+      const result = await appendMemory(tmpProjectRoot, {
+        topic: "general",
+        content: "use typescript",
+      });
 
       expect(result.written).toBe(false);
     });
@@ -86,7 +97,10 @@ describe("memory/writer", () => {
     it("should trigger overflow when exceeding max lines", async () => {
       // Create content that exceeds 10 lines
       const longContent = Array.from({ length: 8 }, (_, i) => `Line ${i + 1}`).join("\n");
-      await saveMemory(tmpProjectRoot, `# Project Memory\n\n## Old\n\n${longContent}\n\n## Recent\n\n- Fresh entry\n`);
+      await saveMemory(
+        tmpProjectRoot,
+        `# Project Memory\n\n## Old\n\n${longContent}\n\n## Recent\n\n- Fresh entry\n`,
+      );
 
       const result = await appendMemory(
         tmpProjectRoot,

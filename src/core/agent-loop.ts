@@ -138,7 +138,11 @@ class UsageAggregator {
   private _retriedCount = 0;
 
   /** Record token usage from a single LLM call */
-  recordLLMUsage(usage: { readonly promptTokens: number; readonly completionTokens: number; readonly totalTokens: number }): void {
+  recordLLMUsage(usage: {
+    readonly promptTokens: number;
+    readonly completionTokens: number;
+    readonly totalTokens: number;
+  }): void {
     this._totalPromptTokens += usage.promptTokens;
     this._totalCompletionTokens += usage.completionTokens;
     this._totalTokens += usage.totalTokens;
@@ -608,6 +612,7 @@ export async function runAgentLoop(
             id: call.id,
             isError: result.isError,
             output: result.output,
+            metadata: result.metadata,
           });
         } else {
           // Promise.allSettled rejected — unexpected execution error

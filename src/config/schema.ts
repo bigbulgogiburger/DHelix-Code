@@ -4,7 +4,7 @@ import { z } from "zod";
 export const llmConfigSchema = z.object({
   baseUrl: z.string().url().default("https://api.openai.com/v1"),
   apiKey: z.string().optional(),
-  model: z.string().default("gpt-4.1-mini"),
+  model: z.string().default("gpt-5-mini"),
   temperature: z.number().min(0).max(2).default(0.0),
   maxTokens: z.number().positive().default(32768),
   contextWindow: z.number().positive().default(1_000_000),
@@ -45,12 +45,14 @@ export const uiConfigSchema = z.object({
 });
 
 /** Persistent permission rules configuration */
-export const permissionsConfigSchema = z.object({
-  /** Allowed tool patterns, e.g. ["Bash(npm *)", "Edit(/src/**)"] */
-  allow: z.array(z.string()).default([]),
-  /** Denied tool patterns, e.g. ["Bash(rm -rf *)"] — deny always takes priority */
-  deny: z.array(z.string()).default([]),
-}).default({});
+export const permissionsConfigSchema = z
+  .object({
+    /** Allowed tool patterns, e.g. ["Bash(npm *)", "Edit(/src/**)"] */
+    allow: z.array(z.string()).default([]),
+    /** Denied tool patterns, e.g. ["Bash(rm -rf *)"] — deny always takes priority */
+    deny: z.array(z.string()).default([]),
+  })
+  .default({ allow: [], deny: [] });
 
 /** Full application configuration schema */
 export const configSchema = z.object({

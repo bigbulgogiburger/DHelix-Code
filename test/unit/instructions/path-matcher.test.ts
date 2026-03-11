@@ -62,11 +62,7 @@ describe("path-matcher", () => {
 
     it("should handle mixed pattern types", () => {
       expect(
-        matchAnyPattern("lib/handlers/auth.ts", [
-          "src/api/**",
-          "src/routes/**",
-          "lib/handlers/**",
-        ]),
+        matchAnyPattern("lib/handlers/auth.ts", ["src/api/**", "src/routes/**", "lib/handlers/**"]),
       ).toBe(true);
     });
   });
@@ -108,9 +104,7 @@ describe("path-matcher", () => {
     });
 
     it("should return empty for no matches", () => {
-      const rules: PathRule[] = [
-        { patterns: ["src/**/*.ts"], content: "TypeScript rule" },
-      ];
+      const rules: PathRule[] = [{ patterns: ["src/**/*.ts"], content: "TypeScript rule" }];
       const matched = filterMatchingRules(rules, "README.md");
       expect(matched).toHaveLength(0);
     });

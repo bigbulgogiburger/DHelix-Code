@@ -8,7 +8,10 @@ const SECRET_PATTERNS: ReadonlyArray<{ readonly name: string; readonly regex: Re
   // Cloud provider keys
   { name: "AWS Access Key", regex: /(?:AKIA|ASIA)[A-Z0-9]{16}/g },
   { name: "Google Cloud Service Account", regex: /"type"\s*:\s*"service_account"/g },
-  { name: "Azure Connection String", regex: /(?:DefaultEndpointsProtocol|AccountKey|SharedAccessSignature)\s*=[^\s;]+/gi },
+  {
+    name: "Azure Connection String",
+    regex: /(?:DefaultEndpointsProtocol|AccountKey|SharedAccessSignature)\s*=[^\s;]+/gi,
+  },
 
   // AI/ML provider keys
   { name: "OpenAI API Key", regex: /sk-[a-zA-Z0-9]{20,}/g },
@@ -41,7 +44,10 @@ const SECRET_PATTERNS: ReadonlyArray<{ readonly name: string; readonly regex: Re
   // SaaS provider keys
   { name: "Heroku API Key", regex: /(?:heroku[_-]?api[_-]?key|HEROKU_API_KEY)\s*[:=]\s*\S+/gi },
   { name: "SendGrid API Key", regex: /SG\.[a-zA-Z0-9_-]{22}\.[a-zA-Z0-9_-]{43}/g },
-  { name: "Twilio Auth Token", regex: /(?:twilio[_-]?auth[_-]?token|TWILIO_AUTH_TOKEN)\s*[:=]\s*[a-f0-9]{32}/gi },
+  {
+    name: "Twilio Auth Token",
+    regex: /(?:twilio[_-]?auth[_-]?token|TWILIO_AUTH_TOKEN)\s*[:=]\s*[a-f0-9]{32}/gi,
+  },
 
   // Database connection strings
   { name: "PostgreSQL Connection", regex: /postgresql:\/\/[^\s'"]+/gi },
@@ -52,7 +58,10 @@ const SECRET_PATTERNS: ReadonlyArray<{ readonly name: string; readonly regex: Re
   { name: "Password", regex: /password\s*[:=]\s*\S+/gi },
   { name: "Bearer Token", regex: /Bearer\s+[a-zA-Z0-9._-]+/g },
   { name: "API Key", regex: /API[_-]?KEY\s*[:=]\s*\S+/gi },
-  { name: "Generic Secret Assignment", regex: /(?:secret|token|credential|auth_key)\s*[:=]\s*['"][^\s'"]{8,}['"]/gi },
+  {
+    name: "Generic Secret Assignment",
+    regex: /(?:secret|token|credential|auth_key)\s*[:=]\s*['"][^\s'"]{8,}['"]/gi,
+  },
 ];
 
 export function scanForSecrets(text: string): SecretScanResult {

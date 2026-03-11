@@ -82,6 +82,35 @@ describe("executeTool", () => {
     expect(result.output).toContain("timed out");
   });
 
+  it("should return metadata from tool execution", async () => {
+    const tool: ToolDefinition<{ input: string }> = {
+      name: "meta_tool",
+      description: "test",
+      parameterSchema: z.object({ input: z.string() }),
+      permissionLevel: "safe",
+      execute: async () => ({
+        output: "result",
+        isError: false,
+        metadata: { key: "value", count: 42 },
+      }),
+    };
+
+    const result = await executeTool(tool, { input: "test" });
+    expect(result.output).toBe("result");
+    expect(result.isError).toBe(false);
+    expect(result.metadata).toEqual({ key: "value", count: 42 });
+  });
+
+  it("should return undefined metadata on execution error", async () => {
+    const tool = createTool(async () => {
+      throw new Error("boom");
+    });
+
+    const result = await executeTool(tool, { input: "test" });
+    expect(result.isError).toBe(true);
+    expect(result.metadata).toBeUndefined();
+  });
+
   it("should forward parent abort signal", async () => {
     const parentController = new AbortController();
     const tool: ToolDefinition<{ input: string }> = {
@@ -135,6 +164,32 @@ describe("executeToolCall", () => {
     expect(result.isError).toBe(false);
   });
 
+  it("should pass metadata through from ToolResult to ToolCallResult", async () => {
+    const registry = new ToolRegistry();
+    registry.register({
+      name: "meta_tool",
+      description: "test",
+      parameterSchema: z.object({ input: z.string() }),
+      permissionLevel: "safe",
+      execute: async () => ({
+        output: "result",
+        isError: false,
+        metadata: { path: "/test/file.ts", lineCount: 100 },
+      }),
+    });
+
+    const result = await executeToolCall(registry, {
+      id: "tc-1",
+      name: "meta_tool",
+      arguments: { input: "test" },
+    });
+
+    expect(result.id).toBe("tc-1");
+    expect(result.output).toBe("result");
+    expect(result.isError).toBe(false);
+    expect(result.metadata).toEqual({ path: "/test/file.ts", lineCount: 100 });
+  });
+
   it("should return error for unknown tool", async () => {
     const registry = new ToolRegistry();
 
@@ -148,5 +203,6 @@ describe("executeToolCall", () => {
     expect(result.name).toBe("unknown_tool");
     expect(result.output).toContain("Unknown tool");
     expect(result.isError).toBe(true);
+    expect(result.metadata).toBeUndefined();
   });
 });

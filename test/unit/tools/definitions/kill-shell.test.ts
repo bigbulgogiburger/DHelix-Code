@@ -35,10 +35,7 @@ describe("kill_shell tool", () => {
   });
 
   it("should terminate a running background process", async () => {
-    const { processId, outputFile } = backgroundProcessManager.start(
-      "sleep 30",
-      process.cwd(),
-    );
+    const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
     outputFilesToClean.push(outputFile);
 
     // Small delay to let the process start
@@ -75,18 +72,12 @@ describe("kill_shell tool", () => {
   });
 
   it("should support sending SIGKILL signal", async () => {
-    const { processId, outputFile } = backgroundProcessManager.start(
-      "sleep 30",
-      process.cwd(),
-    );
+    const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
     outputFilesToClean.push(outputFile);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const result = await killShellTool.execute(
-      { processId, signal: "SIGKILL" },
-      context,
-    );
+    const result = await killShellTool.execute({ processId, signal: "SIGKILL" }, context);
     expect(result.isError).toBe(false);
     expect(result.output).toContain("SIGKILL");
 
@@ -97,18 +88,12 @@ describe("kill_shell tool", () => {
   });
 
   it("should support sending SIGINT signal", async () => {
-    const { processId, outputFile } = backgroundProcessManager.start(
-      "sleep 30",
-      process.cwd(),
-    );
+    const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
     outputFilesToClean.push(outputFile);
 
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const result = await killShellTool.execute(
-      { processId, signal: "SIGINT" },
-      context,
-    );
+    const result = await killShellTool.execute({ processId, signal: "SIGINT" }, context);
     expect(result.isError).toBe(false);
     expect(result.output).toContain("SIGINT");
 

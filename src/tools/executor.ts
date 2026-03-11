@@ -7,7 +7,7 @@ import {
 } from "./types.js";
 import { type ToolRegistry } from "./registry.js";
 import { parseToolArguments } from "./validation.js";
-import { getPlatform, getShellCommandSync, getShellArgs } from "../utils/platform.js";
+import { getPlatform, getShellCommand, getShellArgs } from "../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../constants.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createWriteStream, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
@@ -85,6 +85,7 @@ export async function executeToolCall(
     name: call.name,
     output: result.output,
     isError: result.isError,
+    metadata: result.metadata,
   };
 }
 
@@ -134,7 +135,7 @@ export class BackgroundProcessManager {
     const fileId = randomUUID().slice(0, 8);
     const processId = `bg-${this.nextId++}`;
     const outputFile = join(tmpdir(), `dbcode-bg-${fileId}.log`);
-    const shell = getShellCommandSync();
+    const shell = getShellCommand();
     const args = getShellArgs(command);
 
     const outStream = createWriteStream(outputFile, { flags: "a" });
@@ -226,7 +227,11 @@ export class BackgroundProcessManager {
   }
 
   /** Read only new output since the last incremental read */
-  getIncrementalOutput(idOrPid: string | number): { output: string; running: boolean; exitCode: number | null } {
+  getIncrementalOutput(idOrPid: string | number): {
+    output: string;
+    running: boolean;
+    exitCode: number | null;
+  } {
     const entry = this.resolve(idOrPid);
     if (!entry) {
       return { output: "", running: false, exitCode: null };

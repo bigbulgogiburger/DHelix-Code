@@ -140,9 +140,7 @@ describe("setupNotificationTriggers", () => {
       isFinal: true,
     });
 
-    expect(mockSendNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ sound: true }),
-    );
+    expect(mockSendNotification).toHaveBeenCalledWith(expect.objectContaining({ sound: true }));
 
     cleanup();
   });

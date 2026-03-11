@@ -32,6 +32,15 @@ function findStartTime(
   return typeof startEntry?.data.startTime === "number" ? startEntry.data.startTime : undefined;
 }
 
+function findMetadata(
+  entries: readonly ActivityEntry[],
+  toolId: string | undefined,
+): Readonly<Record<string, unknown>> | undefined {
+  if (!toolId) return undefined;
+  const completeEntry = entries.find((e) => e.type === "tool-complete" && e.data.id === toolId);
+  return completeEntry?.data.metadata as Readonly<Record<string, unknown>> | undefined;
+}
+
 function renderEntry(
   entry: ActivityEntry,
   index: number,
@@ -78,6 +87,13 @@ function renderEntry(
             ? entry.data.startTime
             : undefined
           : findStartTime(allEntries, toolId);
+
+      // For tool-start, find metadata from the matching tool-complete entry
+      const metadata =
+        entry.type === "tool-start"
+          ? findMetadata(allEntries, toolId)
+          : (entry.data.metadata as Readonly<Record<string, unknown>> | undefined);
+
       return (
         <ToolCallBlock
           key={`entry-${index}`}
@@ -85,6 +101,7 @@ function renderEntry(
           status={getToolStatus(entry)}
           args={entry.data.args as Record<string, unknown> | undefined}
           output={typeof entry.data.output === "string" ? entry.data.output : undefined}
+          metadata={metadata}
           isExpanded={isExpanded}
           startTime={startTime}
         />
@@ -104,7 +121,11 @@ function renderEntry(
 }
 
 /** Renders a single turn: user message + assistant responses + tool calls */
-export const TurnBlock = React.memo(function TurnBlock({ turn, isLive = false, isExpanded }: TurnBlockProps) {
+export const TurnBlock = React.memo(function TurnBlock({
+  turn,
+  isLive = false,
+  isExpanded,
+}: TurnBlockProps) {
   return (
     <Box flexDirection="column" marginBottom={1}>
       {turn.entries.map((entry, i) => renderEntry(entry, i, isLive, turn.entries, isExpanded))}

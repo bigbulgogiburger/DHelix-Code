@@ -88,9 +88,7 @@ export class SharedAgentStateImpl implements SharedAgentState {
    * Return all messages addressed to `agentId` **or** broadcast to all agents.
    */
   getMessages(agentId: string): readonly AgentMessage[] {
-    return this.messages.filter(
-      (m) => m.toAgentId === agentId || m.toAgentId === undefined,
-    );
+    return this.messages.filter((m) => m.toAgentId === agentId || m.toAgentId === undefined);
   }
 
   /**

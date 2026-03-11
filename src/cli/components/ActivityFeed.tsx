@@ -14,8 +14,14 @@ interface ActivityFeedProps {
 /** Group consecutive file_read tool-complete entries for compact display */
 export function groupConsecutiveReads(
   entries: readonly ActivityEntry[],
-): readonly (ActivityEntry | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] })[] {
-  const result: (ActivityEntry | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] })[] = [];
+): readonly (
+  | ActivityEntry
+  | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] }
+)[] {
+  const result: (
+    | ActivityEntry
+    | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] }
+  )[] = [];
   let readBuffer: ActivityEntry[] = [];
 
   const flushReads = () => {
@@ -28,9 +34,7 @@ export function groupConsecutiveReads(
   };
 
   for (const entry of entries) {
-    const isReadTool =
-      entry.type === "tool-complete" &&
-      entry.data.name === "file_read";
+    const isReadTool = entry.type === "tool-complete" && entry.data.name === "file_read";
 
     if (isReadTool) {
       readBuffer.push(entry);
@@ -45,7 +49,9 @@ export function groupConsecutiveReads(
 
 /** Render a single activity entry */
 function renderEntry(
-  entry: ActivityEntry | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] },
+  entry:
+    | ActivityEntry
+    | { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] },
   isLive: boolean,
   allEntries: readonly ActivityEntry[],
   keyPrefix: string,
@@ -53,13 +59,19 @@ function renderEntry(
 ): React.ReactNode {
   // Handle grouped reads
   if ("type" in entry && (entry as { readonly type: string }).type === "read-group") {
-    const groupEntries = (entry as { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] }).entries;
+    const groupEntries = (
+      entry as { readonly type: "read-group"; readonly entries: readonly ActivityEntry[] }
+    ).entries;
     const readEntries: ReadGroupEntry[] = groupEntries.map((e) => {
-      const filePath = typeof (e.data.args as Record<string, unknown>)?.file_path === "string"
-        ? (e.data.args as Record<string, unknown>).file_path as string
-        : "unknown";
+      const filePath =
+        typeof (e.data.args as Record<string, unknown>)?.file_path === "string"
+          ? ((e.data.args as Record<string, unknown>).file_path as string)
+          : "unknown";
       const outputStr = typeof e.data.output === "string" ? e.data.output : "";
-      const lineCount = outputStr.trim().split("\n").filter((l: string) => l.length > 0).length;
+      const lineCount = outputStr
+        .trim()
+        .split("\n")
+        .filter((l: string) => l.length > 0).length;
       return { filePath, lineCount: lineCount > 0 ? lineCount : undefined };
     });
     return <ReadGroupBlock key={keyPrefix} entries={readEntries} isExpanded={isExpanded} />;

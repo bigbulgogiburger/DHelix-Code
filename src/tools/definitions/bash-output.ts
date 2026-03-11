@@ -5,9 +5,7 @@ import { backgroundProcessManager } from "../executor.js";
 const paramSchema = z.object({
   processId: z
     .string()
-    .describe(
-      'The process ID returned by bash_exec when run in background mode (e.g., "bg-1")',
-    ),
+    .describe('The process ID returned by bash_exec when run in background mode (e.g., "bg-1")'),
 });
 
 type Params = z.infer<typeof paramSchema>;
@@ -26,9 +24,7 @@ async function execute(params: Params): Promise<ToolResult> {
     params.processId,
   );
 
-  const statusLine = running
-    ? "Status: running"
-    : `Status: exited (code ${exitCode ?? "unknown"})`;
+  const statusLine = running ? "Status: running" : `Status: exited (code ${exitCode ?? "unknown"})`;
 
   const outputSection = output.length > 0 ? `\n\nOutput:\n${output}` : "\n\n(no new output)";
 

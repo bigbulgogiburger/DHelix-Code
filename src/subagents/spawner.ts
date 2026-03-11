@@ -146,10 +146,7 @@ async function loadAgentHistoryFromDisk(
 }
 
 /** Store a completed agent's message history (in-memory + disk) */
-async function storeAgentHistory(
-  agentId: string,
-  messages: readonly ChatMessage[],
-): Promise<void> {
+async function storeAgentHistory(agentId: string, messages: readonly ChatMessage[]): Promise<void> {
   agentHistoryStore.set(agentId, messages);
 
   // Keep in-memory store bounded

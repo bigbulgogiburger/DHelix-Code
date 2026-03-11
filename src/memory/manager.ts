@@ -45,7 +45,9 @@ export class MemoryManager {
   /**
    * Append a memory entry, with deduplication and auto-overflow.
    */
-  async appendMemory(entry: MemoryEntry): Promise<{ readonly written: boolean; readonly overflowed: boolean }> {
+  async appendMemory(
+    entry: MemoryEntry,
+  ): Promise<{ readonly written: boolean; readonly overflowed: boolean }> {
     return appendMemory(this.projectRoot, entry, this.config.maxMemoryLines);
   }
 

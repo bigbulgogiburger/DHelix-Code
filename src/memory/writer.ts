@@ -113,9 +113,7 @@ export async function clearMemory(projectRoot: string): Promise<void> {
   try {
     const entries = await readdir(memoryDir);
     const topicFiles = entries.filter((e) => e.endsWith(".md") && e !== "MEMORY.md");
-    await Promise.all(
-      topicFiles.map((f) => unlink(`${memoryDir}/${f}`).catch(() => undefined)),
-    );
+    await Promise.all(topicFiles.map((f) => unlink(`${memoryDir}/${f}`).catch(() => undefined)));
   } catch {
     // Ignore cleanup errors
   }
@@ -255,7 +253,9 @@ async function handleOverflow(
 }
 
 /** Parse MEMORY.md into named sections */
-function parseSections(content: string): readonly { readonly name: string; readonly content: string }[] {
+function parseSections(
+  content: string,
+): readonly { readonly name: string; readonly content: string }[] {
   const lines = content.split("\n");
   const sections: { readonly name: string; readonly content: string }[] = [];
   let currentName = "";

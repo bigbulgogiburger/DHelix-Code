@@ -1,9 +1,12 @@
 import { platform as osPlatform, homedir, tmpdir } from "node:os";
 import { existsSync, readFileSync } from "node:fs";
-import { execFileSync } from "node:child_process";
+import { dirname, join } from "node:path";
 
 /** Supported platforms */
 export type Platform = "win32" | "darwin" | "linux";
+
+/** Shell type identifier */
+export type ShellType = "bash" | "git-bash" | "cmd" | "powershell";
 
 /** Detect current OS platform */
 export function getPlatform(): Platform {
@@ -66,52 +69,45 @@ export function getTempDir(): string {
   return tmpdir();
 }
 
-/** Common Git Bash installation paths on Windows */
-const GIT_BASH_CANDIDATES: readonly string[] = [
-  "C:\\Program Files\\Git\\bin\\bash.exe",
-  "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
-];
-
 /**
- * Attempt to find Git Bash on Windows.
- *
- * Search order:
- * 1. C:\Program Files\Git\bin\bash.exe
- * 2. C:\Program Files (x86)\Git\bin\bash.exe
- * 3. `where bash.exe` on PATH
- * 4. PROGRAMFILES env var
- *
- * Returns null if not found or not on Windows.
+ * Find Git Bash executable on Windows.
+ * Checks user override (GIT_BASH_PATH env var), standard install locations,
+ * and attempts to derive the path from git.exe on PATH.
  */
-export async function findGitBash(): Promise<string | null> {
+function findGitBash(): string | null {
   if (!isWindows()) return null;
 
-  // 1 & 2: Check common installation paths
-  for (const candidate of GIT_BASH_CANDIDATES) {
-    try {
-      if (existsSync(candidate)) return candidate;
-    } catch {
-      // Ignore filesystem errors
+  const candidates: readonly (string | undefined)[] = [
+    process.env.GIT_BASH_PATH,
+    "C:\\Program Files\\Git\\bin\\bash.exe",
+    "C:\\Program Files (x86)\\Git\\bin\\bash.exe",
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate && existsSync(candidate)) {
+      return candidate;
     }
   }
 
-  // 3: Check PATH via `where bash.exe`
-  try {
-    const result = execFileSync("where", ["bash.exe"], {
-      encoding: "utf-8",
-      timeout: 5000,
-      windowsHide: true,
-    }).trim();
-    // `where` may return multiple lines; take the first one
-    const firstLine = result.split(/\r?\n/)[0]?.trim();
-    if (firstLine && existsSync(firstLine)) {
-      return firstLine;
+  // Try deriving bash.exe location from git.exe on PATH.
+  // git.exe is typically at C:\Program Files\Git\cmd\git.exe
+  // bash.exe is at              C:\Program Files\Git\bin\bash.exe
+  const pathEnv = process.env.PATH ?? process.env.Path ?? "";
+  const pathDirs = pathEnv.split(";");
+
+  for (const dir of pathDirs) {
+    const gitExe = join(dir, "git.exe");
+    if (existsSync(gitExe)) {
+      // dir is e.g. C:\Program Files\Git\cmd  →  parent is Git root
+      const gitRoot = dirname(dir);
+      const bashExe = join(gitRoot, "bin", "bash.exe");
+      if (existsSync(bashExe)) {
+        return bashExe;
+      }
     }
-  } catch {
-    // `where` not available or bash.exe not on PATH
   }
 
-  // 4: Check PROGRAMFILES env var
+  // Check PROGRAMFILES env var as final fallback
   const programFiles = process.env.PROGRAMFILES;
   if (programFiles) {
     const candidate = `${programFiles}\\Git\\bin\\bash.exe`;
@@ -125,38 +121,52 @@ export async function findGitBash(): Promise<string | null> {
   return null;
 }
 
-/**
- * Synchronous version of shell command detection.
- * Returns cmd.exe on Windows, /bin/bash on Unix.
- * This preserves the original behavior for callers that cannot use async.
- */
-export function getShellCommandSync(): string {
-  return isWindows() ? "cmd.exe" : "/bin/bash";
+/** Cached Git Bash path (undefined = not yet looked up) */
+let _gitBashPath: string | null | undefined;
+
+/** Get the cached Git Bash path, or look it up once */
+function getGitBashPath(): string | null {
+  if (_gitBashPath === undefined) {
+    _gitBashPath = findGitBash();
+  }
+  return _gitBashPath;
 }
 
-/**
- * Get platform-specific shell command (async).
- * On Windows, prefers Git Bash over cmd.exe if available.
- * On Unix, returns /bin/bash.
- */
-export async function getShellCommand(): Promise<string> {
+/** Check if Git Bash is available on Windows */
+export function hasGitBash(): boolean {
+  return getGitBashPath() !== null;
+}
+
+/** Get the current shell type */
+export function getShellType(): ShellType {
+  if (!isWindows()) return "bash";
+  if (getGitBashPath()) return "git-bash";
+  return "cmd";
+}
+
+/** Get platform-specific shell command (prefers Git Bash on Windows) */
+export function getShellCommand(): string {
   if (isWindows()) {
-    const gitBash = await findGitBash();
+    const gitBash = getGitBashPath();
     if (gitBash) return gitBash;
-    // Fallback to cmd.exe with warning logged to stderr
     return "cmd.exe";
   }
-  return "/bin/bash";
+  return process.env.SHELL || "/bin/bash";
+}
+
+/** Get platform-specific shell args for executing a command string */
+export function getShellArgs(command: string, shell?: string): readonly string[] {
+  // If the shell is cmd.exe, use /c; otherwise use -c (bash-style)
+  if (shell === "cmd.exe" || (!shell && isWindows() && !getGitBashPath())) {
+    return ["/c", command] as const;
+  }
+  return ["-c", command] as const;
 }
 
 /**
- * Get platform-specific shell args for executing a command string.
- * Works for both bash-like shells (Git Bash, /bin/bash) and cmd.exe.
+ * Reset the cached Git Bash path. Primarily useful for testing.
+ * @internal
  */
-export function getShellArgs(command: string, shell?: string): readonly string[] {
-  // If the shell is cmd.exe, use /c; otherwise use -c (bash-style)
-  if (shell === "cmd.exe" || (!shell && isWindows())) {
-    return ["/c", command];
-  }
-  return ["-c", command];
+export function _resetGitBashCache(): void {
+  _gitBashPath = undefined;
 }

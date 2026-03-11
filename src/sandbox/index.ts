@@ -70,13 +70,7 @@ async function executeUnsandboxed(config: SandboxConfig): Promise<{
   stdout: string;
   stderr: string;
 }> {
-  const {
-    command,
-    args = [],
-    cwd,
-    timeoutMs = 120_000,
-    env,
-  } = config;
+  const { command, args = [], cwd, timeoutMs = 120_000, env } = config;
 
   const result = await execFileAsync(command, [...args], {
     cwd,
@@ -124,9 +118,7 @@ export async function getSandboxStatus(): Promise<SandboxStatus> {
     // Check for WSL2 (supported but note it)
     const wsl = await isWSL();
     if (wsl) {
-      warnings.push(
-        "WSL2 detected. Bubblewrap sandbox is supported but may require installation.",
-      );
+      warnings.push("WSL2 detected. Bubblewrap sandbox is supported but may require installation.");
     }
 
     // Check if bwrap is installed

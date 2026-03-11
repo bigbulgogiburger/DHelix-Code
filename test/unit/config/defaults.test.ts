@@ -3,7 +3,7 @@ import { DEFAULT_CONFIG } from "../../../src/config/defaults.js";
 
 describe("DEFAULT_CONFIG", () => {
   it("should have LLM defaults", () => {
-    expect(DEFAULT_CONFIG.llm.model).toBe("gpt-4.1-mini");
+    expect(DEFAULT_CONFIG.llm.model).toBe("gpt-5-mini");
     expect(DEFAULT_CONFIG.llm.baseUrl).toBe("https://api.openai.com/v1");
     expect(DEFAULT_CONFIG.llm.temperature).toBe(0.0);
     expect(DEFAULT_CONFIG.llm.maxTokens).toBe(32768);

@@ -11,8 +11,14 @@ const BLOCK_PATTERNS: readonly CommandPattern[] = [
   { regex: /mkfs/, description: "Filesystem format command" },
   { regex: /dd\s+if=/, description: "Low-level disk write (dd)" },
   { regex: /:\(\)\{\s*:\|:&\s*\};:/, description: "Fork bomb" },
-  { regex: /curl\s+[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh/, description: "Curl piped to shell execution" },
-  { regex: /wget\s+[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh/, description: "Wget piped to shell execution" },
+  {
+    regex: /curl\s+[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh/,
+    description: "Curl piped to shell execution",
+  },
+  {
+    regex: /wget\s+[^\n|]*\|\s*(?:sudo\s+)?(?:ba)?sh/,
+    description: "Wget piped to shell execution",
+  },
   { regex: /\bnc\b.*\s-e\s+\/bin\/(?:ba)?sh/, description: "Netcat reverse shell" },
   { regex: /\bnetcat\b.*\s-e\s+\/bin\/(?:ba)?sh/, description: "Netcat reverse shell" },
   { regex: /\bncat\b.*\s-e\s+\/bin\/(?:ba)?sh/, description: "Ncat reverse shell" },

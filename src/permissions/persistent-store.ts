@@ -1,182 +1,316 @@
 import { readFile, writeFile, mkdir } from "node:fs/promises";
-import { dirname } from "node:path";
-import { z } from "zod";
-import { BaseError } from "../utils/error.js";
+import { homedir } from "node:os";
+import { joinPath, dirName } from "../utils/path.js";
+import { PROJECT_CONFIG_DIR } from "../constants.js";
+import { parseRuleString, formatRuleString, matchToolArgs } from "./wildcard.js";
 
-/**
- * Error thrown when persistent permission store operations fail.
- */
-export class PersistentStoreError extends BaseError {
-  constructor(message: string, context: Record<string, unknown> = {}) {
-    super(message, "PERSISTENT_STORE_ERROR", context);
-  }
+/** A persistent permission rule loaded from settings.json */
+export interface PersistentPermissionRule {
+  readonly tool: string;
+  readonly pattern?: string;
+  readonly type: "allow" | "deny";
+  readonly scope: "project" | "user";
 }
 
-/**
- * Schema for the permissions section inside settings.json.
- */
-const settingsPermissionsSchema = z.object({
-  allow: z.array(z.string()).default([]),
-  deny: z.array(z.string()).default([]),
-});
-
-/**
- * Schema for the minimal settings.json shape we care about.
- * We preserve all other fields when writing back.
- */
-const settingsFileSchema = z
-  .object({
-    permissions: settingsPermissionsSchema.default({}),
-  })
-  .passthrough();
-
-/** Persistent permission rule type */
-export type PersistentRuleKind = "allow" | "deny";
-
-/** Persistent permission rules */
-export interface PersistentPermissionRules {
+/** Permissions section shape inside settings.json */
+interface PermissionsConfig {
   readonly allow: readonly string[];
   readonly deny: readonly string[];
 }
 
 /**
- * Persistent permission store — reads and writes permission rules
- * from ~/.dbcode/settings.json.
+ * Resolve the settings.json path for a given scope.
+ *   - project -> {projectDir}/.dbcode/settings.json
+ *   - user   -> ~/.dbcode/settings.json
  */
-export class PersistentPermissionStore {
-  private readonly settingsPath: string;
+function settingsPath(scope: "project" | "user", projectDir: string): string {
+  if (scope === "user") {
+    return joinPath(homedir(), `.dbcode`, "settings.json");
+  }
+  return joinPath(projectDir, PROJECT_CONFIG_DIR, "settings.json");
+}
 
-  constructor(settingsPath: string) {
-    this.settingsPath = settingsPath;
+/**
+ * Safely read and parse a JSON settings file.
+ * Returns an empty object if the file does not exist or is unparseable.
+ */
+async function readSettingsFile(filePath: string): Promise<Record<string, unknown>> {
+  try {
+    const raw = await readFile(filePath, "utf-8");
+    const parsed: unknown = JSON.parse(raw);
+    if (parsed !== null && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, unknown>;
+    }
+    return {};
+  } catch {
+    return {};
+  }
+}
+
+/**
+ * Write a settings object to disk, creating parent directories as needed.
+ * Deep merges into the existing file so other settings.json properties are preserved.
+ */
+async function writeSettingsFile(filePath: string, update: Record<string, unknown>): Promise<void> {
+  const existing = await readSettingsFile(filePath);
+  const merged = { ...existing, ...update };
+
+  await mkdir(dirName(filePath), { recursive: true });
+  await writeFile(filePath, JSON.stringify(merged, null, 2) + "\n", "utf-8");
+}
+
+/**
+ * Extract the permissions section from a raw settings object.
+ */
+function extractPermissions(settings: Record<string, unknown>): PermissionsConfig {
+  const perms = settings["permissions"];
+  if (perms === null || typeof perms !== "object" || Array.isArray(perms)) {
+    return { allow: [], deny: [] };
+  }
+
+  const obj = perms as Record<string, unknown>;
+
+  const allow = Array.isArray(obj["allow"])
+    ? (obj["allow"] as unknown[]).filter((v): v is string => typeof v === "string")
+    : [];
+
+  const deny = Array.isArray(obj["deny"])
+    ? (obj["deny"] as unknown[]).filter((v): v is string => typeof v === "string")
+    : [];
+
+  return { allow, deny };
+}
+
+/**
+ * Convert raw rule strings from a settings file into structured rules.
+ */
+function parseRules(
+  ruleStrings: readonly string[],
+  type: "allow" | "deny",
+  scope: "project" | "user",
+): readonly PersistentPermissionRule[] {
+  return ruleStrings.map((raw) => {
+    const { tool, pattern } = parseRuleString(raw);
+    return Object.freeze({ tool, pattern, type, scope });
+  });
+}
+
+/**
+ * Persistent permission store — reads and writes permission rules
+ * to settings.json files at project and user scope.
+ *
+ * Settings.json format:
+ * ```json
+ * {
+ *   "permissions": {
+ *     "allow": ["file_read", "Bash(npm *)"],
+ *     "deny": ["Bash(rm -rf *)"]
+ *   }
+ * }
+ * ```
+ *
+ * Priority: deny rules ALWAYS take precedence over allow rules.
+ * Project-scope rules override user-scope rules for the same tool+pattern.
+ */
+export interface PersistentPermissionStore {
+  /** Load rules from both project and user settings */
+  loadRules(): Promise<readonly PersistentPermissionRule[]>;
+
+  /** Add a new rule */
+  addRule(rule: Omit<PersistentPermissionRule, "scope">, scope: "project" | "user"): Promise<void>;
+
+  /** Remove a rule */
+  removeRule(tool: string, pattern?: string, scope?: "project" | "user"): Promise<void>;
+
+  /** Get all rules for a specific tool */
+  getRulesForTool(tool: string): Promise<readonly PersistentPermissionRule[]>;
+
+  /**
+   * Check if an action is allowed/denied by persistent rules.
+   * Returns 'allow' | 'deny' | 'none' (no matching rule).
+   */
+  checkPermission(tool: string, args?: Record<string, unknown>): Promise<"allow" | "deny" | "none">;
+
+  /** Clear all rules for a scope */
+  clearRules(scope: "project" | "user"): Promise<void>;
+}
+
+/**
+ * Create a persistent permission store for the given project directory.
+ */
+export function createPersistentPermissionStore(projectDir: string): PersistentPermissionStore {
+  /**
+   * Load rules from a single settings file.
+   */
+  async function loadFromScope(
+    scope: "project" | "user",
+  ): Promise<readonly PersistentPermissionRule[]> {
+    const filePath = settingsPath(scope, projectDir);
+    const settings = await readSettingsFile(filePath);
+    const perms = extractPermissions(settings);
+
+    return [...parseRules(perms.allow, "allow", scope), ...parseRules(perms.deny, "deny", scope)];
   }
 
   /**
-   * Load persistent permission rules from settings.json.
-   * Returns empty arrays if the file doesn't exist or has no permissions section.
+   * Build a deduplication key for a rule (used for project-overrides-user merging).
    */
-  async loadRules(): Promise<PersistentPermissionRules> {
-    const raw = await this.readSettingsFile();
-    const parsed = settingsFileSchema.safeParse(raw);
-    if (!parsed.success) {
-      return { allow: [], deny: [] };
+  function ruleKey(rule: PersistentPermissionRule): string {
+    return formatRuleString(rule.tool, rule.pattern) + ":" + rule.type;
+  }
+
+  /**
+   * Load and merge rules from both scopes.
+   * Project rules override user rules for the same tool+pattern+type.
+   */
+  async function loadRules(): Promise<readonly PersistentPermissionRule[]> {
+    const [userRules, projectRules] = await Promise.all([
+      loadFromScope("user"),
+      loadFromScope("project"),
+    ]);
+
+    // Project rules take precedence: build a set of project rule keys
+    const projectKeys = new Set(projectRules.map(ruleKey));
+
+    // Keep user rules that don't conflict with project rules
+    const filteredUserRules = userRules.filter((r) => !projectKeys.has(ruleKey(r)));
+
+    return Object.freeze([...projectRules, ...filteredUserRules]);
+  }
+
+  /**
+   * Append a rule string to a scope's settings.json.
+   */
+  async function addRule(
+    rule: Omit<PersistentPermissionRule, "scope">,
+    scope: "project" | "user",
+  ): Promise<void> {
+    const filePath = settingsPath(scope, projectDir);
+    const settings = await readSettingsFile(filePath);
+    const perms = extractPermissions(settings);
+    const ruleStr = formatRuleString(rule.tool, rule.pattern);
+
+    const listKey = rule.type === "allow" ? "allow" : "deny";
+    const currentList = [...perms[listKey]];
+
+    // Avoid duplicates
+    if (!currentList.includes(ruleStr)) {
+      currentList.push(ruleStr);
     }
-    return {
-      allow: Object.freeze([...parsed.data.permissions.allow]),
-      deny: Object.freeze([...parsed.data.permissions.deny]),
+
+    const updatedPermissions: PermissionsConfig = {
+      ...perms,
+      [listKey]: currentList,
     };
-  }
 
-  /**
-   * Add an allow rule pattern. Deduplicates.
-   */
-  async addAllowRule(pattern: string): Promise<void> {
-    await this.addRule("allow", pattern);
-  }
-
-  /**
-   * Add a deny rule pattern. Deduplicates.
-   */
-  async addDenyRule(pattern: string): Promise<void> {
-    await this.addRule("deny", pattern);
-  }
-
-  /**
-   * Remove a rule pattern from either allow or deny lists.
-   * Returns true if the rule was found and removed.
-   */
-  async removeRule(pattern: string): Promise<boolean> {
-    const settings = await this.readSettingsFile();
-    const parsed = settingsFileSchema.safeParse(settings);
-    if (!parsed.success) {
-      return false;
-    }
-
-    const allow = parsed.data.permissions.allow.filter((r: string) => r !== pattern);
-    const deny = parsed.data.permissions.deny.filter((r: string) => r !== pattern);
-
-    const removedFromAllow =
-      allow.length !== parsed.data.permissions.allow.length;
-    const removedFromDeny =
-      deny.length !== parsed.data.permissions.deny.length;
-
-    if (!removedFromAllow && !removedFromDeny) {
-      return false;
-    }
-
-    await this.writeSettingsFile({
-      ...parsed.data,
-      permissions: { allow, deny },
-    });
-    return true;
-  }
-
-  /**
-   * Get all rules from both allow and deny lists.
-   */
-  async getAllRules(): Promise<PersistentPermissionRules> {
-    return this.loadRules();
-  }
-
-  /** Internal: add a rule to the specified list */
-  private async addRule(kind: PersistentRuleKind, pattern: string): Promise<void> {
-    const settings = await this.readSettingsFile();
-    const parsed = settingsFileSchema.safeParse(settings);
-
-    const current = parsed.success
-      ? parsed.data
-      : { permissions: { allow: [], deny: [] } };
-
-    const list = [...current.permissions[kind]];
-    if (!list.includes(pattern)) {
-      list.push(pattern);
-    }
-
-    const updatedPermissions = {
-      ...current.permissions,
-      [kind]: list,
-    };
-
-    await this.writeSettingsFile({
-      ...current,
+    await writeSettingsFile(filePath, {
+      ...settings,
       permissions: updatedPermissions,
     });
   }
 
-  /** Read settings.json, returning an empty object if not found or invalid JSON */
-  private async readSettingsFile(): Promise<unknown> {
-    try {
-      const content = await readFile(this.settingsPath, "utf-8");
-      return JSON.parse(content) as unknown;
-    } catch (error: unknown) {
-      if (isNodeError(error) && error.code === "ENOENT") {
-        return {};
-      }
-      if (error instanceof SyntaxError) {
-        return {};
-      }
-      throw new PersistentStoreError("Failed to read settings file", {
-        path: this.settingsPath,
-        cause: String(error),
-      });
-    }
+  /**
+   * Remove matching rule(s) from settings.json.
+   * If scope is undefined, removes from both scopes.
+   */
+  async function removeRule(
+    tool: string,
+    pattern?: string,
+    scope?: "project" | "user",
+  ): Promise<void> {
+    const scopes: ReadonlyArray<"project" | "user"> =
+      scope !== undefined ? [scope] : ["project", "user"];
+
+    const ruleStr = formatRuleString(tool, pattern);
+
+    await Promise.all(
+      scopes.map(async (s) => {
+        const filePath = settingsPath(s, projectDir);
+        const settings = await readSettingsFile(filePath);
+        const perms = extractPermissions(settings);
+
+        const updatedPermissions: PermissionsConfig = {
+          allow: perms.allow.filter((r) => r !== ruleStr),
+          deny: perms.deny.filter((r) => r !== ruleStr),
+        };
+
+        await writeSettingsFile(filePath, {
+          ...settings,
+          permissions: updatedPermissions,
+        });
+      }),
+    );
   }
 
-  /** Write settings back to disk, preserving unknown fields */
-  private async writeSettingsFile(data: Record<string, unknown>): Promise<void> {
-    try {
-      await mkdir(dirname(this.settingsPath), { recursive: true });
-      const content = JSON.stringify(data, null, 2) + "\n";
-      await writeFile(this.settingsPath, content, "utf-8");
-    } catch (error: unknown) {
-      throw new PersistentStoreError("Failed to write settings file", {
-        path: this.settingsPath,
-        cause: String(error),
-      });
-    }
+  /**
+   * Get all rules that apply to a specific tool.
+   */
+  async function getRulesForTool(tool: string): Promise<readonly PersistentPermissionRule[]> {
+    const allRules = await loadRules();
+    return allRules.filter((r) => r.tool === tool);
   }
-}
 
-/** Type guard for Node.js error with code property */
-function isNodeError(error: unknown): error is NodeJS.ErrnoException {
-  return error instanceof Error && "code" in error;
+  /**
+   * Check whether an action is allowed, denied, or has no matching rule.
+   * Deny rules always take precedence over allow rules.
+   */
+  async function checkPermission(
+    tool: string,
+    args?: Record<string, unknown>,
+  ): Promise<"allow" | "deny" | "none"> {
+    const allRules = await loadRules();
+
+    // Separate deny and allow rules for this tool
+    const toolRules = allRules.filter((r) => r.tool === tool);
+
+    if (toolRules.length === 0) {
+      return "none";
+    }
+
+    // Check deny rules first (deny always wins)
+    const denyRules = toolRules.filter((r) => r.type === "deny");
+    for (const rule of denyRules) {
+      if (rule.pattern === undefined) {
+        return "deny";
+      }
+      if (matchToolArgs(tool, rule.pattern, args)) {
+        return "deny";
+      }
+    }
+
+    // Check allow rules
+    const allowRules = toolRules.filter((r) => r.type === "allow");
+    for (const rule of allowRules) {
+      if (rule.pattern === undefined) {
+        return "allow";
+      }
+      if (matchToolArgs(tool, rule.pattern, args)) {
+        return "allow";
+      }
+    }
+
+    return "none";
+  }
+
+  /**
+   * Clear all permission rules for a given scope.
+   */
+  async function clearRules(scope: "project" | "user"): Promise<void> {
+    const filePath = settingsPath(scope, projectDir);
+    const settings = await readSettingsFile(filePath);
+
+    await writeSettingsFile(filePath, {
+      ...settings,
+      permissions: { allow: [], deny: [] },
+    });
+  }
+
+  return Object.freeze({
+    loadRules,
+    addRule,
+    removeRule,
+    getRulesForTool,
+    checkPermission,
+    clearRules,
+  });
 }

@@ -1,301 +1,677 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtemp, rm, readFile, readdir } from "node:fs/promises";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
-  MemoryManager,
-  MemoryError,
-  computeProjectHash,
-  normalizeTopicFileName,
+  AutoMemoryCollector,
+  type TurnContext,
+  type AutoMemoryEntry,
 } from "../../../src/core/auto-memory.js";
+import type { MemoryConfig } from "../../../src/core/memory-storage.js";
 
-describe("MemoryManager", () => {
-  let tempDir: string;
-  let manager: MemoryManager;
+// Mock the memory-storage module
+vi.mock("../../../src/core/memory-storage.js", () => ({
+  readMainMemory: vi.fn().mockResolvedValue(""),
+  writeMainMemory: vi.fn().mockResolvedValue(undefined),
+  readTopicMemory: vi.fn().mockResolvedValue(null),
+  writeTopicMemory: vi.fn().mockResolvedValue(undefined),
+  readGlobalMemory: vi.fn().mockResolvedValue(""),
+  writeGlobalMemory: vi.fn().mockResolvedValue(undefined),
+  listMemoryFiles: vi.fn().mockResolvedValue([]),
+  deleteMemoryFile: vi.fn().mockResolvedValue(undefined),
+  getMemoryPaths: vi.fn().mockReturnValue({
+    projectDir: "/test/project",
+    globalDir: "/home/user/.dbcode/memory",
+    maxMainLines: 200,
+    maxTopicLines: 500,
+  }),
+}));
 
-  beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-auto-memory-"));
-    manager = new MemoryManager(tempDir);
+// Mock the logger to suppress output
+vi.mock("../../../src/utils/logger.js", () => ({
+  getLogger: vi.fn().mockReturnValue({
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  }),
+}));
+
+// Reimport mocked modules to get typed references
+import {
+  readMainMemory,
+  writeMainMemory,
+  readTopicMemory,
+  writeTopicMemory,
+  readGlobalMemory,
+} from "../../../src/core/memory-storage.js";
+
+const mockedReadMainMemory = vi.mocked(readMainMemory);
+const mockedWriteMainMemory = vi.mocked(writeMainMemory);
+const mockedReadTopicMemory = vi.mocked(readTopicMemory);
+const mockedWriteTopicMemory = vi.mocked(writeTopicMemory);
+const mockedReadGlobalMemory = vi.mocked(readGlobalMemory);
+
+/** Create a default MemoryConfig for testing */
+function makeStorage(): MemoryConfig {
+  return {
+    projectDir: "/test/project",
+    globalDir: "/home/user/.dbcode/memory",
+    maxMainLines: 200,
+    maxTopicLines: 500,
+  };
+}
+
+/** Create a minimal TurnContext for testing */
+function makeTurn(overrides?: Partial<TurnContext>): TurnContext {
+  return {
+    userMessage: overrides?.userMessage ?? "How do I fix this?",
+    assistantResponse: overrides?.assistantResponse ?? "Here is the solution.",
+    toolCalls: overrides?.toolCalls ?? [],
+    filesAccessed: overrides?.filesAccessed ?? [],
+    errorsEncountered: overrides?.errorsEncountered ?? [],
+  };
+}
+
+describe("AutoMemoryCollector", () => {
+  let collector: AutoMemoryCollector;
+  let storage: MemoryConfig;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    storage = makeStorage();
+    collector = new AutoMemoryCollector(storage);
   });
 
-  afterEach(async () => {
-    // Clean up the temp directory used as project root
-    await rm(tempDir, { recursive: true, force: true });
-    // Clean up the memory directory that MemoryManager creates under ~/.dbcode/projects/...
-    try {
-      await rm(manager.getMemoryDir(), { recursive: true, force: true });
-    } catch {
-      // Ignore if it doesn't exist
-    }
+  // -----------------------------------------------------------------------
+  // Constructor
+  // -----------------------------------------------------------------------
+
+  describe("constructor", () => {
+    it("creates collector with default config", () => {
+      const c = new AutoMemoryCollector(storage);
+      expect(c.getPending()).toEqual([]);
+    });
+
+    it("accepts partial config overrides", () => {
+      const c = new AutoMemoryCollector(storage, {
+        minConfidence: 0.9,
+        maxEntriesPerSession: 5,
+      });
+      expect(c.getPending()).toEqual([]);
+    });
+
+    it("can be disabled via config", () => {
+      const c = new AutoMemoryCollector(storage, { enabled: false });
+      const turn = makeTurn({
+        assistantResponse: "The root cause was a missing import. Fixed by adding the import.",
+      });
+      const entries = c.analyzeForMemories(turn);
+      expect(entries).toEqual([]);
+    });
   });
 
-  // ---------------------------------------------------------------------------
-  // Constructor and hashing
-  // ---------------------------------------------------------------------------
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — architecture
+  // -----------------------------------------------------------------------
 
-  it("should compute a deterministic project hash", () => {
-    const m1 = new MemoryManager(tempDir);
-    const m2 = new MemoryManager(tempDir);
-    expect(m1.projectHash).toBe(m2.projectHash);
-    expect(m1.projectHash).toHaveLength(12);
-    expect(/^[a-f0-9]{12}$/.test(m1.projectHash)).toBe(true);
+  describe("analyzeForMemories() — architecture detection", () => {
+    it("detects architecture decisions", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "The architecture decision was to use a layered approach with separation of concerns.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      expect(entries.length).toBeGreaterThan(0);
+      const archEntry = entries.find((e) => e.category === "architecture");
+      expect(archEntry).toBeDefined();
+      expect(archEntry!.confidence).toBeGreaterThanOrEqual(0.7);
+    });
+
+    it("detects design decisions", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "This is a design decision to use the repository pattern for data access.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const archEntries = entries.filter((e) => e.category === "architecture");
+      expect(archEntries.length).toBeGreaterThan(0);
+    });
   });
 
-  it("should produce different hashes for different paths", () => {
-    const m1 = new MemoryManager("/some/path/a");
-    const m2 = new MemoryManager("/some/path/b");
-    expect(m1.projectHash).not.toBe(m2.projectHash);
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — debugging
+  // -----------------------------------------------------------------------
+
+  describe("analyzeForMemories() — debugging detection", () => {
+    it("detects debugging insights with 'fixed by'", () => {
+      const turn = makeTurn({
+        assistantResponse: "The bug was fixed by updating the dependency version from 2.0 to 3.0.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const debugEntries = entries.filter((e) => e.category === "debugging");
+      expect(debugEntries.length).toBeGreaterThan(0);
+    });
+
+    it("detects 'root cause' keywords", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "The root cause was a race condition in the event handler that caused stale state.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const debugEntries = entries.filter((e) => e.category === "debugging");
+      expect(debugEntries.length).toBeGreaterThan(0);
+      expect(debugEntries[0]!.content).toContain("root cause");
+    });
+
+    it("detects 'workaround' keywords", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "A workaround for this issue is to clear the cache before running the build.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const debugEntries = entries.filter((e) => e.category === "debugging");
+      expect(debugEntries.length).toBeGreaterThan(0);
+    });
   });
 
-  // ---------------------------------------------------------------------------
-  // loadMainMemory
-  // ---------------------------------------------------------------------------
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — preferences
+  // -----------------------------------------------------------------------
 
-  it("should return empty string for non-existent memory file", async () => {
-    const content = await manager.loadMainMemory();
-    expect(content).toBe("");
+  describe("analyzeForMemories() — preference detection", () => {
+    it("detects 'always use' preferences", () => {
+      const turn = makeTurn({
+        userMessage: "Remember, always use named exports instead of default exports.",
+        assistantResponse: "Got it, I will always use named exports in this project.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const prefEntries = entries.filter((e) => e.category === "preferences");
+      expect(prefEntries.length).toBeGreaterThan(0);
+    });
+
+    it("detects 'prefer' preferences", () => {
+      const turn = makeTurn({
+        assistantResponse: "I prefer to use functional components with hooks rather than classes.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      // Could match preferences or patterns depending on regex
+      expect(entries.length).toBeGreaterThan(0);
+    });
+
+    it("detects 'don't use' preferences", () => {
+      const turn = makeTurn({
+        userMessage: "Don't use any type in this project.",
+        assistantResponse:
+          "Understood, I won't use the any type. I'll use unknown with type guards.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const prefEntries = entries.filter((e) => e.category === "preferences");
+      expect(prefEntries.length).toBeGreaterThan(0);
+    });
   });
 
-  it("should load previously saved content", async () => {
-    await manager.saveMainMemory("# Memory\n\n- Item 1\n- Item 2");
-    const loaded = await manager.loadMainMemory();
-    expect(loaded).toContain("# Memory");
-    expect(loaded).toContain("Item 1");
-    expect(loaded).toContain("Item 2");
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — infrastructure
+  // -----------------------------------------------------------------------
+
+  describe("analyzeForMemories() — infrastructure detection", () => {
+    it("detects build commands", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "The build command is `npm run build` which compiles TypeScript via tsup.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const infraEntries = entries.filter((e) => e.category === "infrastructure");
+      expect(infraEntries.length).toBeGreaterThan(0);
+    });
+
+    it("detects deployment info", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "The deploy script runs `npm run deploy` which pushes the container to the registry.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const infraEntries = entries.filter((e) => e.category === "infrastructure");
+      expect(infraEntries.length).toBeGreaterThan(0);
+    });
+
+    it("detects environment variable mentions", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "You need to set the environment variable OPENAI_API_KEY before running the app.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      const infraEntries = entries.filter((e) => e.category === "infrastructure");
+      expect(infraEntries.length).toBeGreaterThan(0);
+    });
   });
 
-  it("should truncate to 200 lines on load when file is longer", async () => {
-    // Create content with 250 lines
-    const lines = Array.from({ length: 250 }, (_, i) => `Line ${i + 1}`);
-    const content = lines.join("\n");
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — generic/empty
+  // -----------------------------------------------------------------------
 
-    // Write directly (bypassing saveMainMemory to avoid save-time truncation)
-    const { mkdir: mkdirFs, writeFile: writeF } = await import("node:fs/promises");
-    const memDir = manager.getMemoryDir();
-    await mkdirFs(memDir, { recursive: true });
-    await writeF(join(memDir, "MEMORY.md"), content, "utf-8");
+  describe("analyzeForMemories() — no matches", () => {
+    it("returns empty for generic conversation", () => {
+      const turn = makeTurn({
+        userMessage: "Hello, how are you?",
+        assistantResponse: "I'm doing well, thank you for asking!",
+      });
+      const entries = collector.analyzeForMemories(turn);
+      expect(entries).toEqual([]);
+    });
 
-    const loaded = await manager.loadMainMemory();
-    const loadedLines = loaded.split("\n");
-    expect(loadedLines.length).toBe(200);
-    expect(loadedLines[0]).toBe("Line 1");
-    expect(loadedLines[199]).toBe("Line 200");
+    it("returns empty for empty messages", () => {
+      const turn = makeTurn({
+        userMessage: "",
+        assistantResponse: "",
+      });
+      const entries = collector.analyzeForMemories(turn);
+      expect(entries).toEqual([]);
+    });
   });
 
-  // ---------------------------------------------------------------------------
-  // saveMainMemory
-  // ---------------------------------------------------------------------------
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — confidence threshold
+  // -----------------------------------------------------------------------
 
-  it("should create file and directories on first save", async () => {
-    await manager.saveMainMemory("Hello, memory!");
-    const memDir = manager.getMemoryDir();
-    const entries = await readdir(memDir);
-    expect(entries).toContain("MEMORY.md");
+  describe("analyzeForMemories() — confidence threshold", () => {
+    it("respects minConfidence threshold", () => {
+      const highThresholdCollector = new AutoMemoryCollector(storage, {
+        minConfidence: 0.99,
+      });
 
-    const content = await readFile(join(memDir, "MEMORY.md"), "utf-8");
-    expect(content).toBe("Hello, memory!");
+      const turn = makeTurn({
+        assistantResponse: "The root cause was a simple typo.",
+      });
+      const entries = highThresholdCollector.analyzeForMemories(turn);
+
+      // With 0.99 threshold, most things should be filtered
+      // Very short content gets confidence penalized below base
+      for (const entry of entries) {
+        expect(entry.confidence).toBeGreaterThanOrEqual(0.99);
+      }
+    });
   });
 
-  it("should truncate content exceeding 200 lines on save", async () => {
-    const lines = Array.from({ length: 250 }, (_, i) => `Line ${i + 1}`);
-    const content = lines.join("\n");
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — file tracking
+  // -----------------------------------------------------------------------
 
-    await manager.saveMainMemory(content);
+  describe("analyzeForMemories() — file access tracking", () => {
+    it("tracks frequently accessed files (3+ times)", () => {
+      // Access the same file 3 times across turns
+      const turn1 = makeTurn({ filesAccessed: ["/src/index.ts"] });
+      const turn2 = makeTurn({ filesAccessed: ["/src/index.ts"] });
+      const turn3 = makeTurn({ filesAccessed: ["/src/index.ts"] });
 
-    const memDir = manager.getMemoryDir();
-    const saved = await readFile(join(memDir, "MEMORY.md"), "utf-8");
+      collector.analyzeForMemories(turn1);
+      collector.analyzeForMemories(turn2);
+      const entries3 = collector.analyzeForMemories(turn3);
 
-    // Should have truncation warning prepended
-    expect(saved).toContain("WARNING: Content was truncated to 200 lines");
+      const fileEntries = entries3.filter((e) => e.category === "files");
+      expect(fileEntries.length).toBe(1);
+      expect(fileEntries[0]!.content).toContain("/src/index.ts");
+    });
 
-    // Should have at most 200 lines of actual content (plus the warning line)
-    const savedLines = saved.split("\n");
-    // Warning line + 200 content lines = 201
-    expect(savedLines.length).toBe(201);
+    it("does not trigger for fewer than 3 accesses", () => {
+      const turn1 = makeTurn({ filesAccessed: ["/src/utils.ts"] });
+      const turn2 = makeTurn({ filesAccessed: ["/src/utils.ts"] });
+
+      const entries1 = collector.analyzeForMemories(turn1);
+      const entries2 = collector.analyzeForMemories(turn2);
+
+      const fileEntries = [
+        ...entries1.filter((e) => e.category === "files"),
+        ...entries2.filter((e) => e.category === "files"),
+      ];
+      expect(fileEntries.length).toBe(0);
+    });
   });
 
-  it("should not truncate content at or under 200 lines", async () => {
-    const lines = Array.from({ length: 200 }, (_, i) => `Line ${i + 1}`);
-    const content = lines.join("\n");
+  // -----------------------------------------------------------------------
+  // analyzeForMemories — error resolution
+  // -----------------------------------------------------------------------
 
-    await manager.saveMainMemory(content);
+  describe("analyzeForMemories() — error resolution", () => {
+    it("detects resolved errors", () => {
+      const turn = makeTurn({
+        errorsEncountered: ["Cannot find module 'foo'"],
+        assistantResponse: "The issue was a missing dependency. I fixed it by running npm install.",
+      });
+      const entries = collector.analyzeForMemories(turn);
 
-    const memDir = manager.getMemoryDir();
-    const saved = await readFile(join(memDir, "MEMORY.md"), "utf-8");
-    expect(saved).not.toContain("WARNING");
-    expect(saved).toBe(content);
+      const debugEntries = entries.filter((e) => e.category === "debugging");
+      expect(debugEntries.length).toBeGreaterThan(0);
+    });
+
+    it("does not generate entry if error not resolved", () => {
+      const turn = makeTurn({
+        errorsEncountered: ["TypeError: x is not a function"],
+        assistantResponse: "Let me look into this further. I need more context.",
+      });
+      const entries = collector.analyzeForMemories(turn);
+
+      // No resolution indicators in the response
+      const errorEntries = entries.filter((e) => e.source === "error-resolution");
+      expect(errorEntries.length).toBe(0);
+    });
   });
 
-  it("should overwrite existing memory on save", async () => {
-    await manager.saveMainMemory("First version");
-    await manager.saveMainMemory("Second version");
+  // -----------------------------------------------------------------------
+  // isDuplicate
+  // -----------------------------------------------------------------------
 
-    const loaded = await manager.loadMainMemory();
-    expect(loaded).toBe("Second version");
+  describe("isDuplicate()", () => {
+    it("detects exact duplicate content in main memory", async () => {
+      mockedReadMainMemory.mockResolvedValueOnce("The root cause was a missing import.");
+
+      const entry: AutoMemoryEntry = {
+        category: "debugging",
+        content: "The root cause was a missing import.",
+        confidence: 0.85,
+        source: "test",
+      };
+
+      const result = await collector.isDuplicate(entry);
+      expect(result).toBe(true);
+    });
+
+    it("detects near-duplicate with whitespace differences", async () => {
+      mockedReadMainMemory.mockResolvedValueOnce("The   root  cause   was  a  missing   import.");
+
+      const entry: AutoMemoryEntry = {
+        category: "debugging",
+        content: "The root cause was a missing import.",
+        confidence: 0.85,
+        source: "test",
+      };
+
+      const result = await collector.isDuplicate(entry);
+      expect(result).toBe(true);
+    });
+
+    it("returns false for unique content", async () => {
+      mockedReadMainMemory.mockResolvedValueOnce("Some completely different content.");
+      mockedReadTopicMemory.mockResolvedValueOnce(null);
+
+      const entry: AutoMemoryEntry = {
+        category: "architecture",
+        content: "Use layered architecture with strict dependency direction.",
+        confidence: 0.8,
+        source: "test",
+      };
+
+      const result = await collector.isDuplicate(entry);
+      expect(result).toBe(false);
+    });
+
+    it("checks topic files for duplicates", async () => {
+      mockedReadMainMemory.mockResolvedValueOnce("");
+      mockedReadTopicMemory.mockResolvedValueOnce(
+        "Use layered architecture with strict boundaries.",
+      );
+
+      const entry: AutoMemoryEntry = {
+        category: "architecture",
+        content: "Use layered architecture with strict boundaries.",
+        confidence: 0.8,
+        source: "test",
+      };
+
+      const result = await collector.isDuplicate(entry);
+      expect(result).toBe(true);
+    });
+
+    it("returns false when deduplication is disabled", async () => {
+      const noDedupCollector = new AutoMemoryCollector(storage, {
+        deduplication: false,
+      });
+
+      const entry: AutoMemoryEntry = {
+        category: "debugging",
+        content: "anything",
+        confidence: 0.85,
+        source: "test",
+      };
+
+      const result = await noDedupCollector.isDuplicate(entry);
+      expect(result).toBe(false);
+    });
   });
 
-  // ---------------------------------------------------------------------------
-  // Topic memory
-  // ---------------------------------------------------------------------------
+  // -----------------------------------------------------------------------
+  // getPending + clearPending
+  // -----------------------------------------------------------------------
 
-  it("should return null for non-existent topic", async () => {
-    const result = await manager.loadTopicMemory("debugging");
-    expect(result).toBeNull();
+  describe("getPending()", () => {
+    it("returns entries not yet flushed", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "The root cause was a circular dependency between the core and CLI layers.",
+      });
+      collector.analyzeForMemories(turn);
+
+      const pending = collector.getPending();
+      expect(pending.length).toBeGreaterThan(0);
+    });
+
+    it("returns a copy (not the internal array)", () => {
+      const turn = makeTurn({
+        assistantResponse:
+          "The architecture decision was to separate concerns into distinct layers.",
+      });
+      collector.analyzeForMemories(turn);
+
+      const pending1 = collector.getPending();
+      const pending2 = collector.getPending();
+      expect(pending1).not.toBe(pending2);
+      expect(pending1).toEqual(pending2);
+    });
   });
 
-  it("should save and load topic memory", async () => {
-    await manager.saveTopicMemory("debugging", "Use verbose logging for tracing");
-    const loaded = await manager.loadTopicMemory("debugging");
-    expect(loaded).toBe("Use verbose logging for tracing");
+  describe("clearPending()", () => {
+    it("empties the pending list", () => {
+      const turn = makeTurn({
+        assistantResponse: "The root cause was that the module was loaded synchronously.",
+      });
+      collector.analyzeForMemories(turn);
+      expect(collector.getPending().length).toBeGreaterThan(0);
+
+      collector.clearPending();
+      expect(collector.getPending()).toEqual([]);
+    });
   });
 
-  it("should reject invalid topic names", async () => {
-    await expect(manager.loadTopicMemory("")).rejects.toThrow(MemoryError);
-    await expect(manager.saveTopicMemory("", "content")).rejects.toThrow(MemoryError);
-    await expect(manager.saveTopicMemory("123invalid", "content")).rejects.toThrow(MemoryError);
+  // -----------------------------------------------------------------------
+  // flush
+  // -----------------------------------------------------------------------
+
+  describe("flush()", () => {
+    it("returns 0 when nothing is pending", async () => {
+      const count = await collector.flush();
+      expect(count).toBe(0);
+    });
+
+    it("writes entries to disk and returns count", async () => {
+      mockedReadMainMemory.mockResolvedValue("");
+      mockedReadTopicMemory.mockResolvedValue(null);
+
+      const turn = makeTurn({
+        assistantResponse:
+          "The root cause was a stale cache. The workaround for this is to clear the build artifacts first.",
+      });
+      collector.analyzeForMemories(turn);
+
+      const pendingBefore = collector.getPending().length;
+      expect(pendingBefore).toBeGreaterThan(0);
+
+      const count = await collector.flush();
+      expect(count).toBeGreaterThan(0);
+      expect(collector.getPending()).toEqual([]);
+    });
+
+    it("appends to MEMORY.md for short entries", async () => {
+      mockedReadMainMemory.mockResolvedValue("# Existing content\n\nSome notes.");
+      mockedReadTopicMemory.mockResolvedValue(null);
+
+      const turn = makeTurn({
+        assistantResponse:
+          "The architecture decision was to keep all LLM providers behind a common interface.",
+      });
+      collector.analyzeForMemories(turn);
+
+      await collector.flush();
+
+      expect(mockedWriteMainMemory).toHaveBeenCalled();
+      const writtenContent = mockedWriteMainMemory.mock.calls[0]?.[1] as string;
+      expect(writtenContent).toContain("# Existing content");
+    });
+
+    it("creates topic files for entries exceeding main file limit", async () => {
+      // Simulate a nearly-full MEMORY.md
+      const longContent = Array.from({ length: 199 }, (_, i) => `Line ${i}`).join("\n");
+      mockedReadMainMemory.mockResolvedValue(longContent);
+      mockedReadTopicMemory.mockResolvedValue(null);
+
+      const turn = makeTurn({
+        assistantResponse:
+          "The architecture decision was to use dependency injection throughout the application.",
+      });
+      collector.analyzeForMemories(turn);
+
+      await collector.flush();
+
+      // With 199 lines already, new entries should overflow to topic files
+      expect(mockedWriteTopicMemory).toHaveBeenCalled();
+    });
+
+    it("clears pending after flush", async () => {
+      mockedReadMainMemory.mockResolvedValue("");
+      mockedReadTopicMemory.mockResolvedValue(null);
+
+      const turn = makeTurn({
+        assistantResponse: "The root cause was incorrect error handling in the stream parser.",
+      });
+      collector.analyzeForMemories(turn);
+
+      await collector.flush();
+      expect(collector.getPending()).toEqual([]);
+    });
   });
 
-  it("should reject empty content on saveTopicMemory", async () => {
-    await expect(manager.saveTopicMemory("valid-topic", "")).rejects.toThrow(MemoryError);
+  // -----------------------------------------------------------------------
+  // buildMemoryPrompt
+  // -----------------------------------------------------------------------
+
+  describe("buildMemoryPrompt()", () => {
+    it("returns empty string when no memory exists", async () => {
+      mockedReadMainMemory.mockResolvedValue("");
+      mockedReadGlobalMemory.mockResolvedValue("");
+      mockedReadTopicMemory.mockResolvedValue(null);
+
+      const prompt = await collector.buildMemoryPrompt();
+      expect(prompt).toBe("");
+    });
+
+    it("loads and formats MEMORY.md content", async () => {
+      mockedReadMainMemory.mockResolvedValue("# Project Notes\n\nESM only project.");
+      mockedReadGlobalMemory.mockResolvedValue("");
+      mockedReadTopicMemory.mockResolvedValue(null);
+
+      const prompt = await collector.buildMemoryPrompt();
+      expect(prompt).toContain("MEMORY.md");
+      expect(prompt).toContain("ESM only project");
+    });
+
+    it("includes global memory", async () => {
+      mockedReadMainMemory.mockResolvedValue("");
+      mockedReadGlobalMemory.mockResolvedValue("# Global patterns\n\nAlways use ESM.");
+      mockedReadTopicMemory.mockResolvedValue(null);
+
+      const prompt = await collector.buildMemoryPrompt();
+      expect(prompt).toContain("Global Memory");
+      expect(prompt).toContain("Always use ESM");
+    });
+
+    it("includes topic files", async () => {
+      mockedReadMainMemory.mockResolvedValue("Main content.");
+      mockedReadGlobalMemory.mockResolvedValue("");
+      // Return content for one specific topic
+      mockedReadTopicMemory.mockImplementation(async (_config, topic) => {
+        if (topic === "debugging") {
+          return "Root cause was X. Fixed by Y.";
+        }
+        return null;
+      });
+
+      const prompt = await collector.buildMemoryPrompt();
+      expect(prompt).toContain("Debugging");
+      expect(prompt).toContain("Root cause was X");
+    });
   });
 
-  it("should save multiple topics independently", async () => {
-    await manager.saveTopicMemory("debugging", "Debug notes");
-    await manager.saveTopicMemory("patterns", "Pattern notes");
+  // -----------------------------------------------------------------------
+  // maxEntriesPerSession limit
+  // -----------------------------------------------------------------------
 
-    const debug = await manager.loadTopicMemory("debugging");
-    const patterns = await manager.loadTopicMemory("patterns");
+  describe("maxEntriesPerSession", () => {
+    it("respects the session limit", () => {
+      const limitedCollector = new AutoMemoryCollector(storage, {
+        maxEntriesPerSession: 2,
+      });
 
-    expect(debug).toBe("Debug notes");
-    expect(patterns).toBe("Pattern notes");
+      // Generate many entries
+      for (let i = 0; i < 10; i++) {
+        limitedCollector.analyzeForMemories(
+          makeTurn({
+            assistantResponse: `Turn ${i}: The root cause was issue ${i}. The workaround for this is approach ${i}.`,
+          }),
+        );
+      }
+
+      const pending = limitedCollector.getPending();
+      expect(pending.length).toBeLessThanOrEqual(2);
+    });
   });
 
-  // ---------------------------------------------------------------------------
-  // listTopics
-  // ---------------------------------------------------------------------------
+  // -----------------------------------------------------------------------
+  // Deduplication across turns
+  // -----------------------------------------------------------------------
 
-  it("should return empty array when no topics exist", async () => {
-    const topics = await manager.listTopics();
-    expect(topics).toEqual([]);
-  });
+  describe("deduplication across multiple turns", () => {
+    it("detects duplicate entries across turns via isDuplicate", async () => {
+      const content = "The architecture decision was to use event-driven patterns.";
 
-  it("should list all topics excluding MEMORY.md", async () => {
-    await manager.saveMainMemory("Main memory content");
-    await manager.saveTopicMemory("debugging", "Debug notes");
-    await manager.saveTopicMemory("patterns", "Pattern notes");
+      // First turn adds an entry
+      mockedReadMainMemory.mockResolvedValue("");
+      mockedReadTopicMemory.mockResolvedValue(null);
 
-    const topics = await manager.listTopics();
-    expect(topics).toContain("debugging");
-    expect(topics).toContain("patterns");
-    expect(topics).not.toContain("MEMORY"); // MEMORY.md should be excluded
-  });
+      const turn1 = makeTurn({ assistantResponse: content });
+      const entries1 = collector.analyzeForMemories(turn1);
 
-  it("should return topics in sorted order", async () => {
-    await manager.saveTopicMemory("zebra", "z content");
-    await manager.saveTopicMemory("alpha", "a content");
-    await manager.saveTopicMemory("middle", "m content");
+      // Simulate that the entry has been flushed to main memory
+      if (entries1.length > 0) {
+        mockedReadMainMemory.mockResolvedValue(entries1[0]!.content);
+      }
 
-    const topics = await manager.listTopics();
-    expect(topics).toEqual(["alpha", "middle", "zebra"]);
-  });
-
-  // ---------------------------------------------------------------------------
-  // getMemoryDir
-  // ---------------------------------------------------------------------------
-
-  it("should return correct path format with project hash", () => {
-    const dir = manager.getMemoryDir();
-    expect(dir).toContain("projects");
-    expect(dir).toContain(manager.projectHash);
-    expect(dir).toContain("memory");
-  });
-
-  // ---------------------------------------------------------------------------
-  // deleteTopic
-  // ---------------------------------------------------------------------------
-
-  it("should delete a topic file", async () => {
-    await manager.saveTopicMemory("temp-topic", "temporary data");
-    await manager.deleteTopic("temp-topic");
-    const loaded = await manager.loadTopicMemory("temp-topic");
-    expect(loaded).toBeNull();
-  });
-
-  it("should be a no-op when deleting non-existent topic", async () => {
-    await expect(manager.deleteTopic("nonexistent")).resolves.toBeUndefined();
-  });
-
-  // ---------------------------------------------------------------------------
-  // clearAll
-  // ---------------------------------------------------------------------------
-
-  it("should clear all memory including topics", async () => {
-    await manager.saveMainMemory("Main content");
-    await manager.saveTopicMemory("debugging", "Debug content");
-
-    await manager.clearAll();
-
-    const main = await manager.loadMainMemory();
-    const topics = await manager.listTopics();
-    expect(main).toBe("");
-    expect(topics).toEqual([]);
-  });
-
-  it("should be a no-op when clearing non-existent memory dir", async () => {
-    await expect(manager.clearAll()).resolves.toBeUndefined();
-  });
-});
-
-// ---------------------------------------------------------------------------
-// Pure helper functions
-// ---------------------------------------------------------------------------
-
-describe("computeProjectHash", () => {
-  it("should return a 12-character hex string", () => {
-    const hash = computeProjectHash("/some/project/path");
-    expect(hash).toHaveLength(12);
-    expect(/^[a-f0-9]{12}$/.test(hash)).toBe(true);
-  });
-
-  it("should be deterministic", () => {
-    const h1 = computeProjectHash("/my/project");
-    const h2 = computeProjectHash("/my/project");
-    expect(h1).toBe(h2);
-  });
-
-  it("should differ for different paths", () => {
-    const h1 = computeProjectHash("/path/a");
-    const h2 = computeProjectHash("/path/b");
-    expect(h1).not.toBe(h2);
-  });
-});
-
-describe("normalizeTopicFileName", () => {
-  it("should lowercase and add .md extension", () => {
-    expect(normalizeTopicFileName("Debugging")).toBe("debugging.md");
-  });
-
-  it("should replace spaces with hyphens", () => {
-    expect(normalizeTopicFileName("My Topic")).toBe("my-topic.md");
-  });
-
-  it("should collapse consecutive hyphens", () => {
-    expect(normalizeTopicFileName("foo--bar---baz")).toBe("foo-bar-baz.md");
-  });
-
-  it("should strip leading and trailing hyphens", () => {
-    expect(normalizeTopicFileName("-leading-trailing-")).toBe("leading-trailing.md");
-  });
-
-  it("should not double-add .md extension", () => {
-    expect(normalizeTopicFileName("topic.md")).toBe("topic.md");
-  });
-
-  it("should handle underscores", () => {
-    expect(normalizeTopicFileName("my_topic")).toBe("my_topic.md");
-  });
-
-  it("should return untitled.md for empty base name", () => {
-    expect(normalizeTopicFileName("---")).toBe("untitled.md");
+      // Second turn with same content should be detected as duplicate
+      const entry: AutoMemoryEntry = {
+        category: "architecture",
+        content,
+        confidence: 0.8,
+        source: "test",
+      };
+      const isDup = await collector.isDuplicate(entry);
+      expect(isDup).toBe(true);
+    });
   });
 });

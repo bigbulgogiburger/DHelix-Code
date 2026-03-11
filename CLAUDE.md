@@ -237,6 +237,13 @@ User Input → Context Prepare → Input Filter → LLM Stream → Output Filter
 - User-invocable skills become `/name` slash commands via `command-bridge.ts`
 - String substitutions: `$ARGUMENTS`, `$ARGUMENTS[N]`, `$N`, `${DBCODE_SESSION_ID}`
 
+### Verify Skills
+
+| Skill                           | Description                                |
+| ------------------------------- | ------------------------------------------ |
+| `verify-tool-metadata-pipeline` | Tool metadata 전달 일관성 검증             |
+| `verify-model-capabilities`     | ModelCapabilities 및 기본 모델 동기화 검증 |
+
 ## Keyboard Shortcuts
 
 | Shortcut  | Action                    |

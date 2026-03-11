@@ -255,12 +255,8 @@ describe("BackgroundProcessManager", () => {
 
     // Wait for both
     await Promise.all([
-      new Promise<void>((resolve) =>
-        backgroundProcessManager.onComplete(id1, () => resolve()),
-      ),
-      new Promise<void>((resolve) =>
-        backgroundProcessManager.onComplete(id2, () => resolve()),
-      ),
+      new Promise<void>((resolve) => backgroundProcessManager.onComplete(id1, () => resolve())),
+      new Promise<void>((resolve) => backgroundProcessManager.onComplete(id2, () => resolve())),
     ]);
   });
 
@@ -330,20 +326,13 @@ describe("BackgroundProcessManager", () => {
     expect(ids).toContain(id2);
 
     await Promise.all([
-      new Promise<void>((resolve) =>
-        backgroundProcessManager.onComplete(id1, () => resolve()),
-      ),
-      new Promise<void>((resolve) =>
-        backgroundProcessManager.onComplete(id2, () => resolve()),
-      ),
+      new Promise<void>((resolve) => backgroundProcessManager.onComplete(id1, () => resolve())),
+      new Promise<void>((resolve) => backgroundProcessManager.onComplete(id2, () => resolve())),
     ]);
   });
 
   it("should kill by process ID with custom signal", async () => {
-    const { processId, outputFile } = backgroundProcessManager.start(
-      "sleep 30",
-      process.cwd(),
-    );
+    const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
     outputFilesToClean.push(outputFile);
 
     await new Promise((resolve) => setTimeout(resolve, 50));

@@ -112,7 +112,7 @@ describe("gitBashToWindows", () => {
     expect(gitBashToWindows("/d/Projects/file.ts")).toBe("D:\\Projects\\file.ts");
   });
 
-  it("should handle drive letter root /c to C:\\", () => {
+  it("should handle drive letter root /c to C:", () => {
     expect(gitBashToWindows("/c")).toBe("C:");
   });
 
@@ -178,9 +178,7 @@ describe("expandWindowsEnvVars", () => {
   });
 
   it("should leave unknown variables unchanged", () => {
-    expect(expandWindowsEnvVars("%NONEXISTENT_VAR_XYZ%/path")).toBe(
-      "%NONEXISTENT_VAR_XYZ%/path",
-    );
+    expect(expandWindowsEnvVars("%NONEXISTENT_VAR_XYZ%/path")).toBe("%NONEXISTENT_VAR_XYZ%/path");
   });
 
   it("should expand multiple variables", () => {

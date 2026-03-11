@@ -294,7 +294,11 @@ describe("groupToolCalls backward compatibility", () => {
     const calls: ExtractedToolCall[] = [
       { id: "tc-1", name: "grep_search", arguments: { pattern: "TODO", path: "/src" } },
       { id: "tc-2", name: "file_read", arguments: { path: "/src/app.ts" } },
-      { id: "tc-3", name: "file_edit", arguments: { file_path: "/src/app.ts", old_string: "old", new_string: "new" } },
+      {
+        id: "tc-3",
+        name: "file_edit",
+        arguments: { file_path: "/src/app.ts", old_string: "old", new_string: "new" },
+      },
       { id: "tc-4", name: "file_write", arguments: { file_path: "/src/new-file.ts" } },
       { id: "tc-5", name: "bash_exec", arguments: { command: "npm test" } },
     ];

@@ -30,7 +30,9 @@ async function readSettings(): Promise<Record<string, unknown>> {
     ) {
       return {};
     }
-    throw new Error(`Failed to read settings: ${error instanceof Error ? error.message : String(error)}`);
+    throw new Error(
+      `Failed to read settings: ${error instanceof Error ? error.message : String(error)}`,
+    );
   }
 }
 
@@ -97,10 +99,7 @@ export function validatePattern(pattern: string): string | null {
 /**
  * Format the display for `/permissions` (no args) — show current state.
  */
-function formatPermissionStatus(
-  mode: PermissionMode,
-  perms: PermissionsSettings,
-): string {
+function formatPermissionStatus(mode: PermissionMode, perms: PermissionsSettings): string {
   const lines: string[] = [];
 
   lines.push("Permission Status");

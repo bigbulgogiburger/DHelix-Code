@@ -21,6 +21,7 @@ interface StatusBarProps {
 const MODEL_PRICING: Record<string, readonly [number, number]> = {
   // GPT-4.1 series (2025-04)
   "gpt-4.1": [2.0, 8.0],
+  "gpt-5-mini": [0.4, 1.6],
   "gpt-4.1-mini": [0.4, 1.6],
   "gpt-4.1-nano": [0.1, 0.4],
   // GPT-4o series

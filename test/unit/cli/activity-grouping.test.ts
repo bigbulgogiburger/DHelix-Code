@@ -2,11 +2,7 @@ import { describe, it, expect } from "vitest";
 import { groupConsecutiveReads } from "../../../src/cli/components/ActivityFeed.js";
 import type { ActivityEntry } from "../../../src/core/activity.js";
 
-function makeEntry(
-  type: string,
-  name: string,
-  data: Record<string, unknown> = {},
-): ActivityEntry {
+function makeEntry(type: string, name: string, data: Record<string, unknown> = {}): ActivityEntry {
   return {
     type: type as ActivityEntry["type"],
     timestamp: new Date(),

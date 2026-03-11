@@ -11,7 +11,14 @@ export type AppEvents = {
   /** LLM streaming completed */
   "llm:complete": { tokenCount: number };
   /** LLM token usage reported during streaming (via stream_options.include_usage) */
-  "llm:usage": { usage: { readonly promptTokens: number; readonly completionTokens: number; readonly totalTokens: number }; model: string };
+  "llm:usage": {
+    usage: {
+      readonly promptTokens: number;
+      readonly completionTokens: number;
+      readonly totalTokens: number;
+    };
+    model: string;
+  };
   /** LLM streaming errored */
   "llm:error": { error: Error };
 
@@ -28,7 +35,13 @@ export type AppEvents = {
   /** Tool execution started */
   "tool:start": { name: string; id: string; args?: Record<string, unknown> };
   /** Tool execution completed */
-  "tool:complete": { name: string; id: string; isError: boolean; output?: string };
+  "tool:complete": {
+    name: string;
+    id: string;
+    isError: boolean;
+    output?: string;
+    metadata?: Readonly<Record<string, unknown>>;
+  };
 
   /** Context compaction is about to start */
   "context:pre-compact": { compactionNumber: number };

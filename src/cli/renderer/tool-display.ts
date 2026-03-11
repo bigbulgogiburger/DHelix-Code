@@ -12,12 +12,17 @@ interface ToolDisplayConfig {
   readonly headerVerb: string;
   readonly runningHeaderVerb: string;
   readonly headerColor: string;
-  readonly extractDetail?: (args?: Record<string, unknown>, output?: string) => string | undefined;
+  readonly extractDetail?: (
+    args?: Record<string, unknown>,
+    output?: string,
+    metadata?: Readonly<Record<string, unknown>>,
+  ) => string | undefined;
   /** Extract a preview snippet (diff, output preview, etc.) shown below the status line */
   readonly extractPreview?: (
     args?: Record<string, unknown>,
     output?: string,
     status?: ToolStatus,
+    metadata?: Readonly<Record<string, unknown>>,
   ) => string | undefined;
   readonly extractHeaderArg?: (args?: Record<string, unknown>) => string | undefined;
   readonly extractSubtext?: (
@@ -182,6 +187,7 @@ function formatBashPreview(
   _args?: Record<string, unknown>,
   output?: string,
   status?: ToolStatus,
+  _metadata?: Readonly<Record<string, unknown>>,
 ): string | undefined {
   if (!output || status === "running") return undefined;
   const lines = output.trim().split("\n");
@@ -214,10 +220,40 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "Read",
     runningHeaderVerb: "Reading",
     headerColor: "blue",
-    extractDetail: (args, output) => {
+    extractDetail: (args, output, metadata) => {
       const filePath =
-        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+        typeof metadata?.path === "string"
+          ? shortenPath(metadata.path)
+          : typeof args?.file_path === "string"
+            ? shortenPath(args.file_path)
+            : undefined;
       if (!filePath) return undefined;
+
+      // Image files
+      if (metadata?.type === "image") return `${filePath} — image`;
+      // PDF files
+      if (metadata?.type === "pdf") {
+        const pages = metadata.totalPages ? ` ${metadata.totalPages} pages` : "";
+        return `${filePath} — PDF${pages}`;
+      }
+      // Notebook files
+      if (metadata?.type === "notebook") {
+        const cells = typeof metadata.cellCount === "number" ? ` ${metadata.cellCount} cells` : "";
+        return `${filePath} — notebook${cells}`;
+      }
+
+      // Regular file — use metadata totalLines if available
+      const totalLines = typeof metadata?.totalLines === "number" ? metadata.totalLines : undefined;
+      if (totalLines !== undefined) {
+        const from = typeof metadata?.readFrom === "number" ? metadata.readFrom : undefined;
+        const to = typeof metadata?.readTo === "number" ? metadata.readTo : undefined;
+        if (from !== undefined && to !== undefined) {
+          return `${filePath} (lines ${from}-${to} of ${totalLines})`;
+        }
+        return `${filePath} — ${totalLines} lines`;
+      }
+
+      // Fallback to counting output lines
       if (output) {
         const lines = output.trim().split("\n");
         const lineCount = lines.filter((l) => l.length > 0).length;
@@ -239,16 +275,21 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "Write",
     runningHeaderVerb: "Writing",
     headerColor: "cyan",
-    extractDetail: (args) => {
+    extractDetail: (args, _output, metadata) => {
       const filePath =
-        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+        typeof metadata?.path === "string"
+          ? shortenPath(metadata.path)
+          : typeof args?.file_path === "string"
+            ? shortenPath(args.file_path)
+            : undefined;
       if (!filePath) return undefined;
+      const lineCount = typeof metadata?.lineCount === "number" ? metadata.lineCount : undefined;
+      if (lineCount !== undefined) return `${filePath} — ${lineCount} lines`;
+      // Fallback
       const content = typeof args?.content === "string" ? args.content : undefined;
       if (content) {
-        const lineCount = content.split("\n").length;
-        const bytes = new TextEncoder().encode(content).byteLength;
-        if (bytes < 1024) return `${filePath} (${lineCount} lines, ${bytes} B)`;
-        return `${filePath} (${lineCount} lines, ${(bytes / 1024).toFixed(1)} KB)`;
+        const lc = content.split("\n").length;
+        return `${filePath} — ${lc} lines`;
       }
       return filePath;
     },
@@ -269,13 +310,23 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "Update",
     runningHeaderVerb: "Updating",
     headerColor: "cyan",
-    extractDetail: (args) => {
+    extractDetail: (args, _output, metadata) => {
       const filePath =
-        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+        typeof metadata?.path === "string"
+          ? shortenPath(metadata.path)
+          : typeof args?.file_path === "string"
+            ? shortenPath(args.file_path)
+            : undefined;
       if (!filePath) return undefined;
+      const added = typeof metadata?.linesAdded === "number" ? metadata.linesAdded : undefined;
+      const removed =
+        typeof metadata?.linesRemoved === "number" ? metadata.linesRemoved : undefined;
+      if (added !== undefined && removed !== undefined) {
+        return `${filePath} (+${added} -${removed})`;
+      }
       const replaceAll = args?.replace_all === true;
-      const summary = formatChangeSummary(args);
       if (replaceAll) return `${filePath} (replace all)`;
+      const summary = formatChangeSummary(args);
       if (summary) return `${filePath} — ${summary}`;
       return filePath;
     },
@@ -293,14 +344,25 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "Bash",
     runningHeaderVerb: "Running",
     headerColor: "yellow",
-    extractDetail: (args) => {
-      const cmd = typeof args?.command === "string" ? args.command : undefined;
+    extractDetail: (args, _output, metadata) => {
+      const cmd =
+        typeof metadata?.command === "string"
+          ? metadata.command
+          : typeof args?.command === "string"
+            ? args.command
+            : undefined;
       if (!cmd) return undefined;
-      // Show first line of multi-line commands, truncate long single-line
       const firstLine = cmd.split("\n")[0];
       const display = firstLine.length > 80 ? firstLine.slice(0, 77) + "…" : firstLine;
       const lineCount = cmd.split("\n").length;
-      return lineCount > 1 ? `${display} (+${lineCount - 1} lines)` : display;
+      const cmdText = lineCount > 1 ? `${display} (+${lineCount - 1} lines)` : display;
+
+      // Add exit code from metadata
+      const exitCode = typeof metadata?.exitCode === "number" ? metadata.exitCode : undefined;
+      if (exitCode !== undefined) {
+        return `${cmdText} — exit ${exitCode}`;
+      }
+      return cmdText;
     },
     extractPreview: formatBashPreview,
     extractHeaderArg: (args) => {
@@ -332,8 +394,7 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       return processId ? `from ${processId}` : undefined;
     },
     extractPreview: formatBashPreview,
-    extractHeaderArg: (args) =>
-      typeof args?.processId === "string" ? args.processId : undefined,
+    extractHeaderArg: (args) => (typeof args?.processId === "string" ? args.processId : undefined),
     extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   kill_shell: {
@@ -347,8 +408,7 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       const signal = typeof args?.signal === "string" ? args.signal : "SIGTERM";
       return processId ? `${processId} (${signal})` : undefined;
     },
-    extractHeaderArg: (args) =>
-      typeof args?.processId === "string" ? args.processId : undefined,
+    extractHeaderArg: (args) => (typeof args?.processId === "string" ? args.processId : undefined),
     extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
   },
   glob_search: {
@@ -357,20 +417,31 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "Search",
     runningHeaderVerb: "Searching",
     headerColor: "magenta",
-    extractDetail: (args, output) => {
-      const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
+    extractDetail: (args, output, metadata) => {
+      const pattern =
+        typeof metadata?.pattern === "string"
+          ? `"${metadata.pattern}"`
+          : typeof args?.pattern === "string"
+            ? `"${args.pattern}"`
+            : undefined;
+
+      const count = typeof metadata?.count === "number" ? metadata.count : undefined;
+      if (count !== undefined) {
+        return `${count} file${count === 1 ? "" : "s"} matching ${pattern ?? "pattern"}`;
+      }
+
+      // Fallback
       if (output) {
         const lines = output
           .trim()
           .split("\n")
           .filter((l) => l.length > 0);
-        const count = `${lines.length} file${lines.length === 1 ? "" : "s"}`;
-        return pattern ? `${count} matching ${pattern}` : count;
+        const c = `${lines.length} file${lines.length === 1 ? "" : "s"}`;
+        return pattern ? `${c} matching ${pattern}` : c;
       }
       return pattern;
     },
-    extractHeaderArg: (args) =>
-      typeof args?.pattern === "string" ? args.pattern : undefined,
+    extractHeaderArg: (args) => (typeof args?.pattern === "string" ? args.pattern : undefined),
     extractSubtext: (_args, output) => {
       const count = countNonEmptyLines(output);
       if (count > 0) return `${count} file${count === 1 ? "" : "s"}`;
@@ -383,15 +454,30 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "Search",
     runningHeaderVerb: "Searching",
     headerColor: "magenta",
-    extractDetail: (args, output) => {
-      const pattern = typeof args?.pattern === "string" ? `"${args.pattern}"` : undefined;
+    extractDetail: (args, output, metadata) => {
+      const pattern =
+        typeof metadata?.pattern === "string"
+          ? `"${metadata.pattern}"`
+          : typeof args?.pattern === "string"
+            ? `"${args.pattern}"`
+            : undefined;
+      const searchPath = typeof args?.path === "string" ? shortenPath(args.path) : undefined;
+
+      const matchCount = typeof metadata?.matchCount === "number" ? metadata.matchCount : undefined;
+      if (matchCount !== undefined) {
+        const pathSuffix = searchPath ? ` in ${searchPath}` : "";
+        return `${pattern ?? "pattern"}${pathSuffix} — ${matchCount} match${matchCount === 1 ? "" : "es"}`;
+      }
+
+      // Fallback to output counting
       if (output) {
         const lines = output
           .trim()
           .split("\n")
           .filter((l) => l.length > 0);
         const matchInfo = `${lines.length} result${lines.length === 1 ? "" : "s"}`;
-        return pattern ? `${pattern} — ${matchInfo}` : matchInfo;
+        const pathSuffix = searchPath ? ` in ${searchPath}` : "";
+        return pattern ? `${pattern}${pathSuffix} — ${matchInfo}` : matchInfo;
       }
       return pattern;
     },
@@ -420,10 +506,55 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "Fetch",
     runningHeaderVerb: "Fetching",
     headerColor: "magenta",
-    extractDetail: (args) => (typeof args?.url === "string" ? args.url : undefined),
-    extractHeaderArg: (args) =>
-      typeof args?.url === "string" ? args.url : undefined,
+    extractDetail: (args, output, metadata) => {
+      const url =
+        typeof metadata?.url === "string"
+          ? metadata.url
+          : typeof args?.url === "string"
+            ? args.url
+            : undefined;
+      if (!url) return undefined;
+      // Truncate long URLs
+      const displayUrl = url.length > 60 ? url.slice(0, 57) + "…" : url;
+      if (output) {
+        const bytes = new TextEncoder().encode(output).byteLength;
+        if (bytes >= 1024) return `${displayUrl} — ${(bytes / 1024).toFixed(1)} KB`;
+        return `${displayUrl} — ${bytes} B`;
+      }
+      return displayUrl;
+    },
+    extractHeaderArg: (args) => (typeof args?.url === "string" ? args.url : undefined),
     extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
+  },
+  web_search: {
+    running: "Searching web",
+    complete: "Searched web",
+    headerVerb: "WebSearch",
+    runningHeaderVerb: "Searching web",
+    headerColor: "magenta",
+    extractDetail: (args, output, metadata) => {
+      const query =
+        typeof metadata?.query === "string"
+          ? `"${metadata.query}"`
+          : typeof args?.query === "string"
+            ? `"${args.query}"`
+            : undefined;
+
+      const resultCount =
+        typeof metadata?.resultCount === "number" ? metadata.resultCount : undefined;
+      if (resultCount !== undefined) {
+        return `${query ?? "query"} — ${resultCount} result${resultCount === 1 ? "" : "s"}`;
+      }
+
+      if (output) {
+        const lines = output
+          .trim()
+          .split("\n")
+          .filter((l) => l.length > 0);
+        return `${query ?? "query"} — ${lines.length} result${lines.length === 1 ? "" : "s"}`;
+      }
+      return query;
+    },
   },
   list_dir: {
     running: "Listing",
@@ -431,7 +562,26 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     headerVerb: "List",
     runningHeaderVerb: "Listing",
     headerColor: "blue",
-    extractDetail: (args) => (typeof args?.path === "string" ? shortenPath(args.path) : undefined),
+    extractDetail: (args, output, metadata) => {
+      const dirPath =
+        typeof metadata?.path === "string"
+          ? shortenPath(metadata.path)
+          : typeof args?.path === "string"
+            ? shortenPath(args.path)
+            : undefined;
+      const entryCount = typeof metadata?.entryCount === "number" ? metadata.entryCount : undefined;
+      if (dirPath && entryCount !== undefined) {
+        return `${dirPath} — ${entryCount} entries`;
+      }
+      if (dirPath && output) {
+        const lines = output
+          .trim()
+          .split("\n")
+          .filter((l) => l.length > 0);
+        return `${dirPath} — ${lines.length} entries`;
+      }
+      return dirPath;
+    },
     extractHeaderArg: (args) =>
       typeof args?.path === "string" ? shortenPath(args.path) : undefined,
     extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
@@ -465,6 +615,39 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       return question.length > 40 ? question.slice(0, 37) + "…" : question;
     },
     extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
+  },
+  agent: {
+    running: "Running agent",
+    complete: "Agent completed",
+    headerVerb: "Agent",
+    runningHeaderVerb: "Running agent",
+    headerColor: "green",
+    extractDetail: (args, _output, metadata) => {
+      const desc = typeof args?.description === "string" ? args.description : undefined;
+      const type =
+        typeof metadata?.type === "string"
+          ? metadata.type
+          : typeof args?.type === "string"
+            ? args.type
+            : undefined;
+      if (desc) return type ? `(${type}) ${desc}` : desc;
+      return type;
+    },
+  },
+  todo_write: {
+    running: "Updating tasks",
+    complete: "Updated tasks",
+    headerVerb: "Todo",
+    runningHeaderVerb: "Updating tasks",
+    headerColor: "yellow",
+    extractDetail: (_args, _output, metadata) => {
+      const total = typeof metadata?.total === "number" ? metadata.total : undefined;
+      const completed = typeof metadata?.completed === "number" ? metadata.completed : undefined;
+      if (total !== undefined && completed !== undefined) {
+        return `${completed}/${total} completed`;
+      }
+      return undefined;
+    },
   },
 };
 
@@ -507,6 +690,7 @@ export function getToolDisplayText(
   args?: Record<string, unknown>,
   output?: string,
   duration?: number,
+  metadata?: Readonly<Record<string, unknown>>,
 ): string {
   const config = toolDisplayMap[name];
   if (!config) {
@@ -515,7 +699,7 @@ export function getToolDisplayText(
   }
 
   const verb = status === "running" ? config.running : config.complete;
-  const detail = config.extractDetail?.(args, output);
+  const detail = config.extractDetail?.(args, output, metadata);
   const base = detail ? `${verb} ${detail}` : verb;
 
   return duration && status !== "running" ? `${base} (${formatDuration(duration)})` : base;
@@ -527,9 +711,10 @@ export function getToolPreview(
   status: ToolStatus,
   args?: Record<string, unknown>,
   output?: string,
+  metadata?: Readonly<Record<string, unknown>>,
 ): string | undefined {
   const config = toolDisplayMap[name];
-  return config?.extractPreview?.(args, output, status);
+  return config?.extractPreview?.(args, output, status, metadata);
 }
 
 export function getToolStatusIcon(status: ToolStatus): string {

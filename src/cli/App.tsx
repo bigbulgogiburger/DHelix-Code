@@ -185,7 +185,11 @@ export function App({
 
   return (
     <Box flexDirection="column" padding={1}>
-      <ActivityFeed completedTurns={completedTurns} currentTurn={liveTurn} isExpanded={verboseMode} />
+      <ActivityFeed
+        completedTurns={completedTurns}
+        currentTurn={liveTurn}
+        isExpanded={verboseMode}
+      />
 
       {isProcessing &&
       !streamingText &&

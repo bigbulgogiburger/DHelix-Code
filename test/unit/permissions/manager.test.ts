@@ -248,11 +248,9 @@ describe("PermissionManager", () => {
     });
 
     it("should fall through to explicit rules if no allow match", () => {
-      const pm = new PermissionManager(
-        "default",
-        [{ toolName: "file_write", allowed: true }],
-        { allow: ["Bash(npm *)"] },
-      );
+      const pm = new PermissionManager("default", [{ toolName: "file_write", allowed: true }], {
+        allow: ["Bash(npm *)"],
+      });
 
       const result = pm.check("file_write", "confirm");
       expect(result.allowed).toBe(true);
@@ -276,11 +274,9 @@ describe("PermissionManager", () => {
     });
 
     it("persistent allow checked before explicit rules", () => {
-      const pm = new PermissionManager(
-        "default",
-        [{ toolName: "Bash", allowed: false }],
-        { allow: ["Bash(npm *)"] },
-      );
+      const pm = new PermissionManager("default", [{ toolName: "Bash", allowed: false }], {
+        allow: ["Bash(npm *)"],
+      });
 
       const result = pm.check("Bash", "confirm", { command: "npm install" });
       // Persistent allow (step 3) fires before explicit rules (step 4)
@@ -289,10 +285,7 @@ describe("PermissionManager", () => {
     });
 
     it("explicit rules checked before mode", () => {
-      const pm = new PermissionManager(
-        "default",
-        [{ toolName: "file_write", allowed: true }],
-      );
+      const pm = new PermissionManager("default", [{ toolName: "file_write", allowed: true }]);
 
       const result = pm.check("file_write", "confirm");
       expect(result.allowed).toBe(true);

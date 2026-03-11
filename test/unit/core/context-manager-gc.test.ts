@@ -22,7 +22,11 @@ vi.mock("../../../src/llm/token-counter.js", () => ({
 }));
 
 /** Create a message helper */
-function msg(role: ChatMessage["role"], content: string, extra?: Partial<ChatMessage>): ChatMessage {
+function msg(
+  role: ChatMessage["role"],
+  content: string,
+  extra?: Partial<ChatMessage>,
+): ChatMessage {
   return { role, content, ...extra };
 }
 
@@ -141,7 +145,11 @@ describe("Cold storage and cleanup behavior", () => {
     for (let i = 0; i < 8; i++) {
       messages.push(msg("user", `request ${i}`));
       // Non-eligible tool (no name pattern matching file_read/bash_exec/grep/glob)
-      messages.push({ role: "tool", content: `Custom tool result: ${largeContent}`, toolCallId: `t${i}` });
+      messages.push({
+        role: "tool",
+        content: `Custom tool result: ${largeContent}`,
+        toolCallId: `t${i}`,
+      });
       messages.push(msg("assistant", `response ${i}`));
     }
 
@@ -229,9 +237,7 @@ describe("Hot tail priority: error results kept over reads", () => {
 
     const { messages: compacted } = await manager.compact(messages);
 
-    const errorTool = compacted.find(
-      (m) => m.role === "tool" && m.content.startsWith("Error:"),
-    );
+    const errorTool = compacted.find((m) => m.role === "tool" && m.content.startsWith("Error:"));
     const normalTool = compacted.find(
       (m) => m.role === "tool" && !m.content.startsWith("Error:") && m.content.includes("omitted"),
     );
@@ -458,10 +464,7 @@ describe("Context usage reporting", () => {
 
   it("should report usage ratio correctly", () => {
     const manager = new ContextManager({ maxContextTokens: 10_000 });
-    const messages: ChatMessage[] = [
-      msg("user", "Hello"),
-      msg("assistant", "Hi there!"),
-    ];
+    const messages: ChatMessage[] = [msg("user", "Hello"), msg("assistant", "Hi there!")];
 
     const usage = manager.getUsage(messages);
     expect(usage.usageRatio).toBeGreaterThan(0);
@@ -486,10 +489,7 @@ describe("Context usage reporting", () => {
       compactionThreshold: 0.835,
     });
 
-    const messages: ChatMessage[] = [
-      msg("user", "Hello"),
-      msg("assistant", "Hi!"),
-    ];
+    const messages: ChatMessage[] = [msg("user", "Hello"), msg("assistant", "Hi!")];
     expect(manager.needsCompaction(messages)).toBe(false);
   });
 });

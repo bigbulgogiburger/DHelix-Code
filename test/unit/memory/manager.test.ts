@@ -82,7 +82,10 @@ describe("memory/manager", () => {
   });
 
   it("should write and read topic files", async () => {
-    const fileName = await manager.writeTopicFile("debugging", "# Debugging Notes\n\nSome notes here.");
+    const fileName = await manager.writeTopicFile(
+      "debugging",
+      "# Debugging Notes\n\nSome notes here.",
+    );
     expect(fileName).toBe("debugging.md");
 
     const content = await manager.readTopicFile("debugging");

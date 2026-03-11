@@ -331,9 +331,7 @@ export class ContextManager {
     const hotIndices = new Set(sorted.slice(0, HOT_TAIL_SIZE).map((s) => s.idx));
 
     // Everything else is a cold candidate
-    const coldCandidateIndices = new Set(
-      toolIndices.filter((idx) => !hotIndices.has(idx)),
-    );
+    const coldCandidateIndices = new Set(toolIndices.filter((idx) => !hotIndices.has(idx)));
 
     const coldStorageDir = await this.ensureColdStorageDir();
 
@@ -591,11 +589,12 @@ export class ContextManager {
       return messages;
     }
 
-    const strategyLabel = this.rehydrationStrategy === "recency"
-      ? "recently accessed"
-      : this.rehydrationStrategy === "frequency"
-        ? "frequently accessed"
-        : "recent + frequent";
+    const strategyLabel =
+      this.rehydrationStrategy === "recency"
+        ? "recently accessed"
+        : this.rehydrationStrategy === "frequency"
+          ? "frequently accessed"
+          : "recent + frequent";
 
     const rehydrationMessage: ChatMessage = {
       role: "system",

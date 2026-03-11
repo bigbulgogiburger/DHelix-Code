@@ -13,6 +13,7 @@ interface ToolCallBlockProps {
   readonly status: "running" | "complete" | "error" | "denied";
   readonly args?: Record<string, unknown>;
   readonly output?: string;
+  readonly metadata?: Readonly<Record<string, unknown>>;
   readonly isExpanded?: boolean;
   readonly startTime?: number;
 }
@@ -95,17 +96,17 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   status,
   args,
   output,
+  metadata,
   isExpanded = false,
   startTime,
 }: ToolCallBlockProps) {
   const spinnerChar = useSpinner(status === "running");
   const duration = startTime && status !== "running" ? Date.now() - startTime : undefined;
   const headerInfo = getToolHeaderInfo(name, status, args, output, duration);
-  const preview = getToolPreview(name, status, args, output);
+  const preview = getToolPreview(name, status, args, output, metadata);
 
   // Determine header color override for error/denied
-  const effectiveColor =
-    status === "error" || status === "denied" ? "red" : headerInfo.color;
+  const effectiveColor = status === "error" || status === "denied" ? "red" : headerInfo.color;
 
   return (
     <Box flexDirection="column" marginLeft={2}>
@@ -117,9 +118,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         <Text bold color={effectiveColor}>
           {headerInfo.header}
         </Text>
-        {duration && status !== "running" && (
-          <Text dimColor> ({formatDuration(duration)})</Text>
-        )}
+        {duration && status !== "running" && <Text dimColor> ({formatDuration(duration)})</Text>}
       </Box>
 
       {/* Subtext row with tree connector ⎿ */}
@@ -128,7 +127,9 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
           <Text dimColor>{"⎿  "}</Text>
           <Text>{headerInfo.subtext}</Text>
           {!isExpanded && preview && (
-            <Text dimColor italic>{" (ctrl+o to expand)"}</Text>
+            <Text dimColor italic>
+              {" (ctrl+o to expand)"}
+            </Text>
           )}
         </Box>
       )}

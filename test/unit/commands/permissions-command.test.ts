@@ -38,7 +38,8 @@ describe("/permissions command", () => {
     await mkdir(settingsDir, { recursive: true });
     await writeFile(
       settingsPath,
-      JSON.stringify({ permissionMode: "default", permissions: { allow: [], deny: [] } }, null, 2) + "\n",
+      JSON.stringify({ permissionMode: "default", permissions: { allow: [], deny: [] } }, null, 2) +
+        "\n",
       "utf-8",
     );
   });
@@ -84,13 +85,17 @@ describe("/permissions command", () => {
       // Pre-populate settings with rules
       await writeFile(
         settingsPath,
-        JSON.stringify({
-          permissionMode: "acceptEdits",
-          permissions: {
-            allow: ["Bash(npm *)"],
-            deny: ["file_write"],
+        JSON.stringify(
+          {
+            permissionMode: "acceptEdits",
+            permissions: {
+              allow: ["Bash(npm *)"],
+              deny: ["file_write"],
+            },
           },
-        }, null, 2) + "\n",
+          null,
+          2,
+        ) + "\n",
         "utf-8",
       );
 

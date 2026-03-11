@@ -91,7 +91,8 @@ describe("Enhanced secret scanner patterns", () => {
   describe("JWT tokens", () => {
     it("should detect a JWT token", () => {
       // A realistic JWT structure: header.payload.signature (all base64url)
-      const jwt = "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiMTIzIn0.dBjftJeZ4CVP_mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
+      const jwt =
+        "eyJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiMTIzIn0.dBjftJeZ4CVP_mB92K27uhbUJU1p1r_wW1gFWFOEjXk";
       const result = scanForSecrets(`token=${jwt}`);
       expect(result.found).toBe(true);
       expect(result.patterns).toContain("JWT Token");

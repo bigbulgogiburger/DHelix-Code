@@ -97,10 +97,7 @@ describe("bash_output tool", () => {
   });
 
   it("should also accept numeric PID as string", async () => {
-    const { pid, outputFile } = backgroundProcessManager.start(
-      "echo pid-test",
-      process.cwd(),
-    );
+    const { pid, outputFile } = backgroundProcessManager.start("echo pid-test", process.cwd());
     outputFilesToClean.push(outputFile);
 
     await new Promise<void>((resolve) => {

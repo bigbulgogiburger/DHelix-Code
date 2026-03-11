@@ -1,4 +1,9 @@
-import { type PermissionMode, type PermissionCheckResult, type PermissionRule } from "./types.js";
+import {
+  type PermissionMode,
+  type PermissionCheckResult,
+  type PermissionRule,
+  type PersistentPermissionRule,
+} from "./types.js";
 import { type PermissionLevel } from "../tools/types.js";
 import { checkPermissionByMode } from "./modes.js";
 import { findMatchingRule } from "./rules.js";
@@ -35,6 +40,24 @@ function parsePersistentRules(rawPatterns: readonly string[]): readonly Persiste
 }
 
 /**
+ * Convert PersistentPermissionRule[] to the internal PersistentRule[] format,
+ * filtering by rule type.
+ */
+function toPersistentRules(
+  rules: readonly PersistentPermissionRule[],
+  type: "allow" | "deny",
+): readonly PersistentRule[] {
+  const filtered = rules.filter((r) => r.type === type);
+  const rawPatterns = filtered.map((r) => {
+    if (r.pattern) {
+      return `${r.tool}(${r.pattern})`;
+    }
+    return r.tool;
+  });
+  return parsePersistentRules(rawPatterns);
+}
+
+/**
  * Permission manager — coordinates mode, rules, session approvals,
  * and persistent allow/deny rules from settings.json.
  *
@@ -49,8 +72,9 @@ export class PermissionManager {
   private mode: PermissionMode;
   private readonly rules: PermissionRule[];
   private readonly sessionStore: SessionApprovalStore;
-  private readonly persistentAllowRules: readonly PersistentRule[];
-  private readonly persistentDenyRules: readonly PersistentRule[];
+  private persistentAllowRules: readonly PersistentRule[];
+  private persistentDenyRules: readonly PersistentRule[];
+  private persistentRulesList: readonly PersistentPermissionRule[];
 
   constructor(
     mode: PermissionMode = "default",
@@ -65,6 +89,7 @@ export class PermissionManager {
     this.sessionStore = new SessionApprovalStore();
     this.persistentAllowRules = parsePersistentRules(persistentRules?.allow ?? []);
     this.persistentDenyRules = parsePersistentRules(persistentRules?.deny ?? []);
+    this.persistentRulesList = [];
   }
 
   /** Get current permission mode */
@@ -75,6 +100,18 @@ export class PermissionManager {
   /** Set permission mode */
   setMode(mode: PermissionMode): void {
     this.mode = mode;
+  }
+
+  /** Set persistent permission rules (loaded from disk) */
+  setPersistentRules(rules: readonly PersistentPermissionRule[]): void {
+    this.persistentRulesList = [...rules];
+    this.persistentAllowRules = toPersistentRules(rules, "allow");
+    this.persistentDenyRules = toPersistentRules(rules, "deny");
+  }
+
+  /** Get current persistent rules */
+  getPersistentRules(): readonly PersistentPermissionRule[] {
+    return this.persistentRulesList;
   }
 
   /**
@@ -137,6 +174,21 @@ export class PermissionManager {
   /** Record that the user approved all future calls to a tool */
   approveAll(toolName: string): void {
     this.sessionStore.approveAll(toolName);
+  }
+
+  /**
+   * Save a persistent "always allow" rule.
+   * Adds the rule to the in-memory list. Callers are responsible for
+   * persisting to disk via PersistentPermissionStore.
+   */
+  approveAlways(toolName: string, pattern?: string, scope: "project" | "user" = "project"): void {
+    const newRule: PersistentPermissionRule = {
+      tool: toolName,
+      ...(pattern !== undefined ? { pattern } : {}),
+      type: "allow",
+      scope,
+    };
+    this.setPersistentRules([...this.persistentRulesList, newRule]);
   }
 
   /** Add a permission rule */

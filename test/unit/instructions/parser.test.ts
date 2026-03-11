@@ -108,11 +108,7 @@ describe("instruction parser", () => {
 
     it("should resolve nested @import imports", async () => {
       await writeFile(join(parserTmpDir, "inner.md"), "Inner content", "utf-8");
-      await writeFile(
-        join(parserTmpDir, "outer.md"),
-        '@import "./inner.md"\nOuter text',
-        "utf-8",
-      );
+      await writeFile(join(parserTmpDir, "outer.md"), '@import "./inner.md"\nOuter text', "utf-8");
       const content = '@import "./outer.md"';
       const result = await resolveImports(content, parserTmpDir);
       expect(result).toContain("Inner content");

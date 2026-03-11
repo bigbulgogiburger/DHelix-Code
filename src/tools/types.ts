@@ -52,4 +52,5 @@ export interface ToolCallResult {
   readonly name: string;
   readonly output: string;
   readonly isError: boolean;
+  readonly metadata?: Readonly<Record<string, unknown>>;
 }

@@ -16,6 +16,8 @@ export interface ModelCapabilities {
   readonly useDeveloperRole: boolean;
   /** Pricing per million tokens (USD). Undefined for models with unknown pricing. */
   readonly pricing?: ModelPricingInfo;
+  /** Use max_completion_tokens instead of max_tokens (GPT-4o+, o-series, GPT-5) */
+  readonly useMaxCompletionTokens: boolean;
 }
 
 /** Default pricing fallback for unknown/local models ($1/M input, $3/M output) */
@@ -34,6 +36,7 @@ const DEFAULTS: ModelCapabilities = {
   tokenizer: "o200k",
   useDeveloperRole: false,
   pricing: DEFAULT_PRICING,
+  useMaxCompletionTokens: true,
 };
 
 /** Known model capability overrides (partial, merged with defaults) */
@@ -56,16 +59,29 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
     },
   ],
   [/^gpt-4\.1/i, { maxContextTokens: 1_000_000, maxOutputTokens: 32768, tokenizer: "o200k" }],
-  [/^gpt-3\.5/i, { maxContextTokens: 16385, tokenizer: "cl100k" }],
+  [
+    /^gpt-5/i,
+    {
+      maxContextTokens: 1_000_000,
+      maxOutputTokens: 32768,
+      tokenizer: "o200k",
+      supportsTemperature: false,
+    },
+  ],
+  [/^gpt-3\.5/i, { maxContextTokens: 16385, tokenizer: "cl100k", useMaxCompletionTokens: false }],
   [
     /^gpt-4-turbo/i,
     {
       maxContextTokens: 128_000,
       tokenizer: "cl100k",
+      useMaxCompletionTokens: false,
       pricing: { inputPerMillion: 10, outputPerMillion: 30 },
     },
   ],
-  [/^gpt-4(?!o|\.)/i, { maxContextTokens: 8192, tokenizer: "cl100k" }],
+  [
+    /^gpt-4(?!o|\.)/i,
+    { maxContextTokens: 8192, tokenizer: "cl100k", useMaxCompletionTokens: false },
+  ],
 
   // OpenAI reasoning (o-series) — no system message, no temperature, use developer role
   [

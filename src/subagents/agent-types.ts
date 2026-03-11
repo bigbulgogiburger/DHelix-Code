@@ -17,12 +17,7 @@ export interface AgentTypeConfig {
 }
 
 /** Read-only tool set shared by several investigative agent types */
-const READ_ONLY_TOOLS = [
-  "file_read",
-  "glob_search",
-  "grep_search",
-  "list_dir",
-] as const;
+const READ_ONLY_TOOLS = ["file_read", "glob_search", "grep_search", "list_dir"] as const;
 
 /** All built-in tool names (used by unrestricted agents) */
 const ALL_TOOLS = [
@@ -49,10 +44,7 @@ const ALL_TOOLS = [
  * When spawning a subagent you can reference a key here to get sensible
  * defaults for tools, iterations, and system-prompt additions.
  */
-export const AGENT_TYPES: ReadonlyMap<string, AgentTypeConfig> = new Map<
-  string,
-  AgentTypeConfig
->([
+export const AGENT_TYPES: ReadonlyMap<string, AgentTypeConfig> = new Map<string, AgentTypeConfig>([
   [
     "explore",
     {

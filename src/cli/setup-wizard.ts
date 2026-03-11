@@ -7,8 +7,8 @@ import { CONFIG_DIR, APP_NAME } from "../constants.js";
 /** Available model presets */
 const MODEL_PRESETS = [
   {
-    name: "GPT-4.1-mini (추천 — 저렴하고 고성능)",
-    model: "gpt-4.1-mini",
+    name: "GPT-5-mini (추천 — 저렴하고 고성능)",
+    model: "gpt-5-mini",
     baseUrl: "https://api.openai.com/v1",
   },
   { name: "GPT-4.1", model: "gpt-4.1", baseUrl: "https://api.openai.com/v1" },
@@ -83,7 +83,7 @@ export async function runSetupWizard(): Promise<SetupConfig> {
       baseUrl = preset.baseUrl;
       stdout.write(`  Selected: ${preset.name}\n\n`);
     } else {
-      model = (await rl.question("  Model name: ")).trim() || "gpt-4.1-mini";
+      model = (await rl.question("  Model name: ")).trim() || "gpt-5-mini";
       baseUrl = (await rl.question("  API base URL: ")).trim() || "https://api.openai.com/v1";
       stdout.write("\n");
     }
