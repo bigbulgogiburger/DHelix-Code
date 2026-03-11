@@ -59,6 +59,16 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
     },
   ],
   [/^gpt-4\.1/i, { maxContextTokens: 1_000_000, maxOutputTokens: 32768, tokenizer: "o200k" }],
+  // GPT-5.1 codex models (Azure Responses API compatible)
+  [
+    /^gpt-5\.1-codex/i,
+    {
+      maxContextTokens: 1_000_000,
+      maxOutputTokens: 16384,
+      tokenizer: "o200k",
+      supportsTemperature: false,
+    },
+  ],
   [
     /^gpt-5/i,
     {

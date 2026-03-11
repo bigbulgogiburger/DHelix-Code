@@ -670,7 +670,7 @@ export function getToolHeaderInfo(
   const config = toolDisplayMap[name];
   if (!config) {
     return {
-      header: status === "running" ? `Running(${name})` : `Tool(${name})`,
+      header: status === "running" ? `Running ${name}` : `Tool ${name}`,
       color: "gray",
       subtext: duration ? formatDuration(duration) : undefined,
     };
@@ -678,7 +678,7 @@ export function getToolHeaderInfo(
 
   const verb = status === "running" ? config.runningHeaderVerb : config.headerVerb;
   const arg = config.extractHeaderArg?.(args);
-  const header = arg ? `${verb}(${arg})` : verb;
+  const header = arg ? `${verb} ${arg}` : verb;
   const subtext = config.extractSubtext?.(args, output, duration);
 
   return { header, color: config.headerColor, subtext };

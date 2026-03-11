@@ -230,7 +230,9 @@ describe("normalizeUNCPath", () => {
   });
 
   it("should collapse duplicate slashes in path body", () => {
-    expect(normalizeUNCPath("\\\\server\\\\share\\\\folder")).toBe("//server/share/folder");
+    // Use backslash UNC path with duplicate backslashes in the path portion after share
+    // \\server\share\\folder\\file has extra backslashes in the path body
+    expect(normalizeUNCPath("\\\\server\\share\\\\folder")).toBe("//server/share/folder");
   });
 
   it("should pass through non-UNC paths unchanged", () => {

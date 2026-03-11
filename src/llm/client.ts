@@ -197,25 +197,31 @@ export interface OpenAIClientConfig {
 
 /**
  * Normalize Azure OpenAI URLs for the OpenAI SDK.
- * Azure URLs contain ".openai.azure.com" and may include /chat/completions and ?api-version=...
- * The SDK appends /chat/completions automatically, so we strip it and extract api-version.
+ * Azure URLs contain ".openai.azure.com" or ".cognitiveservices.azure.com"
+ * and may include endpoint paths (/chat/completions, /responses, /deployments/...) and ?api-version=...
+ * The SDK appends /chat/completions automatically, so we strip endpoint paths and extract api-version.
  */
 function normalizeAzureUrl(baseURL: string): {
   baseURL: string;
   apiVersion?: string;
   isAzure: boolean;
 } {
-  if (!baseURL.includes(".openai.azure.com")) {
+  const isAzure =
+    baseURL.includes(".openai.azure.com") || baseURL.includes(".cognitiveservices.azure.com");
+  if (!isAzure) {
     return { baseURL, isAzure: false };
   }
 
   // Extract api-version from query string
-  let apiVersion: string | undefined;
   const urlObj = new URL(baseURL);
-  apiVersion = urlObj.searchParams.get("api-version") ?? undefined;
+  const apiVersion = urlObj.searchParams.get("api-version") ?? undefined;
 
-  // Strip /chat/completions and query string from the path
-  let cleanPath = urlObj.pathname.replace(/\/chat\/completions\/?$/, "");
+  // Strip Azure-specific endpoint paths, keeping just the /openai base
+  let cleanPath = urlObj.pathname;
+  // Remove specific API endpoints: /responses, /chat/completions, /completions
+  cleanPath = cleanPath.replace(/\/(responses|chat\/completions|completions)\/?$/, "");
+  // Remove deployment-specific paths: /deployments/{name}/...
+  cleanPath = cleanPath.replace(/\/deployments\/[^/]+(\/.*)?$/, "");
   // Ensure no trailing slash
   cleanPath = cleanPath.replace(/\/$/, "");
 

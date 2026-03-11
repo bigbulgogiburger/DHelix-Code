@@ -7,9 +7,8 @@ import {
   getHomeDir,
   getTempDir,
   getShellCommand,
-  getShellCommandSync,
   getShellArgs,
-  findGitBash,
+  hasGitBash,
   isWSL,
   isWSL1,
   isWSL2,
@@ -46,24 +45,16 @@ describe("platform", () => {
     expect(temp.length).toBeGreaterThan(0);
   });
 
-  it("should return shell command based on platform (async)", async () => {
-    const shell = await getShellCommand();
+  it("should return shell command based on platform", () => {
+    const shell = getShellCommand();
     if (isWindows()) {
       // On Windows, could be Git Bash or cmd.exe
       expect(shell).toMatch(/bash\.exe$|cmd\.exe$/);
     } else {
-      expect(shell).toBe("/bin/bash");
-    }
-  });
-
-  it("should return sync shell command based on platform", () => {
-    const shell = getShellCommandSync();
-    if (isWindows()) {
-      // On Windows, result depends on Git Bash availability
-      expect(shell).toMatch(/bash\.exe$|cmd\.exe$/);
-    } else {
-      // On Unix, returns SHELL env var or /bin/bash
+      // On Unix, returns SHELL env var or /bin/bash as fallback
+      // Could be /bin/bash, /bin/zsh, /usr/bin/fish, etc.
       expect(shell.length).toBeGreaterThan(0);
+      expect(shell).toMatch(/^\//); // Should be an absolute path
     }
   });
 
@@ -94,23 +85,17 @@ describe("platform", () => {
   });
 });
 
-describe("findGitBash", () => {
-  it("should return null on non-Windows platforms", async () => {
+describe("hasGitBash", () => {
+  it("should return false on non-Windows platforms", () => {
     if (!isWindows()) {
-      const result = await findGitBash();
-      expect(result).toBeNull();
+      expect(hasGitBash()).toBe(false);
     }
   });
 
-  it("should not throw even if Git is not installed", async () => {
-    // findGitBash should never crash, just return null
-    const result = await findGitBash();
-    if (!isWindows()) {
-      expect(result).toBeNull();
-    } else {
-      // On Windows, result could be a path or null
-      expect(typeof result === "string" || result === null).toBe(true);
-    }
+  it("should not throw even if Git is not installed", () => {
+    // hasGitBash should never crash, just return a boolean
+    const result = hasGitBash();
+    expect(typeof result).toBe("boolean");
   });
 });
 

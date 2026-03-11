@@ -84,11 +84,15 @@ describe("loadConfig", () => {
 
   it("should fallback to OPENAI_API_KEY when DBCODE_API_KEY not set", async () => {
     delete process.env.DBCODE_API_KEY;
+    delete process.env.OPENAI_BASE_URL;
+    delete process.env.DBCODE_BASE_URL;
+    delete process.env.DBCODE_MODEL;
+    delete process.env.OPENAI_MODEL;
     process.env.OPENAI_API_KEY = "sk-test-openai-key";
     const resolved = await loadConfig();
     expect(resolved.config.llm.apiKey).toBe("sk-test-openai-key");
     expect(resolved.config.llm.baseUrl).toBe("https://api.openai.com/v1");
-    expect(resolved.config.llm.model).toBe("gpt-5-mini");
+    expect(resolved.config.llm.model).toBe("gpt-5.1-codex-mini");
     delete process.env.OPENAI_API_KEY;
   });
 
@@ -106,9 +110,15 @@ describe("loadConfig", () => {
     const savedKey = process.env.OPENAI_API_KEY;
     const savedDbKey = process.env.DBCODE_API_KEY;
     const savedModel = process.env.DBCODE_MODEL;
+    const savedBaseUrl = process.env.OPENAI_BASE_URL;
+    const savedDbBaseUrl = process.env.DBCODE_BASE_URL;
+    const savedOpenaiModel = process.env.OPENAI_MODEL;
     delete process.env.OPENAI_API_KEY;
     delete process.env.DBCODE_API_KEY;
     delete process.env.DBCODE_MODEL;
+    delete process.env.OPENAI_BASE_URL;
+    delete process.env.DBCODE_BASE_URL;
+    delete process.env.OPENAI_MODEL;
 
     const tmpDir = join(tmpdir(), `dbcode-config-test-${Date.now()}`);
     const projectConfigDir = join(tmpDir, ".dbcode");
@@ -127,6 +137,9 @@ describe("loadConfig", () => {
     if (savedKey) process.env.OPENAI_API_KEY = savedKey;
     if (savedDbKey) process.env.DBCODE_API_KEY = savedDbKey;
     if (savedModel) process.env.DBCODE_MODEL = savedModel;
+    if (savedBaseUrl) process.env.OPENAI_BASE_URL = savedBaseUrl;
+    if (savedDbBaseUrl) process.env.DBCODE_BASE_URL = savedDbBaseUrl;
+    if (savedOpenaiModel) process.env.OPENAI_MODEL = savedOpenaiModel;
     await rm(tmpDir, { recursive: true, force: true });
   });
 

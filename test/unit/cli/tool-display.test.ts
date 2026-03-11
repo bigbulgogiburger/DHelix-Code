@@ -313,57 +313,57 @@ describe("SPINNER_INTERVAL_MS", () => {
 
 describe("getToolHeaderInfo", () => {
   describe("header format", () => {
-    it("should return Update(filepath) for file_edit", () => {
+    it("should return Update filepath for file_edit", () => {
       const info = getToolHeaderInfo("file_edit", "complete", { file_path: "/src/foo.ts" });
-      expect(info.header).toBe("Update(/src/foo.ts)");
+      expect(info.header).toBe("Update /src/foo.ts");
       expect(info.color).toBe("cyan");
     });
 
-    it("should return Write(filepath) for file_write", () => {
+    it("should return Write filepath for file_write", () => {
       const info = getToolHeaderInfo("file_write", "complete", { file_path: "/src/bar.ts" });
-      expect(info.header).toBe("Write(/src/bar.ts)");
+      expect(info.header).toBe("Write /src/bar.ts");
       expect(info.color).toBe("cyan");
     });
 
-    it("should return Read(filepath) for file_read", () => {
+    it("should return Read filepath for file_read", () => {
       const info = getToolHeaderInfo("file_read", "complete", { file_path: "/src/index.ts" });
-      expect(info.header).toBe("Read(/src/index.ts)");
+      expect(info.header).toBe("Read /src/index.ts");
       expect(info.color).toBe("blue");
     });
 
-    it("should return Bash(command) for bash_exec", () => {
+    it("should return Bash command for bash_exec", () => {
       const info = getToolHeaderInfo("bash_exec", "complete", { command: "npm test" });
-      expect(info.header).toBe("Bash(npm test)");
+      expect(info.header).toBe("Bash npm test");
       expect(info.color).toBe("yellow");
     });
 
-    it("should return Search(pattern) for glob_search", () => {
+    it("should return Search pattern for glob_search", () => {
       const info = getToolHeaderInfo("glob_search", "complete", { pattern: "**/*.ts" });
-      expect(info.header).toBe("Search(**/*.ts)");
+      expect(info.header).toBe("Search **/*.ts");
       expect(info.color).toBe("magenta");
     });
 
-    it("should return Search(pattern) for grep_search", () => {
+    it("should return Search pattern for grep_search", () => {
       const info = getToolHeaderInfo("grep_search", "complete", { pattern: "TODO" });
-      expect(info.header).toBe('Search("TODO")');
+      expect(info.header).toBe('Search "TODO"');
       expect(info.color).toBe("magenta");
     });
 
-    it("should return Fetch(url) for web_fetch", () => {
+    it("should return Fetch url for web_fetch", () => {
       const info = getToolHeaderInfo("web_fetch", "complete", { url: "https://example.com" });
-      expect(info.header).toBe("Fetch(https://example.com)");
+      expect(info.header).toBe("Fetch https://example.com");
       expect(info.color).toBe("magenta");
     });
 
-    it("should return Mkdir(path) for mkdir", () => {
+    it("should return Mkdir path for mkdir", () => {
       const info = getToolHeaderInfo("mkdir", "complete", { path: "/src/utils" });
-      expect(info.header).toBe("Mkdir(/src/utils)");
+      expect(info.header).toBe("Mkdir /src/utils");
       expect(info.color).toBe("cyan");
     });
 
-    it("should return List(path) for list_dir", () => {
+    it("should return List path for list_dir", () => {
       const info = getToolHeaderInfo("list_dir", "complete", { path: "/src" });
-      expect(info.header).toBe("List(/src)");
+      expect(info.header).toBe("List /src");
       expect(info.color).toBe("blue");
     });
 

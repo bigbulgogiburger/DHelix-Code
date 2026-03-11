@@ -66,6 +66,7 @@ program
       const [
         { loadConfig },
         { OpenAICompatibleClient },
+        { ResponsesAPIClient, isResponsesOnlyModel },
         { ToolRegistry },
         { selectStrategy },
         { PermissionManager },
@@ -120,9 +121,12 @@ program
         { undoCommand },
         { memoryCommand },
         { keybindingsCommand },
+        { reviewCommand },
+        { commitCommand },
       ] = await Promise.all([
         import("./config/loader.js"),
         import("./llm/client.js"),
+        import("./llm/responses-client.js"),
         import("./tools/registry.js"),
         import("./llm/tool-call-strategy.js"),
         import("./permissions/manager.js"),
@@ -177,6 +181,8 @@ program
         import("./commands/undo.js"),
         import("./commands/memory.js"),
         import("./commands/keybindings.js"),
+        import("./commands/review.js"),
+        import("./commands/commit.js"),
       ]);
 
       // Only pass explicitly-set CLI options as overrides
@@ -197,11 +203,17 @@ program
 
       const config = resolved.config;
 
-      const client = new OpenAICompatibleClient({
-        baseURL: config.llm.baseUrl,
-        apiKey: config.llm.apiKey,
-        timeout: config.llm.timeout,
-      });
+      const client = isResponsesOnlyModel(config.llm.model)
+        ? new ResponsesAPIClient({
+            baseURL: config.llm.baseUrl,
+            apiKey: config.llm.apiKey,
+            timeout: config.llm.timeout,
+          })
+        : new OpenAICompatibleClient({
+            baseURL: config.llm.baseUrl,
+            apiKey: config.llm.apiKey,
+            timeout: config.llm.timeout,
+          });
 
       // Register tools
       const toolRegistry = new ToolRegistry();
@@ -300,6 +312,8 @@ program
         undoCommand,
         memoryCommand,
         keybindingsCommand,
+        reviewCommand,
+        commitCommand,
       ];
       // Register skill-based custom commands (user-invocable skills become /commands)
       const { createSkillCommands } = await import("./skills/command-bridge.js");

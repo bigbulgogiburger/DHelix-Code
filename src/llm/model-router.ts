@@ -7,6 +7,7 @@ import {
 import { LLMError } from "../utils/error.js";
 import { AnthropicProvider } from "./providers/anthropic.js";
 import { OpenAICompatibleClient } from "./client.js";
+import { ResponsesAPIClient, isResponsesOnlyModel } from "./responses-client.js";
 
 /** Model routing configuration */
 export interface ModelRouterConfig {
@@ -268,6 +269,14 @@ export function resolveProvider(modelName: string, opts: ResolveProviderOptions 
     return new AnthropicProvider({
       apiKey: opts.apiKey,
       baseURL: opts.baseUrl,
+    });
+  }
+
+  // Codex models → Responses API client
+  if (isResponsesOnlyModel(modelName)) {
+    return new ResponsesAPIClient({
+      baseURL: opts.baseUrl ?? process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
+      apiKey: opts.apiKey ?? process.env.OPENAI_API_KEY,
     });
   }
 

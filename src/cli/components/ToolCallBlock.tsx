@@ -110,7 +110,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
 
   return (
     <Box flexDirection="column" marginLeft={2}>
-      {/* Header row: [spinner/icon] Verb(arg) */}
+      {/* Header row: [spinner/icon] Verb arg */}
       <Box>
         {status === "running" && <Text color="yellow">{spinnerChar} </Text>}
         {status === "error" && <Text color="red">{"\u2717"} </Text>}
@@ -126,16 +126,11 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         <Box marginLeft={1}>
           <Text dimColor>{"⎿  "}</Text>
           <Text>{headerInfo.subtext}</Text>
-          {!isExpanded && preview && (
-            <Text dimColor italic>
-              {" (ctrl+o to expand)"}
-            </Text>
-          )}
         </Box>
       )}
 
-      {/* Diff preview — only when expanded */}
-      {isExpanded && preview ? <DiffPreview preview={preview} /> : null}
+      {/* Diff preview — always shown when available */}
+      {preview ? <DiffPreview preview={preview} /> : null}
 
       {/* Raw output fallback — only when expanded and no diff */}
       {isExpanded && output && !preview ? (

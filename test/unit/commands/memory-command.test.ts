@@ -34,34 +34,34 @@ describe("/memory command", () => {
   it("should show no memory when directory does not exist", async () => {
     const result = await memoryCommand.execute("", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("No project memory found");
+    expect(result.output).toContain("No memory files found");
   });
 
   it("should save a memory entry with topic", async () => {
-    const result = await memoryCommand.execute("save debugging: Found the auth bug", baseContext);
+    const result = await memoryCommand.execute("edit debugging Found the auth bug", baseContext);
     expect(result.success).toBe(true);
     expect(result.output).toContain("debugging");
   });
 
   it("should save a memory entry without topic (defaults to General)", async () => {
-    const result = await memoryCommand.execute("save Hello world", baseContext);
+    const result = await memoryCommand.execute("edit General Hello world", baseContext);
     expect(result.success).toBe(true);
     expect(result.output).toContain("General");
   });
 
   it("should show memory content after saving", async () => {
-    await memoryCommand.execute("save notes: Some content here", baseContext);
+    await memoryCommand.execute("edit notes Some content here", baseContext);
 
-    const result = await memoryCommand.execute("", baseContext);
+    const result = await memoryCommand.execute("view notes", baseContext);
     expect(result.success).toBe(true);
     expect(result.output).toContain("Some content here");
   });
 
-  it("should detect duplicate entries", async () => {
-    await memoryCommand.execute("save notes: Hello world", baseContext);
-    const result = await memoryCommand.execute("save notes: Hello world", baseContext);
+  it("should overwrite when saving same file twice", async () => {
+    await memoryCommand.execute("edit notes Hello world", baseContext);
+    const result = await memoryCommand.execute("edit notes Hello world", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("duplicate");
+    expect(result.output).toContain("Memory file written");
   });
 
   it("should list topic files", async () => {
@@ -71,29 +71,30 @@ describe("/memory command", () => {
   });
 
   it("should return error for non-existent topic file", async () => {
-    const result = await memoryCommand.execute("read nonexistent", baseContext);
+    const result = await memoryCommand.execute("view nonexistent", baseContext);
     expect(result.success).toBe(false);
     expect(result.output).toContain("not found");
   });
 
-  it("should clear all memory", async () => {
-    await memoryCommand.execute("save notes: data to clear", baseContext);
-    const result = await memoryCommand.execute("clear", baseContext);
+  it("should delete a memory file", async () => {
+    await memoryCommand.execute("edit notes data to clear", baseContext);
+    const result = await memoryCommand.execute("delete notes", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("cleared");
+    expect(result.output).toContain("deleted");
 
-    // Verify memory is empty
-    const showResult = await memoryCommand.execute("", baseContext);
-    expect(showResult.output).toContain("No project memory found");
+    // Verify memory file is gone
+    const showResult = await memoryCommand.execute("view notes", baseContext);
+    expect(showResult.success).toBe(false);
+    expect(showResult.output).toContain("not found");
   });
 
-  it("should require text for save subcommand", async () => {
-    const result = await memoryCommand.execute("save", baseContext);
+  it("should require content for edit subcommand", async () => {
+    const result = await memoryCommand.execute("edit", baseContext);
     expect(result.success).toBe(false);
   });
 
-  it("should require topic for read subcommand", async () => {
-    const result = await memoryCommand.execute("read", baseContext);
+  it("should require name for view subcommand", async () => {
+    const result = await memoryCommand.execute("view", baseContext);
     expect(result.success).toBe(false);
   });
 });

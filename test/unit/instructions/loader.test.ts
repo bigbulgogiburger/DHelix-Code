@@ -6,8 +6,10 @@ import {
 } from "../../../src/instructions/loader.js";
 import { mkdir, writeFile, rm, symlink } from "node:fs/promises";
 import { join } from "node:path";
+import { tmpdir } from "node:os";
 
-const tmpDir = join(process.cwd(), "test", "tmp", "instructions-loader");
+// Use OS tmpdir to avoid findProjectRoot walking up into the actual project
+const tmpDir = join(tmpdir(), "dbcode-test-instructions-loader");
 
 describe("instructions/loader", () => {
   beforeEach(async () => {

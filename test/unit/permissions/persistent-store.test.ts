@@ -1,38 +1,67 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { mkdtemp, rm, readFile, writeFile, mkdir } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { PersistentPermissionStore } from "../../../src/permissions/persistent-store.js";
+
+// Mock homedir so user-scope settings also go to our temp dir
+const { mockHomedir } = vi.hoisted(() => {
+  // Provide a default so module-level calls (e.g. constants.ts CONFIG_DIR) don't crash
+  const mockHomedir = vi.fn<() => string>().mockReturnValue("/tmp/dbcode-mock-home");
+  return { mockHomedir };
+});
+
+vi.mock("node:os", async () => {
+  const actual = await vi.importActual<typeof import("node:os")>("node:os");
+  return { ...actual, homedir: () => mockHomedir() };
+});
+
+import {
+  createPersistentPermissionStore,
+  type PersistentPermissionRule,
+} from "../../../src/permissions/persistent-store.js";
 
 describe("PersistentPermissionStore", () => {
   let tempDir: string;
-  let settingsPath: string;
+  /** The project-scope settings path: {tempDir}/.dbcode/settings.json */
+  let projectSettingsPath: string;
 
   beforeEach(async () => {
     tempDir = await mkdtemp(join(tmpdir(), "dbcode-persist-test-"));
-    settingsPath = join(tempDir, "settings.json");
+    // Point homedir to a subfolder so user-scope writes don't collide
+    mockHomedir.mockReturnValue(tempDir);
+    projectSettingsPath = join(tempDir, ".dbcode", "settings.json");
   });
 
   afterEach(async () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
+  /** Helper: write a project-scope settings file */
+  async function writeProjectSettings(data: unknown): Promise<void> {
+    await mkdir(join(tempDir, ".dbcode"), { recursive: true });
+    await writeFile(projectSettingsPath, JSON.stringify(data), "utf-8");
+  }
+
+  /** Helper: read back the project-scope settings file */
+  async function readProjectSettings(): Promise<Record<string, unknown>> {
+    const raw = await readFile(projectSettingsPath, "utf-8");
+    return JSON.parse(raw) as Record<string, unknown>;
+  }
+
   describe("loadRules", () => {
-    it("should return empty arrays when file does not exist", async () => {
-      const store = new PersistentPermissionStore(settingsPath);
+    it("should return empty array when file does not exist", async () => {
+      const store = createPersistentPermissionStore(tempDir);
       const rules = await store.loadRules();
 
-      expect(rules.allow).toEqual([]);
-      expect(rules.deny).toEqual([]);
+      expect(rules).toEqual([]);
     });
 
-    it("should return empty arrays for empty object", async () => {
-      await writeFile(settingsPath, "{}", "utf-8");
-      const store = new PersistentPermissionStore(settingsPath);
+    it("should return empty array for empty object", async () => {
+      await writeProjectSettings({});
+      const store = createPersistentPermissionStore(tempDir);
       const rules = await store.loadRules();
 
-      expect(rules.allow).toEqual([]);
-      expect(rules.deny).toEqual([]);
+      expect(rules).toEqual([]);
     });
 
     it("should load existing rules", async () => {
@@ -42,22 +71,28 @@ describe("PersistentPermissionStore", () => {
           deny: ["Bash(rm -rf *)"],
         },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
+      const store = createPersistentPermissionStore(tempDir);
       const rules = await store.loadRules();
 
-      expect(rules.allow).toEqual(["Bash(npm *)", "Edit(/src/**)"]);
-      expect(rules.deny).toEqual(["Bash(rm -rf *)"]);
+      const allowRules = rules.filter((r) => r.type === "allow");
+      const denyRules = rules.filter((r) => r.type === "deny");
+
+      expect(allowRules).toHaveLength(2);
+      expect(allowRules[0]).toMatchObject({ tool: "Bash", pattern: "npm *", type: "allow" });
+      expect(allowRules[1]).toMatchObject({ tool: "Edit", pattern: "/src/**", type: "allow" });
+      expect(denyRules).toHaveLength(1);
+      expect(denyRules[0]).toMatchObject({ tool: "Bash", pattern: "rm -rf *", type: "deny" });
     });
 
-    it("should return empty arrays for invalid JSON", async () => {
-      await writeFile(settingsPath, "not json!!!", "utf-8");
-      const store = new PersistentPermissionStore(settingsPath);
+    it("should return empty array for invalid JSON", async () => {
+      await mkdir(join(tempDir, ".dbcode"), { recursive: true });
+      await writeFile(projectSettingsPath, "not json!!!", "utf-8");
+      const store = createPersistentPermissionStore(tempDir);
       const rules = await store.loadRules();
 
-      expect(rules.allow).toEqual([]);
-      expect(rules.deny).toEqual([]);
+      expect(rules).toEqual([]);
     });
 
     it("should preserve extra fields in settings when loading", async () => {
@@ -66,62 +101,66 @@ describe("PersistentPermissionStore", () => {
         llm: { model: "gpt-4" },
         customField: true,
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
+      const store = createPersistentPermissionStore(tempDir);
       const rules = await store.loadRules();
 
-      expect(rules.allow).toEqual(["Bash(npm *)"]);
+      const allowRules = rules.filter((r) => r.type === "allow");
+      expect(allowRules).toHaveLength(1);
+      expect(allowRules[0]).toMatchObject({ tool: "Bash", pattern: "npm *" });
     });
 
-    it("should return immutable arrays", async () => {
+    it("should return frozen array", async () => {
       const data = {
         permissions: { allow: ["Bash(npm *)"], deny: ["Bash(rm *)"] },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
+      const store = createPersistentPermissionStore(tempDir);
       const rules = await store.loadRules();
 
-      expect(Object.isFrozen(rules.allow)).toBe(true);
-      expect(Object.isFrozen(rules.deny)).toBe(true);
+      expect(Object.isFrozen(rules)).toBe(true);
     });
   });
 
-  describe("addAllowRule", () => {
+  describe("addRule (allow)", () => {
     it("should create settings file with allow rule if not exists", async () => {
-      const store = new PersistentPermissionStore(settingsPath);
-      await store.addAllowRule("Bash(npm *)");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.addRule({ tool: "Bash", pattern: "npm *", type: "allow" }, "project");
 
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.permissions.allow).toEqual(["Bash(npm *)"]);
-      expect(content.permissions.deny).toEqual([]);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.allow).toEqual(["Bash(npm *)"]);
+      expect(perms.deny).toEqual([]);
     });
 
     it("should append to existing allow rules", async () => {
       const data = {
         permissions: { allow: ["Bash(npm *)"], deny: [] },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      await store.addAllowRule("Edit(/src/**)");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.addRule({ tool: "Edit", pattern: "/src/**", type: "allow" }, "project");
 
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.permissions.allow).toEqual(["Bash(npm *)", "Edit(/src/**)"]);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.allow).toEqual(["Bash(npm *)", "Edit(/src/**)"]);
     });
 
     it("should not duplicate existing rule", async () => {
       const data = {
         permissions: { allow: ["Bash(npm *)"], deny: [] },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      await store.addAllowRule("Bash(npm *)");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.addRule({ tool: "Bash", pattern: "npm *", type: "allow" }, "project");
 
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.permissions.allow).toEqual(["Bash(npm *)"]);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.allow).toEqual(["Bash(npm *)"]);
     });
 
     it("should preserve other settings fields", async () => {
@@ -130,39 +169,42 @@ describe("PersistentPermissionStore", () => {
         llm: { model: "gpt-4" },
         verbose: true,
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      await store.addAllowRule("file_read");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.addRule({ tool: "file_read", type: "allow" }, "project");
 
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.llm.model).toBe("gpt-4");
+      const content = await readProjectSettings();
+      expect((content.llm as Record<string, unknown>).model).toBe("gpt-4");
       expect(content.verbose).toBe(true);
-      expect(content.permissions.allow).toEqual(["file_read"]);
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.allow).toEqual(["file_read"]);
     });
   });
 
-  describe("addDenyRule", () => {
+  describe("addRule (deny)", () => {
     it("should add a deny rule", async () => {
-      const store = new PersistentPermissionStore(settingsPath);
-      await store.addDenyRule("Bash(rm -rf *)");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.addRule({ tool: "Bash", pattern: "rm -rf *", type: "deny" }, "project");
 
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.permissions.deny).toEqual(["Bash(rm -rf *)"]);
-      expect(content.permissions.allow).toEqual([]);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.deny).toEqual(["Bash(rm -rf *)"]);
+      expect(perms.allow).toEqual([]);
     });
 
     it("should not duplicate existing deny rule", async () => {
       const data = {
         permissions: { allow: [], deny: ["Bash(rm *)"] },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      await store.addDenyRule("Bash(rm *)");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.addRule({ tool: "Bash", pattern: "rm *", type: "deny" }, "project");
 
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.permissions.deny).toEqual(["Bash(rm *)"]);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.deny).toEqual(["Bash(rm *)"]);
     });
   });
 
@@ -171,75 +213,80 @@ describe("PersistentPermissionStore", () => {
       const data = {
         permissions: { allow: ["Bash(npm *)", "file_read"], deny: [] },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      const removed = await store.removeRule("Bash(npm *)");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.removeRule("Bash", "npm *", "project");
 
-      expect(removed).toBe(true);
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.permissions.allow).toEqual(["file_read"]);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.allow).toEqual(["file_read"]);
     });
 
     it("should remove a rule from deny list", async () => {
       const data = {
         permissions: { allow: [], deny: ["Bash(rm -rf *)", "Bash(rm *)"] },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      const removed = await store.removeRule("Bash(rm -rf *)");
+      const store = createPersistentPermissionStore(tempDir);
+      await store.removeRule("Bash", "rm -rf *", "project");
 
-      expect(removed).toBe(true);
-      const content = JSON.parse(await readFile(settingsPath, "utf-8"));
-      expect(content.permissions.deny).toEqual(["Bash(rm *)"]);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.deny).toEqual(["Bash(rm *)"]);
     });
 
-    it("should return false when rule does not exist", async () => {
+    it("should be safe when rule does not exist", async () => {
       const data = {
         permissions: { allow: ["Bash(npm *)"], deny: [] },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      const removed = await store.removeRule("Edit(/src/**)");
+      const store = createPersistentPermissionStore(tempDir);
+      // Should not throw — removeRule returns void
+      await store.removeRule("Edit", "/src/**", "project");
 
-      expect(removed).toBe(false);
+      const content = await readProjectSettings();
+      const perms = content.permissions as { allow: string[]; deny: string[] };
+      expect(perms.allow).toEqual(["Bash(npm *)"]);
     });
 
-    it("should return false when file does not exist", async () => {
-      const store = new PersistentPermissionStore(settingsPath);
-      const removed = await store.removeRule("Bash(npm *)");
-
-      expect(removed).toBe(false);
+    it("should be safe when file does not exist", async () => {
+      const store = createPersistentPermissionStore(tempDir);
+      // Should not throw — removeRule handles missing files gracefully
+      await store.removeRule("Bash", "npm *", "project");
     });
   });
 
-  describe("getAllRules", () => {
-    it("should return all rules", async () => {
+  describe("getRulesForTool", () => {
+    it("should return all rules for a specific tool", async () => {
       const data = {
         permissions: {
           allow: ["Bash(npm *)", "file_read"],
           deny: ["Bash(rm -rf *)"],
         },
       };
-      await writeFile(settingsPath, JSON.stringify(data), "utf-8");
+      await writeProjectSettings(data);
 
-      const store = new PersistentPermissionStore(settingsPath);
-      const rules = await store.getAllRules();
+      const store = createPersistentPermissionStore(tempDir);
+      const rules = await store.getRulesForTool("Bash");
 
-      expect(rules.allow).toEqual(["Bash(npm *)", "file_read"]);
-      expect(rules.deny).toEqual(["Bash(rm -rf *)"]);
+      expect(rules).toHaveLength(2);
+      expect(rules[0]).toMatchObject({ tool: "Bash", pattern: "npm *", type: "allow" });
+      expect(rules[1]).toMatchObject({ tool: "Bash", pattern: "rm -rf *", type: "deny" });
     });
   });
 
   describe("nested directory creation", () => {
     it("should create parent directories when writing", async () => {
-      const nestedPath = join(tempDir, "a", "b", "settings.json");
-      const store = new PersistentPermissionStore(nestedPath);
-      await store.addAllowRule("file_read");
+      // Use a fresh nested temp dir as project dir so .dbcode/ needs to be created
+      const nestedProjectDir = join(tempDir, "a", "b");
+      const store = createPersistentPermissionStore(nestedProjectDir);
+      await store.addRule({ tool: "file_read", type: "allow" }, "project");
 
-      const content = JSON.parse(await readFile(nestedPath, "utf-8"));
+      const nestedSettingsPath = join(nestedProjectDir, ".dbcode", "settings.json");
+      const content = JSON.parse(await readFile(nestedSettingsPath, "utf-8"));
       expect(content.permissions.allow).toEqual(["file_read"]);
     });
   });

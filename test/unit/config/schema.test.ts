@@ -27,7 +27,7 @@ describe("configSchema", () => {
     const result = configSchema.safeParse({});
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.llm.model).toBe("gpt-5-mini");
+      expect(result.data.llm.model).toBe("gpt-5.1-codex-mini");
       expect(result.data.llm.temperature).toBe(0.0);
       expect(result.data.permissionMode).toBe("default");
       expect(result.data.verbose).toBe(false);
