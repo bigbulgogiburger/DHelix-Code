@@ -603,7 +603,10 @@ describe("MCPManagerConnector", () => {
     it("should truncate long content with paragraph breaks", () => {
       // Default limit: 10_000 tokens * 4 chars = 40_000 chars
       // Smart truncation needs paragraph breaks to find truncation points
-      const paragraphs = Array.from({ length: 100 }, (_, i) => `Paragraph ${i}: ${"x".repeat(500)}`);
+      const paragraphs = Array.from(
+        { length: 100 },
+        (_, i) => `Paragraph ${i}: ${"x".repeat(500)}`,
+      );
       const content = paragraphs.join("\n\n"); // ~60,000 chars with breaks
       const result = connector.limitToolOutput(content);
       expect(result.length).toBeLessThan(content.length);
