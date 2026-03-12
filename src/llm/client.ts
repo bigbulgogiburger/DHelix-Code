@@ -78,7 +78,7 @@ function toOpenAIMessages(
   });
 }
 
-/** Convert our tool definitions to OpenAI format */
+/** Convert our tool definitions to OpenAI Chat Completions format */
 function toOpenAITools(tools: readonly ToolDefinitionForLLM[]): OpenAI.ChatCompletionTool[] {
   return tools.map((t) => ({
     type: "function" as const,
@@ -88,6 +88,88 @@ function toOpenAITools(tools: readonly ToolDefinitionForLLM[]): OpenAI.ChatCompl
       parameters: t.function.parameters as Record<string, unknown>,
     },
   }));
+}
+
+/** Check if a model requires the Responses API (Codex models) */
+function isResponsesApiModel(model: string): boolean {
+  return model.toLowerCase().includes("codex");
+}
+
+/** Convert our tool definitions to Responses API format (flattened, no function wrapper) */
+function toResponsesTools(tools: readonly ToolDefinitionForLLM[]): Array<{
+  type: "function";
+  name: string;
+  description: string;
+  parameters: Record<string, unknown>;
+}> {
+  return tools.map((t) => ({
+    type: "function" as const,
+    name: t.function.name,
+    description: t.function.description ?? "",
+    parameters: t.function.parameters as Record<string, unknown>,
+  }));
+}
+
+/** Convert our ChatMessages to Responses API input format */
+function toResponsesInput(
+  messages: readonly ChatMessage[],
+  capabilities: ModelCapabilities,
+): Array<Record<string, unknown>> {
+  return messages.map((msg) => {
+    if (msg.role === "tool") {
+      return {
+        type: "function_call_output",
+        call_id: msg.toolCallId ?? "",
+        output: msg.content,
+      };
+    }
+    if (msg.role === "assistant" && msg.toolCalls && msg.toolCalls.length > 0) {
+      // Return multiple items: message + function_calls
+      // For Responses API, function calls are separate items, but we flatten here.
+      // The assistant message content is handled separately.
+      const items: Array<Record<string, unknown>> = [];
+      if (msg.content) {
+        items.push({
+          role: "assistant",
+          content: msg.content,
+        });
+      }
+      for (const tc of msg.toolCalls) {
+        items.push({
+          type: "function_call",
+          id: tc.id,
+          name: tc.name,
+          arguments: tc.arguments,
+          call_id: tc.id,
+        });
+      }
+      // Return first item; caller must handle multi-item expansion
+      return items.length === 1 ? items[0] : { _multi: items };
+    }
+    if (msg.role === "system") {
+      // Responses API uses "developer" role for system instructions
+      if (capabilities.useDeveloperRole || capabilities.supportsSystemMessage) {
+        return { role: "developer", content: msg.content };
+      }
+      return { role: "user", content: `[System instructions]\n${msg.content}` };
+    }
+    return { role: msg.role, content: msg.content };
+  });
+}
+
+/** Flatten multi-item messages for Responses API input */
+function flattenResponsesInput(
+  items: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> {
+  const result: Array<Record<string, unknown>> = [];
+  for (const item of items) {
+    if (item._multi && Array.isArray(item._multi)) {
+      result.push(...(item._multi as Array<Record<string, unknown>>));
+    } else {
+      result.push(item);
+    }
+  }
+  return result;
 }
 
 /** Check if an error is retryable (transient server/network issues) */
@@ -281,6 +363,11 @@ export class OpenAICompatibleClient implements LLMProvider {
   }
 
   private async _chatOnce(request: ChatRequest): Promise<ChatResponse> {
+    // Route to Responses API for Codex models
+    if (isResponsesApiModel(request.model)) {
+      return this._chatOnceResponses(request);
+    }
+
     const caps = getModelCapabilities(request.model);
     const params: Record<string, unknown> = {
       model: request.model,
@@ -311,11 +398,16 @@ export class OpenAICompatibleClient implements LLMProvider {
     }
 
     const toolCalls: ToolCallRequest[] =
-      choice.message.tool_calls?.map((tc) => ({
-        id: tc.id,
-        name: tc.function.name,
-        arguments: tc.function.arguments,
-      })) ?? [];
+      choice.message.tool_calls
+        ?.filter(
+          (tc): tc is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall =>
+            tc.type === "function",
+        )
+        .map((tc) => ({
+          id: tc.id,
+          name: tc.function.name,
+          arguments: tc.function.arguments,
+        })) ?? [];
 
     return {
       content: choice.message.content ?? "",
@@ -326,6 +418,66 @@ export class OpenAICompatibleClient implements LLMProvider {
         totalTokens: response.usage?.total_tokens ?? 0,
       },
       finishReason: choice.finish_reason ?? "stop",
+    };
+  }
+
+  /**
+   * Responses API path for Codex models.
+   * Uses client.responses.create() which sends to /responses endpoint.
+   */
+  private async _chatOnceResponses(request: ChatRequest): Promise<ChatResponse> {
+    const caps = getModelCapabilities(request.model);
+    const input = flattenResponsesInput(toResponsesInput(request.messages, caps));
+
+    const params: Record<string, unknown> = {
+      model: request.model,
+      input,
+    };
+
+    if (request.maxTokens) {
+      params.max_output_tokens = request.maxTokens;
+    }
+    if (caps.supportsTemperature && request.temperature !== undefined) {
+      params.temperature = request.temperature;
+    }
+    if (caps.supportsTools && request.tools) {
+      params.tools = toResponsesTools(request.tools);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const response = await (this.client.responses as any).create(params, {
+      signal: request.signal,
+    });
+
+    // Extract text content and tool calls from output items
+    let content = "";
+    const toolCalls: ToolCallRequest[] = [];
+
+    for (const item of response.output ?? []) {
+      if (item.type === "message") {
+        for (const part of item.content ?? []) {
+          if (part.type === "output_text") {
+            content += part.text ?? "";
+          }
+        }
+      } else if (item.type === "function_call") {
+        toolCalls.push({
+          id: item.call_id ?? item.id ?? "",
+          name: item.name ?? "",
+          arguments: item.arguments ?? "{}",
+        });
+      }
+    }
+
+    return {
+      content,
+      toolCalls,
+      usage: {
+        promptTokens: response.usage?.input_tokens ?? 0,
+        completionTokens: response.usage?.output_tokens ?? 0,
+        totalTokens: response.usage?.total_tokens ?? 0,
+      },
+      finishReason: response.status === "completed" ? "stop" : (response.status ?? "stop"),
     };
   }
 
@@ -355,6 +507,12 @@ export class OpenAICompatibleClient implements LLMProvider {
   }
 
   private async *_streamOnce(request: ChatRequest): AsyncIterable<ChatChunk> {
+    // Route to Responses API streaming for Codex models
+    if (isResponsesApiModel(request.model)) {
+      yield* this._streamOnceResponses(request);
+      return;
+    }
+
     const caps = getModelCapabilities(request.model);
     const params: Record<string, unknown> = {
       model: request.model,
@@ -425,6 +583,72 @@ export class OpenAICompatibleClient implements LLMProvider {
             },
           };
         }
+      }
+    }
+
+    yield {
+      type: "done",
+      usage: streamUsage,
+    };
+  }
+
+  /**
+   * Responses API streaming for Codex models.
+   * Uses client.responses.create() with stream: true.
+   */
+  private async *_streamOnceResponses(request: ChatRequest): AsyncIterable<ChatChunk> {
+    const caps = getModelCapabilities(request.model);
+    const input = flattenResponsesInput(toResponsesInput(request.messages, caps));
+
+    const params: Record<string, unknown> = {
+      model: request.model,
+      input,
+      stream: true,
+    };
+
+    if (request.maxTokens) {
+      params.max_output_tokens = request.maxTokens;
+    }
+    if (caps.supportsTemperature && request.temperature !== undefined) {
+      params.temperature = request.temperature;
+    }
+    if (caps.supportsTools && request.tools) {
+      params.tools = toResponsesTools(request.tools);
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stream = await (this.client.responses as any).create(params, {
+      signal: request.signal,
+    });
+
+    let streamUsage:
+      | { promptTokens: number; completionTokens: number; totalTokens: number }
+      | undefined;
+
+    // Responses API streaming emits events, not chunks
+    for await (const event of stream) {
+      // Text delta events
+      if (event.type === "response.output_text.delta") {
+        yield { type: "text-delta", text: event.delta ?? "" };
+      }
+      // Function call events
+      else if (event.type === "response.function_call_arguments.done") {
+        yield {
+          type: "tool-call-delta",
+          toolCall: {
+            id: event.call_id ?? event.item_id ?? "",
+            name: event.name ?? "",
+            arguments: event.arguments ?? "{}",
+          },
+        };
+      }
+      // Completed event with usage
+      else if (event.type === "response.completed" && event.response?.usage) {
+        streamUsage = {
+          promptTokens: event.response.usage.input_tokens ?? 0,
+          completionTokens: event.response.usage.output_tokens ?? 0,
+          totalTokens: event.response.usage.total_tokens ?? 0,
+        };
       }
     }
 
