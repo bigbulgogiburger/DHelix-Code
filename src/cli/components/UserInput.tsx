@@ -128,6 +128,21 @@ export function UserInput({
         input === "\r\n" ||
         (input.length === 1 && (input.charCodeAt(0) === 13 || input.charCodeAt(0) === 10));
       if (isEnter) {
+        // When mentioning, Enter confirms the mention selection instead of submitting
+        if (isMentioning && mentionSuggestions.length > 0) {
+          const selected = mentionSuggestions[mentionIndex];
+          const mention = extractMentionToken(value, cursorOffset);
+          if (mention && selected) {
+            const before = value.slice(0, mention.start);
+            const after = value.slice(cursorOffset);
+            const insertion = `@${selected} `;
+            const next = before + insertion + after;
+            const nextCursor = before.length + insertion.length;
+            cancelCompletion();
+            updateValue(next, nextCursor);
+            return;
+          }
+        }
         handleSubmit();
         return;
       }
@@ -243,7 +258,7 @@ export function UserInput({
           if (mention && selected) {
             const before = value.slice(0, mention.start);
             const after = value.slice(cursorOffset);
-            const insertion = `@file:${selected}`;
+            const insertion = `@${selected} `;
             const next = before + insertion + after;
             const nextCursor = before.length + insertion.length;
             cancelCompletion();
@@ -279,8 +294,12 @@ export function UserInput({
         return;
       }
 
-      // Up arrow — navigate history
+      // Up arrow — navigate mention suggestions or history
       if (key.upArrow) {
+        if (isMentioning && mentionSuggestions.length > 0) {
+          setMentionIndex((prev) => (prev <= 0 ? mentionSuggestions.length - 1 : prev - 1));
+          return;
+        }
         if (savedInputRef.current === null) {
           savedInputRef.current = value;
         }
@@ -291,8 +310,12 @@ export function UserInput({
         return;
       }
 
-      // Down arrow — navigate history
+      // Down arrow — navigate mention suggestions or history
       if (key.downArrow) {
+        if (isMentioning && mentionSuggestions.length > 0) {
+          setMentionIndex((prev) => (prev + 1) % mentionSuggestions.length);
+          return;
+        }
         const next = navigateDown();
         if (next !== undefined) {
           if (next === "") {
@@ -451,11 +474,11 @@ export function UserInput({
               bold={idx === activeIndex}
             >
               {idx === activeIndex ? "> " : "  "}
-              {isMentioning ? `@file:${item}` : item}
+              {isMentioning ? `@${item}` : item}
             </Text>
           ))}
           <Text color="gray" dimColor>
-            Tab: cycle | Enter/Space: select | Esc: cancel
+            ↑↓: navigate | Tab: cycle | Enter: select | Esc: cancel
           </Text>
         </Box>
       )}

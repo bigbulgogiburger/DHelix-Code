@@ -25,11 +25,15 @@ const paramSchema = z.object({
   caseSensitive: z
     .boolean()
     .optional()
-    .describe("Whether the search is case-sensitive (default: true). Set to false for case-insensitive search."),
+    .describe(
+      "Whether the search is case-sensitive (default: true). Set to false for case-insensitive search.",
+    ),
   fileType: z
     .string()
     .optional()
-    .describe("Language file type filter (e.g., 'ts', 'py', 'js'). Uses ripgrep's built-in type definitions."),
+    .describe(
+      "Language file type filter (e.g., 'ts', 'py', 'js'). Uses ripgrep's built-in type definitions.",
+    ),
   multiline: z
     .boolean()
     .optional()
@@ -144,9 +148,7 @@ async function searchWithRipgrep(
   }
 
   // Count actual matches (lines with : separator, not context lines with -)
-  const matchCount = normalizedLines.filter(
-    (l) => l !== "--" && /^.+?:\d+:/.test(l),
-  ).length;
+  const matchCount = normalizedLines.filter((l) => l !== "--" && /^.+?:\d+:/.test(l)).length;
 
   const output = normalizedLines.join("\n");
 

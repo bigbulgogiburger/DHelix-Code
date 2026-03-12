@@ -47,6 +47,16 @@ export function groupConsecutiveReads(
   return result;
 }
 
+/** Find metadata from a tool-complete entry matching the given tool ID */
+function findMetadata(
+  entries: readonly ActivityEntry[],
+  toolId: string | undefined,
+): Readonly<Record<string, unknown>> | undefined {
+  if (!toolId) return undefined;
+  const completeEntry = entries.find((e) => e.type === "tool-complete" && e.data.id === toolId);
+  return completeEntry?.data.metadata as Readonly<Record<string, unknown>> | undefined;
+}
+
 /** Render a single activity entry */
 function renderEntry(
   entry:
@@ -122,6 +132,11 @@ function renderEntry(
             ? startEntry.data.startTime
             : undefined;
 
+      const metadata =
+        entry.type === "tool-start"
+          ? findMetadata(allEntries, toolId)
+          : (entry.data.metadata as Readonly<Record<string, unknown>> | undefined);
+
       const status =
         entry.type === "tool-start"
           ? ("running" as const)
@@ -140,6 +155,7 @@ function renderEntry(
           output={typeof entry.data.output === "string" ? entry.data.output : undefined}
           isExpanded={isExpanded}
           startTime={startTime}
+          metadata={metadata}
         />
       );
     }

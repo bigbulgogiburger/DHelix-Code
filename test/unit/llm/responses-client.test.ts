@@ -139,44 +139,37 @@ describe("ResponsesAPIClient", () => {
       expect(mockFetch).toHaveBeenCalledTimes(3);
     });
 
-    it(
-      "should retry on 429 rate limit up to 5 times",
-      async () => {
-        vi.useRealTimers();
+    it("should retry on 429 rate limit up to 5 times", async () => {
+      vi.useRealTimers();
 
-        // Create a fast client with near-zero timeout so retries are instant
-        // We re-stub fetch since useRealTimers resets
+      // Create a fast client with near-zero timeout so retries are instant
+      // We re-stub fetch since useRealTimers resets
+      vi.stubGlobal("fetch", mockFetch);
+      vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+      // 429 errors with no Retry-After header
+      for (let i = 0; i < 6; i++) {
+        mockFetch.mockResolvedValueOnce(
+          makeErrorResponse(429, '{"error":{"message":"Rate limited"}}'),
+        );
+      }
+
+      // Monkey-patch the delay constants via module-level sleep override
+      // Since we can't modify module constants, we instead mock setTimeout to fire immediately
+      const origSetTimeout = globalThis.setTimeout;
+      vi.stubGlobal("setTimeout", (fn: (...args: unknown[]) => void) => origSetTimeout(fn, 0));
+
+      try {
+        await expect(client.chat(makeRequest())).rejects.toThrow("Rate limit");
+        // attempt 0 through 5 = 6 calls total (initial + 5 retries)
+        expect(mockFetch).toHaveBeenCalledTimes(6);
+      } finally {
+        vi.stubGlobal("setTimeout", origSetTimeout);
+        vi.useFakeTimers({ shouldAdvanceTime: true });
         vi.stubGlobal("fetch", mockFetch);
         vi.spyOn(Math, "random").mockReturnValue(0.5);
-
-        // 429 errors with no Retry-After header
-        for (let i = 0; i < 6; i++) {
-          mockFetch.mockResolvedValueOnce(
-            makeErrorResponse(429, '{"error":{"message":"Rate limited"}}'),
-          );
-        }
-
-        // Monkey-patch the delay constants via module-level sleep override
-        // Since we can't modify module constants, we instead mock setTimeout to fire immediately
-        const origSetTimeout = globalThis.setTimeout;
-        vi.stubGlobal(
-          "setTimeout",
-          (fn: (...args: unknown[]) => void) => origSetTimeout(fn, 0),
-        );
-
-        try {
-          await expect(client.chat(makeRequest())).rejects.toThrow("Rate limit");
-          // attempt 0 through 5 = 6 calls total (initial + 5 retries)
-          expect(mockFetch).toHaveBeenCalledTimes(6);
-        } finally {
-          vi.stubGlobal("setTimeout", origSetTimeout);
-          vi.useFakeTimers({ shouldAdvanceTime: true });
-          vi.stubGlobal("fetch", mockFetch);
-          vi.spyOn(Math, "random").mockReturnValue(0.5);
-        }
-      },
-      30_000,
-    );
+      }
+    }, 30_000);
 
     it("should honor Retry-After header on 429 response", async () => {
       mockFetch
@@ -214,38 +207,31 @@ describe("ResponsesAPIClient", () => {
       expect(mockFetch).toHaveBeenCalledTimes(1);
     });
 
-    it(
-      "should exhaust transient retries after MAX_RETRIES_TRANSIENT",
-      async () => {
-        vi.useRealTimers();
+    it("should exhaust transient retries after MAX_RETRIES_TRANSIENT", async () => {
+      vi.useRealTimers();
 
+      vi.stubGlobal("fetch", mockFetch);
+      vi.spyOn(Math, "random").mockReturnValue(0.5);
+
+      // 4 failures = initial + 3 retries exhausted
+      for (let i = 0; i < 4; i++) {
+        mockFetch.mockResolvedValueOnce(makeErrorResponse(500, "Internal error"));
+      }
+
+      // Make setTimeout fire immediately so retries don't wait
+      const origSetTimeout = globalThis.setTimeout;
+      vi.stubGlobal("setTimeout", (fn: (...args: unknown[]) => void) => origSetTimeout(fn, 0));
+
+      try {
+        await expect(client.chat(makeRequest())).rejects.toThrow("Responses API error (500)");
+        expect(mockFetch).toHaveBeenCalledTimes(4);
+      } finally {
+        vi.stubGlobal("setTimeout", origSetTimeout);
+        vi.useFakeTimers({ shouldAdvanceTime: true });
         vi.stubGlobal("fetch", mockFetch);
         vi.spyOn(Math, "random").mockReturnValue(0.5);
-
-        // 4 failures = initial + 3 retries exhausted
-        for (let i = 0; i < 4; i++) {
-          mockFetch.mockResolvedValueOnce(makeErrorResponse(500, "Internal error"));
-        }
-
-        // Make setTimeout fire immediately so retries don't wait
-        const origSetTimeout = globalThis.setTimeout;
-        vi.stubGlobal(
-          "setTimeout",
-          (fn: (...args: unknown[]) => void) => origSetTimeout(fn, 0),
-        );
-
-        try {
-          await expect(client.chat(makeRequest())).rejects.toThrow("Responses API error (500)");
-          expect(mockFetch).toHaveBeenCalledTimes(4);
-        } finally {
-          vi.stubGlobal("setTimeout", origSetTimeout);
-          vi.useFakeTimers({ shouldAdvanceTime: true });
-          vi.stubGlobal("fetch", mockFetch);
-          vi.spyOn(Math, "random").mockReturnValue(0.5);
-        }
-      },
-      30_000,
-    );
+      }
+    }, 30_000);
 
     it("should retry on network errors (ECONNRESET)", async () => {
       const networkError = new Error("fetch failed: ECONNRESET");

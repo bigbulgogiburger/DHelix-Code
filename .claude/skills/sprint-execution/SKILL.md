@@ -42,12 +42,14 @@ argument-hint: "[plan file path] [sprint number] [--dry-run]"
 파일 충돌을 사전에 탐지하고 그룹을 나눕니다. 이 단계가 핵심입니다.
 
 **규칙:**
+
 - 두 작업이 **같은 파일을 수정**하면 → 같은 에이전트에 배정하거나 순차 실행
 - 테스트 파일은 소스 파일과 함께 묶음 (test fix → 해당 소스 담당 에이전트)
 - `src/index.ts` 같은 공통 진입점 수정은 **마지막에 통합 에이전트**가 처리
 - 새 파일 생성은 항상 안전하게 병렬 가능
 
 **분석 방법:**
+
 ```
 1. 각 작업 항목의 변경 대상 파일 나열
 2. 파일 간 교차점(intersection) 계산
@@ -68,16 +70,19 @@ argument-hint: "[plan file path] [sprint number] [--dry-run]"
 분석 결과를 바탕으로 Claude Agent Team을 구성합니다.
 
 **팀 구성 원칙:**
+
 - 에이전트 수는 병렬 그룹 수와 일치 (보통 5-10개)
 - 각 에이전트에 명확한 역할명 부여 (예: `test-fixer-config`, `ripgrep-developer`)
 - 에이전트명은 작업 내용을 직관적으로 반영
 
 **팀 생성 절차:**
+
 1. `TeamCreate`로 팀 생성 (이름: `dbcode-sprint-{N}`)
 2. 각 작업 그룹에 대해 `TaskCreate`로 태스크 등록
 3. 각 태스크에 대해 `Agent` 도구로 팀원 스폰
 
 **에이전트 스폰 시 설정:**
+
 ```
 - mode: bypassPermissions (자동 실행)
 - run_in_background: true (병렬)
@@ -85,6 +90,7 @@ argument-hint: "[plan file path] [sprint number] [--dry-run]"
 ```
 
 **에이전트 프롬프트 템플릿:**
+
 ```
 당신은 dbcode 프로젝트의 [{역할명}] 개발자입니다.
 
@@ -111,11 +117,13 @@ argument-hint: "[plan file path] [sprint number] [--dry-run]"
 모든 에이전트를 동시에 실행하고 완료를 기다립니다.
 
 **모니터링:**
+
 - 백그라운드 에이전트의 완료 알림을 수신
 - 각 에이전트 완료 시 결과 요약을 기록
 - 모든 에이전트 완료 후 다음 단계로 진행
 
 **실패 처리:**
+
 - 에이전트가 실패하면 → 에러 내용 분석 → 재시도 또는 수동 수정
 - 파일 충돌 발생 시 → `git diff`로 충돌 확인 → 통합 에이전트가 해결
 - 테스트 실패 시 → 실패한 테스트에 대해 추가 수정 에이전트 스폰
@@ -141,6 +149,7 @@ npm run build
 ```
 
 **검증 실패 시:**
+
 - 테스트 실패: 실패 원인 분석 → 직접 수정 또는 수정 에이전트 추가 스폰
 - 린트 에러: 직접 수정 (보통 간단한 수정)
 - 타입 에러: 타입 관련 파일 분석 → 수정
@@ -151,6 +160,7 @@ npm run build
 검증 통과 후 변경사항을 커밋합니다.
 
 **커밋 메시지 형식:**
+
 ```
 feat(sprint{N}): {스프린트 요약}
 
@@ -164,6 +174,7 @@ All {테스트 수} tests pass, typecheck clean, build succeeds.
 ```
 
 **커밋 절차:**
+
 1. `git status`로 변경 파일 확인
 2. Sprint 관련 파일만 선별적으로 `git add` (unrelated 파일 제외)
 3. 커밋 메시지 생성 및 커밋
@@ -181,10 +192,10 @@ All {테스트 수} tests pass, typecheck clean, build succeeds.
 ```markdown
 ## Sprint {N} Results — {X}/{Y} Items Delivered
 
-| # | Task | Agent | Status | Tests |
-|---|------|-------|--------|-------|
-| 1 | {작업명} | {에이전트명} | {상태} | {통과/실패} |
-| 2 | ... | ... | ... | ... |
+| #   | Task     | Agent        | Status | Tests       |
+| --- | -------- | ------------ | ------ | ----------- |
+| 1   | {작업명} | {에이전트명} | {상태} | {통과/실패} |
+| 2   | ...      | ...          | ...    | ...         |
 
 **Commit**: `{hash}` — pushed to `origin/{branch}`
 **Files changed**: {N} files, +{additions} / -{deletions} lines
@@ -194,6 +205,7 @@ All {테스트 수} tests pass, typecheck clean, build succeeds.
 ## Dry Run Mode
 
 `--dry-run` 플래그 사용 시:
+
 - Phase 1-2만 실행 (분석만 수행)
 - 팀 구성 계획을 출력하되 실제 에이전트는 스폰하지 않음
 - 파일 충돌 분석 결과와 제안된 에이전트 배정 표시

@@ -525,9 +525,7 @@ export class ResponsesAPIClient implements LLMProvider {
   }
 
   /** Parse SSE stream from the Responses API */
-  private async *parseSSEStream(
-    body: ReadableStream<Uint8Array>,
-  ): AsyncIterable<ChatChunk> {
+  private async *parseSSEStream(body: ReadableStream<Uint8Array>): AsyncIterable<ChatChunk> {
     const reader = body.getReader();
     const decoder = new TextDecoder();
     let buffer = "";

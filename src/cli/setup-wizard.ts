@@ -6,13 +6,14 @@ import { CONFIG_DIR, APP_NAME } from "../constants.js";
 
 /** Available model presets */
 const MODEL_PRESETS = [
+  { name: "Default (프로젝트 .env 설정 사용)", model: "", baseUrl: "" },
   {
     name: "GPT-5-mini (추천 — 저렴하고 고성능)",
     model: "gpt-5-mini",
     baseUrl: "https://api.openai.com/v1",
   },
+  { name: "GPT-5-nano (가장 저렴)", model: "gpt-5-nano", baseUrl: "https://api.openai.com/v1" },
   { name: "GPT-4.1", model: "gpt-4.1", baseUrl: "https://api.openai.com/v1" },
-  { name: "GPT-4.1-nano (가장 저렴)", model: "gpt-4.1-nano", baseUrl: "https://api.openai.com/v1" },
   { name: "GPT-4o", model: "gpt-4o", baseUrl: "https://api.openai.com/v1" },
   { name: "GPT-4o-mini", model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" },
 ] as const;
@@ -23,8 +24,8 @@ const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 /** Saved configuration */
 interface SetupConfig {
   readonly llm: {
-    readonly model: string;
-    readonly baseUrl: string;
+    readonly model?: string;
+    readonly baseUrl?: string;
     readonly apiKey?: string;
   };
 }
@@ -107,8 +108,8 @@ export async function runSetupWizard(): Promise<SetupConfig> {
 
     const config: SetupConfig = {
       llm: {
-        model,
-        baseUrl,
+        ...(model ? { model } : {}),
+        ...(baseUrl ? { baseUrl } : {}),
         ...(apiKey ? { apiKey } : {}),
       },
     };

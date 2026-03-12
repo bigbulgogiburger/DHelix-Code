@@ -58,24 +58,54 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 2.5, outputPerMillion: 10 },
     },
   ],
-  [/^gpt-4\.1/i, { maxContextTokens: 1_000_000, maxOutputTokens: 32768, tokenizer: "o200k" }],
-  // GPT-5.1 codex models (Azure Responses API compatible)
   [
-    /^gpt-5\.1-codex/i,
-    {
-      maxContextTokens: 1_000_000,
-      maxOutputTokens: 16384,
-      tokenizer: "o200k",
-      supportsTemperature: false,
-    },
-  ],
-  [
-    /^gpt-5/i,
+    /^gpt-4\.1/i,
     {
       maxContextTokens: 1_000_000,
       maxOutputTokens: 32768,
       tokenizer: "o200k",
-      supportsTemperature: false,
+      pricing: { inputPerMillion: 2, outputPerMillion: 8 },
+    },
+  ],
+  // GPT-5.1 codex models (Azure Responses API compatible)
+  [
+    /^gpt-5\.1-codex/i,
+    {
+      maxContextTokens: 400_000,
+      maxOutputTokens: 100_000,
+      tokenizer: "o200k",
+      supportsTemperature: true,
+      pricing: { inputPerMillion: 0.25, outputPerMillion: 2 },
+    },
+  ],
+  // GPT-5 mini
+  [
+    /^gpt-5(\.\d+)?-mini/i,
+    {
+      maxContextTokens: 400_000,
+      maxOutputTokens: 128_000,
+      tokenizer: "o200k",
+      pricing: { inputPerMillion: 0.25, outputPerMillion: 2 },
+    },
+  ],
+  // GPT-5 nano
+  [
+    /^gpt-5(\.\d+)?-nano/i,
+    {
+      maxContextTokens: 400_000,
+      maxOutputTokens: 128_000,
+      tokenizer: "o200k",
+      pricing: { inputPerMillion: 0.05, outputPerMillion: 0.4 },
+    },
+  ],
+  // GPT-5 generic (must be after specific gpt-5 variants)
+  [
+    /^gpt-5/i,
+    {
+      maxContextTokens: 400_000,
+      maxOutputTokens: 128_000,
+      tokenizer: "o200k",
+      supportsTemperature: true,
     },
   ],
   [/^gpt-3\.5/i, { maxContextTokens: 16385, tokenizer: "cl100k", useMaxCompletionTokens: false }],

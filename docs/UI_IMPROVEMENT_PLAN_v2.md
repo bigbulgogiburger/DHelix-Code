@@ -2,8 +2,7 @@
 
 > **Author**: Claude Agent Team (8 specialist agents, parallel analysis)
 > **Date**: 2026-03-12 (v2)
-> **Status**: **Approved — Ready for Implementation**
-> **Analysis Method**: Claude Agent Teams (8 parallel specialists, ~27,000 lines analyzed)
+> **Status**: **Approved — Ready for Implementation** > **Analysis Method**: Claude Agent Teams (8 parallel specialists, ~27,000 lines analyzed)
 > **Scope**: Core Engine + LLM + Tools + UI + Security + MCP/Skills + DX + Testing
 
 ---
@@ -15,17 +14,17 @@ v1 계획(UI 중심 33개 항목)을 확장하여 **Core 레벨까지 포괄하�
 
 ### Key Findings
 
-| Category | Items | Critical | High | Medium | Low |
-|----------|-------|----------|------|--------|-----|
-| Core Engine | 22 | 1 | 5 | 10 | 6 |
-| LLM Layer | 26 | 3 | 5 | 12 | 6 |
-| Tool System | 12 | 1 | 4 | 4 | 3 |
-| CLI UI/Rendering | 31 | 0 | 8 | 15 | 8 |
-| Permissions & Security | 19 | 0 | 5 | 9 | 5 |
-| MCP & Skills | 16 | 1 | 3 | 7 | 5 |
-| Developer Experience | 22 | 5 | 6 | 7 | 4 |
-| Testing & Quality | 12 | 1 | 4 | 5 | 2 |
-| **Total** | **160** | **12** | **40** | **69** | **39** |
+| Category               | Items   | Critical | High   | Medium | Low    |
+| ---------------------- | ------- | -------- | ------ | ------ | ------ |
+| Core Engine            | 22      | 1        | 5      | 10     | 6      |
+| LLM Layer              | 26      | 3        | 5      | 12     | 6      |
+| Tool System            | 12      | 1        | 4      | 4      | 3      |
+| CLI UI/Rendering       | 31      | 0        | 8      | 15     | 8      |
+| Permissions & Security | 19      | 0        | 5      | 9      | 5      |
+| MCP & Skills           | 16      | 1        | 3      | 7      | 5      |
+| Developer Experience   | 22      | 5        | 6      | 7      | 4      |
+| Testing & Quality      | 12      | 1        | 4      | 5      | 2      |
+| **Total**              | **160** | **12**   | **40** | **69** | **39** |
 
 ### Strategic Positioning
 
@@ -33,20 +32,21 @@ v1 계획(UI 중심 33개 항목)을 확장하여 **Core 레벨까지 포괄하�
 >
 > dbcode's killer differentiator is multi-provider support (OpenAI + Anthropic + Local).
 > No competitor occupies this niche. Strategic focus should be:
+>
 > 1. Multi-provider excellence (routing, capabilities, cost awareness)
 > 2. Extensibility (agents, skills, hooks, MCP)
 > 3. CI/CD first-class citizen
 
 ### Competitive Score (March 2026)
 
-| Tool | Score | Key Strength |
-|------|-------|-------------|
-| Claude Code | 8.8/10 | Market leader, Agent Teams, MCP Tool Search |
-| Copilot CLI | 7.0/10 | GA, /fleet, specialized agents |
-| Gemini CLI | 7.1/10 | 1M context, open-source |
-| Codex CLI | 6.1/10 | Rust/fast, minimal |
-| **dbcode** | **6.8/10** | Multi-provider, 3-layer compaction, extensibility |
-| **dbcode (post-v2)** | **8.2/10** | Target after implementing this plan |
+| Tool                 | Score      | Key Strength                                      |
+| -------------------- | ---------- | ------------------------------------------------- |
+| Claude Code          | 8.8/10     | Market leader, Agent Teams, MCP Tool Search       |
+| Copilot CLI          | 7.0/10     | GA, /fleet, specialized agents                    |
+| Gemini CLI           | 7.1/10     | 1M context, open-source                           |
+| Codex CLI            | 6.1/10     | Rust/fast, minimal                                |
+| **dbcode**           | **6.8/10** | Multi-provider, 3-layer compaction, extensibility |
+| **dbcode (post-v2)** | **8.2/10** | Target after implementing this plan               |
 
 ---
 
@@ -346,6 +346,7 @@ memory, tests each line with regex. On 10,000 files: ~10 seconds.
 **Claude Code, Codex CLI, and all major competitors wrap ripgrep.**
 
 **Proposed**: Replace with ripgrep subprocess wrapper:
+
 - Detect `rg` in PATH (fallback to current JS for environments without ripgrep)
 - Support `-A/-B/-C` context lines, `-i` case insensitive, `--type` filtering
 - Support `-U` multiline, `--count` mode, `--max-count` result limiting
@@ -422,13 +423,13 @@ Temp output files never cleaned up.
 
 ### 3.9 Proposed New Tools
 
-| Tool | Priority | Description |
-|------|----------|-------------|
-| `multi_file_edit` | HIGH | Atomic multi-file edits (like Codex CLI's `apply_patch`) |
-| `batch_file_read` | MEDIUM | Read multiple files in one call (token-efficient) |
-| `diff_view` | MEDIUM | Show diff between files or vs git HEAD |
-| `code_search` | LOW | AST-aware search via tree-sitter |
-| `file_rename` | LOW | Rename/move with import awareness |
+| Tool              | Priority | Description                                              |
+| ----------------- | -------- | -------------------------------------------------------- |
+| `multi_file_edit` | HIGH     | Atomic multi-file edits (like Codex CLI's `apply_patch`) |
+| `batch_file_read` | MEDIUM   | Read multiple files in one call (token-efficient)        |
+| `diff_view`       | MEDIUM   | Show diff between files or vs git HEAD                   |
+| `code_search`     | LOW      | AST-aware search via tree-sitter                         |
+| `file_rename`     | LOW      | Rename/move with import awareness                        |
 
 ---
 
@@ -619,6 +620,7 @@ items accumulate React nodes indefinitely.
 **Current**: 5 coarse-grained modes.
 
 **Proposed**: Per-category config:
+
 ```typescript
 categoryPermissions: {
   reads: "auto" | "ask" | "deny",
@@ -729,13 +731,13 @@ Reduce severity for `file_content` context.
 
 ### 5.12 Dead Security Code Inventory
 
-| Feature | Config/Type | Implementation | Status |
-|---------|------------|----------------|--------|
-| `security.auditLogging` | ✅ Defined | ❌ Zero refs | DEAD |
-| `security.rateLimit` | ✅ Defined | ❌ Never enforced | DEAD |
-| `ResolvedToken.expiresAt` | ✅ Type field | ❌ Never populated | DEAD |
-| `TokenSource: "keychain"` | ✅ Type variant | ❌ Never used | DEAD |
-| `bubblewrap.ts` (advanced) | ✅ Complete impl | ❌ Not in dispatcher | DEAD |
+| Feature                    | Config/Type      | Implementation       | Status |
+| -------------------------- | ---------------- | -------------------- | ------ |
+| `security.auditLogging`    | ✅ Defined       | ❌ Zero refs         | DEAD   |
+| `security.rateLimit`       | ✅ Defined       | ❌ Never enforced    | DEAD   |
+| `ResolvedToken.expiresAt`  | ✅ Type field    | ❌ Never populated   | DEAD   |
+| `TokenSource: "keychain"`  | ✅ Type variant  | ❌ Never used        | DEAD   |
+| `bubblewrap.ts` (advanced) | ✅ Complete impl | ❌ Not in dispatcher | DEAD   |
 
 ---
 
@@ -772,6 +774,7 @@ Phase 3: On-Demand Schema Fetching
 ```
 
 **Architecture changes**:
+
 1. `MCPToolBridge` — add `DeferredToolEntry` type
 2. `ToolRegistry` — add `registerDeferred()` method
 3. `system-prompt-builder.ts` — render deferred tools as compact block
@@ -856,14 +859,14 @@ Hook conversion code is ready but can't be triggered.
 
 ### 6.10 System Prompt Token Impact
 
-| Section | Priority | Tokens (current) | Tokens (after Tool Search) |
-|---------|----------|-------------------|---------------------------|
-| MCP tools | 82 | **5K-50K** | **500-1K** |
-| Identity | 100 | ~200 | ~200 |
-| Tools (built-in) | 85 | ~500 | ~500 |
-| Skills | 78 | ~100-500 | ~100-500 |
-| Project instructions | 70 | variable | variable |
-| Auto-memory | 72 | ~200-2K | ~200-2K |
+| Section              | Priority | Tokens (current) | Tokens (after Tool Search) |
+| -------------------- | -------- | ---------------- | -------------------------- |
+| MCP tools            | 82       | **5K-50K**       | **500-1K**                 |
+| Identity             | 100      | ~200             | ~200                       |
+| Tools (built-in)     | 85       | ~500             | ~500                       |
+| Skills               | 78       | ~100-500         | ~100-500                   |
+| Project instructions | 70       | variable         | variable                   |
+| Auto-memory          | 72       | ~200-2K          | ~200-2K                    |
 
 **MCP Tool Search alone saves 85-95% of the largest system prompt section.**
 
@@ -899,29 +902,29 @@ then model presets per provider.
 
 ### 7.4 Missing Critical Slash Commands
 
-| Command | Priority | Description | Effort |
-|---------|----------|-------------|--------|
-| `/commit` | **P0** | AI-generated commit message + commit | 1 day |
-| `/review` | **P0** | Code review current changes | 1 day |
-| `/pr` | **P0** | Create pull request from context | 1 day |
-| `/test` | **HIGH** | Run tests and analyze failures | 1 day |
-| `/login` | **HIGH** | Authentication management | 0.5 day |
-| `/search` | MEDIUM | Web search within session | 0.5 day |
-| `/image` | MEDIUM | Screenshot/diagram analysis | 0.5 day |
-| `/profile` | LOW | Switch config profiles | 0.5 day |
-| `/theme` | LOW | UI theme picker | 1 day |
-| `/fleet` | LOW | Launch specialized agent fleet | 2 days |
+| Command    | Priority | Description                          | Effort  |
+| ---------- | -------- | ------------------------------------ | ------- |
+| `/commit`  | **P0**   | AI-generated commit message + commit | 1 day   |
+| `/review`  | **P0**   | Code review current changes          | 1 day   |
+| `/pr`      | **P0**   | Create pull request from context     | 1 day   |
+| `/test`    | **HIGH** | Run tests and analyze failures       | 1 day   |
+| `/login`   | **HIGH** | Authentication management            | 0.5 day |
+| `/search`  | MEDIUM   | Web search within session            | 0.5 day |
+| `/image`   | MEDIUM   | Screenshot/diagram analysis          | 0.5 day |
+| `/profile` | LOW      | Switch config profiles               | 0.5 day |
+| `/theme`   | LOW      | UI theme picker                      | 1 day   |
+| `/fleet`   | LOW      | Launch specialized agent fleet       | 2 days  |
 
 ### 7.5 CI/CD Integration Gaps
 
-| Gap | Priority | Description |
-|-----|----------|-------------|
-| Semantic exit codes | **HIGH** | 0=success, 1=error, 2=no changes |
+| Gap                   | Priority | Description                          |
+| --------------------- | -------- | ------------------------------------ |
+| Semantic exit codes   | **HIGH** | 0=success, 1=error, 2=no changes     |
 | `--auto-approve` flag | **HIGH** | Non-interactive tool approval for CI |
-| stdin piping | **HIGH** | `git diff \| dbcode -p "review"` |
-| `--max-cost` flag | MEDIUM | Cost guard for CI runs |
-| GitHub Actions action | MEDIUM | Official `dbcode-action` |
-| Artifact output | LOW | Structured CI output (patches, PRs) |
+| stdin piping          | **HIGH** | `git diff \| dbcode -p "review"`     |
+| `--max-cost` flag     | MEDIUM   | Cost guard for CI runs               |
+| GitHub Actions action | MEDIUM   | Official `dbcode-action`             |
+| Artifact output       | LOW      | Structured CI output (patches, PRs)  |
 
 ### 7.6 Enhanced /doctor Command [HIGH]
 
@@ -947,6 +950,7 @@ Current architecture (tool registry + agent loop) maps cleanly to ACP.
 **Current**: 3 generic types (explore/plan/general) + custom definitions.
 
 **Proposed**: Ship built-in specialized agents:
+
 - `reviewer` — Code review with severity classification
 - `tester` — Test execution and analysis
 - `security-scanner` — Security vulnerability detection
@@ -958,6 +962,7 @@ Current architecture (tool registry + agent loop) maps cleanly to ACP.
 ### 7.9 Startup Performance
 
 **Potential bottlenecks identified**:
+
 1. 30+ parallel dynamic imports at startup
 2. Skill loading from 4 directories (filesystem I/O)
 3. No startup time measurement
@@ -975,17 +980,18 @@ Current architecture (tool registry + agent loop) maps cleanly to ACP.
 
 ### Current State
 
-| Metric | Value |
-|--------|-------|
-| Test files | 131 (123 passing, 8 failing) |
-| Test cases | 2,312 (2,277 passing, 35 failing) |
-| Execution time | ~17s |
-| LLM mocking | Excellent (3 patterns, no real API calls) |
-| CI pipeline | GitHub Actions (typecheck → lint → test → build) |
+| Metric         | Value                                            |
+| -------------- | ------------------------------------------------ |
+| Test files     | 131 (123 passing, 8 failing)                     |
+| Test cases     | 2,312 (2,277 passing, 35 failing)                |
+| Execution time | ~17s                                             |
+| LLM mocking    | Excellent (3 patterns, no real API calls)        |
+| CI pipeline    | GitHub Actions (typecheck → lint → test → build) |
 
 ### 8.1 Fix 35 Failing Tests [P0]
 
 **Root causes**:
+
 1. `persistent-store.test.ts` (18 failures) — Constructor API changed
 2. `config/loader.test.ts` (2) — Default model changed to `gpt-5.1-codex-mini`
 3. `memory-command.test.ts` (5) — Output format changed
@@ -997,14 +1003,14 @@ Current architecture (tool registry + agent loop) maps cleanly to ACP.
 
 ### 8.2 Missing Critical Test Files [HIGH]
 
-| Missing Test | Priority | Reason |
-|-------------|----------|--------|
-| `responses-client.test.ts` | HIGH | New file, zero tests, used by default model |
-| `injection-detector.test.ts` | HIGH | Security-critical, no dedicated tests |
-| `agent.test.ts` (tool def) | HIGH | Complex subagent spawning, untested |
-| `output-limiter.test.ts` | MEDIUM | No tests |
-| `path-filter.test.ts` | MEDIUM | No tests |
-| `mcp/manager.test.ts` | MEDIUM | No dedicated tests |
+| Missing Test                 | Priority | Reason                                      |
+| ---------------------------- | -------- | ------------------------------------------- |
+| `responses-client.test.ts`   | HIGH     | New file, zero tests, used by default model |
+| `injection-detector.test.ts` | HIGH     | Security-critical, no dedicated tests       |
+| `agent.test.ts` (tool def)   | HIGH     | Complex subagent spawning, untested         |
+| `output-limiter.test.ts`     | MEDIUM   | No tests                                    |
+| `path-filter.test.ts`        | MEDIUM   | No tests                                    |
+| `mcp/manager.test.ts`        | MEDIUM   | No dedicated tests                          |
 
 ### 8.3 CLI Component Tests are Shallow [MEDIUM]
 
@@ -1020,6 +1026,7 @@ PermissionPrompt using `ink-testing-library`.
 **Current**: No thresholds configured. Coverage can silently regress.
 
 **Proposed**: Add to `vitest.config.ts`:
+
 ```typescript
 coverage: {
   thresholds: {
@@ -1033,20 +1040,21 @@ coverage: {
 
 ### 8.5 CI/CD Improvements
 
-| Improvement | Priority | Description |
-|------------|----------|-------------|
-| Coverage thresholds | HIGH | Prevent silent regression |
-| Node version matrix | MEDIUM | Test on Node 20.x + 22.x |
-| Circular dependency check | MEDIUM | `madge --circular src/` in CI |
-| E2E test job (scheduled) | MEDIUM | Run smoke tests on schedule |
-| Pre-commit hooks | LOW | husky + lint-staged |
-| Coverage PR comments | LOW | vitest-coverage-report action |
+| Improvement               | Priority | Description                   |
+| ------------------------- | -------- | ----------------------------- |
+| Coverage thresholds       | HIGH     | Prevent silent regression     |
+| Node version matrix       | MEDIUM   | Test on Node 20.x + 22.x      |
+| Circular dependency check | MEDIUM   | `madge --circular src/` in CI |
+| E2E test job (scheduled)  | MEDIUM   | Run smoke tests on schedule   |
+| Pre-commit hooks          | LOW      | husky + lint-staged           |
+| Coverage PR comments      | LOW      | vitest-coverage-report action |
 
 ### 8.6 Shared LLM Mock Factory [MEDIUM]
 
 **Current**: 3 different mock patterns duplicated across test files.
 
 **Proposed**: Create `test/helpers/mock-llm.ts` with:
+
 - `createMockProvider(responses)` — full provider mock
 - `createMockStream(chunks)` — streaming mock
 - `createMockToolResult(name, output)` — tool result mock
@@ -1063,84 +1071,84 @@ coverage: {
 
 ### P0 — Ship This Week (12 items)
 
-| # | Item | Category | Effort | Impact |
-|---|------|----------|--------|--------|
-| 1 | Fix 35 failing tests | Testing | 1-2d | CI health |
-| 2 | ResponsesAPIClient add retry logic | LLM | 0.5d | Default model resilience |
-| 3 | Fix abort signal memory leak | LLM | 15min | Correctness |
-| 4 | Update model capabilities (Claude 4.x, GPT-4.1) | LLM | 0.5d | Model support |
-| 5 | Fix /context command (0% hardcoded) | DX | 0.5d | Broken feature |
-| 6 | Fix setup wizard i18n | DX | 0.25d | First-run UX |
-| 7 | Show diff by default (one-line change) | UI | 0.25d | Biggest visual win |
-| 8 | Add working timer to Spinner | UI | 0.25d | Perceived responsiveness |
-| 9 | Wire token/cost events to StatusBar | UI | 1d | Real-time feedback |
-| 10 | Format permission arguments (not raw JSON) | UI | 0.5d | Permission UX |
-| 11 | Add /commit command | DX | 1d | Table stakes |
-| 12 | Add /review command | DX | 1d | Table stakes |
+| #   | Item                                            | Category | Effort | Impact                   |
+| --- | ----------------------------------------------- | -------- | ------ | ------------------------ |
+| 1   | Fix 35 failing tests                            | Testing  | 1-2d   | CI health                |
+| 2   | ResponsesAPIClient add retry logic              | LLM      | 0.5d   | Default model resilience |
+| 3   | Fix abort signal memory leak                    | LLM      | 15min  | Correctness              |
+| 4   | Update model capabilities (Claude 4.x, GPT-4.1) | LLM      | 0.5d   | Model support            |
+| 5   | Fix /context command (0% hardcoded)             | DX       | 0.5d   | Broken feature           |
+| 6   | Fix setup wizard i18n                           | DX       | 0.25d  | First-run UX             |
+| 7   | Show diff by default (one-line change)          | UI       | 0.25d  | Biggest visual win       |
+| 8   | Add working timer to Spinner                    | UI       | 0.25d  | Perceived responsiveness |
+| 9   | Wire token/cost events to StatusBar             | UI       | 1d     | Real-time feedback       |
+| 10  | Format permission arguments (not raw JSON)      | UI       | 0.5d   | Permission UX            |
+| 11  | Add /commit command                             | DX       | 1d     | Table stakes             |
+| 12  | Add /review command                             | DX       | 1d     | Table stakes             |
 
 **Total P0 effort: ~7 days**
 
 ### P1 — Ship This Month (20 items)
 
-| # | Item | Category | Effort |
-|---|------|----------|--------|
-| 13 | MCP Tool Search / Deferred Loading | MCP | 3-5d |
-| 14 | grep_search → ripgrep wrapper | Tools | 1-2d |
-| 15 | Session resumption with context restoration | Core | 8-12h |
-| 16 | Connect shiki syntax highlighting | UI | 0.5-1d |
-| 17 | ! Bash mode | UI | 0.5d |
-| 18 | Inline permission deny feedback | UI | 0.5d |
-| 19 | "Always" persistent permission | UI | 0.5d |
-| 20 | Per-category auto-approve | Security | 1-2d |
-| 21 | bash_exec output size limit | Tools | 0.5d |
-| 22 | Tool metadata system | Tools | 1-2d |
-| 23 | Multi-provider setup wizard | DX | 1d |
-| 24 | Unify error classification | LLM | 0.5d |
-| 25 | Adaptive compaction threshold | Core | 3-4h |
-| 26 | Rate-limit header awareness | Core | 3-4h |
-| 27 | Async git context + caching | Core | 4-6h |
-| 28 | Circuit breaker for providers | LLM | 1-2d |
-| 29 | CI semantic exit codes | DX | 0.5d |
-| 30 | --auto-approve flag for CI | DX | 0.5d |
-| 31 | Command filter bypass hardening | Security | 0.5d |
-| 32 | Wire unimplemented security config | Security | 2-3d |
+| #   | Item                                        | Category | Effort |
+| --- | ------------------------------------------- | -------- | ------ |
+| 13  | MCP Tool Search / Deferred Loading          | MCP      | 3-5d   |
+| 14  | grep_search → ripgrep wrapper               | Tools    | 1-2d   |
+| 15  | Session resumption with context restoration | Core     | 8-12h  |
+| 16  | Connect shiki syntax highlighting           | UI       | 0.5-1d |
+| 17  | ! Bash mode                                 | UI       | 0.5d   |
+| 18  | Inline permission deny feedback             | UI       | 0.5d   |
+| 19  | "Always" persistent permission              | UI       | 0.5d   |
+| 20  | Per-category auto-approve                   | Security | 1-2d   |
+| 21  | bash_exec output size limit                 | Tools    | 0.5d   |
+| 22  | Tool metadata system                        | Tools    | 1-2d   |
+| 23  | Multi-provider setup wizard                 | DX       | 1d     |
+| 24  | Unify error classification                  | LLM      | 0.5d   |
+| 25  | Adaptive compaction threshold               | Core     | 3-4h   |
+| 26  | Rate-limit header awareness                 | Core     | 3-4h   |
+| 27  | Async git context + caching                 | Core     | 4-6h   |
+| 28  | Circuit breaker for providers               | LLM      | 1-2d   |
+| 29  | CI semantic exit codes                      | DX       | 0.5d   |
+| 30  | --auto-approve flag for CI                  | DX       | 0.5d   |
+| 31  | Command filter bypass hardening             | Security | 0.5d   |
+| 32  | Wire unimplemented security config          | Security | 2-3d   |
 
 **Total P1 effort: ~25-35 days**
 
 ### P2 — Ship Next Quarter (30+ items)
 
-| # | Item | Category | Effort |
-|---|------|----------|--------|
-| 33 | Summarization caching | Core | 6-8h |
-| 34 | Content-addressable checkpoint storage | Core | 8-12h |
-| 35 | Checkpoint auto-pruning | Core | 3-4h |
-| 36 | Agent Teams shared task list | MCP/Agents | 2-3d |
-| 37 | Agent Teams inter-agent messaging | MCP/Agents | 2-3d |
-| 38 | Word-level diff highlighting | UI | 1d |
-| 39 | Ctrl+R reverse history search | UI | 1d |
-| 40 | Completion notification | UI | 0.5d |
-| 41 | /btw side questions | UI | 1d |
-| 42 | Esc+Esc rewind menu | UI | 2d |
-| 43 | Customizable statusline | UI | 2d |
-| 44 | Interactive /diff viewer | UI | 2d |
-| 45 | Stream resumption on failure | LLM | 2-3d |
-| 46 | Cost budget alerts | LLM | 1d |
-| 47 | Multi-tokenizer support | LLM | 1-2d |
-| 48 | PII detection in output | Security | 1-2d |
-| 49 | Windows native sandbox | Security | 3-5d |
-| 50 | OWASP code generation scanner | Security | 2-3d |
-| 51 | Skills hot-reload | Skills | 1-2d |
-| 52 | MCP health monitoring | MCP | 1-2d |
-| 53 | Worktree merge-back | Agents | 2-3d |
-| 54 | /test command | DX | 1d |
-| 55 | /pr command | DX | 1d |
-| 56 | Enhanced /doctor | DX | 1d |
-| 57 | Gemini provider routing | LLM | 1-2d |
-| 58 | ACP support | DX | 3-5d |
-| 59 | Concurrency limiter for tools | Tools | 1d |
-| 60 | Semantic rehydration | Core | 6-8h |
-| 61 | Consolidate bubblewrap | Security | 0.5d |
-| 62 | Injection detector context awareness | Security | 0.5d |
+| #   | Item                                   | Category   | Effort |
+| --- | -------------------------------------- | ---------- | ------ |
+| 33  | Summarization caching                  | Core       | 6-8h   |
+| 34  | Content-addressable checkpoint storage | Core       | 8-12h  |
+| 35  | Checkpoint auto-pruning                | Core       | 3-4h   |
+| 36  | Agent Teams shared task list           | MCP/Agents | 2-3d   |
+| 37  | Agent Teams inter-agent messaging      | MCP/Agents | 2-3d   |
+| 38  | Word-level diff highlighting           | UI         | 1d     |
+| 39  | Ctrl+R reverse history search          | UI         | 1d     |
+| 40  | Completion notification                | UI         | 0.5d   |
+| 41  | /btw side questions                    | UI         | 1d     |
+| 42  | Esc+Esc rewind menu                    | UI         | 2d     |
+| 43  | Customizable statusline                | UI         | 2d     |
+| 44  | Interactive /diff viewer               | UI         | 2d     |
+| 45  | Stream resumption on failure           | LLM        | 2-3d   |
+| 46  | Cost budget alerts                     | LLM        | 1d     |
+| 47  | Multi-tokenizer support                | LLM        | 1-2d   |
+| 48  | PII detection in output                | Security   | 1-2d   |
+| 49  | Windows native sandbox                 | Security   | 3-5d   |
+| 50  | OWASP code generation scanner          | Security   | 2-3d   |
+| 51  | Skills hot-reload                      | Skills     | 1-2d   |
+| 52  | MCP health monitoring                  | MCP        | 1-2d   |
+| 53  | Worktree merge-back                    | Agents     | 2-3d   |
+| 54  | /test command                          | DX         | 1d     |
+| 55  | /pr command                            | DX         | 1d     |
+| 56  | Enhanced /doctor                       | DX         | 1d     |
+| 57  | Gemini provider routing                | LLM        | 1-2d   |
+| 58  | ACP support                            | DX         | 3-5d   |
+| 59  | Concurrency limiter for tools          | Tools      | 1d     |
+| 60  | Semantic rehydration                   | Core       | 6-8h   |
+| 61  | Consolidate bubblewrap                 | Security   | 0.5d   |
+| 62  | Injection detector context awareness   | Security   | 0.5d   |
 
 ### P3 — Backlog (30+ items)
 
@@ -1232,24 +1240,25 @@ Day 14-15: /btw side questions + completion notification
 
 ## Part XI: Risk Assessment
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|------------|------------|
-| grep_search ripgrep not installed | Performance fallback | Medium | Keep JS fallback, auto-detect `rg` in PATH |
-| MCP Tool Search breaks existing workflows | User disruption | Low | Feature flag + gradual rollout |
-| shiki async init blocks rendering | Startup delay | Medium | Dynamic import + eager singleton cache |
-| Checkpoint storage migration | Data loss | Low | Versioned checkpoint format, auto-migrate |
-| 35 test fixes cascade | More broken tests | Medium | Fix in dependency order, run full suite after each |
-| Agent Teams message flooding | Token waste | Medium | Message rate limiting + queue depth control |
-| Windows sandbox complexity | Platform issues | High | Phased approach, community testing |
-| Context resumption state corruption | Session loss | Medium | Validation + fallback to fresh state |
-| DEC Mode 2026 terminal compat | Visual glitches | Low | Graceful fallback, terminal detection |
-| Multi-tokenizer accuracy gaps | Bad compaction | Medium | Conservative estimates for unknown tokenizers |
+| Risk                                      | Impact               | Probability | Mitigation                                         |
+| ----------------------------------------- | -------------------- | ----------- | -------------------------------------------------- |
+| grep_search ripgrep not installed         | Performance fallback | Medium      | Keep JS fallback, auto-detect `rg` in PATH         |
+| MCP Tool Search breaks existing workflows | User disruption      | Low         | Feature flag + gradual rollout                     |
+| shiki async init blocks rendering         | Startup delay        | Medium      | Dynamic import + eager singleton cache             |
+| Checkpoint storage migration              | Data loss            | Low         | Versioned checkpoint format, auto-migrate          |
+| 35 test fixes cascade                     | More broken tests    | Medium      | Fix in dependency order, run full suite after each |
+| Agent Teams message flooding              | Token waste          | Medium      | Message rate limiting + queue depth control        |
+| Windows sandbox complexity                | Platform issues      | High        | Phased approach, community testing                 |
+| Context resumption state corruption       | Session loss         | Medium      | Validation + fallback to fresh state               |
+| DEC Mode 2026 terminal compat             | Visual glitches      | Low         | Graceful fallback, terminal detection              |
+| Multi-tokenizer accuracy gaps             | Bad compaction       | Medium      | Conservative estimates for unknown tokenizers      |
 
 ---
 
 ## Part XII: Metrics & Success Criteria
 
 ### Sprint 1 Success
+
 - [ ] CI: 0 failing tests, all checks green
 - [ ] StatusBar: Real-time `↑Nk ↓Mk $0.XX` token/cost display
 - [ ] ToolCallBlock: Diff visible by default without verbose mode
@@ -1258,21 +1267,25 @@ Day 14-15: /btw side questions + completion notification
 - [ ] /commit and /review commands functional
 
 ### Sprint 2 Success
+
 - [ ] grep_search: <100ms on 10K file repos (vs ~10s current)
 - [ ] bash_exec: Output capped at 1MB with truncation notice
 - [ ] Setup wizard: Provider selection → model selection flow
 
 ### Sprint 3 Success
+
 - [ ] MCP tools: 85%+ token reduction in system prompt
 - [ ] Session resume: Full context state restoration
 - [ ] Provider failures: Circuit breaker prevents cascade
 
 ### Sprint 4 Success
+
 - [ ] ! Bash mode: Direct shell execution working
 - [ ] Permission deny: Feedback text reaches agent
 - [ ] CI mode: Semantic exit codes + --auto-approve
 
 ### Sprint 5 Success
+
 - [ ] Agent Teams: Shared task list with claim/complete
 - [ ] Agent messaging: Mid-execution communication working
 - [ ] Rewind: Esc+Esc shows checkpoint selection menu
@@ -1283,88 +1296,88 @@ Day 14-15: /btw side questions + completion notification
 
 ### Files to Modify (30+)
 
-| File | Sprints | Changes |
-|------|---------|---------|
-| `src/core/agent-loop.ts` | 1,3,4 | Retry headers, budget warning, deny feedback |
-| `src/core/context-manager.ts` | 3 | Adaptive threshold, summarization cache, semantic rehydration |
-| `src/core/checkpoint-manager.ts` | P2 | Content-addressable storage, auto-pruning |
-| `src/core/system-prompt-builder.ts` | 3 | Async git, deferred tools rendering |
-| `src/core/session-manager.ts` | 3 | Context state persistence |
-| `src/llm/responses-client.ts` | 1 | Add retry logic |
-| `src/llm/model-capabilities.ts` | 1 | Add modern models |
-| `src/llm/model-router.ts` | 3,P2 | Circuit breaker, health monitoring |
-| `src/llm/providers/anthropic.ts` | 1 | Fix abort leak, timeout refresh |
-| `src/llm/cost-tracker.ts` | P2 | Budget alerts, unified pricing |
-| `src/llm/token-counter.ts` | P2 | Multi-tokenizer, larger cache |
-| `src/tools/definitions/grep-search.ts` | 2 | ripgrep wrapper |
-| `src/tools/definitions/bash-exec.ts` | 2 | Output size limit |
-| `src/tools/definitions/glob-search.ts` | 2 | Result limit |
-| `src/tools/definitions/file-edit.ts` | 2 | Diff output |
-| `src/tools/types.ts` | 2 | ToolMetadata interface |
-| `src/tools/registry.ts` | 2,3 | Metadata, deferred registration |
-| `src/tools/executor.ts` | 2 | Concurrency limiter, timing metrics |
-| `src/cli/components/ToolCallBlock.tsx` | 1,4 | Diff default, word-level |
-| `src/cli/components/StatusBar.tsx` | 1,5 | Token counter, responsive |
-| `src/cli/components/Spinner.tsx` | 1 | Working timer |
-| `src/cli/components/StreamingMessage.tsx` | 1 | Remove "assistant:" |
-| `src/cli/components/PermissionPrompt.tsx` | 4 | Deny feedback, "Always" |
-| `src/cli/components/UserInput.tsx` | 4 | ! bash, Ctrl+R |
-| `src/cli/hooks/useAgentLoop.ts` | 1,4 | Usage events, notification |
-| `src/cli/renderer/markdown.ts` | 4 | Shiki integration |
-| `src/cli/App.tsx` | 1,5 | StatusBar wiring, keybindings |
-| `src/mcp/tool-bridge.ts` | 3 | Deferred loading |
-| `src/permissions/manager.ts` | 4 | Category auto-approve, deny feedback |
-| `src/config/schema.ts` | 4 | Category permissions, notification |
-| `src/guardrails/command-filter.ts` | 4 | Bypass hardening |
-| `src/index.ts` | 1 | Setup wizard, CostTracker wiring |
-| `src/subagents/shared-state.ts` | 5 | Task list, messaging |
+| File                                      | Sprints | Changes                                                       |
+| ----------------------------------------- | ------- | ------------------------------------------------------------- |
+| `src/core/agent-loop.ts`                  | 1,3,4   | Retry headers, budget warning, deny feedback                  |
+| `src/core/context-manager.ts`             | 3       | Adaptive threshold, summarization cache, semantic rehydration |
+| `src/core/checkpoint-manager.ts`          | P2      | Content-addressable storage, auto-pruning                     |
+| `src/core/system-prompt-builder.ts`       | 3       | Async git, deferred tools rendering                           |
+| `src/core/session-manager.ts`             | 3       | Context state persistence                                     |
+| `src/llm/responses-client.ts`             | 1       | Add retry logic                                               |
+| `src/llm/model-capabilities.ts`           | 1       | Add modern models                                             |
+| `src/llm/model-router.ts`                 | 3,P2    | Circuit breaker, health monitoring                            |
+| `src/llm/providers/anthropic.ts`          | 1       | Fix abort leak, timeout refresh                               |
+| `src/llm/cost-tracker.ts`                 | P2      | Budget alerts, unified pricing                                |
+| `src/llm/token-counter.ts`                | P2      | Multi-tokenizer, larger cache                                 |
+| `src/tools/definitions/grep-search.ts`    | 2       | ripgrep wrapper                                               |
+| `src/tools/definitions/bash-exec.ts`      | 2       | Output size limit                                             |
+| `src/tools/definitions/glob-search.ts`    | 2       | Result limit                                                  |
+| `src/tools/definitions/file-edit.ts`      | 2       | Diff output                                                   |
+| `src/tools/types.ts`                      | 2       | ToolMetadata interface                                        |
+| `src/tools/registry.ts`                   | 2,3     | Metadata, deferred registration                               |
+| `src/tools/executor.ts`                   | 2       | Concurrency limiter, timing metrics                           |
+| `src/cli/components/ToolCallBlock.tsx`    | 1,4     | Diff default, word-level                                      |
+| `src/cli/components/StatusBar.tsx`        | 1,5     | Token counter, responsive                                     |
+| `src/cli/components/Spinner.tsx`          | 1       | Working timer                                                 |
+| `src/cli/components/StreamingMessage.tsx` | 1       | Remove "assistant:"                                           |
+| `src/cli/components/PermissionPrompt.tsx` | 4       | Deny feedback, "Always"                                       |
+| `src/cli/components/UserInput.tsx`        | 4       | ! bash, Ctrl+R                                                |
+| `src/cli/hooks/useAgentLoop.ts`           | 1,4     | Usage events, notification                                    |
+| `src/cli/renderer/markdown.ts`            | 4       | Shiki integration                                             |
+| `src/cli/App.tsx`                         | 1,5     | StatusBar wiring, keybindings                                 |
+| `src/mcp/tool-bridge.ts`                  | 3       | Deferred loading                                              |
+| `src/permissions/manager.ts`              | 4       | Category auto-approve, deny feedback                          |
+| `src/config/schema.ts`                    | 4       | Category permissions, notification                            |
+| `src/guardrails/command-filter.ts`        | 4       | Bypass hardening                                              |
+| `src/index.ts`                            | 1       | Setup wizard, CostTracker wiring                              |
+| `src/subagents/shared-state.ts`           | 5       | Task list, messaging                                          |
 
 ### New Files to Create (15+)
 
-| File | Sprint | Description |
-|------|--------|-------------|
-| `src/tools/definitions/tool-search.ts` | 3 | MCP Tool Search tool |
-| `src/tools/definitions/multi-file-edit.ts` | P2 | Atomic multi-file edits |
-| `src/commands/commit.ts` | 1 | AI commit command |
-| `src/commands/review.ts` | 1 | Code review command |
-| `src/commands/test.ts` | P2 | Test runner command |
-| `src/commands/pr.ts` | P2 | PR creation command |
-| `src/llm/circuit-breaker.ts` | 3 | Circuit breaker pattern |
-| `src/llm/error-classifier.ts` | 3 | Unified error classification |
-| `src/guardrails/pii-scanner.ts` | P2 | PII detection |
-| `src/guardrails/code-scanner.ts` | P2 | OWASP vulnerability scanner |
-| `src/permissions/audit-log.ts` | P2 | Audit trail |
-| `src/cli/components/RewindMenu.tsx` | 5 | Esc+Esc rewind overlay |
-| `src/cli/components/SideQuestionOverlay.tsx` | 5 | /btw overlay |
-| `src/cli/components/DiffViewer.tsx` | 5 | Interactive diff |
-| `test/helpers/mock-llm.ts` | 1 | Shared LLM mock factory |
+| File                                         | Sprint | Description                  |
+| -------------------------------------------- | ------ | ---------------------------- |
+| `src/tools/definitions/tool-search.ts`       | 3      | MCP Tool Search tool         |
+| `src/tools/definitions/multi-file-edit.ts`   | P2     | Atomic multi-file edits      |
+| `src/commands/commit.ts`                     | 1      | AI commit command            |
+| `src/commands/review.ts`                     | 1      | Code review command          |
+| `src/commands/test.ts`                       | P2     | Test runner command          |
+| `src/commands/pr.ts`                         | P2     | PR creation command          |
+| `src/llm/circuit-breaker.ts`                 | 3      | Circuit breaker pattern      |
+| `src/llm/error-classifier.ts`                | 3      | Unified error classification |
+| `src/guardrails/pii-scanner.ts`              | P2     | PII detection                |
+| `src/guardrails/code-scanner.ts`             | P2     | OWASP vulnerability scanner  |
+| `src/permissions/audit-log.ts`               | P2     | Audit trail                  |
+| `src/cli/components/RewindMenu.tsx`          | 5      | Esc+Esc rewind overlay       |
+| `src/cli/components/SideQuestionOverlay.tsx` | 5      | /btw overlay                 |
+| `src/cli/components/DiffViewer.tsx`          | 5      | Interactive diff             |
+| `test/helpers/mock-llm.ts`                   | 1      | Shared LLM mock factory      |
 
 ---
 
 ## Appendix B: Competitive Intelligence Sources (March 2026)
 
-| Source | Key Data |
-|--------|----------|
-| Claude Code Changelog | Agent Teams, MCP Tool Search, ACP |
-| Codex CLI GitHub | Rust/Ratatui rewrite, GPT-5.x |
-| Copilot CLI Blog | GA Feb 2026, /fleet, specialized agents |
-| Cline CLI 2.0 Launch | Parallel agents, ACP, free models |
-| Gemini CLI Release | 1M context, Conductor, open-source |
-| Cursor CLI | 8 parallel agents, <200ms completions |
-| JetBrains ACP | Agent Client Protocol standard |
+| Source                | Key Data                                |
+| --------------------- | --------------------------------------- |
+| Claude Code Changelog | Agent Teams, MCP Tool Search, ACP       |
+| Codex CLI GitHub      | Rust/Ratatui rewrite, GPT-5.x           |
+| Copilot CLI Blog      | GA Feb 2026, /fleet, specialized agents |
+| Cline CLI 2.0 Launch  | Parallel agents, ACP, free models       |
+| Gemini CLI Release    | 1M context, Conductor, open-source      |
+| Cursor CLI            | 8 parallel agents, <200ms completions   |
+| JetBrains ACP         | Agent Client Protocol standard          |
 
 ---
 
 ## Appendix C: Analysis Team
 
-| Specialist | Scope | Files Analyzed | Improvements Found |
-|-----------|-------|----------------|-------------------|
-| core-architect | Core Engine | 8 files, ~3,000 lines | 22 |
-| llm-specialist | LLM Layer | 12 files, ~2,500 lines | 26 |
-| tools-expert | Tool System | 20 files, ~2,500 lines | 12 + 5 new tools |
-| ui-renderer | CLI UI/Rendering | 17 files, ~2,500 lines | 31 (23 validated + 8 new) |
-| permissions-security | Security | 22 files, ~2,200 lines | 19 + 5 dead code items |
-| mcp-skills | MCP/Skills/Agents | 22 files, ~2,200 lines | 16 |
-| dx-competitive | DX/Commands | 7 files + web research | 22 + competitive matrix |
-| testing-quality | Testing/Quality | 131 test files, 2,312 cases | 12 + CI improvements |
-| **Total** | **Full codebase** | **27,287 lines** | **160 improvements** |
+| Specialist           | Scope             | Files Analyzed              | Improvements Found        |
+| -------------------- | ----------------- | --------------------------- | ------------------------- |
+| core-architect       | Core Engine       | 8 files, ~3,000 lines       | 22                        |
+| llm-specialist       | LLM Layer         | 12 files, ~2,500 lines      | 26                        |
+| tools-expert         | Tool System       | 20 files, ~2,500 lines      | 12 + 5 new tools          |
+| ui-renderer          | CLI UI/Rendering  | 17 files, ~2,500 lines      | 31 (23 validated + 8 new) |
+| permissions-security | Security          | 22 files, ~2,200 lines      | 19 + 5 dead code items    |
+| mcp-skills           | MCP/Skills/Agents | 22 files, ~2,200 lines      | 16                        |
+| dx-competitive       | DX/Commands       | 7 files + web research      | 22 + competitive matrix   |
+| testing-quality      | Testing/Quality   | 131 test files, 2,312 cases | 12 + CI improvements      |
+| **Total**            | **Full codebase** | **27,287 lines**            | **160 improvements**      |

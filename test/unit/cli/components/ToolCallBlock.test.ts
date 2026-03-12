@@ -126,6 +126,22 @@ describe("ToolCallBlock", () => {
     });
   });
 
+  describe("metadata forwarding", () => {
+    it("should pass metadata to getToolHeaderInfo", async () => {
+      const { getToolHeaderInfo } = await import("../../../../src/cli/renderer/tool-display.js");
+      // Verify getToolHeaderInfo accepts metadata parameter
+      const info = getToolHeaderInfo(
+        "file_read",
+        "complete",
+        { file_path: "/a.ts" },
+        "content",
+        undefined,
+        { path: "/a.ts", totalLines: 10 },
+      );
+      expect(info.subtext).toContain("/a.ts");
+    });
+  });
+
   describe("exports", () => {
     it("should export ToolCallBlock function", async () => {
       const mod = await import("../../../../src/cli/components/ToolCallBlock.js");

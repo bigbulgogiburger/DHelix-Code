@@ -666,6 +666,7 @@ export function getToolHeaderInfo(
   args?: Record<string, unknown>,
   output?: string,
   duration?: number,
+  metadata?: Readonly<Record<string, unknown>>,
 ): ToolHeaderInfo {
   const config = toolDisplayMap[name];
   if (!config) {
@@ -679,7 +680,13 @@ export function getToolHeaderInfo(
   const verb = status === "running" ? config.runningHeaderVerb : config.headerVerb;
   const arg = config.extractHeaderArg?.(args);
   const header = arg ? `${verb} ${arg}` : verb;
-  const subtext = config.extractSubtext?.(args, output, duration);
+  let subtext = config.extractSubtext?.(args, output, duration);
+
+  // When metadata is available, use extractDetail for richer subtext
+  if (metadata && config.extractDetail) {
+    const detail = config.extractDetail(args, output, metadata);
+    if (detail) subtext = detail;
+  }
 
   return { header, color: config.headerColor, subtext };
 }

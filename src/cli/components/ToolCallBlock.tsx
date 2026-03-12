@@ -102,7 +102,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
 }: ToolCallBlockProps) {
   const spinnerChar = useSpinner(status === "running");
   const duration = startTime && status !== "running" ? Date.now() - startTime : undefined;
-  const headerInfo = getToolHeaderInfo(name, status, args, output, duration);
+  const headerInfo = getToolHeaderInfo(name, status, args, output, duration, metadata);
   const preview = getToolPreview(name, status, args, output, metadata);
 
   // Determine header color override for error/denied
@@ -132,11 +132,39 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
       {/* Diff preview — always shown when available */}
       {preview ? <DiffPreview preview={preview} /> : null}
 
+      {/* Collapsed output preview — show first 3 lines when not expanded */}
+      {!isExpanded &&
+        !preview &&
+        output &&
+        status !== "running" &&
+        (() => {
+          const lines = output.trim().split("\n");
+          const max = 3;
+          const shown = lines.slice(0, max);
+          const hidden = lines.length - max;
+          return (
+            <Box marginLeft={4} flexDirection="column">
+              {shown.map((line, i) => (
+                <Text key={i} color="gray" wrap="truncate-end">
+                  {line}
+                </Text>
+              ))}
+              {hidden > 0 && (
+                <Text dimColor>
+                  {"  … +"}
+                  {hidden}
+                  {" lines (ctrl+o to expand)"}
+                </Text>
+              )}
+            </Box>
+          );
+        })()}
+
       {/* Raw output fallback — only when expanded and no diff */}
       {isExpanded && output && !preview ? (
         <Box marginLeft={4}>
           <Text color="gray" wrap="truncate-end">
-            {output.length > 500 ? output.slice(0, 500) + "..." : output}
+            {output.length > 2000 ? output.slice(0, 2000) + "..." : output}
           </Text>
         </Box>
       ) : null}

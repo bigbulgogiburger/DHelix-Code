@@ -19,29 +19,29 @@ Claude Code, Codex CLI (v0.105+), GitHub Copilot CLI, Cline CLI 2.0 등
 
 ### 삭제된 항목과 사유
 
-| 삭제 항목 | 원 Source | 삭제 사유 |
-|-----------|-----------|-----------|
-| Architect/Editor Split | Aider 단독 | `/plan` 모드 + subagent 2-phase가 이미 동일 역할 수행 |
-| /run Auto-Fix Loop | Aider 단독 | 에이전트 루프의 ReAct 패턴이 "실행→실패→수정→재실행"을 자연스럽게 수행 |
-| Auto-Lint After Edit | Aider 단독 | `hooks/` PostToolUse 시스템으로 이미 구현 가능. 사용자 설정 영역 |
-| /personality | Codex 단독 | `/output-style` 명령이 이미 존재 (Default/Explanatory/Learning) |
-| Voice Input | Codex 단독 | CLI 도구에서 음성 입력은 니치. 외부 의존성(Wispr) 필요 |
-| Feature Flags | Codex 단독 | 5-level config 시스템으로 충분. 실험 기능 없는 현 단계에서 시기상조 |
-| Shell Completion | Codex 단독 | Commander.js 12.x 내장 자동완성으로 충분 |
-| Paste Burst Detection | Codex 단독 | Ink 5.x의 React reconciliation이 이미 합리적으로 처리 |
+| 삭제 항목              | 원 Source  | 삭제 사유                                                              |
+| ---------------------- | ---------- | ---------------------------------------------------------------------- |
+| Architect/Editor Split | Aider 단독 | `/plan` 모드 + subagent 2-phase가 이미 동일 역할 수행                  |
+| /run Auto-Fix Loop     | Aider 단독 | 에이전트 루프의 ReAct 패턴이 "실행→실패→수정→재실행"을 자연스럽게 수행 |
+| Auto-Lint After Edit   | Aider 단독 | `hooks/` PostToolUse 시스템으로 이미 구현 가능. 사용자 설정 영역       |
+| /personality           | Codex 단독 | `/output-style` 명령이 이미 존재 (Default/Explanatory/Learning)        |
+| Voice Input            | Codex 단독 | CLI 도구에서 음성 입력은 니치. 외부 의존성(Wispr) 필요                 |
+| Feature Flags          | Codex 단독 | 5-level config 시스템으로 충분. 실험 기능 없는 현 단계에서 시기상조    |
+| Shell Completion       | Codex 단독 | Commander.js 12.x 내장 자동완성으로 충분                               |
+| Paste Burst Detection  | Codex 단독 | Ink 5.x의 React reconciliation이 이미 합리적으로 처리                  |
 
 ### 현재 코드베이스에서 이미 구현된 기능 (확인 완료)
 
-| 기능 | 상태 | 위치 |
-|------|------|------|
-| @File Mentions | ✅ 구현 완료 | `src/mentions/parser.ts` + `resolver.ts` |
-| /output-style | ✅ 구현 완료 | `src/commands/output-style.ts` |
-| /permissions | ✅ 구현 완료 | `src/commands/permissions.ts` (10KB) |
-| PermissionPrompt 3-option | ✅ 구현 완료 | Allow once / Allow session / Deny |
-| Syntax highlighting (shiki) | ✅ 의존성 설치됨 | `package.json` → shiki 3.2.1 |
-| /stats | ✅ 구현 완료 | `src/commands/stats.ts` |
-| TaskManager | ✅ 구현 완료 | `src/core/task-manager.ts` |
-| Tab 자동완성 | ✅ 구현 완료 | `UserInput.tsx` (파일 glob, 10개 제안) |
+| 기능                        | 상태             | 위치                                     |
+| --------------------------- | ---------------- | ---------------------------------------- |
+| @File Mentions              | ✅ 구현 완료     | `src/mentions/parser.ts` + `resolver.ts` |
+| /output-style               | ✅ 구현 완료     | `src/commands/output-style.ts`           |
+| /permissions                | ✅ 구현 완료     | `src/commands/permissions.ts` (10KB)     |
+| PermissionPrompt 3-option   | ✅ 구현 완료     | Allow once / Allow session / Deny        |
+| Syntax highlighting (shiki) | ✅ 의존성 설치됨 | `package.json` → shiki 3.2.1             |
+| /stats                      | ✅ 구현 완료     | `src/commands/stats.ts`                  |
+| TaskManager                 | ✅ 구현 완료     | `src/core/task-manager.ts`               |
+| Tab 자동완성                | ✅ 구현 완료     | `UserInput.tsx` (파일 glob, 10개 제안)   |
 
 ---
 
@@ -101,47 +101,47 @@ Sprint 5+ (장기) — "차별화" [Tier 4]
 
 가장 성숙한 CLI AI 도구. dbcode의 주요 벤치마크 대상.
 
-| 카테고리 | 핵심 기능 | dbcode 현황 | 격차 |
-|----------|-----------|-------------|------|
-| **비용 추적** | Customizable Statusline (JSON→셸 스크립트) | 고정 StatusBar | 높음 |
-| **비용 추적** | /cost 세션 비용 | /cost 존재, 비용 미연결 | 중간 |
-| **비용 추적** | 실시간 context % (70% 노랑, 90% 빨강) | % 표시하나 실시간 아님 | 중간 |
-| **입력** | ! Bash Mode | 없음 | 높음 |
-| **입력** | @ File Mentions | ✅ 구현됨 (드롭다운 UI 미흡) | 낮음 |
-| **입력** | Ctrl+R 역검색 | 없음 | 중간 |
-| **입력** | Ctrl+G 외부 에디터 | 없음 | 낮음 |
-| **대화** | /btw 사이드 질문 | 없음 | 중간 |
-| **대화** | Esc+Esc 되돌리기 메뉴 | /rewind만 존재 | 중간 |
-| **디스플레이** | Syntax Highlighting | shiki 설치됨, 미연결 | 낮음 |
-| **디스플레이** | /theme 테마 선택 | 없음 | 낮음 |
-| **PR/Git** | PR Review Status Footer | 없음 | 낮음 |
-| **PR/Git** | Interactive /diff | /diff 있으나 인터랙티브 아님 | 중간 |
-| **고급** | Task List (Ctrl+T) | TaskManager 있으나 UI 토글 없음 | 낮음 |
-| **고급** | Prompt Suggestions | 없음 | 낮음 |
-| **고급** | /context 컬러 그리드 | /context 있으나 그리드 없음 | 낮음 |
+| 카테고리       | 핵심 기능                                  | dbcode 현황                     | 격차 |
+| -------------- | ------------------------------------------ | ------------------------------- | ---- |
+| **비용 추적**  | Customizable Statusline (JSON→셸 스크립트) | 고정 StatusBar                  | 높음 |
+| **비용 추적**  | /cost 세션 비용                            | /cost 존재, 비용 미연결         | 중간 |
+| **비용 추적**  | 실시간 context % (70% 노랑, 90% 빨강)      | % 표시하나 실시간 아님          | 중간 |
+| **입력**       | ! Bash Mode                                | 없음                            | 높음 |
+| **입력**       | @ File Mentions                            | ✅ 구현됨 (드롭다운 UI 미흡)    | 낮음 |
+| **입력**       | Ctrl+R 역검색                              | 없음                            | 중간 |
+| **입력**       | Ctrl+G 외부 에디터                         | 없음                            | 낮음 |
+| **대화**       | /btw 사이드 질문                           | 없음                            | 중간 |
+| **대화**       | Esc+Esc 되돌리기 메뉴                      | /rewind만 존재                  | 중간 |
+| **디스플레이** | Syntax Highlighting                        | shiki 설치됨, 미연결            | 낮음 |
+| **디스플레이** | /theme 테마 선택                           | 없음                            | 낮음 |
+| **PR/Git**     | PR Review Status Footer                    | 없음                            | 낮음 |
+| **PR/Git**     | Interactive /diff                          | /diff 있으나 인터랙티브 아님    | 중간 |
+| **고급**       | Task List (Ctrl+T)                         | TaskManager 있으나 UI 토글 없음 | 낮음 |
+| **고급**       | Prompt Suggestions                         | 없음                            | 낮음 |
+| **고급**       | /context 컬러 그리드                       | /context 있으나 그리드 없음     | 낮음 |
 
 ### 2. Codex CLI (v0.105+, Rust/Ratatui)
 
-| 카테고리 | 핵심 기능 | dbcode 현황 | 격차 |
-|----------|-----------|-------------|------|
-| **피드백** | Working Timer ("Working 3s") | Spinner에 시간 없음 | 중간 |
-| **피드백** | Notification on Completion (OSC9/BEL) | 없음 | 중간 |
-| **피드백** | Fast Mode Badge | /fast 있으나 뱃지 없음 | 낮음 |
-| **권한** | Approval y/n/a/s (영구 저장) | Allow/Session/Deny 3개 | 낮음 |
-| **권한** | Exec Policy (패턴 기반 자동 승인) | 없음 | 낮음 |
-| **디스플레이** | Syntax-Highlighted Diffs (syntect) | 없음 | 중간 |
-| **디스플레이** | /review (Critical/Important/Suggestion 분류) | 없음 | 낮음 |
-| **디스플레이** | Reasoning Display Config (auto/concise/detailed/none) | Alt+T 토글만 | 낮음 |
-| **대화** | /new (터미널 유지 새 대화) | /clear만 | 낮음 |
+| 카테고리       | 핵심 기능                                             | dbcode 현황            | 격차 |
+| -------------- | ----------------------------------------------------- | ---------------------- | ---- |
+| **피드백**     | Working Timer ("Working 3s")                          | Spinner에 시간 없음    | 중간 |
+| **피드백**     | Notification on Completion (OSC9/BEL)                 | 없음                   | 중간 |
+| **피드백**     | Fast Mode Badge                                       | /fast 있으나 뱃지 없음 | 낮음 |
+| **권한**       | Approval y/n/a/s (영구 저장)                          | Allow/Session/Deny 3개 | 낮음 |
+| **권한**       | Exec Policy (패턴 기반 자동 승인)                     | 없음                   | 낮음 |
+| **디스플레이** | Syntax-Highlighted Diffs (syntect)                    | 없음                   | 중간 |
+| **디스플레이** | /review (Critical/Important/Suggestion 분류)          | 없음                   | 낮음 |
+| **디스플레이** | Reasoning Display Config (auto/concise/detailed/none) | Alt+T 토글만           | 낮음 |
+| **대화**       | /new (터미널 유지 새 대화)                            | /clear만               | 낮음 |
 
 ### 3. 기타 도구 (핵심만)
 
-| Source | 기능 | dbcode 현황 | 격차 |
-|--------|------|-------------|------|
+| Source          | 기능                                        | dbcode 현황 | 격차 |
+| --------------- | ------------------------------------------- | ----------- | ---- |
 | **Copilot CLI** | Inline Permission Feedback (거부 사유 입력) | Deny만 가능 | 높음 |
-| **Copilot CLI** | Word-Level Diff Highlighting | 줄 단위만 | 중간 |
-| **Copilot CLI** | Smart Task Output (성공=요약, 실패=전체) | 전체 출력만 | 낮음 |
-| **Cline 2.0** | Granular Per-Category Auto-Approve | 전체 모드만 | 중간 |
+| **Copilot CLI** | Word-Level Diff Highlighting                | 줄 단위만   | 중간 |
+| **Copilot CLI** | Smart Task Output (성공=요약, 실패=전체)    | 전체 출력만 | 낮음 |
+| **Cline 2.0**   | Granular Per-Category Auto-Approve          | 전체 모드만 | 중간 |
 
 ---
 
@@ -167,6 +167,7 @@ After:   ✓ Update src/llm/client.ts (+3 -1)
 ```
 
 **핵심 변경**:
+
 1. `ToolCallBlock.tsx` (line ~137): `isExpanded` → `isExpanded || shouldShowPreview`
 2. file_edit 완료 시 항상 diff 표시 (최대 8줄 → 접기)
 3. bash_exec 완료 시 출력 처음 3줄 기본 표시
@@ -186,6 +187,7 @@ After:   [Model: gpt-5.1-codex-mini] ↑1.2k ↓384  [###--------] 12%  $0.04
 ```
 
 **핵심 변경**:
+
 1. `useAgentLoop.ts`: `turnUsage`/`cumulativeUsage` state 추가, `agent:usage-update` + `llm:usage` 이벤트 구독
 2. `App.tsx`: StatusBar에 `inputTokens`, `outputTokens`, `cost` props 전달
 3. `StatusBar.tsx`: 실시간 토큰 포매팅 (`formatTokenCount()` — 1234→"1.2k")
@@ -202,6 +204,7 @@ After:   ⠋ Thinking... (3s)
 ```
 
 **핵심 변경**:
+
 1. `startTime` prop 또는 내부 `useState(Date.now())`
 2. 500ms `setInterval`로 경과 시간 업데이트
 3. tool 실행 중: `"Running bash... (2s)"`
@@ -214,6 +217,7 @@ After:   ⠋ Thinking... (3s)
 **변경 파일**: `src/cli/renderer/markdown.ts`
 
 **핵심 변경**:
+
 1. `marked-terminal` 옵션에서 코드 블록 렌더러를 shiki로 교체
 2. 다크/라이트 자동 감지 (터미널 배경)
 3. dynamic import로 lazy loading (시작 시간 영향 최소화)
@@ -371,6 +375,7 @@ After:   45  - const ███ = "██████";
 **변경 파일**: `src/cli/components/CustomStatusLine.tsx` (NEW), `src/config/schema.ts`
 
 1. StatusLine JSON Schema 정의 (Claude Code 호환):
+
 ```json
 {
   "model": { "id": "gpt-5.1-codex-mini" },
@@ -379,6 +384,7 @@ After:   45  - const ███ = "██████";
   "session_id": "abc123"
 }
 ```
+
 2. 설정: `statusLine.command = "~/.dbcode/statusline.sh"`
 3. 하이브리드: 설정 있으면 커스텀, 없으면 기존 StatusBar
 
@@ -488,56 +494,56 @@ Context Window: 128,000 tokens
 
 ### Tier 1 — 즉시 구현 (3일, Sprint 1)
 
-| # | Feature | Effort | Impact | 핵심 변경 |
-|---|---------|--------|--------|-----------|
-| 1 | Rich Tool Display | 1일 | ★★★★★ | ToolCallBlock.tsx: diff 기본 표시 |
-| 2 | Live Token Counter | 1일 | ★★★★★ | useAgentLoop→App→StatusBar 이벤트 연결 |
-| 3 | Working Timer | 0.5일 | ★★★★☆ | Spinner.tsx: 경과 시간 추가 |
-| 4 | Syntax Highlighting | 0.5일 | ★★★★☆ | markdown.ts: shiki 연결 |
+| #   | Feature             | Effort | Impact | 핵심 변경                              |
+| --- | ------------------- | ------ | ------ | -------------------------------------- |
+| 1   | Rich Tool Display   | 1일    | ★★★★★  | ToolCallBlock.tsx: diff 기본 표시      |
+| 2   | Live Token Counter  | 1일    | ★★★★★  | useAgentLoop→App→StatusBar 이벤트 연결 |
+| 3   | Working Timer       | 0.5일  | ★★★★☆  | Spinner.tsx: 경과 시간 추가            |
+| 4   | Syntax Highlighting | 0.5일  | ★★★★☆  | markdown.ts: shiki 연결                |
 
 ### Tier 2 — 높은 임팩트 (10일, Sprint 2-3)
 
-| # | Feature | Effort | Impact | Source |
-|---|---------|--------|--------|--------|
-| 5 | ! Bash Mode | 0.5일 | ★★★★☆ | Claude Code + Codex |
-| 6 | @ Mentions 드롭다운 강화 | 1일 | ★★★★☆ | Claude Code + Codex |
-| 7 | Ctrl+R Reverse Search | 1일 | ★★★★☆ | Claude Code |
-| 8 | Ctrl+G External Editor | 0.5일 | ★★★☆☆ | Claude Code + Codex |
-| 9 | /new Command | 0.25일 | ★★★☆☆ | Codex CLI |
-| 10 | Inline Permission Feedback | 0.5일 | ★★★★★ | Copilot CLI |
-| 11 | Word-Level Diff | 1일 | ★★★★☆ | Copilot CLI + Cursor |
-| 12 | Approval "Always" 영구 저장 | 0.5일 | ★★★★☆ | Codex CLI |
-| 13 | Notification on Completion | 0.5일 | ★★★★☆ | Codex CLI |
-| 14 | Smart Task Output | 0.5일 | ★★★☆☆ | Copilot CLI |
-| 15 | Reasoning Display Config | 0.5일 | ★★★☆☆ | Codex CLI |
+| #   | Feature                     | Effort | Impact | Source               |
+| --- | --------------------------- | ------ | ------ | -------------------- |
+| 5   | ! Bash Mode                 | 0.5일  | ★★★★☆  | Claude Code + Codex  |
+| 6   | @ Mentions 드롭다운 강화    | 1일    | ★★★★☆  | Claude Code + Codex  |
+| 7   | Ctrl+R Reverse Search       | 1일    | ★★★★☆  | Claude Code          |
+| 8   | Ctrl+G External Editor      | 0.5일  | ★★★☆☆  | Claude Code + Codex  |
+| 9   | /new Command                | 0.25일 | ★★★☆☆  | Codex CLI            |
+| 10  | Inline Permission Feedback  | 0.5일  | ★★★★★  | Copilot CLI          |
+| 11  | Word-Level Diff             | 1일    | ★★★★☆  | Copilot CLI + Cursor |
+| 12  | Approval "Always" 영구 저장 | 0.5일  | ★★★★☆  | Codex CLI            |
+| 13  | Notification on Completion  | 0.5일  | ★★★★☆  | Codex CLI            |
+| 14  | Smart Task Output           | 0.5일  | ★★★☆☆  | Copilot CLI          |
+| 15  | Reasoning Display Config    | 0.5일  | ★★★☆☆  | Codex CLI            |
 
 ### Tier 3 — 중간 임팩트 (7일, Sprint 4)
 
-| # | Feature | Effort | Impact | Source |
-|---|---------|--------|--------|--------|
-| 16 | /btw Side Questions | 1일 | ★★★★☆ | Claude Code |
-| 17 | Customizable Statusline | 2일 | ★★★★☆ | Claude Code |
-| 18 | Interactive /diff Viewer | 2일 | ★★★★☆ | Claude Code + Codex |
-| 19 | /context Grid | 1일 | ★★★☆☆ | Claude Code |
-| 20 | Esc+Esc Rewind Menu | 1.5일 | ★★★★☆ | Claude Code + Codex |
-| 21 | Task List Ctrl+T | 0.5일 | ★★★☆☆ | Claude Code |
-| 22 | Granular Auto-Approve | 1.5일 | ★★★★★ | Cline CLI 2.0 |
+| #   | Feature                  | Effort | Impact | Source              |
+| --- | ------------------------ | ------ | ------ | ------------------- |
+| 16  | /btw Side Questions      | 1일    | ★★★★☆  | Claude Code         |
+| 17  | Customizable Statusline  | 2일    | ★★★★☆  | Claude Code         |
+| 18  | Interactive /diff Viewer | 2일    | ★★★★☆  | Claude Code + Codex |
+| 19  | /context Grid            | 1일    | ★★★☆☆  | Claude Code         |
+| 20  | Esc+Esc Rewind Menu      | 1.5일  | ★★★★☆  | Claude Code + Codex |
+| 21  | Task List Ctrl+T         | 0.5일  | ★★★☆☆  | Claude Code         |
+| 22  | Granular Auto-Approve    | 1.5일  | ★★★★★  | Cline CLI 2.0       |
 
 ### Tier 4 — 장기 로드맵 (15일+, Sprint 5+)
 
-| # | Feature | Effort | Impact | Source |
-|---|---------|--------|--------|--------|
-| 23 | /theme Picker | 2일 | ★★★☆☆ | Claude Code + Codex |
-| 24 | Prompt Suggestions | 2일 | ★★★★☆ | Claude Code |
-| 25 | /copy Code Block Picker | 0.5일 | ★★★☆☆ | Claude Code + Codex |
-| 26 | PR Review Status Footer | 1일 | ★★★☆☆ | Claude Code |
-| 27 | /stats Visualization | 1.5일 | ★★☆☆☆ | Claude Code |
-| 28 | /security-review | 1일 | ★★★☆☆ | Claude Code |
-| 29 | /insights Session Analysis | 2일 | ★★☆☆☆ | Claude Code |
-| 30 | Vim Mode | 3일 | ★★☆☆☆ | Claude Code |
-| 31 | /pr-comments | 0.5일 | ★★☆☆☆ | Claude Code |
-| 32 | Agent Teams | 5일 | ★★★★★ | Claude Code + Codex |
-| 33 | /review (Critical/Important 분류) | 1.5일 | ★★★☆☆ | Codex CLI |
+| #   | Feature                           | Effort | Impact | Source              |
+| --- | --------------------------------- | ------ | ------ | ------------------- |
+| 23  | /theme Picker                     | 2일    | ★★★☆☆  | Claude Code + Codex |
+| 24  | Prompt Suggestions                | 2일    | ★★★★☆  | Claude Code         |
+| 25  | /copy Code Block Picker           | 0.5일  | ★★★☆☆  | Claude Code + Codex |
+| 26  | PR Review Status Footer           | 1일    | ★★★☆☆  | Claude Code         |
+| 27  | /stats Visualization              | 1.5일  | ★★☆☆☆  | Claude Code         |
+| 28  | /security-review                  | 1일    | ★★★☆☆  | Claude Code         |
+| 29  | /insights Session Analysis        | 2일    | ★★☆☆☆  | Claude Code         |
+| 30  | Vim Mode                          | 3일    | ★★☆☆☆  | Claude Code         |
+| 31  | /pr-comments                      | 0.5일  | ★★☆☆☆  | Claude Code         |
+| 32  | Agent Teams                       | 5일    | ★★★★★  | Claude Code + Codex |
+| 33  | /review (Critical/Important 분류) | 1.5일  | ★★★☆☆  | Codex CLI           |
 
 ---
 
@@ -545,54 +551,55 @@ Context Window: 128,000 tokens
 
 ### 기존 파일 수정 (14개)
 
-| File | Sprint | Changes |
-|------|--------|---------|
-| `src/cli/components/ToolCallBlock.tsx` | 1, 2 | diff 기본 표시 + word-level diff |
-| `src/cli/renderer/tool-display.ts` | 1, 2 | 상대경로, 헤더 포맷, smart output |
-| `src/cli/renderer/markdown.ts` | 1 | shiki 구문 강조 연결 |
-| `src/cli/components/StatusBar.tsx` | 1, 3 | 토큰 카운터 + 커스텀 statusline 폴백 |
-| `src/cli/components/Spinner.tsx` | 1 | 경과 시간 카운터 |
-| `src/cli/hooks/useAgentLoop.ts` | 1, 2 | usage 구독 + ! bash + notification |
-| `src/cli/App.tsx` | 1-4 | StatusBar 연결, 키바인딩, 오버레이 |
-| `src/cli/components/UserInput.tsx` | 2 | !, @ 드롭다운, Ctrl+R/G |
-| `src/cli/hooks/useInput.ts` | 2 | reverse search 상태 머신 |
-| `src/cli/components/PermissionPrompt.tsx` | 2 | deny feedback + always 옵션 |
-| `src/permissions/manager.ts` | 2, 4 | 영구 정책 + 카테고리별 |
-| `src/commands/diff.ts` | 3 | 인터랙티브 모드 |
-| `src/commands/context.ts` | 3 | 그리드 시각화 |
-| `src/config/schema.ts` | 2, 3 | notification + statusLine + reasoning |
+| File                                      | Sprint | Changes                               |
+| ----------------------------------------- | ------ | ------------------------------------- |
+| `src/cli/components/ToolCallBlock.tsx`    | 1, 2   | diff 기본 표시 + word-level diff      |
+| `src/cli/renderer/tool-display.ts`        | 1, 2   | 상대경로, 헤더 포맷, smart output     |
+| `src/cli/renderer/markdown.ts`            | 1      | shiki 구문 강조 연결                  |
+| `src/cli/components/StatusBar.tsx`        | 1, 3   | 토큰 카운터 + 커스텀 statusline 폴백  |
+| `src/cli/components/Spinner.tsx`          | 1      | 경과 시간 카운터                      |
+| `src/cli/hooks/useAgentLoop.ts`           | 1, 2   | usage 구독 + ! bash + notification    |
+| `src/cli/App.tsx`                         | 1-4    | StatusBar 연결, 키바인딩, 오버레이    |
+| `src/cli/components/UserInput.tsx`        | 2      | !, @ 드롭다운, Ctrl+R/G               |
+| `src/cli/hooks/useInput.ts`               | 2      | reverse search 상태 머신              |
+| `src/cli/components/PermissionPrompt.tsx` | 2      | deny feedback + always 옵션           |
+| `src/permissions/manager.ts`              | 2, 4   | 영구 정책 + 카테고리별                |
+| `src/commands/diff.ts`                    | 3      | 인터랙티브 모드                       |
+| `src/commands/context.ts`                 | 3      | 그리드 시각화                         |
+| `src/config/schema.ts`                    | 2, 3   | notification + statusLine + reasoning |
 
 ### 신규 파일 (6개)
 
-| File | Sprint | Description |
-|------|--------|-------------|
-| `src/commands/new.ts` | 2 | /new 명령 |
-| `src/commands/btw.ts` | 3 | /btw 사이드 질문 |
-| `src/cli/components/SideQuestionOverlay.tsx` | 3 | /btw 오버레이 UI |
-| `src/cli/components/CustomStatusLine.tsx` | 3 | 커스텀 statusline 렌더러 |
-| `src/cli/components/DiffViewer.tsx` | 3 | 인터랙티브 diff 뷰어 |
-| `src/cli/components/RewindMenu.tsx` | 3 | Esc+Esc 되돌리기 메뉴 |
+| File                                         | Sprint | Description              |
+| -------------------------------------------- | ------ | ------------------------ |
+| `src/commands/new.ts`                        | 2      | /new 명령                |
+| `src/commands/btw.ts`                        | 3      | /btw 사이드 질문         |
+| `src/cli/components/SideQuestionOverlay.tsx` | 3      | /btw 오버레이 UI         |
+| `src/cli/components/CustomStatusLine.tsx`    | 3      | 커스텀 statusline 렌더러 |
+| `src/cli/components/DiffViewer.tsx`          | 3      | 인터랙티브 diff 뷰어     |
+| `src/cli/components/RewindMenu.tsx`          | 3      | Esc+Esc 되돌리기 메뉴    |
 
 ---
 
 ## Part VIII: 위험 요소 및 대응
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| Diff 기본 표시 시 화면 과다 점유 | UX 저하 | 기본 8줄 제한 + 접기, 긴 diff는 축약 |
-| usage 이벤트 미발생 (모델별 차이) | 토큰 카운터 0 표시 | 로컬 token-counter 폴백 유지 |
-| Responses API usage 지연 | 스트리밍 중 0 → 완료 시 갱신 | `response.completed` 시점에 일괄 반영 |
-| shiki 초기 로딩 시간 | 시작 느림 | dynamic import + lazy loading |
-| 터미널 폭 부족 | statusline 잘림 | `process.stdout.columns` 기반 반응형 |
-| anti-flicker 충돌 | 빠른 업데이트 깜빡임 | 100ms throttle (기존 text buffering 동일) |
-| OSC9 미지원 터미널 | 알림 무동작 | BEL 폴백 + 설정 비활성화 기본 |
-| 커스텀 statusline 스크립트 오류 | 상태바 공백 | try/catch + 기존 StatusBar 폴백 |
+| Risk                              | Impact                       | Mitigation                                |
+| --------------------------------- | ---------------------------- | ----------------------------------------- |
+| Diff 기본 표시 시 화면 과다 점유  | UX 저하                      | 기본 8줄 제한 + 접기, 긴 diff는 축약      |
+| usage 이벤트 미발생 (모델별 차이) | 토큰 카운터 0 표시           | 로컬 token-counter 폴백 유지              |
+| Responses API usage 지연          | 스트리밍 중 0 → 완료 시 갱신 | `response.completed` 시점에 일괄 반영     |
+| shiki 초기 로딩 시간              | 시작 느림                    | dynamic import + lazy loading             |
+| 터미널 폭 부족                    | statusline 잘림              | `process.stdout.columns` 기반 반응형      |
+| anti-flicker 충돌                 | 빠른 업데이트 깜빡임         | 100ms throttle (기존 text buffering 동일) |
+| OSC9 미지원 터미널                | 알림 무동작                  | BEL 폴백 + 설정 비활성화 기본             |
+| 커스텀 statusline 스크립트 오류   | 상태바 공백                  | try/catch + 기존 StatusBar 폴백           |
 
 ---
 
 ## Part IX: 성공 지표
 
 ### Sprint 1 완료 기준
+
 1. ✅ file_edit 완료 시 diff가 기본 표시된다 (verbose 불필요)
 2. ✅ 스트리밍 중 StatusBar에 `↑Nk ↓Mk` 토큰 카운터가 실시간 업데이트된다
 3. ✅ 세션 누적 비용($)이 StatusBar에 표시된다
@@ -600,6 +607,7 @@ Context Window: 128,000 tokens
 5. ✅ 코드 블록에 언어별 구문 강조가 적용된다
 
 ### Sprint 2-3 완료 기준
+
 6. ✅ `!ls` 입력 시 LLM 호출 없이 직접 실행, 출력이 컨텍스트에 추가
 7. ✅ `@` 입력 시 파일 자동완성 드롭다운이 표시된다
 8. ✅ Ctrl+R로 이전 입력을 인터랙티브 검색
@@ -608,6 +616,7 @@ Context Window: 128,000 tokens
 11. ✅ 권한 "Always" 승인이 다음 세션에도 유지된다
 
 ### Sprint 4 완료 기준
+
 12. ✅ `/btw` 질문이 오버레이로 표시, 대화에 추가 안 됨
 13. ✅ `/diff`에서 좌우 화살표로 turn별 diff 전환
 14. ✅ `/context`에서 토큰 할당이 컬러 바로 시각화

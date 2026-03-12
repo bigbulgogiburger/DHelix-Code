@@ -502,4 +502,61 @@ describe("getToolHeaderInfo", () => {
       expect(getToolHeaderInfo("unknown", "complete", {}).color).toBe("gray");
     });
   });
+
+  describe("metadata enrichment", () => {
+    it("should use extractDetail for subtext when metadata is provided", () => {
+      const metadata = { path: "/src/index.ts", totalLines: 42, readFrom: 1, readTo: 42 };
+      const info = getToolHeaderInfo(
+        "file_read",
+        "complete",
+        { file_path: "/src/index.ts" },
+        "content",
+        undefined,
+        metadata,
+      );
+      expect(info.subtext).toBe("/src/index.ts (lines 1-42 of 42)");
+    });
+
+    it("should fall back to normal subtext when metadata is not provided", () => {
+      const info = getToolHeaderInfo(
+        "file_read",
+        "complete",
+        { file_path: "/src/index.ts" },
+        "line1\nline2\n",
+      );
+      expect(info.subtext).toBe("2 lines");
+    });
+
+    it("should fall back to normal subtext when extractDetail returns undefined", () => {
+      const info = getToolHeaderInfo("file_read", "complete", {}, undefined, 150, {});
+      // extractDetail returns undefined for missing path, so subtext falls back
+      expect(info.subtext).toBeDefined();
+    });
+
+    it("should show file edit detail with metadata", () => {
+      const metadata = { path: "/src/foo.ts", linesAdded: 5, linesRemoved: 2 };
+      const info = getToolHeaderInfo(
+        "file_edit",
+        "complete",
+        { file_path: "/src/foo.ts" },
+        undefined,
+        undefined,
+        metadata,
+      );
+      expect(info.subtext).toBe("/src/foo.ts (+5 -2)");
+    });
+
+    it("should show bash detail with metadata", () => {
+      const metadata = { command: "npm test", exitCode: 0 };
+      const info = getToolHeaderInfo(
+        "bash_exec",
+        "complete",
+        { command: "npm test" },
+        undefined,
+        undefined,
+        metadata,
+      );
+      expect(info.subtext).toBe("npm test — exit 0");
+    });
+  });
 });

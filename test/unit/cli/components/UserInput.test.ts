@@ -114,6 +114,10 @@ function getMentionSuggestions(): string[] {
   return stateStore.get(7) as string[];
 }
 
+function getMentionIndex(): number {
+  return stateStore.get(8) as number;
+}
+
 function key(overrides: Partial<Record<string, boolean>> = {}): Record<string, boolean> {
   return {
     return: false,
@@ -603,6 +607,76 @@ describe("UserInput", () => {
       press("", { escape: true });
       expect(getIsMentioning()).toBe(false);
       expect(getMentionSuggestions()).toEqual([]);
+    });
+
+    it("should navigate mention suggestions with downArrow", () => {
+      // Set mentioning state with suggestions
+      stateStore.set(6, true); // isMentioning
+      stateStore.set(7, ["src/a.ts", "src/b.ts", "src/c.ts"]); // mentionSuggestions
+      stateStore.set(8, 0); // mentionIndex
+      rerender();
+      press("", { downArrow: true });
+      expect(getMentionIndex()).toBe(1);
+    });
+
+    it("should navigate mention suggestions with upArrow", () => {
+      stateStore.set(6, true);
+      stateStore.set(7, ["src/a.ts", "src/b.ts", "src/c.ts"]);
+      stateStore.set(8, 1);
+      rerender();
+      press("", { upArrow: true });
+      expect(getMentionIndex()).toBe(0);
+    });
+
+    it("should wrap around mentionIndex on upArrow from 0", () => {
+      stateStore.set(6, true);
+      stateStore.set(7, ["src/a.ts", "src/b.ts", "src/c.ts"]);
+      stateStore.set(8, 0);
+      rerender();
+      press("", { upArrow: true });
+      expect(getMentionIndex()).toBe(2); // wraps to last
+    });
+
+    it("should wrap around mentionIndex on downArrow from last", () => {
+      stateStore.set(6, true);
+      stateStore.set(7, ["src/a.ts", "src/b.ts"]);
+      stateStore.set(8, 1);
+      rerender();
+      press("", { downArrow: true });
+      expect(getMentionIndex()).toBe(0); // wraps to first
+    });
+
+    it("should not navigate history when mentioning with upArrow", () => {
+      stateStore.set(6, true);
+      stateStore.set(7, ["src/a.ts"]);
+      stateStore.set(8, 0);
+      rerender();
+      historyMock.navigateUp.mockReturnValue("old command");
+      press("", { upArrow: true });
+      expect(historyMock.navigateUp).not.toHaveBeenCalled();
+    });
+
+    it("should not navigate history when mentioning with downArrow", () => {
+      stateStore.set(6, true);
+      stateStore.set(7, ["src/a.ts"]);
+      stateStore.set(8, 0);
+      rerender();
+      historyMock.navigateDown.mockReturnValue("next command");
+      press("", { downArrow: true });
+      expect(historyMock.navigateDown).not.toHaveBeenCalled();
+    });
+
+    it("should insert @path with trailing space (no file: prefix)", () => {
+      // Simulate: user typed "@sr" and mention suggestions are available
+      stateStore.set(0, "@sr"); // value
+      stateStore.set(1, 3); // cursorOffset (after "@sr")
+      stateStore.set(6, true); // isMentioning
+      stateStore.set(7, ["src/index.ts"]); // mentionSuggestions
+      stateStore.set(8, 0); // mentionIndex
+      rerender();
+      // Press Enter to confirm selection (goes through isMentioning branch)
+      press("", { return: true });
+      expect(getValue()).toBe("@src/index.ts ");
     });
   });
 
