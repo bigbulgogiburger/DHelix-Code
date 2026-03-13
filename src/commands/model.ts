@@ -1,9 +1,24 @@
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 
+/** Well-known models available for interactive selection */
+const KNOWN_MODELS = [
+  { label: "gpt-4o", value: "gpt-4o", description: "128k context" },
+  { label: "gpt-4o-mini", value: "gpt-4o-mini", description: "Cost-effective" },
+  { label: "claude-sonnet-4-6", value: "claude-sonnet-4-6", description: "Best coding" },
+  { label: "claude-opus-4-6", value: "claude-opus-4-6", description: "Deepest reasoning" },
+  {
+    label: "claude-haiku-4-5-20251001",
+    value: "claude-haiku-4-5-20251001",
+    description: "Fast",
+  },
+  { label: "o3-mini", value: "o3-mini", description: "Reasoning" },
+  { label: "deepseek-chat", value: "deepseek-chat", description: "Open-source" },
+] as const;
+
 /**
  * /model [name] — Switch the active model mid-session.
- * Without arguments, shows the current model and its capabilities.
+ * Without arguments, shows an interactive model selector.
  */
 export const modelCommand: SlashCommand = {
   name: "model",
@@ -14,20 +29,18 @@ export const modelCommand: SlashCommand = {
     const newModel = args.trim();
 
     if (!newModel) {
+      // Show interactive model selector with current model highlighted info
       const caps = getModelCapabilities(context.model);
-      const lines = [
-        `Current model: ${context.model}`,
-        `  Context: ${(caps.maxContextTokens / 1000).toFixed(0)}K tokens`,
-        `  Max output: ${(caps.maxOutputTokens / 1000).toFixed(0)}K tokens`,
-        `  Tools: ${caps.supportsTools ? "yes" : "no (text-parsing fallback)"}`,
-        `  Tokenizer: ${caps.tokenizer}`,
-      ];
-      if (caps.useDeveloperRole) {
-        lines.push("  Note: uses developer role (no system message)");
-      }
+      const currentInfo = `Current: ${context.model} (${(caps.maxContextTokens / 1000).toFixed(0)}K context)`;
+
       return {
-        output: lines.join("\n"),
+        output: currentInfo,
         success: true,
+        interactiveSelect: {
+          options: KNOWN_MODELS,
+          prompt: `Select a model (current: ${context.model}):`,
+          onSelect: "/model",
+        },
       };
     }
 

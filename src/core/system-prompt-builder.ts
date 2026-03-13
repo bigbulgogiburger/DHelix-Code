@@ -6,6 +6,7 @@ import { APP_NAME, VERSION, getProjectConfigPaths } from "../constants.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { estimateTokens } from "../llm/token-counter.js";
 import { type CapabilityTier } from "../llm/model-capabilities.js";
+import { getToneProfile } from "./tone-profiles.js";
 
 /** System prompt section with optional condition and token budget */
 export interface PromptSection {
@@ -44,6 +45,10 @@ export interface BuildSystemPromptOptions {
   readonly totalTokenBudget?: number;
   /** Capability tier of the active model — controls prompt complexity */
   readonly capabilityTier?: CapabilityTier;
+  /** Response language locale (e.g., "ko", "en", "ja"). Defaults to "en". */
+  readonly locale?: string;
+  /** Response tone/style (e.g., "normal", "cute", "senior"). Defaults to "normal". */
+  readonly tone?: string;
 }
 
 /** Default token budget for system prompts (32k tokens) */
@@ -58,12 +63,20 @@ const DEFAULT_TOTAL_TOKEN_BUDGET = 32_000;
 export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
   const cwd = options?.workingDirectory ?? process.cwd();
   const state = options?.sessionState;
+  const locale = options?.locale ?? "en";
+  const tone = options?.tone ?? "normal";
 
   const sections: PromptSection[] = [
     {
       id: "identity",
       content: buildIdentitySection(),
       priority: 100,
+    },
+    {
+      id: "locale",
+      content: buildLocaleSection(locale),
+      priority: 94,
+      condition: () => locale !== "en",
     },
     {
       id: "doing-tasks",
@@ -106,6 +119,14 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
       priority: 78,
     });
   }
+
+  // Tone section (priority 76, after skills)
+  sections.push({
+    id: "tone",
+    content: getToneProfile(tone).systemPromptSection,
+    priority: 76,
+    condition: () => tone !== "normal",
+  });
 
   // CoT scaffolding for low-tier models
   const tier = options?.capabilityTier;
@@ -570,4 +591,26 @@ function buildConventionsSection(): string {
 - Before committing, review changes with git diff.
 - Never force push, reset --hard, or use destructive git operations without user confirmation.
 - Use conventional commit format: feat(scope): description.`;
+}
+
+/** Map locale code to human-readable language name */
+function localeToLanguageName(locale: string): string {
+  const map: Record<string, string> = {
+    ko: "Korean (한국어)",
+    en: "English",
+    ja: "Japanese (日本語)",
+    zh: "Chinese (中文)",
+    es: "Spanish (Español)",
+    fr: "French (Français)",
+    de: "German (Deutsch)",
+  };
+  return map[locale] ?? locale;
+}
+
+function buildLocaleSection(locale: string): string {
+  const langName = localeToLanguageName(locale);
+  return `# Response Language
+Respond in ${langName}.
+All explanations, comments, and documentation should be in ${langName}.
+Code identifiers (variable names, function names) remain in English.`;
 }

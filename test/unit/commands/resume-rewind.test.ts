@@ -46,7 +46,7 @@ describe("resume command", () => {
     listMock.mockRestore();
   });
 
-  it("should list sessions when they exist", async () => {
+  it("should return interactiveSelect when sessions exist", async () => {
     const listMock = vi.spyOn(SessionManager.prototype, "listSessions");
     listMock.mockResolvedValueOnce([
       {
@@ -63,11 +63,14 @@ describe("resume command", () => {
 
     const { resumeCommand } = await import("../../../src/commands/resume.js");
     const result = await resumeCommand.execute("", baseContext);
-    expect(result.output).toContain("Available sessions");
-    expect(result.output).toContain("abc12345");
-    expect(result.output).toContain("My Session");
-    expect(result.output).toContain("5 msgs");
     expect(result.success).toBe(true);
+    expect(result.interactiveSelect).toBeDefined();
+    expect(result.interactiveSelect!.prompt).toContain("Select a session");
+    expect(result.interactiveSelect!.onSelect).toBe("/resume");
+    expect(result.interactiveSelect!.options).toHaveLength(1);
+    expect(result.interactiveSelect!.options[0]!.value).toBe("abc12345-session-id");
+    expect(result.interactiveSelect!.options[0]!.label).toContain("abc12345");
+    expect(result.interactiveSelect!.options[0]!.description).toBe("My Session");
 
     listMock.mockRestore();
   });

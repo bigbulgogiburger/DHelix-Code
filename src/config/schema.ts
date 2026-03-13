@@ -54,6 +54,17 @@ export const permissionsConfigSchema = z
   })
   .default({ allow: [], deny: [] });
 
+/** Voice input configuration */
+export const voiceConfigSchema = z
+  .object({
+    enabled: z.boolean().default(false),
+    provider: z.enum(["openai", "local"]).default("openai"),
+    language: z.string().default("ko"),
+    model: z.string().default("whisper-1"),
+    soxPath: z.string().optional(),
+  })
+  .default({});
+
 /** Full application configuration schema */
 export const configSchema = z.object({
   llm: llmConfigSchema.default({}),
@@ -65,4 +76,10 @@ export const configSchema = z.object({
   verbose: z.boolean().default(false),
   /** Glob patterns to exclude specific rule files from loading */
   dbcodeMdExcludes: z.array(z.string()).default([]),
+  /** Response language (ISO 639-1) */
+  locale: z.string().default("ko"),
+  /** Response tone/style */
+  tone: z.enum(["normal", "cute", "senior", "friend", "mentor", "minimal"]).default("normal"),
+  /** Voice input settings */
+  voice: voiceConfigSchema,
 });

@@ -10,7 +10,7 @@ import { type HookRunner } from "../../hooks/runner.js";
 import { type SessionManager } from "../../core/session-manager.js";
 import { CheckpointManager } from "../../core/checkpoint-manager.js";
 import { type SkillManager } from "../../skills/manager.js";
-import { type CommandRegistry } from "../../commands/registry.js";
+import { type CommandRegistry, type InteractiveSelect } from "../../commands/registry.js";
 import { type ExtractedToolCall } from "../../tools/types.js";
 import { SESSIONS_DIR } from "../../constants.js";
 import { join } from "node:path";
@@ -68,6 +68,7 @@ export function useAgentLoop({
   const [tokenCount, setTokenCount] = useState(0);
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(initialModel);
+  const [interactiveSelect, setInteractiveSelect] = useState<InteractiveSelect | null>(null);
 
   // Token usage and cost tracking
   const [inputTokens, setInputTokens] = useState(0);
@@ -436,6 +437,11 @@ export function useAgentLoop({
             return;
           }
 
+          if (result.interactiveSelect) {
+            setInteractiveSelect(result.interactiveSelect);
+            return;
+          }
+
           setCommandOutput(result.output);
 
           if (result.shouldClear) {
@@ -512,5 +518,7 @@ export function useAgentLoop({
     inputTokens,
     outputTokens,
     totalCost,
+    interactiveSelect,
+    setInteractiveSelect,
   } as const;
 }

@@ -1,4 +1,9 @@
-import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
+import {
+  type SlashCommand,
+  type CommandResult,
+  type CommandContext,
+  type SelectOption,
+} from "./registry.js";
 import { SessionManager } from "../core/session-manager.js";
 
 /**
@@ -15,7 +20,7 @@ export const resumeCommand: SlashCommand = {
     const sessionId = args.trim();
 
     if (!sessionId) {
-      // List sessions
+      // List sessions as interactive select
       const sessions = await sessionManager.listSessions();
 
       if (sessions.length === 0) {
@@ -25,20 +30,20 @@ export const resumeCommand: SlashCommand = {
         };
       }
 
-      const lines: string[] = ["Available sessions:", ""];
-      for (const session of sessions.slice(0, 20)) {
-        const date = new Date(session.lastUsedAt).toLocaleString();
-        lines.push(
-          `  ${session.id.slice(0, 8)}  ${date}  ${session.name} (${session.messageCount} msgs)`,
-        );
-      }
-
-      lines.push("");
-      lines.push("Use /resume <session-id> to resume a session.");
+      const options: readonly SelectOption[] = sessions.slice(0, 20).map((s) => ({
+        label: `${s.id.slice(0, 8)}  ${new Date(s.lastUsedAt).toLocaleString()}`,
+        value: s.id,
+        description: s.name || `(${s.messageCount} msgs)`,
+      }));
 
       return {
-        output: lines.join("\n"),
+        output: "",
         success: true,
+        interactiveSelect: {
+          options,
+          prompt: "Select a session to resume:",
+          onSelect: "/resume",
+        },
       };
     }
 

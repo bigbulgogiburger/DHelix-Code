@@ -62,9 +62,15 @@ describe("Core slash commands", () => {
     expect(result.output).toContain("help");
   });
 
-  it("/model should show current model without args", async () => {
+  it("/model should return interactiveSelect without args", async () => {
     const result = await modelCommand.execute("", baseContext);
+    expect(result.success).toBe(true);
     expect(result.output).toContain("test-model");
+    expect(result.interactiveSelect).toBeDefined();
+    expect(result.interactiveSelect!.prompt).toContain("Select a model");
+    expect(result.interactiveSelect!.prompt).toContain("test-model");
+    expect(result.interactiveSelect!.onSelect).toBe("/model");
+    expect(result.interactiveSelect!.options.length).toBeGreaterThan(0);
   });
 
   it("/model should switch model with args", async () => {
@@ -72,23 +78,25 @@ describe("Core slash commands", () => {
     expect(result.newModel).toBe("gpt-4");
   });
 
-  it("/model should show developer role note for o1 model", async () => {
+  it("/model should return interactiveSelect for o1 model without args", async () => {
     const result = await modelCommand.execute("", {
       ...baseContext,
       model: "o1",
     });
-    expect(result.output).toContain("developer role");
     expect(result.success).toBe(true);
+    expect(result.interactiveSelect).toBeDefined();
+    expect(result.interactiveSelect!.prompt).toContain("o1");
   });
 
-  it("/model should show 'no (text-parsing fallback)' for model without tool support", async () => {
+  it("/model should return interactiveSelect for llama3 model without args", async () => {
     // llama3 has supportsTools: false in model-capabilities
     const result = await modelCommand.execute("", {
       ...baseContext,
       model: "llama3",
     });
-    expect(result.output).toContain("no (text-parsing fallback)");
     expect(result.success).toBe(true);
+    expect(result.interactiveSelect).toBeDefined();
+    expect(result.interactiveSelect!.prompt).toContain("llama3");
   });
 
   it("/model switch should include notes for model without tool support", async () => {

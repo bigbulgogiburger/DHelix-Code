@@ -123,6 +123,8 @@ program
         { keybindingsCommand },
         { reviewCommand },
         { commitCommand },
+        { toneCommand },
+        { voiceCommand },
       ] = await Promise.all([
         import("./config/loader.js"),
         import("./llm/client.js"),
@@ -183,6 +185,8 @@ program
         import("./commands/keybindings.js"),
         import("./commands/review.js"),
         import("./commands/commit.js"),
+        import("./commands/tone.js"),
+        import("./commands/voice.js"),
       ]);
 
       // Only pass explicitly-set CLI options as overrides
@@ -314,6 +318,8 @@ program
         keybindingsCommand,
         reviewCommand,
         commitCommand,
+        toneCommand,
+        voiceCommand,
       ];
       // Register skill-based custom commands (user-invocable skills become /commands)
       const { createSkillCommands } = await import("./skills/command-bridge.js");

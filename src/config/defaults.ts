@@ -35,4 +35,12 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   verbose: false,
   dbcodeMdExcludes: [],
+  locale: "ko",
+  tone: "normal" as const,
+  voice: {
+    enabled: false,
+    provider: "openai" as const,
+    language: "ko",
+    model: "whisper-1",
+  },
 };

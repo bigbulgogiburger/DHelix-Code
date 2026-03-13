@@ -2,6 +2,7 @@ import { Box, Text } from "ink";
 import { useState, useMemo, useCallback } from "react";
 import { UserInput } from "./components/UserInput.js";
 import { AgentStatus } from "./components/AgentStatus.js";
+import { SelectList } from "./components/SelectList.js";
 import { StatusBar } from "./components/StatusBar.js";
 // Logo is now printed to stdout before Ink render (see src/index.ts)
 import { ErrorBanner } from "./components/ErrorBanner.js";
@@ -100,6 +101,8 @@ export function App({
     messageQueueRef,
     inputTokens,
     outputTokens,
+    interactiveSelect,
+    setInteractiveSelect,
   } = useAgentLoop({
     client,
     model,
@@ -206,6 +209,18 @@ export function App({
           toolName={pendingPermission.call.name}
           description={`Arguments: ${JSON.stringify(pendingPermission.call.arguments)}`}
           onResponse={handlePermissionResponse}
+        />
+      ) : null}
+
+      {interactiveSelect ? (
+        <SelectList
+          prompt={interactiveSelect.prompt}
+          options={interactiveSelect.options}
+          onSelect={(value) => {
+            setInteractiveSelect(null);
+            void handleSubmit(`${interactiveSelect.onSelect} ${value}`);
+          }}
+          onCancel={() => setInteractiveSelect(null)}
         />
       ) : null}
 

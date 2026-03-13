@@ -7,6 +7,21 @@ export class CommandError extends BaseError {
   }
 }
 
+/** A single option in an interactive select list */
+export interface SelectOption {
+  readonly label: string;
+  readonly value: string;
+  readonly description?: string;
+}
+
+/** Configuration for an interactive select prompt */
+export interface InteractiveSelect {
+  readonly options: readonly SelectOption[];
+  readonly prompt: string;
+  /** Command to run with selected value, e.g. "/resume" */
+  readonly onSelect: string;
+}
+
 /** Context provided to command execution */
 export interface CommandContext {
   /** Current working directory */
@@ -39,6 +54,12 @@ export interface CommandResult {
   readonly shouldInjectAsUserMessage?: boolean;
   /** Override the model for processing the injected message */
   readonly modelOverride?: string;
+  /** If set, display an interactive select list instead of text output */
+  readonly interactiveSelect?: InteractiveSelect;
+  /** Updated tone setting (if changed) */
+  readonly newTone?: string;
+  /** Updated locale setting (if changed) */
+  readonly newLocale?: string;
 }
 
 /** Definition of a slash command */
