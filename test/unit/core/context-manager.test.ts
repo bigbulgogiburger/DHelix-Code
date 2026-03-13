@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { ContextManager } from "../../../src/core/context-manager.js";
+import { ContextManager, getContextConfig } from "../../../src/core/context-manager.js";
 import { type ChatMessage } from "../../../src/llm/provider.js";
 
 /** Create a message with predictable content */
@@ -191,5 +191,43 @@ describe("ContextManager", () => {
     });
 
     expect(manager.tokenBudget).toBe(8_000);
+  });
+});
+
+describe("getContextConfig", () => {
+  it("should return high-tier config", () => {
+    const config = getContextConfig("high");
+    expect(config.compactionThreshold).toBe(0.835);
+    expect(config.preserveRecentTurns).toBe(5);
+  });
+
+  it("should return medium-tier config", () => {
+    const config = getContextConfig("medium");
+    expect(config.compactionThreshold).toBe(0.75);
+    expect(config.preserveRecentTurns).toBe(4);
+  });
+
+  it("should return low-tier config", () => {
+    const config = getContextConfig("low");
+    expect(config.compactionThreshold).toBe(0.65);
+    expect(config.preserveRecentTurns).toBe(3);
+  });
+
+  it("should return lower threshold for lower tiers", () => {
+    const high = getContextConfig("high");
+    const medium = getContextConfig("medium");
+    const low = getContextConfig("low");
+
+    expect(high.compactionThreshold).toBeGreaterThan(medium.compactionThreshold);
+    expect(medium.compactionThreshold).toBeGreaterThan(low.compactionThreshold);
+  });
+
+  it("should return fewer preserved turns for lower tiers", () => {
+    const high = getContextConfig("high");
+    const medium = getContextConfig("medium");
+    const low = getContextConfig("low");
+
+    expect(high.preserveRecentTurns).toBeGreaterThan(medium.preserveRecentTurns);
+    expect(medium.preserveRecentTurns).toBeGreaterThan(low.preserveRecentTurns);
   });
 });

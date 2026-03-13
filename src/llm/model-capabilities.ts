@@ -4,6 +4,9 @@ export interface ModelPricingInfo {
   readonly outputPerMillion: number;
 }
 
+/** Capability tier — determines prompt style, context strategy, and tool call handling */
+export type CapabilityTier = "high" | "medium" | "low";
+
 /** Model capability flags — determines how requests are shaped */
 export interface ModelCapabilities {
   readonly supportsTools: boolean;
@@ -18,6 +21,8 @@ export interface ModelCapabilities {
   readonly pricing: ModelPricingInfo;
   /** Use max_completion_tokens instead of max_tokens (GPT-4o+, o-series, GPT-5) */
   readonly useMaxCompletionTokens: boolean;
+  /** Capability tier for adaptive prompt/context strategies */
+  readonly capabilityTier: CapabilityTier;
 }
 
 /** Default pricing fallback for unknown/local models ($1/M input, $3/M output) */
@@ -37,6 +42,7 @@ const DEFAULTS: ModelCapabilities = {
   useDeveloperRole: false,
   pricing: DEFAULT_PRICING,
   useMaxCompletionTokens: true,
+  capabilityTier: "medium",
 };
 
 /** Known model capability overrides (partial, merged with defaults) */
@@ -48,6 +54,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 16384,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 0.15, outputPerMillion: 0.6 },
+      capabilityTier: "medium",
     },
   ],
   [
@@ -56,6 +63,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 16384,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 2.5, outputPerMillion: 10 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -65,6 +73,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 32768,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 2, outputPerMillion: 8 },
+      capabilityTier: "high",
     },
   ],
   // GPT-5.1 codex models (Azure Responses API compatible)
@@ -76,6 +85,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       supportsTemperature: true,
       pricing: { inputPerMillion: 0.25, outputPerMillion: 2 },
+      capabilityTier: "high",
     },
   ],
   // GPT-5 mini
@@ -86,6 +96,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 128_000,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 0.25, outputPerMillion: 2 },
+      capabilityTier: "medium",
     },
   ],
   // GPT-5 nano
@@ -96,6 +107,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 128_000,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 0.05, outputPerMillion: 0.4 },
+      capabilityTier: "medium",
     },
   ],
   // GPT-5 generic (must be after specific gpt-5 variants)
@@ -107,6 +119,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       supportsTemperature: true,
       pricing: { inputPerMillion: 2, outputPerMillion: 8 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -116,6 +129,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       useMaxCompletionTokens: false,
       pricing: { inputPerMillion: 0.5, outputPerMillion: 1.5 },
+      capabilityTier: "medium",
     },
   ],
   [
@@ -125,6 +139,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       useMaxCompletionTokens: false,
       pricing: { inputPerMillion: 10, outputPerMillion: 30 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -134,6 +149,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       useMaxCompletionTokens: false,
       pricing: { inputPerMillion: 30, outputPerMillion: 60 },
+      capabilityTier: "high",
     },
   ],
 
@@ -148,6 +164,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 100_000,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 3, outputPerMillion: 12 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -160,6 +177,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 100_000,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 15, outputPerMillion: 60 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -172,6 +190,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 100_000,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 1.1, outputPerMillion: 4.4 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -184,6 +203,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 100_000,
       tokenizer: "o200k",
       pricing: { inputPerMillion: 10, outputPerMillion: 40 },
+      capabilityTier: "high",
     },
   ],
 
@@ -195,6 +215,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 16384,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 15, outputPerMillion: 75 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -204,6 +225,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 16384,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -213,6 +235,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 16384,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.8, outputPerMillion: 4 },
+      capabilityTier: "medium",
     },
   ],
   [
@@ -222,6 +245,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 8192,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 15, outputPerMillion: 75 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -231,6 +255,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 8192,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.25, outputPerMillion: 1.25 },
+      capabilityTier: "medium",
     },
   ],
   [
@@ -240,6 +265,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 8192,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
+      capabilityTier: "high",
     },
   ],
   [
@@ -249,6 +275,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 8192,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
+      capabilityTier: "high",
     },
   ],
 
@@ -261,6 +288,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 4096,
       tokenizer: "llama",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+      capabilityTier: "low",
     },
   ],
   [
@@ -269,6 +297,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 131_072,
       tokenizer: "llama",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+      capabilityTier: "low",
     },
   ],
 
@@ -280,6 +309,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 8192,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.3, outputPerMillion: 0.9 },
+      capabilityTier: "low",
     },
   ],
 
@@ -291,6 +321,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 16384,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.27, outputPerMillion: 1.1 },
+      capabilityTier: "low",
     },
   ],
   [
@@ -299,6 +330,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 128_000,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.27, outputPerMillion: 1.1 },
+      capabilityTier: "medium",
     },
   ],
 
@@ -309,6 +341,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 32768,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+      capabilityTier: "low",
     },
   ],
   [
@@ -318,6 +351,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 8192,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+      capabilityTier: "low",
     },
   ],
 
@@ -328,6 +362,31 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 128_000,
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 2, outputPerMillion: 6 },
+      capabilityTier: "medium",
+    },
+  ],
+
+  // Phi (local models via Ollama)
+  [
+    /^phi/i,
+    {
+      maxContextTokens: 4096,
+      maxOutputTokens: 2048,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+      capabilityTier: "low",
+    },
+  ],
+
+  // Gemma (local models via Ollama)
+  [
+    /^gemma/i,
+    {
+      maxContextTokens: 8192,
+      maxOutputTokens: 4096,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+      capabilityTier: "low",
     },
   ],
 ];

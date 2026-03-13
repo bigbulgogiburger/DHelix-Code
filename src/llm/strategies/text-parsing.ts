@@ -16,6 +16,52 @@ import { type ExtractedToolCall } from "../../tools/types.js";
 const TOOL_CALL_PATTERN =
   /<tool_call>\s*<name>([\s\S]*?)<\/name>\s*<arguments>([\s\S]*?)<\/arguments>\s*<\/tool_call>/g;
 
+/**
+ * Extract key-value pairs from malformed JSON using regex.
+ * Last-resort fallback when JSON.parse fails even after fixup.
+ */
+export function extractKeyValuePairs(raw: string): Record<string, unknown> {
+  const pairs: Record<string, unknown> = {};
+  const regex = /["']?(\w+)["']?\s*:\s*["']?([^"',}\]]+)["']?/g;
+  let match;
+  while ((match = regex.exec(raw)) !== null) {
+    if (match[1] && match[2]) {
+      pairs[match[1]] = match[2].trim();
+    }
+  }
+  return pairs;
+}
+
+/**
+ * Parse tool arguments with progressive JSON recovery.
+ * Handles common LLM mistakes: trailing commas, single quotes, unquoted keys, literal newlines.
+ */
+export function parseToolArguments(raw: string): Record<string, unknown> {
+  // 1st try: standard JSON.parse
+  try {
+    return JSON.parse(raw) as Record<string, unknown>;
+  } catch {
+    /* continue */
+  }
+
+  // 2nd try: fix common mistakes
+  const fixed = raw
+    .replace(/,\s*}/g, "}") // trailing comma in objects
+    .replace(/,\s*]/g, "]") // trailing comma in arrays
+    .replace(/'/g, '"') // single quotes -> double
+    .replace(/(\w+)\s*:/g, '"$1":') // unquoted keys
+    .replace(/\n/g, "\\n"); // literal newlines in strings
+
+  try {
+    return JSON.parse(fixed) as Record<string, unknown>;
+  } catch {
+    /* continue */
+  }
+
+  // 3rd try: regex key-value extraction
+  return extractKeyValuePairs(raw);
+}
+
 /** Counter for generating unique tool call IDs */
 let callIdCounter = 0;
 
@@ -115,13 +161,7 @@ export class TextParsingStrategy implements ToolCallStrategy {
       const name = match[1].trim();
       const argsStr = match[2].trim();
 
-      let args: Record<string, unknown>;
-      try {
-        args = JSON.parse(argsStr) as Record<string, unknown>;
-      } catch {
-        // If arguments aren't valid JSON, try to extract key-value pairs
-        args = { raw: argsStr };
-      }
+      const args = parseToolArguments(argsStr);
 
       calls.push({
         id: generateCallId(),

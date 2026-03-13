@@ -5,6 +5,7 @@ import { getPlatform } from "../utils/platform.js";
 import { APP_NAME, VERSION, getProjectConfigPaths } from "../constants.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { estimateTokens } from "../llm/token-counter.js";
+import { type CapabilityTier } from "../llm/model-capabilities.js";
 
 /** System prompt section with optional condition and token budget */
 export interface PromptSection {
@@ -41,6 +42,8 @@ export interface BuildSystemPromptOptions {
   readonly sessionState?: SessionState;
   /** Total token budget for the system prompt. Lowest-priority sections trimmed if exceeded. */
   readonly totalTokenBudget?: number;
+  /** Capability tier of the active model — controls prompt complexity */
+  readonly capabilityTier?: CapabilityTier;
 }
 
 /** Default token budget for system prompts (32k tokens) */
@@ -103,6 +106,15 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
       priority: 78,
     });
   }
+
+  // CoT scaffolding for low-tier models
+  const tier = options?.capabilityTier;
+  sections.push({
+    id: "cot-scaffolding",
+    content: buildCotScaffoldingSection(),
+    priority: 79,
+    condition: () => tier === "low",
+  });
 
   // Conditional sections based on session state
   if (state) {
@@ -529,6 +541,18 @@ ${lines.join("\n")}
 - Use **list_dir** to see directory structure before searching.
 - You can call multiple independent tools in parallel for efficiency.
 - For large outputs, prefer targeted searches over reading entire files.`;
+}
+
+function buildCotScaffoldingSection(): string {
+  return `## Step-by-Step Approach
+For each task, follow these steps:
+1. THINK: What do I need to do?
+2. LOOK: What files or information do I need?
+3. PLAN: What tools should I use and in what order?
+4. ACT: Execute one tool at a time
+5. CHECK: Did the tool succeed? What's next?
+
+Always explain your reasoning before using a tool.`;
 }
 
 function buildConventionsSection(): string {

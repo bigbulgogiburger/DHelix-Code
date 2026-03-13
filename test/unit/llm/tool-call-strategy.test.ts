@@ -150,7 +150,8 @@ describe("TextParsingStrategy", () => {
 
     const calls = strategy.extractToolCalls(content, []);
     expect(calls).toHaveLength(1);
-    expect(calls[0].arguments).toEqual({ raw: "not valid json" });
+    // Falls through to key-value extraction which returns empty for no key:value patterns
+    expect(calls[0].arguments).toEqual({});
   });
 
   it("should return empty array when no tool calls in content", () => {

@@ -6,6 +6,22 @@ import { countTokens, countMessageTokens } from "../llm/token-counter.js";
 import { AGENT_LOOP, TOKEN_DEFAULTS, SESSIONS_DIR } from "../constants.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { buildSystemPrompt } from "./system-prompt-builder.js";
+import type { CapabilityTier } from "../llm/model-capabilities.js";
+
+/** Tier-based context configuration for adaptive compaction behavior */
+export function getContextConfig(tier: CapabilityTier): {
+  readonly compactionThreshold: number;
+  readonly preserveRecentTurns: number;
+} {
+  switch (tier) {
+    case "high":
+      return { compactionThreshold: 0.835, preserveRecentTurns: 5 };
+    case "medium":
+      return { compactionThreshold: 0.75, preserveRecentTurns: 4 };
+    case "low":
+      return { compactionThreshold: 0.65, preserveRecentTurns: 3 };
+  }
+}
 
 /** Tools whose outputs are eligible for cold storage (bulky read-only outputs) */
 const COLD_STORAGE_ELIGIBLE_TOOLS = new Set([

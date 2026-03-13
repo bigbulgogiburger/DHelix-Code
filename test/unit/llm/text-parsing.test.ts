@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { TextParsingStrategy } from "../../../src/llm/strategies/text-parsing.js";
+import {
+  TextParsingStrategy,
+  parseToolArguments,
+  extractKeyValuePairs,
+} from "../../../src/llm/strategies/text-parsing.js";
 import { type ToolDefinitionForLLM } from "../../../src/llm/provider.js";
 
 describe("TextParsingStrategy", () => {
@@ -126,7 +130,44 @@ describe("TextParsingStrategy", () => {
 
       expect(calls).toHaveLength(1);
       expect(calls[0].name).toBe("file_read");
-      expect(calls[0].arguments).toEqual({ raw: "not valid json" });
+      // Falls through to key-value extraction which returns empty for no key:value patterns
+      expect(calls[0].arguments).toEqual({});
+    });
+
+    it("should recover from trailing comma in JSON", () => {
+      const content = `<tool_call>
+<name>file_read</name>
+<arguments>{"path": "src/index.ts",}</arguments>
+</tool_call>`;
+
+      const calls = strategy.extractToolCalls(content, []);
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0].arguments).toEqual({ path: "src/index.ts" });
+    });
+
+    it("should recover from single quotes in JSON", () => {
+      const content = `<tool_call>
+<name>file_read</name>
+<arguments>{'path': 'src/index.ts'}</arguments>
+</tool_call>`;
+
+      const calls = strategy.extractToolCalls(content, []);
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0].arguments).toEqual({ path: "src/index.ts" });
+    });
+
+    it("should recover from unquoted keys in JSON", () => {
+      const content = `<tool_call>
+<name>file_read</name>
+<arguments>{path: "src/index.ts"}</arguments>
+</tool_call>`;
+
+      const calls = strategy.extractToolCalls(content, []);
+
+      expect(calls).toHaveLength(1);
+      expect(calls[0].arguments).toEqual({ path: "src/index.ts" });
     });
   });
 
@@ -176,5 +217,66 @@ And some more text.`;
       expect(stripped).not.toContain("<tool_call>");
       expect(stripped).not.toContain("file_read");
     });
+  });
+});
+
+describe("parseToolArguments", () => {
+  it("should parse valid JSON directly", () => {
+    const result = parseToolArguments('{"path": "src/index.ts"}');
+    expect(result).toEqual({ path: "src/index.ts" });
+  });
+
+  it("should fix trailing comma in objects", () => {
+    const result = parseToolArguments('{"path": "src/index.ts",}');
+    expect(result).toEqual({ path: "src/index.ts" });
+  });
+
+  it("should fix trailing comma in arrays", () => {
+    const result = parseToolArguments('{"items": ["a", "b",]}');
+    expect(result).toEqual({ items: ["a", "b"] });
+  });
+
+  it("should fix single quotes to double quotes", () => {
+    const result = parseToolArguments("{'path': 'src/index.ts'}");
+    expect(result).toEqual({ path: "src/index.ts" });
+  });
+
+  it("should fix unquoted keys", () => {
+    const result = parseToolArguments('{path: "src/index.ts"}');
+    expect(result).toEqual({ path: "src/index.ts" });
+  });
+
+  it("should fall back to key-value extraction for fully malformed input", () => {
+    const result = parseToolArguments('path: src/index.ts, command: "ls -la"');
+    expect(result).toHaveProperty("path");
+    expect(result).toHaveProperty("command");
+  });
+
+  it("should return empty object for completely unstructured input", () => {
+    const result = parseToolArguments("just some random text");
+    expect(result).toEqual({});
+  });
+});
+
+describe("extractKeyValuePairs", () => {
+  it("should extract simple key-value pairs", () => {
+    const result = extractKeyValuePairs('path: "src/index.ts"');
+    expect(result).toHaveProperty("path");
+  });
+
+  it("should extract multiple pairs", () => {
+    const result = extractKeyValuePairs('name: "file_read", path: "src/index.ts"');
+    expect(result).toHaveProperty("name");
+    expect(result).toHaveProperty("path");
+  });
+
+  it("should handle quoted keys", () => {
+    const result = extractKeyValuePairs('"path": "src/index.ts"');
+    expect(result).toHaveProperty("path");
+  });
+
+  it("should return empty object for no key-value patterns", () => {
+    const result = extractKeyValuePairs("no pairs here");
+    expect(result).toEqual({});
   });
 });
