@@ -6,9 +6,10 @@ import {
   type CostSummary,
   type ModelPricing,
 } from "../../../src/llm/cost-tracker.js";
+import { getModelCapabilities } from "../../../src/llm/model-capabilities.js";
 
 // =============================================================================
-// getModelPricing
+// getModelPricing — SSOT delegation to model-capabilities
 // =============================================================================
 
 describe("getModelPricing", () => {
@@ -64,6 +65,73 @@ describe("getModelPricing", () => {
     const pricing = getModelPricing("");
     expect(pricing.inputPerMillion).toBe(1);
     expect(pricing.outputPerMillion).toBe(3);
+  });
+
+  it("should delegate to model-capabilities as SSOT", () => {
+    // Verify that getModelPricing returns the same values as getModelCapabilities
+    const models = [
+      "gpt-4o",
+      "gpt-4o-mini",
+      "claude-3.5-sonnet",
+      "claude-opus-4-6",
+      "o1",
+      "o3-mini",
+      "deepseek-v3",
+    ];
+    for (const model of models) {
+      const pricing = getModelPricing(model);
+      const caps = getModelCapabilities(model);
+      expect(pricing.inputPerMillion).toBe(caps.pricing.inputPerMillion);
+      expect(pricing.outputPerMillion).toBe(caps.pricing.outputPerMillion);
+    }
+  });
+
+  it("should return pricing for o1", () => {
+    const pricing = getModelPricing("o1");
+    expect(pricing.inputPerMillion).toBe(15);
+    expect(pricing.outputPerMillion).toBe(60);
+  });
+
+  it("should return pricing for o1-mini", () => {
+    const pricing = getModelPricing("o1-mini");
+    expect(pricing.inputPerMillion).toBe(3);
+    expect(pricing.outputPerMillion).toBe(12);
+  });
+
+  it("should return pricing for o3-mini", () => {
+    const pricing = getModelPricing("o3-mini");
+    expect(pricing.inputPerMillion).toBe(1.1);
+    expect(pricing.outputPerMillion).toBe(4.4);
+  });
+
+  it("should return pricing for claude-opus-4-6", () => {
+    const pricing = getModelPricing("claude-opus-4-6");
+    expect(pricing.inputPerMillion).toBe(15);
+    expect(pricing.outputPerMillion).toBe(75);
+  });
+
+  it("should return pricing for claude-haiku-4-5-20251001", () => {
+    const pricing = getModelPricing("claude-haiku-4-5-20251001");
+    expect(pricing.inputPerMillion).toBe(0.8);
+    expect(pricing.outputPerMillion).toBe(4);
+  });
+
+  it("should return pricing for deepseek variants", () => {
+    const pricing = getModelPricing("deepseek-v3");
+    expect(pricing.inputPerMillion).toBe(0.27);
+    expect(pricing.outputPerMillion).toBe(1.1);
+  });
+
+  it("should return zero pricing for local models (llama)", () => {
+    const pricing = getModelPricing("llama3.2");
+    expect(pricing.inputPerMillion).toBe(0);
+    expect(pricing.outputPerMillion).toBe(0);
+  });
+
+  it("should return zero pricing for local models (qwen)", () => {
+    const pricing = getModelPricing("qwen2.5-coder-7b");
+    expect(pricing.inputPerMillion).toBe(0);
+    expect(pricing.outputPerMillion).toBe(0);
   });
 });
 

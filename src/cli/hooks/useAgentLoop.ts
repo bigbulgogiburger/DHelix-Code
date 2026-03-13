@@ -20,6 +20,7 @@ import { getModelCapabilities } from "../../llm/model-capabilities.js";
 import { createEventEmitter } from "../../utils/events.js";
 import { ActivityCollector, type TurnActivity } from "../../core/activity.js";
 import { MemoryManager } from "../../memory/manager.js";
+import { metrics, COUNTERS } from "../../telemetry/metrics.js";
 
 export interface UseAgentLoopOptions {
   readonly client: LLMProvider;
@@ -67,6 +68,12 @@ export function useAgentLoop({
   const [tokenCount, setTokenCount] = useState(0);
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(initialModel);
+
+  // Token usage and cost tracking
+  const [inputTokens, setInputTokens] = useState(0);
+  const [outputTokens, setOutputTokens] = useState(0);
+  const [totalCost, setTotalCost] = useState(0);
+  const prevUsageRef = useRef({ prompt: 0, completion: 0 });
 
   // Activity tracking
   const activityRef = useRef(new ActivityCollector());
@@ -184,6 +191,42 @@ export function useAgentLoop({
       events.off("agent:assistant-message", onAssistantMessage);
     };
   }, [events, appendText, syncCurrentTurn]);
+
+  // Wire up usage tracking: listen for agent:usage-update events
+  useEffect(() => {
+    const handleUsageUpdate = (data: {
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      iteration: number;
+    }) => {
+      const deltaPrompt = data.promptTokens - prevUsageRef.current.prompt;
+      const deltaCompletion = data.completionTokens - prevUsageRef.current.completion;
+      prevUsageRef.current = { prompt: data.promptTokens, completion: data.completionTokens };
+
+      setInputTokens(data.promptTokens);
+      setOutputTokens(data.completionTokens);
+
+      metrics.increment(COUNTERS.tokensUsed, deltaPrompt, { type: "input", model: activeModel });
+      metrics.increment(COUNTERS.tokensUsed, deltaCompletion, {
+        type: "output",
+        model: activeModel,
+      });
+
+      const caps = getModelCapabilities(activeModel);
+      const pricing = caps.pricing;
+      const deltaCost =
+        (deltaPrompt / 1_000_000) * pricing.inputPerMillion +
+        (deltaCompletion / 1_000_000) * pricing.outputPerMillion;
+      setTotalCost((prev) => prev + deltaCost);
+      metrics.increment(COUNTERS.tokenCost, deltaCost, { model: activeModel });
+    };
+
+    events.on("agent:usage-update", handleUsageUpdate);
+    return () => {
+      events.off("agent:usage-update", handleUsageUpdate);
+    };
+  }, [events, activeModel]);
 
   /** Process a single user message through the agent loop */
   const processMessage = useCallback(
@@ -466,5 +509,8 @@ export function useAgentLoop({
     activeModel,
     events,
     messageQueueRef,
+    inputTokens,
+    outputTokens,
+    totalCost,
   } as const;
 }

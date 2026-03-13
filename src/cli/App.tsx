@@ -98,6 +98,8 @@ export function App({
     activeModel,
     events,
     messageQueueRef,
+    inputTokens,
+    outputTokens,
   } = useAgentLoop({
     client,
     model,
@@ -257,6 +259,8 @@ export function App({
           tokenCount={tokenCount}
           maxTokens={getModelCapabilities(activeModel).maxContextTokens}
           isStreaming={isProcessing}
+          inputTokens={inputTokens}
+          outputTokens={outputTokens}
           permissionMode={MODE_LABELS[permissionMode]}
           verboseMode={verboseMode}
           thinkingEnabled={thinkingEnabled}

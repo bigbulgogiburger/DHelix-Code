@@ -1,6 +1,7 @@
 import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import { VERSION } from "../../constants.js";
+import { getModelCapabilities } from "../../llm/model-capabilities.js";
 
 interface StatusBarProps {
   readonly model: string;
@@ -17,42 +18,14 @@ interface StatusBarProps {
   readonly thinkingEnabled?: boolean;
 }
 
-/** Token pricing per 1M tokens (USD) — input / output */
-const MODEL_PRICING: Record<string, readonly [number, number]> = {
-  // GPT-4.1 series (2025-04)
-  "gpt-4.1": [2.0, 8.0],
-  "gpt-5-mini": [0.4, 1.6],
-  "gpt-4.1-mini": [0.4, 1.6],
-  "gpt-4.1-nano": [0.1, 0.4],
-  // GPT-4o series
-  "gpt-4o": [2.5, 10],
-  "gpt-4o-mini": [0.15, 0.6],
-  // GPT-4 legacy
-  "gpt-4-turbo": [10, 30],
-  "gpt-4": [30, 60],
-  "gpt-3.5-turbo": [0.5, 1.5],
-  // Claude
-  "claude-opus-4-6": [15, 75],
-  "claude-sonnet-4-6": [3, 15],
-  "claude-haiku-4-5-20251001": [0.8, 4],
-  "claude-3-5-sonnet-20241022": [3, 15],
-  "claude-3-5-haiku-20241022": [0.8, 4],
-  "claude-3-opus-20240229": [15, 75],
-  // OpenAI reasoning
-  o1: [15, 60],
-  "o1-mini": [3, 12],
-  "o3-mini": [1.1, 4.4],
-};
-
-/** Calculate session cost from token counts */
+/** Calculate session cost from token counts using model-capabilities SSOT */
 function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
-  // Try exact match, then prefix match
-  const pricing =
-    MODEL_PRICING[model] ??
-    Object.entries(MODEL_PRICING).find(([key]) => model.startsWith(key))?.[1];
-  if (!pricing) return 0;
-  const [inputPricePerM, outputPricePerM] = pricing;
-  return (inputTokens / 1_000_000) * inputPricePerM + (outputTokens / 1_000_000) * outputPricePerM;
+  const caps = getModelCapabilities(model);
+  const pricing = caps.pricing;
+  return (
+    (inputTokens / 1_000_000) * pricing.inputPerMillion +
+    (outputTokens / 1_000_000) * pricing.outputPerMillion
+  );
 }
 
 /** Format cost as dollar string */

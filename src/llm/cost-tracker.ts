@@ -1,4 +1,5 @@
 import { type TokenUsage } from "./provider.js";
+import { getModelCapabilities } from "./model-capabilities.js";
 
 /** Pricing per million tokens (USD) */
 export interface ModelPricing {
@@ -27,36 +28,17 @@ export interface CostSummary {
   readonly modelBreakdown: ReadonlyMap<string, { readonly tokens: number; readonly cost: number }>;
 }
 
-/** Known model pricing table — cost per million tokens in USD */
-const MODEL_PRICING: ReadonlyArray<[RegExp, ModelPricing]> = [
-  // Anthropic Claude
-  [/^claude-3\.5-sonnet/i, { inputPerMillion: 3, outputPerMillion: 15 }],
-  [/^claude-3-opus/i, { inputPerMillion: 15, outputPerMillion: 75 }],
-  [/^claude-3-haiku/i, { inputPerMillion: 0.25, outputPerMillion: 1.25 }],
-
-  // OpenAI GPT
-  [/^gpt-4o-mini/i, { inputPerMillion: 0.15, outputPerMillion: 0.6 }],
-  [/^gpt-4o/i, { inputPerMillion: 2.5, outputPerMillion: 10 }],
-  [/^gpt-4-turbo/i, { inputPerMillion: 10, outputPerMillion: 30 }],
-];
-
-/** Default pricing fallback for unknown/local models */
-const DEFAULT_PRICING: ModelPricing = {
-  inputPerMillion: 1,
-  outputPerMillion: 3,
-};
-
 /**
  * Look up pricing for a model by name.
- * Matches against known model patterns, falls back to default pricing.
+ * Delegates to model-capabilities as the single source of truth for pricing.
  */
 export function getModelPricing(modelName: string): ModelPricing {
-  for (const [pattern, pricing] of MODEL_PRICING) {
-    if (pattern.test(modelName)) {
-      return pricing;
-    }
-  }
-  return { ...DEFAULT_PRICING };
+  const caps = getModelCapabilities(modelName);
+  const p = caps.pricing;
+  return {
+    inputPerMillion: p.inputPerMillion,
+    outputPerMillion: p.outputPerMillion,
+  };
 }
 
 /**

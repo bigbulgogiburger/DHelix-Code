@@ -14,8 +14,8 @@ export interface ModelCapabilities {
   readonly maxOutputTokens: number;
   readonly tokenizer: "cl100k" | "o200k" | "llama";
   readonly useDeveloperRole: boolean;
-  /** Pricing per million tokens (USD). Undefined for models with unknown pricing. */
-  readonly pricing?: ModelPricingInfo;
+  /** Pricing per million tokens (USD). Always present — defaults to $1/$3 for unknown models. */
+  readonly pricing: ModelPricingInfo;
   /** Use max_completion_tokens instead of max_tokens (GPT-4o+, o-series, GPT-5) */
   readonly useMaxCompletionTokens: boolean;
 }
@@ -106,9 +106,18 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxOutputTokens: 128_000,
       tokenizer: "o200k",
       supportsTemperature: true,
+      pricing: { inputPerMillion: 2, outputPerMillion: 8 },
     },
   ],
-  [/^gpt-3\.5/i, { maxContextTokens: 16385, tokenizer: "cl100k", useMaxCompletionTokens: false }],
+  [
+    /^gpt-3\.5/i,
+    {
+      maxContextTokens: 16385,
+      tokenizer: "cl100k",
+      useMaxCompletionTokens: false,
+      pricing: { inputPerMillion: 0.5, outputPerMillion: 1.5 },
+    },
+  ],
   [
     /^gpt-4-turbo/i,
     {
@@ -120,10 +129,27 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
   ],
   [
     /^gpt-4(?!o|\.)/i,
-    { maxContextTokens: 8192, tokenizer: "cl100k", useMaxCompletionTokens: false },
+    {
+      maxContextTokens: 8192,
+      tokenizer: "cl100k",
+      useMaxCompletionTokens: false,
+      pricing: { inputPerMillion: 30, outputPerMillion: 60 },
+    },
   ],
 
   // OpenAI reasoning (o-series) — no system message, no temperature, use developer role
+  [
+    /^o1-mini/i,
+    {
+      supportsSystemMessage: false,
+      supportsTemperature: false,
+      useDeveloperRole: true,
+      maxContextTokens: 200_000,
+      maxOutputTokens: 100_000,
+      tokenizer: "o200k",
+      pricing: { inputPerMillion: 3, outputPerMillion: 12 },
+    },
+  ],
   [
     /^o1/i,
     {
@@ -133,6 +159,19 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 200_000,
       maxOutputTokens: 100_000,
       tokenizer: "o200k",
+      pricing: { inputPerMillion: 15, outputPerMillion: 60 },
+    },
+  ],
+  [
+    /^o3-mini/i,
+    {
+      supportsSystemMessage: false,
+      supportsTemperature: false,
+      useDeveloperRole: true,
+      maxContextTokens: 200_000,
+      maxOutputTokens: 100_000,
+      tokenizer: "o200k",
+      pricing: { inputPerMillion: 1.1, outputPerMillion: 4.4 },
     },
   ],
   [
@@ -144,10 +183,38 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 200_000,
       maxOutputTokens: 100_000,
       tokenizer: "o200k",
+      pricing: { inputPerMillion: 10, outputPerMillion: 40 },
     },
   ],
 
   // Claude (via proxy) — specific variants must precede the generic /^claude/ pattern
+  [
+    /^claude-opus-4/i,
+    {
+      maxContextTokens: 200_000,
+      maxOutputTokens: 16384,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 15, outputPerMillion: 75 },
+    },
+  ],
+  [
+    /^claude-sonnet-4/i,
+    {
+      maxContextTokens: 200_000,
+      maxOutputTokens: 16384,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 3, outputPerMillion: 15 },
+    },
+  ],
+  [
+    /^claude-haiku-4/i,
+    {
+      maxContextTokens: 200_000,
+      maxOutputTokens: 16384,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0.8, outputPerMillion: 4 },
+    },
+  ],
   [
     /^claude-3-opus/i,
     {
@@ -175,7 +242,15 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
     },
   ],
-  [/^claude/i, { maxContextTokens: 200_000, maxOutputTokens: 8192, tokenizer: "cl100k" }],
+  [
+    /^claude/i,
+    {
+      maxContextTokens: 200_000,
+      maxOutputTokens: 8192,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 3, outputPerMillion: 15 },
+    },
+  ],
 
   // Llama (base models via Ollama — no tools for base llama3)
   [
@@ -185,12 +260,28 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       maxContextTokens: 8192,
       maxOutputTokens: 4096,
       tokenizer: "llama",
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 },
     },
   ],
-  [/^llama3\.[1-9]/i, { maxContextTokens: 131_072, tokenizer: "llama" }],
+  [
+    /^llama3\.[1-9]/i,
+    {
+      maxContextTokens: 131_072,
+      tokenizer: "llama",
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+    },
+  ],
 
   // Codestral
-  [/^codestral/i, { maxContextTokens: 256_000, maxOutputTokens: 8192, tokenizer: "cl100k" }],
+  [
+    /^codestral/i,
+    {
+      maxContextTokens: 256_000,
+      maxOutputTokens: 8192,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0.3, outputPerMillion: 0.9 },
+    },
+  ],
 
   // DeepSeek
   [
@@ -199,19 +290,46 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsTools: false,
       maxContextTokens: 16384,
       tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0.27, outputPerMillion: 1.1 },
     },
   ],
-  [/^deepseek-(coder-v2|v3)/i, { maxContextTokens: 128_000, tokenizer: "cl100k" }],
+  [
+    /^deepseek-(coder-v2|v3)/i,
+    {
+      maxContextTokens: 128_000,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0.27, outputPerMillion: 1.1 },
+    },
+  ],
 
   // Qwen
-  [/^qwen2\.5-coder-7b/i, { maxContextTokens: 32768, tokenizer: "cl100k" }],
+  [
+    /^qwen2\.5-coder-7b/i,
+    {
+      maxContextTokens: 32768,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+    },
+  ],
   [
     /^qwen2\.5-coder-32b/i,
-    { maxContextTokens: 131_072, maxOutputTokens: 8192, tokenizer: "cl100k" },
+    {
+      maxContextTokens: 131_072,
+      maxOutputTokens: 8192,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+    },
   ],
 
   // Mistral
-  [/^mistral-(large|medium)/i, { maxContextTokens: 128_000, tokenizer: "cl100k" }],
+  [
+    /^mistral-(large|medium)/i,
+    {
+      maxContextTokens: 128_000,
+      tokenizer: "cl100k",
+      pricing: { inputPerMillion: 2, outputPerMillion: 6 },
+    },
+  ],
 ];
 
 /**
