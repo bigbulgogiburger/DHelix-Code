@@ -1,7 +1,7 @@
 import { Box, Text } from "ink";
 import { useState, useMemo, useCallback } from "react";
 import { UserInput } from "./components/UserInput.js";
-import { Spinner } from "./components/Spinner.js";
+import { AgentStatus } from "./components/AgentStatus.js";
 import { StatusBar } from "./components/StatusBar.js";
 // Logo is now printed to stdout before Ink render (see src/index.ts)
 import { ErrorBanner } from "./components/ErrorBanner.js";
@@ -197,7 +197,7 @@ export function App({
       !streamingText &&
       !currentTurn?.entries.some((e) => e.type === "tool-start") ? (
         <Box marginY={1}>
-          <Spinner label="Thinking..." />
+          <AgentStatus tokenCount={tokenCount} />
         </Box>
       ) : null}
 
