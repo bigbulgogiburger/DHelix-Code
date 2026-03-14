@@ -1,6 +1,6 @@
 # Sprint 4: 완성도 + 개발자 경험 (Polish & Developer Experience)
 
-> **Version**: 1.0
+> **Version**: 2.0 (웹 리서치 + 프로젝트 심층 분석 반영)
 > **Date**: 2026-03-14
 > **Base**: Sprint 3 완료 — 3443 tests / 0 TS errors
 > **Scope**: I6 /doctor 진단 + I7 /bug 이슈 리포트 + 성능 최적화 + DX 개선
@@ -23,33 +23,43 @@
 
 Sprint 1-3에서 Critical + Important 격차가 모두 해소되었습니다. Sprint 4는 **완성도와 사용성**에 집중합니다.
 
-### 로드맵 잔여 항목
+### 현재 프로젝트 현황 (심층 분석)
 
-| # | 기능 | 설명 | 복잡도 |
-|---|------|------|--------|
-| **I6** | /doctor 진단 | 환경 점검 (Node, Git, LLM, MCP 등) | 중 |
-| **I7** | /bug 이슈 리포트 | GitHub Issues 자동 생성 | 중 |
+| 항목 | 수치 | 비고 |
+|------|------|------|
+| 소스 파일 | ~120개 | src/ 전체 |
+| 테스트 파일 | ~60개 | test/unit/ |
+| 커맨드 수 | **38개** | src/commands/ (doctor, stats, diff 등 이미 존재) |
+| 테스트 커버리지 갭 | **23개 커맨드** 미테스트 | commands 모듈이 가장 큰 갭 |
+| 인증 시스템 | 토큰 기반만 | OAuth Device Flow 없음 |
 
-### 신규 발견 항목 (프로젝트 분석 기반)
+### 로드맵 잔여 + 신규 발견 항목
 
-| # | 기능 | 설명 | 복잡도 |
-|---|------|------|--------|
-| **P1** | 성능 최적화 | Startup 시간 단축, context compaction 효율성 | 중 |
-| **DX1** | 개발자 경험 | /stats 커맨드, /export, /diff 등 유틸리티 | 낮-중 |
+| # | 기능 | 설명 | 현재 상태 | 복잡도 |
+|---|------|------|----------|--------|
+| **I6** | /doctor 진단 | 환경 점검 12+ 항목 | 4개 체크만 존재 (65줄) | 중 |
+| **I7** | /bug 이슈 리포트 | GitHub Issues URL 자동 생성 | 미구현 | 낮-중 |
+| **P1** | 성능 최적화 | Startup 병렬화, 커맨드 lazy loading | 순차 초기화 | 중 |
+| **DX1** | 개발자 경험 | /stats, /export, /diff 보강 | 일부 존재하나 미흡 | 낮-중 |
+| **T1** | 테스트 커버리지 | 23개 미테스트 커맨드 | 38개 중 15개만 테스트 | 중 |
 
 ---
 
 ## I6. /doctor 포괄적 진단
 
-### Claude Code /doctor 참조
+### Claude Code /doctor 참조 (웹 리서치)
 
 Claude Code의 `/doctor`는 환경 문제를 자동 감지하고 해결 방법을 제시합니다:
-- Node.js 버전 확인
-- Git 설치 + 설정 확인
-- API 키 유효성 확인
-- MCP 서버 연결 상태
-- 디스크 공간 확인
-- 네트워크 연결 확인
+- **Installation Info**: 설치 방식(npm/native), Node.js 경로, 버전
+- **Authentication**: API 연결 상태, 인증 유효성
+- **Configuration**: `settings.json` 유효성, 잘못된 권한 패턴 감지
+- **MCP Health**: MCP 서버 연결 상태
+- **File Permissions**: config 디렉토리 쓰기 권한
+- **Context**: DBCODE.md 유효성
+
+> 출처: [Claude Code Troubleshooting](https://code.claude.com/docs/en/troubleshooting), [Flutter Doctor Guide](https://flutterfever.com/flutter-doctor-command/)
+
+**dbcode 현재 상태**: `src/commands/doctor.ts` — 65줄, **4개 체크만** (Node, Git, Git repo, Model config). Claude Code 대비 큰 갭.
 
 ### 구현 계획
 
@@ -371,3 +381,21 @@ Sprint 4: 완성도 + DX         ✅ I6+I7+P1+DX1 (Doctor, Bug, Performance, Com
   - CI/CD 파이프라인 (GitHub Actions)
   - 사용자 문서 (Getting Started, Configuration Guide)
 ```
+
+---
+
+## 웹 리서치 참조
+
+### /doctor 패턴
+- [Claude Code Troubleshooting](https://code.claude.com/docs/en/troubleshooting)
+- [Flutter Doctor Diagnostics Guide](https://flutterfever.com/flutter-doctor-command/)
+- [Claude Code /doctor Issue #7842](https://github.com/anthropics/claude-code/issues/7842)
+
+### /bug 패턴
+- [Claude Code /bug URL length Issue #11858](https://github.com/anthropics/claude-code/issues/11858)
+- [Reporting Issues — DeepWiki](https://deepwiki.com/anthropics/claude-code/2.5-providing-feedback-and-reporting-issues)
+
+### OAuth CLI 패턴
+- [gh auth login manual](https://cli.github.com/manual/gh_auth_login)
+- [OAuth Device Flow in JS CLI](https://dev.to/ddebajyati/integrate-github-login-with-oauth-device-flow-in-your-js-cli-28fk)
+- [Browser-based OAuth for CLI — WorkOS](https://workos.com/blog/how-to-build-browser-based-oauth-into-your-cli-with-workos)
