@@ -182,7 +182,9 @@ describe("conditional sections with SessionState", () => {
 
   it("should not include plan mode section when mode is normal", () => {
     const prompt = buildSystemPrompt({ sessionState: baseState });
-    expect(prompt).not.toContain("Plan Mode");
+    // Check for the actual plan mode section header, not just "Plan Mode" substring
+    // (project docs may contain "Plan Mode" references)
+    expect(prompt).not.toContain("# Plan Mode\n");
   });
 
   it("should include plan mode section when mode is plan", () => {

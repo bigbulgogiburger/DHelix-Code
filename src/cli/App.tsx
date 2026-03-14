@@ -151,6 +151,19 @@ export function App({
     };
   }, [events, setVoiceEnabled]);
 
+  // Wire permission mode change events from /plan command
+  useEffect(() => {
+    const handleModeChange = ({ mode }: { mode: string }) => {
+      const validMode = mode as PermissionMode;
+      permissionManager.setMode(validMode);
+      setPermissionMode(validMode);
+    };
+    events.on("permission:mode-change", handleModeChange);
+    return () => {
+      events.off("permission:mode-change", handleModeChange);
+    };
+  }, [events, permissionManager]);
+
   // Track current input value for slash command menu
   const [inputValue, setInputValue] = useState("");
   const slashMenuVisible =

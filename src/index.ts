@@ -379,6 +379,9 @@ program
       // Print logo to stdout BEFORE Ink render — prevents flickering
       printStartupLogo(config.llm.model);
 
+      // Clean orphaned worktrees (non-blocking)
+      import("./subagents/spawner.js").then(m => m.cleanOrphanedWorktrees(process.cwd())).catch(() => {});
+
       // Patch Ink rendering with DEC Mode 2026 synchronized output
       // Terminals that support it (Ghostty, iTerm2, WezTerm, VSCode) will
       // display each frame atomically, eliminating flickering entirely.

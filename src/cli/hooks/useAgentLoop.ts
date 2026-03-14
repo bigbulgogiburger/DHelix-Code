@@ -506,6 +506,9 @@ export function useAgentLoop({
           if (result.newTone) {
             setCurrentTone(result.newTone);
           }
+          if (result.newPermissionMode) {
+            events.emit("permission:mode-change", { mode: result.newPermissionMode });
+          }
           if (result.voiceEnabled !== undefined) {
             events.emit("voice:toggle", { enabled: result.voiceEnabled });
           }

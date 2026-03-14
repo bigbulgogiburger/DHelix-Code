@@ -297,14 +297,20 @@ function buildSubagentSystemPrompt(type: SubagentType, toolRegistry: ToolRegistr
 
 /**
  * Create a git worktree for isolated subagent execution.
- * Returns the worktree path and a cleanup function.
+ * Worktrees are created under .dbcode/worktrees/<agentId> following
+ * the Claude Code convention of project-local isolation directories.
+ * Returns the worktree path, branch name, and a cleanup function.
  */
 async function createWorktree(
   baseDir: string,
   agentId: string,
-): Promise<{ worktreePath: string; cleanup: () => Promise<void> }> {
-  const worktreePath = `/tmp/dbcode-worktree-${agentId}`;
-  const branchName = `subagent/${agentId}`;
+): Promise<{ worktreePath: string; branchName: string; cleanup: () => Promise<void> }> {
+  const worktreeDir = join(baseDir, ".dbcode", "worktrees");
+  const worktreePath = join(worktreeDir, agentId);
+  const branchName = `dbcode-worktree-${agentId}`;
+
+  // Ensure directory exists
+  await mkdir(worktreeDir, { recursive: true });
 
   try {
     await execFileAsync("git", ["worktree", "add", "-b", branchName, worktreePath], {
@@ -319,16 +325,71 @@ async function createWorktree(
 
   const cleanup = async (): Promise<void> => {
     try {
-      await execFileAsync("git", ["worktree", "remove", "--force", worktreePath], {
-        cwd: baseDir,
+      // Check if worktree has changes
+      const status = await execFileAsync("git", ["status", "--porcelain"], {
+        cwd: worktreePath,
       });
-      await execFileAsync("git", ["branch", "-D", branchName], { cwd: baseDir });
+      const hasChanges = status.stdout.trim().length > 0;
+
+      if (!hasChanges) {
+        // No changes — clean up completely
+        await execFileAsync("git", ["worktree", "remove", "--force", worktreePath], {
+          cwd: baseDir,
+        });
+        await execFileAsync("git", ["branch", "-D", branchName], { cwd: baseDir });
+      }
+      // If has changes, keep branch for user review
     } catch {
       // Best-effort cleanup
     }
   };
 
-  return { worktreePath, cleanup };
+  return { worktreePath, branchName, cleanup };
+}
+
+/**
+ * Detect and clean orphaned worktrees on startup.
+ * Worktrees with no uncommitted changes are removed.
+ */
+export async function cleanOrphanedWorktrees(repoRoot: string): Promise<number> {
+  const worktreeDir = join(repoRoot, ".dbcode", "worktrees");
+
+  try {
+    const entries = await readdir(worktreeDir);
+    let cleaned = 0;
+
+    for (const entry of entries) {
+      const worktreePath = join(worktreeDir, entry);
+      try {
+        // Check if worktree has changes
+        const { stdout } = await execFileAsync("git", ["status", "--porcelain"], {
+          cwd: worktreePath,
+        });
+
+        if (stdout.trim().length === 0) {
+          // No changes — safe to remove
+          await execFileAsync("git", ["worktree", "remove", "--force", worktreePath], {
+            cwd: repoRoot,
+          });
+          cleaned++;
+        }
+      } catch {
+        // Worktree might be invalid — try force removal
+        try {
+          await execFileAsync("git", ["worktree", "remove", "--force", worktreePath], {
+            cwd: repoRoot,
+          });
+          cleaned++;
+        } catch {
+          // Skip if even force removal fails
+        }
+      }
+    }
+
+    return cleaned;
+  } catch {
+    return 0; // worktree dir doesn't exist yet
+  }
 }
 
 /**
@@ -503,11 +564,24 @@ async function executeSubagent(params: {
     }
 
     // Create filtered registry with both allowlist and denylist
-    const agentRegistry = createFilteredRegistryWithBlacklist(
+    let agentRegistry = createFilteredRegistryWithBlacklist(
       toolRegistry,
       allowedTools,
       disallowedTools,
     );
+
+    // Sub-agent in plan mode: block MCP and non-safe tools
+    if (params.permissionMode === "plan") {
+      const planSafe = new ToolRegistry();
+      for (const tool of agentRegistry.getAll()) {
+        // Block MCP tools
+        if (tool.name.startsWith("mcp__")) continue;
+        // Block dangerous/confirm tools
+        if (tool.permissionLevel !== "safe") continue;
+        planSafe.register(tool);
+      }
+      agentRegistry = planSafe;
+    }
 
     // Build system prompt: use agent definition body if provided, otherwise default
     const systemPrompt = agentDefinition
@@ -543,20 +617,37 @@ async function executeSubagent(params: {
       );
     }
 
-    const result: AgentLoopResult = await runAgentLoop(
-      {
-        client: effectiveClient,
-        model: effectiveModel,
-        toolRegistry: agentRegistry,
-        strategy,
-        events,
-        maxIterations,
-        signal,
-        workingDirectory: effectiveWorkingDir,
-        maxContextTokens,
-      },
-      initialMessages,
-    );
+    // Wall-clock timeout to prevent subagents from running indefinitely
+    const SUBAGENT_TIMEOUT_MS = 300_000; // 5 minutes
+
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      const timer = setTimeout(
+        () => reject(new SubagentError("Subagent timed out after 5 minutes")),
+        SUBAGENT_TIMEOUT_MS,
+      );
+      // Allow the process to exit even if the timer is still pending
+      if (typeof timer === "object" && "unref" in timer) {
+        timer.unref();
+      }
+    });
+
+    const result: AgentLoopResult = await Promise.race([
+      runAgentLoop(
+        {
+          client: effectiveClient,
+          model: effectiveModel,
+          toolRegistry: agentRegistry,
+          strategy,
+          events,
+          maxIterations,
+          signal,
+          workingDirectory: effectiveWorkingDir,
+          maxContextTokens,
+        },
+        initialMessages,
+      ),
+      timeoutPromise,
+    ]);
 
     // Store message history for potential future resume (in-memory + disk)
     await storeAgentHistory(agentId, result.messages);

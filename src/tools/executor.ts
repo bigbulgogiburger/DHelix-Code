@@ -16,6 +16,13 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 
+const MAX_TOOL_RETRIES = 1;
+
+function isTransientError(error: unknown): boolean {
+  const msg = error instanceof Error ? error.message : String(error);
+  return /ECONNRESET|ETIMEDOUT|ENOTFOUND|EPIPE|EAI_AGAIN/.test(msg);
+}
+
 /**
  * Execute a single tool call with timeout, validation, and error handling.
  */
@@ -56,8 +63,22 @@ export async function executeTool(
 
   try {
     const validatedArgs = parseToolArguments(tool.parameterSchema, args);
-    const result = await tool.execute(validatedArgs, context);
-    return result;
+
+    // Retry loop for transient errors
+    let lastError: unknown;
+    for (let attempt = 0; attempt <= MAX_TOOL_RETRIES; attempt++) {
+      try {
+        return await tool.execute(validatedArgs, context);
+      } catch (execError) {
+        lastError = execError;
+        if (attempt < MAX_TOOL_RETRIES && isTransientError(execError)) {
+          await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+          continue;
+        }
+        throw execError;
+      }
+    }
+    throw lastError;
   } catch (error) {
     if (controller.signal.aborted) {
       return { output: `Tool "${tool.name}" timed out after ${timeoutMs}ms`, isError: true };

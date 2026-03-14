@@ -1,46 +1,35 @@
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 
-/** Current plan mode state */
-let planModeEnabled = false;
-
-/** Get whether plan mode is currently enabled */
-export function isPlanMode(): boolean {
-  return planModeEnabled;
-}
-
-/**
- * /plan [on|off] — Toggle plan mode.
- * In plan mode, the assistant explains its implementation plan
- * without executing any file modifications.
- */
+/** /plan [on|off] — Toggle plan mode (read-only). */
 export const planCommand: SlashCommand = {
   name: "plan",
-  description: "Toggle plan mode (explain without executing)",
+  description: "Toggle plan mode (read-only, no file modifications)",
   usage: "/plan [on|off]",
 
   async execute(args: string, _context: CommandContext): Promise<CommandResult> {
     const arg = args.trim().toLowerCase();
 
     if (arg === "off") {
-      planModeEnabled = false;
       return {
-        output: ["Plan mode disabled.", "Tools will execute normally."].join("\n"),
+        output: "Plan mode disabled. Tools will execute normally.",
         success: true,
+        newPermissionMode: "default",
+        refreshInstructions: true,
       };
     }
 
-    // "on" or no argument: enable plan mode
-    planModeEnabled = true;
     return {
       output: [
-        "Plan mode enabled.",
+        "Plan mode enabled (read-only).",
         "",
-        "The assistant will explain its implementation plan",
-        "without modifying any files.",
+        "Available: file_read, glob_search, grep_search, list_dir",
+        "Blocked: file_write, file_edit, bash_exec, and all write operations",
         "",
         "Use /plan off to resume normal execution.",
       ].join("\n"),
       success: true,
+      newPermissionMode: "plan",
+      refreshInstructions: true,
     };
   },
 };

@@ -56,6 +56,8 @@ export interface CommandResult {
   readonly modelOverride?: string;
   /** If set, display an interactive select list instead of text output */
   readonly interactiveSelect?: InteractiveSelect;
+  /** Updated permission mode (if changed by command) */
+  readonly newPermissionMode?: string;
   /** Updated tone setting (if changed) */
   readonly newTone?: string;
   /** Updated locale setting (if changed) */

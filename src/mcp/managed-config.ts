@@ -62,6 +62,32 @@ export interface ManagedConfigValidationResult {
 /** Default path for managed MCP config */
 const DEFAULT_MANAGED_CONFIG_PATH = join(homedir(), ".dbcode", "managed-mcp.json");
 
+/** Raw server config input before transport type is resolved */
+export interface RawServerConfigInput {
+  readonly command?: string;
+  readonly args?: readonly string[];
+  readonly url?: string;
+  readonly transport?: "stdio" | "http" | "sse";
+  readonly headers?: Readonly<Record<string, string>>;
+}
+
+/** Auto-detect transport type from server config */
+export function detectTransportType(
+  config: RawServerConfigInput,
+): "stdio" | "http" | "sse" {
+  // Explicit transport override
+  if (config.transport) return config.transport;
+
+  // URL present -> HTTP transport
+  if (config.url) return "http";
+
+  // Command present -> stdio
+  if (config.command) return "stdio";
+
+  // Default fallback
+  return "stdio";
+}
+
 /**
  * Handles admin-level MCP server configuration that takes priority over
  * user/project configs for security-sensitive settings.

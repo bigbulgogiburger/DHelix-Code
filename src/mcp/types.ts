@@ -56,6 +56,8 @@ export interface MCPServerConfig {
   readonly url?: string;
   /** Environment variables for the server process */
   readonly env?: Readonly<Record<string, string>>;
+  /** Custom headers for HTTP/SSE transport */
+  readonly headers?: Readonly<Record<string, string>>;
   /** Server scope */
   readonly scope?: "local" | "project" | "user";
 }

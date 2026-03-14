@@ -1,3 +1,7 @@
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { join } from "node:path";
+import { homedir } from "node:os";
+
 /**
  * Session-scoped approval cache.
  * Remembers "always allow" decisions for the duration of the session.
@@ -41,5 +45,34 @@ export class SessionApprovalStore {
   /** Get the count of approvals */
   get size(): number {
     return this.approved.size;
+  }
+
+  /** Path to persist approvals */
+  private get persistPath(): string {
+    return join(homedir(), ".dbcode", "session-approvals.json");
+  }
+
+  /** Save current approvals to disk */
+  save(): void {
+    try {
+      const dir = join(homedir(), ".dbcode");
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(this.persistPath, JSON.stringify([...this.approved]), "utf-8");
+    } catch {
+      // Best-effort persistence
+    }
+  }
+
+  /** Load saved approvals from disk */
+  load(): void {
+    try {
+      const data = readFileSync(this.persistPath, "utf-8");
+      const approvals = JSON.parse(data) as string[];
+      for (const key of approvals) {
+        this.approved.add(key);
+      }
+    } catch {
+      // No saved approvals or parse error — start fresh
+    }
   }
 }

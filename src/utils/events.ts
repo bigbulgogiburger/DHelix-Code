@@ -96,6 +96,9 @@ export type AppEvents = {
   /** Voice input toggle (from /voice command) */
   "voice:toggle": { enabled: boolean };
 
+  /** Permission mode changed (from /plan or other commands) */
+  "permission:mode-change": { mode: string };
+
   /** Tool output streaming delta (for long-running tools like bash) */
   "tool:output-delta": { id: string; name: string; chunk: string };
 };

@@ -26,7 +26,8 @@ export class HttpTransport implements MCPTransportLayer {
   private errorHandler: ((error: Error) => void) | null = null;
   private closeHandler: (() => void) | null = null;
   private readonly url: string;
-  private readonly headers: Record<string, string>;
+  private sessionId: string | undefined;
+  private authToken: string | undefined;
 
   constructor(private readonly config: MCPServerConfig) {
     if (!config.url) {
@@ -35,10 +36,34 @@ export class HttpTransport implements MCPTransportLayer {
       });
     }
     this.url = config.url;
-    this.headers = {
+  }
+
+  /** Set Bearer token for authenticated requests */
+  setAuthToken(token: string): void {
+    this.authToken = token;
+  }
+
+  /** Build request headers including session ID and auth token when available */
+  private buildHeaders(): Record<string, string> {
+    const headers: Record<string, string> = {
       "Content-Type": "application/json",
       Accept: "application/json, text/event-stream",
     };
+    if (this.sessionId) {
+      headers["Mcp-Session-Id"] = this.sessionId;
+    }
+    if (this.authToken) {
+      headers["Authorization"] = `Bearer ${this.authToken}`;
+    }
+    return headers;
+  }
+
+  /** Extract and store session ID from response headers */
+  private extractSessionId(response: Response): void {
+    const sid = response.headers.get("Mcp-Session-Id");
+    if (sid) {
+      this.sessionId = sid;
+    }
   }
 
   async connect(): Promise<void> {
@@ -50,7 +75,7 @@ export class HttpTransport implements MCPTransportLayer {
 
       const response = await fetch(this.url, {
         method: "POST",
-        headers: this.headers,
+        headers: this.buildHeaders(),
         body: JSON.stringify({
           jsonrpc: "2.0",
           id: "connection-check",
@@ -72,6 +97,9 @@ export class HttpTransport implements MCPTransportLayer {
           status: response.status,
         });
       }
+
+      // Extract session ID from initialize response
+      this.extractSessionId(response);
 
       // Process the initialize response
       const contentType = response.headers.get("content-type") ?? "";
@@ -142,7 +170,7 @@ export class HttpTransport implements MCPTransportLayer {
     try {
       const response = await fetch(this.url, {
         method: "POST",
-        headers: this.headers,
+        headers: this.buildHeaders(),
         body: JSON.stringify(message),
         signal: controller.signal,
       });
@@ -155,6 +183,9 @@ export class HttpTransport implements MCPTransportLayer {
           status: response.status,
         });
       }
+
+      // Extract session ID from every response
+      this.extractSessionId(response);
 
       // 202 Accepted = notification acknowledged, no body
       if (response.status === 202) return;
