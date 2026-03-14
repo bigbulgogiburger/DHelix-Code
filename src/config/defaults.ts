@@ -44,4 +44,10 @@ export const DEFAULT_CONFIG: AppConfig = {
     model: "whisper-1",
   },
   deferredTools: true,
+  dualModel: {
+    enabled: false,
+    architectModel: "claude-opus-4-6",
+    editorModel: "gpt-4o-mini",
+    routingStrategy: "auto" as const,
+  },
 };

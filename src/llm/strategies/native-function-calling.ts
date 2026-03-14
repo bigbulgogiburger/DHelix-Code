@@ -25,6 +25,11 @@ export class NativeFunctionCallingStrategy implements ToolCallStrategy {
       try {
         args = JSON.parse(tc.arguments) as Record<string, unknown>;
       } catch {
+        if (process.env.DBCODE_VERBOSE) {
+          process.stderr.write(
+            `[native-function-calling] Failed to parse tool arguments for "${tc.name}" (id: ${tc.id}): ${tc.arguments}\n`,
+          );
+        }
         args = {};
       }
       return {

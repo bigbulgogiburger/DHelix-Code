@@ -65,6 +65,20 @@ export const voiceConfigSchema = z
   })
   .default({});
 
+/** Dual-model (Architect/Editor) routing configuration */
+export const dualModelConfigSchema = z
+  .object({
+    /** Whether dual-model routing is enabled */
+    enabled: z.boolean().default(false),
+    /** High-capability model for planning and review phases */
+    architectModel: z.string().default("claude-opus-4-6"),
+    /** Cost-effective model for code generation and execution */
+    editorModel: z.string().default("gpt-4o-mini"),
+    /** Routing strategy: auto (keyword-based), plan-execute (explicit), manual (user-controlled) */
+    routingStrategy: z.enum(["auto", "plan-execute", "manual"]).default("auto"),
+  })
+  .default({});
+
 /** Full application configuration schema */
 export const configSchema = z.object({
   llm: llmConfigSchema.default({}),
@@ -84,4 +98,6 @@ export const configSchema = z.object({
   voice: voiceConfigSchema,
   /** Enable deferred tool loading for MCP tools */
   deferredTools: z.boolean().default(true),
+  /** Dual-model (Architect/Editor) routing settings */
+  dualModel: dualModelConfigSchema,
 });

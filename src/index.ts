@@ -126,6 +126,7 @@ program
         { toneCommand },
         { bugCommand },
         { voiceCommand },
+        { architectCommand, editorCommand, dualCommand },
       ] = await Promise.all([
         import("./config/loader.js"),
         import("./llm/client.js"),
@@ -189,6 +190,7 @@ program
         import("./commands/tone.js"),
         import("./commands/bug.js"),
         import("./commands/voice.js"),
+        import("./commands/dual-model.js"),
       ]);
 
       // Only pass explicitly-set CLI options as overrides
@@ -323,6 +325,9 @@ program
         toneCommand,
         bugCommand,
         voiceCommand,
+        architectCommand,
+        editorCommand,
+        dualCommand,
       ];
       // Register skill-based custom commands (user-invocable skills become /commands)
       const { createSkillCommands } = await import("./skills/command-bridge.js");
@@ -385,6 +390,67 @@ program
       // Clean orphaned worktrees (non-blocking)
       import("./subagents/spawner.js").then(m => m.cleanOrphanedWorktrees(process.cwd())).catch(() => {});
 
+      // Initialize MCP connector (non-blocking — failures warn but don't crash)
+      let mcpConnector: import("./mcp/manager-connector.js").MCPManagerConnector | undefined;
+      let mcpManager: import("./mcp/manager.js").MCPManager | undefined;
+      try {
+        const { MCPManagerConnector } = await import("./mcp/manager-connector.js");
+        const { MCPManager } = await import("./mcp/manager.js");
+
+        mcpManager = new MCPManager({
+          workingDirectory: process.cwd(),
+          toolRegistry,
+        });
+
+        const connectResult = await mcpManager.connectAll();
+        if (connectResult.connected.length > 0 || connectResult.failed.length > 0) {
+          mcpConnector = new MCPManagerConnector();
+
+          for (const failure of connectResult.failed) {
+            process.stderr.write(
+              `Warning: MCP server "${failure.name}" failed to connect: ${failure.error}\n`,
+            );
+          }
+        }
+      } catch (err) {
+        process.stderr.write(
+          `Warning: MCP initialization failed: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+      }
+
+      // Set up session auto-save (heartbeat for metadata freshness)
+      const { setupAutoSave } = await import("./core/session-auto-save.js");
+      const autoSave = setupAutoSave(sessionManager, sessionId);
+
+      // Set up graceful shutdown
+      let shuttingDown = false;
+      const shutdown = async (signal: string): Promise<void> => {
+        if (shuttingDown) return;
+        shuttingDown = true;
+
+        // Stop auto-save timer
+        autoSave.stop();
+
+        // Disconnect MCP servers
+        if (mcpManager) {
+          await mcpManager.disconnectAll().catch(() => {});
+        }
+        if (mcpConnector) {
+          await mcpConnector.disconnectAll().catch(() => {});
+        }
+
+        // Run Stop hook (best-effort)
+        await hookRunner.run("Stop", {
+          event: "Stop",
+          workingDirectory: process.cwd(),
+        }).catch(() => {});
+
+        process.exit(signal === "SIGTERM" ? 143 : 130);
+      };
+
+      process.on("SIGINT", () => void shutdown("SIGINT"));
+      process.on("SIGTERM", () => void shutdown("SIGTERM"));
+
       // Patch Ink rendering with DEC Mode 2026 synchronized output
       // Terminals that support it (Ghostty, iTerm2, WezTerm, VSCode) will
       // display each frame atomically, eliminating flickering entirely.
@@ -405,7 +471,7 @@ program
           skillManager,
           initialLocale: config.locale,
           initialTone: config.tone,
-          mcpConnector: undefined,  // MCP initialization is a future task — wiring only
+          mcpConnector,
         }),
       );
     },

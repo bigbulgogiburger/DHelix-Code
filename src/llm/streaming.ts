@@ -104,7 +104,7 @@ export function accumulateChunk(
       const { id, name, arguments: args } = chunk.toolCall;
 
       // Find existing tool call being assembled
-      const existingIndex = state.toolCalls.findIndex((tc) => tc.id === id && id);
+      const existingIndex = state.toolCalls.findIndex((tc) => tc.id === id);
 
       if (existingIndex >= 0) {
         // Append to existing tool call arguments

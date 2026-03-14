@@ -8,6 +8,49 @@ import { estimateTokens } from "../llm/token-counter.js";
 import { type CapabilityTier } from "../llm/model-capabilities.js";
 import { getToneProfile } from "./tone-profiles.js";
 
+/** Tier-based token budget allocation for system prompt sections */
+const TIER_BUDGETS: Readonly<Record<CapabilityTier, {
+  readonly totalBudget: number;
+  readonly toolDescriptionBudget: number;
+  readonly instructionsBudget: number;
+  readonly repoMapBudget: number;
+  readonly skillsBudget: number;
+}>> = {
+  high: { totalBudget: 12_000, toolDescriptionBudget: 4_000, instructionsBudget: 3_000, repoMapBudget: 5_000, skillsBudget: 2_000 },
+  medium: { totalBudget: 8_000, toolDescriptionBudget: 2_500, instructionsBudget: 2_000, repoMapBudget: 2_000, skillsBudget: 1_000 },
+  low: { totalBudget: 4_000, toolDescriptionBudget: 1_500, instructionsBudget: 1_000, repoMapBudget: 500, skillsBudget: 500 },
+};
+
+/** Explicit tool usage guide injected for LOW tier models */
+const LOW_TIER_TOOL_GUIDE = `# Tool Usage Guide
+You have these tools available. Always use absolute paths.
+
+## Reading files
+Call file_read: {"file_path": "/absolute/path/to/file.ts"}
+
+## Editing files
+Call file_edit: {"file_path": "/absolute/path", "old_string": "exact text to find", "new_string": "replacement"}
+
+## Searching
+Call grep_search: {"pattern": "search term", "path": "/absolute/path/to/dir"}
+Call glob_search: {"pattern": "**/*.ts", "path": "/absolute/path/to/dir"}
+
+## Running commands
+Call bash_exec: {"command": "npm test"}
+
+Important: Always use the file_read tool before file_edit.`;
+
+/**
+ * Compress a tool description for LOW tier models.
+ * Keeps only the first sentence to reduce token usage.
+ */
+export function compressToolDescription(description: string, tier: CapabilityTier): string {
+  if (tier !== "low") return description;
+  const firstSentenceEnd = description.indexOf(".");
+  if (firstSentenceEnd === -1) return description;
+  return description.slice(0, firstSentenceEnd + 1);
+}
+
 /** System prompt section with optional condition and token budget */
 export interface PromptSection {
   readonly id: string;
@@ -49,6 +92,8 @@ export interface BuildSystemPromptOptions {
   readonly locale?: string;
   /** Response tone/style (e.g., "normal", "cute", "senior"). Defaults to "normal". */
   readonly tone?: string;
+  /** Pre-rendered repo map content (from buildRepoMap + renderRepoMap) */
+  readonly repoMapContent?: string;
 }
 
 /** Default token budget for system prompts (32k tokens) */
@@ -65,6 +110,8 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
   const state = options?.sessionState;
   const locale = options?.locale ?? "en";
   const tone = options?.tone ?? "normal";
+  const tier = options?.capabilityTier;
+  const tierBudget = tier ? TIER_BUDGETS[tier] : undefined;
 
   const sections: PromptSection[] = [
     {
@@ -82,6 +129,7 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
       id: "doing-tasks",
       content: buildDoingTasksSection(),
       priority: 95,
+      tokenBudget: tierBudget?.instructionsBudget,
     },
     {
       id: "environment",
@@ -93,8 +141,9 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
   if (options?.toolRegistry && options.toolRegistry.size > 0) {
     sections.push({
       id: "tools",
-      content: buildToolsSection(options.toolRegistry),
+      content: buildToolsSection(options.toolRegistry, tier),
       priority: 85,
+      tokenBudget: tierBudget?.toolDescriptionBudget,
     });
   }
 
@@ -110,6 +159,7 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
     id: "conventions",
     content: buildConventionsSection(),
     priority: 80,
+    tokenBudget: tierBudget?.instructionsBudget,
   });
 
   if (options?.skillsPromptSection) {
@@ -117,6 +167,7 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
       id: "skills",
       content: options.skillsPromptSection,
       priority: 78,
+      tokenBudget: tierBudget?.skillsBudget,
     });
   }
 
@@ -141,11 +192,18 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
   });
 
   // CoT scaffolding for low-tier models
-  const tier = options?.capabilityTier;
   sections.push({
     id: "cot-scaffolding",
     content: buildCotScaffoldingSection(),
     priority: 79,
+    condition: () => tier === "low",
+  });
+
+  // LOW tier tool usage guide with explicit examples
+  sections.push({
+    id: "low-tier-tool-guide",
+    content: LOW_TIER_TOOL_GUIDE,
+    priority: 91, // High priority for LOW tier — between environment(90) and plan-mode(92)
     condition: () => tier === "low",
   });
 
@@ -192,6 +250,7 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
       id: "project",
       content: `# Project Instructions\n\n${projectInstructions}`,
       priority: 70,
+      tokenBudget: tierBudget?.repoMapBudget,
     });
   }
 
@@ -204,11 +263,24 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
     });
   }
 
+  // Repo map section: provides codebase overview for navigation
+  if (options?.repoMapContent) {
+    const repoMapTokenBudget = tier === "high" ? 5000 : tier === "low" ? 500 : 2000;
+    sections.push({
+      id: "repo-map",
+      content: `# Repository Map\n\n${options.repoMapContent}`,
+      priority: 35,
+      tokenBudget: repoMapTokenBudget,
+    });
+  }
+
   if (options?.customSections) {
     sections.push(...options.customSections);
   }
 
-  return assembleSections(sections, options?.totalTokenBudget);
+  // Use explicit budget if provided, otherwise fall back to tier-based budget
+  const effectiveBudget = options?.totalTokenBudget ?? tierBudget?.totalBudget;
+  return assembleSections(sections, effectiveBudget);
 }
 
 /**
@@ -553,9 +625,12 @@ The following MCP servers are available. MCP tools are called using the \`mcp__{
 ${serverLines.join("\n\n")}`;
 }
 
-function buildToolsSection(registry: ToolRegistry): string {
+function buildToolsSection(registry: ToolRegistry, tier?: CapabilityTier): string {
   const defs = registry.getDefinitionsForLLM();
-  const lines = defs.map((d) => `- **${d.function.name}**: ${d.function.description}`);
+  const lines = defs.map((d) => {
+    const desc = tier ? compressToolDescription(d.function.description, tier) : d.function.description;
+    return `- **${d.function.name}**: ${desc}`;
+  });
 
   return `# Using your tools
 

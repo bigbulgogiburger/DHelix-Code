@@ -3,6 +3,7 @@ import {
   buildSystemPrompt,
   buildStructuredSystemPrompt,
   buildSystemReminder,
+  compressToolDescription,
   type SessionState,
   type PromptSection,
 } from "../../../src/core/system-prompt-builder.js";
@@ -427,5 +428,127 @@ describe("buildStructuredSystemPrompt", () => {
     const result = buildStructuredSystemPrompt();
     const reconstructed = result.blocks.map((b) => b.text).join("\n\n---\n\n");
     expect(reconstructed).toBe(result.text);
+  });
+});
+
+describe("compressToolDescription", () => {
+  it("should return full description for high tier", () => {
+    const desc = "Read a file from disk. Supports binary and text files.";
+    expect(compressToolDescription(desc, "high")).toBe(desc);
+  });
+
+  it("should return full description for medium tier", () => {
+    const desc = "Read a file from disk. Supports binary and text files.";
+    expect(compressToolDescription(desc, "medium")).toBe(desc);
+  });
+
+  it("should keep only first sentence for low tier", () => {
+    const desc = "Read a file from disk. Supports binary and text files.";
+    expect(compressToolDescription(desc, "low")).toBe("Read a file from disk.");
+  });
+
+  it("should return full description when no period exists for low tier", () => {
+    const desc = "Read a file from disk";
+    expect(compressToolDescription(desc, "low")).toBe(desc);
+  });
+});
+
+describe("tier-based system prompt budget", () => {
+  it("should include low-tier tool guide when capabilityTier is low", () => {
+    const prompt = buildSystemPrompt({ capabilityTier: "low" });
+    expect(prompt).toContain("# Tool Usage Guide");
+    expect(prompt).toContain("Call file_read");
+    expect(prompt).toContain("Call file_edit");
+    expect(prompt).toContain("Call grep_search");
+    expect(prompt).toContain("Call bash_exec");
+  });
+
+  it("should not include low-tier tool guide for high tier", () => {
+    const prompt = buildSystemPrompt({ capabilityTier: "high" });
+    expect(prompt).not.toContain("# Tool Usage Guide");
+  });
+
+  it("should not include low-tier tool guide for medium tier", () => {
+    const prompt = buildSystemPrompt({ capabilityTier: "medium" });
+    expect(prompt).not.toContain("# Tool Usage Guide");
+  });
+
+  it("should not include low-tier tool guide when tier is undefined", () => {
+    const prompt = buildSystemPrompt();
+    expect(prompt).not.toContain("# Tool Usage Guide");
+  });
+
+  it("should compress tool descriptions for low tier", () => {
+    const registry = new ToolRegistry();
+    registry.register({
+      name: "test_tool",
+      description: "A test tool for testing. It supports many features and options.",
+      parameterSchema: z.object({}),
+      permissionLevel: "safe",
+      execute: async () => ({ output: "ok", isError: false }),
+    });
+
+    const prompt = buildSystemPrompt({
+      toolRegistry: registry,
+      capabilityTier: "low",
+    });
+    // Should have only first sentence
+    expect(prompt).toContain("A test tool for testing.");
+    // Should not have the second sentence
+    expect(prompt).not.toContain("It supports many features");
+  });
+
+  it("should not compress tool descriptions for high tier", () => {
+    const registry = new ToolRegistry();
+    registry.register({
+      name: "test_tool",
+      description: "A test tool for testing. It supports many features and options.",
+      parameterSchema: z.object({}),
+      permissionLevel: "safe",
+      execute: async () => ({ output: "ok", isError: false }),
+    });
+
+    const prompt = buildSystemPrompt({
+      toolRegistry: registry,
+      capabilityTier: "high",
+    });
+    expect(prompt).toContain("It supports many features and options.");
+  });
+
+  it("should include CoT scaffolding for low tier", () => {
+    const prompt = buildSystemPrompt({ capabilityTier: "low" });
+    expect(prompt).toContain("Step-by-Step Approach");
+  });
+
+  it("should not include CoT scaffolding for high tier", () => {
+    const prompt = buildSystemPrompt({ capabilityTier: "high" });
+    expect(prompt).not.toContain("Step-by-Step Approach");
+  });
+
+  it("should apply tier-based total token budget for low tier", () => {
+    // Low tier budget is 4000 tokens — this should trim some sections
+    const prompt = buildSystemPrompt({
+      capabilityTier: "low",
+      customSections: [
+        { id: "big", content: "X".repeat(20000), priority: 5 },
+      ],
+    });
+    // Big low-priority section should be trimmed due to low budget
+    expect(prompt).not.toContain("X".repeat(20000));
+    // But identity (highest priority) should still be present
+    expect(prompt).toContain("dbcode");
+  });
+
+  it("should allow explicit totalTokenBudget to override tier budget", () => {
+    // Explicitly set high budget even though tier is low
+    const prompt = buildSystemPrompt({
+      capabilityTier: "low",
+      totalTokenBudget: 50_000,
+      customSections: [
+        { id: "big", content: "MARKER_" + "Y".repeat(200), priority: 50 },
+      ],
+    });
+    // With large explicit budget, the section should be included
+    expect(prompt).toContain("MARKER_");
   });
 });

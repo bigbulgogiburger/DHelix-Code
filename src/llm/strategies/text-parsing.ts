@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { type ChatMessage, type ToolCallRequest, type ToolDefinitionForLLM } from "../provider.js";
 import { type ToolCallStrategy, type PreparedRequest } from "../tool-call-strategy.js";
 import { type ExtractedToolCall } from "../../tools/types.js";
@@ -62,15 +63,12 @@ export function parseToolArguments(raw: string): Record<string, unknown> {
   return extractKeyValuePairs(raw);
 }
 
-/** Counter for generating unique tool call IDs */
-let callIdCounter = 0;
-
 /**
  * Generate a unique tool call ID for text-parsed calls.
+ * Uses crypto.randomUUID to avoid collisions across concurrent requests.
  */
 function generateCallId(): string {
-  callIdCounter++;
-  return `tc_text_${Date.now()}_${callIdCounter}`;
+  return `tc_text_${randomUUID().slice(0, 8)}`;
 }
 
 /**

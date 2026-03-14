@@ -11,6 +11,8 @@ import { ContextManager } from "./context-manager.js";
 import { type CheckpointManager } from "./checkpoint-manager.js";
 import { applyInputGuardrails, applyOutputGuardrails } from "../guardrails/index.js";
 import { countTokens } from "../llm/token-counter.js";
+import { findRecoveryStrategy } from "./recovery-strategy.js";
+import { type DualModelRouter, detectPhase } from "../llm/dual-model-router.js";
 
 /** Configuration for the agent loop */
 export interface AgentLoopConfig {
@@ -43,6 +45,8 @@ export interface AgentLoopConfig {
   readonly sessionId?: string;
   /** Extended thinking configuration (for Claude models) */
   readonly thinking?: ThinkingConfig;
+  /** Dual-model router for architect/editor pattern (optional) */
+  readonly dualModelRouter?: DualModelRouter;
 }
 
 /** Result of a permission check */
@@ -341,6 +345,18 @@ export async function runAgentLoop(
     iterations++;
     config.events.emit("agent:iteration", { iteration: iterations });
 
+    // Dual-model routing: detect phase and select client/model for this iteration
+    let activeClient = config.client;
+    let activeModel = config.model;
+
+    if (config.dualModelRouter) {
+      const phase = detectPhase(messages);
+      config.dualModelRouter.setPhase(phase);
+      const routing = config.dualModelRouter.getClientForPhase(phase);
+      activeClient = routing.client;
+      activeModel = routing.model;
+    }
+
     // Apply context compaction if messages exceed token budget
     const managedMessages = [...(await contextManager.prepare(messages))];
 
@@ -360,7 +376,7 @@ export async function runAgentLoop(
     config.events.emit("llm:start", { iteration: iterations });
 
     const chatRequest = {
-      model: config.model,
+      model: activeModel,
       messages: prepared.messages,
       tools: prepared.tools,
       temperature: config.temperature ?? 0,
@@ -376,13 +392,13 @@ export async function runAgentLoop(
       try {
         if (config.useStreaming) {
           // Streaming mode: accumulate chunks while emitting text deltas
-          const stream = config.client.stream(chatRequest);
+          const stream = activeClient.stream(chatRequest);
           const accumulated = await consumeStream(stream, {
             onTextDelta: (text) => {
               config.events.emit("llm:text-delta", { text });
             },
             onUsage: (usage) => {
-              config.events.emit("llm:usage", { usage, model: config.model });
+              config.events.emit("llm:usage", { usage, model: activeModel });
             },
           });
 
@@ -405,12 +421,22 @@ export async function runAgentLoop(
             finishReason: accumulated.partial ? "length" : "stop",
           };
         } else {
-          response = await config.client.chat(chatRequest);
+          response = await activeClient.chat(chatRequest);
         }
         break;
       } catch (error) {
         lastError = error;
         const errorClass = classifyLLMError(error);
+
+        // Check recovery strategies before giving up
+        if (error instanceof Error) {
+          const recovery = findRecoveryStrategy(error);
+          if (recovery) {
+            config.events.emit("llm:error", {
+              error: new Error(`Recovery strategy: ${recovery.description}`),
+            });
+          }
+        }
 
         // Overload: client already retried with Retry-After — don't retry again
         if (errorClass === "overload" || errorClass === "permanent") {

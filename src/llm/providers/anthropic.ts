@@ -299,7 +299,11 @@ async function* parseSSEStream(
             const parsed = JSON.parse(data) as AnthropicStreamEvent;
             yield parsed;
           } catch {
-            // Skip unparseable data lines
+            if (process.env.DBCODE_VERBOSE) {
+              process.stderr.write(
+                `[anthropic] Failed to parse SSE data (event: ${currentEventType}): ${data}\n`,
+              );
+            }
           }
           currentEventType = null;
           continue;
@@ -369,7 +373,7 @@ export class AnthropicProvider implements LLMProvider {
     const timeoutId = setTimeout(() => controller.abort(), this.timeout);
 
     if (request.signal) {
-      request.signal.addEventListener("abort", () => controller.abort());
+      request.signal.addEventListener("abort", () => controller.abort(), { once: true });
     }
 
     let response: Response;
@@ -470,10 +474,21 @@ export class AnthropicProvider implements LLMProvider {
     body.stream = true;
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
+    let idleTimeoutId: ReturnType<typeof setTimeout> | undefined = setTimeout(
+      () => controller.abort(),
+      this.timeout,
+    );
+
+    /** Reset the idle timeout — called on each received SSE chunk */
+    const resetIdleTimeout = (): void => {
+      if (idleTimeoutId !== undefined) {
+        clearTimeout(idleTimeoutId);
+      }
+      idleTimeoutId = setTimeout(() => controller.abort(), this.timeout);
+    };
 
     if (request.signal) {
-      request.signal.addEventListener("abort", () => controller.abort());
+      request.signal.addEventListener("abort", () => controller.abort(), { once: true });
     }
 
     let response: Response;
@@ -490,7 +505,7 @@ export class AnthropicProvider implements LLMProvider {
         signal: controller.signal,
       });
     } catch (error) {
-      clearTimeout(timeoutId);
+      clearTimeout(idleTimeoutId);
       if (error instanceof Error && error.name === "AbortError") {
         throw new LLMError("Request timed out or was aborted.", { model: request.model });
       }
@@ -502,13 +517,13 @@ export class AnthropicProvider implements LLMProvider {
 
     // Don't clear timeout yet — stream is ongoing
     if (!response.ok) {
-      clearTimeout(timeoutId);
+      clearTimeout(idleTimeoutId);
       const errorBody = await response.text();
       throw classifyHttpError(response.status, errorBody, request.model);
     }
 
     if (!response.body) {
-      clearTimeout(timeoutId);
+      clearTimeout(idleTimeoutId);
       throw new LLMError("No response body from Anthropic streaming API.", {
         model: request.model,
       });
@@ -523,6 +538,7 @@ export class AnthropicProvider implements LLMProvider {
 
     try {
       for await (const event of parseSSEStream(response.body, request.signal)) {
+        resetIdleTimeout();
         switch (event.type) {
           case "message_start": {
             inputTokens = event.message.usage.input_tokens;
@@ -584,7 +600,7 @@ export class AnthropicProvider implements LLMProvider {
         }
       }
     } finally {
-      clearTimeout(timeoutId);
+      clearTimeout(idleTimeoutId);
     }
 
     yield {

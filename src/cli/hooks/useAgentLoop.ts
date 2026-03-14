@@ -93,6 +93,12 @@ export function useAgentLoop({
   // Streaming output tracking for long-running tools (e.g., bash_exec)
   const streamingOutputsRef = useRef<Map<string, string>>(new Map());
 
+  // AbortController for cancelling the agent loop (P0-3)
+  const abortControllerRef = useRef<AbortController | null>(null);
+
+  // Track whether MCP tool search has been wired up (P0-6)
+  const mcpReadyRef = useRef(false);
+
   // Activity tracking
   const activityRef = useRef(new ActivityCollector());
   const [completedTurns, setCompletedTurns] = useState<readonly TurnActivity[]>([]);
@@ -103,6 +109,9 @@ export function useAgentLoop({
 
   // Auto-memory content
   const [autoMemoryContent, setAutoMemoryContent] = useState<string | undefined>(undefined);
+
+  // Repo map content (built async on mount)
+  const [repoMapContent, setRepoMapContent] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     loadInstructions(process.cwd())
@@ -123,12 +132,26 @@ export function useAgentLoop({
         }
       })
       .catch(() => {});
+
+    // Build repo map asynchronously (non-blocking, optional feature)
+    import("../../indexing/repo-map.js")
+      .then(async ({ buildRepoMap, renderRepoMap }) => {
+        const map = await buildRepoMap(process.cwd());
+        if (map.totalFiles > 0) {
+          const rendered = renderRepoMap(map);
+          setRepoMapContent(rendered);
+        }
+      })
+      .catch(() => {
+        // Repo map is optional — silently ignore errors
+      });
   }, []);
 
   // Wire MCP tool search into the tool registry
   useEffect(() => {
     if (mcpConnector) {
       toolRegistry.setToolSearch(mcpConnector.getToolSearch());
+      mcpReadyRef.current = true;
     }
   }, [mcpConnector, toolRegistry]);
 
@@ -225,6 +248,17 @@ export function useAgentLoop({
     };
   }, [events, appendText, syncCurrentTurn]);
 
+  // P0-3: Wire up input:abort event to abort the current agent loop
+  useEffect(() => {
+    const handleAbort = () => {
+      abortControllerRef.current?.abort();
+    };
+    events.on("input:abort", handleAbort);
+    return () => {
+      events.off("input:abort", handleAbort);
+    };
+  }, [events]);
+
   // Wire up usage tracking: listen for agent:usage-update events
   useEffect(() => {
     const handleUsageUpdate = (data: {
@@ -270,6 +304,17 @@ export function useAgentLoop({
       setError(null);
       setCommandOutput(null);
 
+      // P0-3: Create a new AbortController for this agent loop run
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
+      // P0-6: Ensure MCP tool search is wired up before processing
+      // The useEffect that normally does this is async and may not have fired yet
+      if (mcpConnector && !mcpReadyRef.current) {
+        toolRegistry.setToolSearch(mcpConnector.getToolSearch());
+        mcpReadyRef.current = true;
+      }
+
       // Start a new turn
       activityRef.current.startTurn();
       activityRef.current.addEntry("user-message", { content: input });
@@ -297,6 +342,7 @@ export function useAgentLoop({
         projectInstructions,
         skillsPromptSection: skillManager?.buildPromptSection() ?? undefined,
         autoMemoryContent,
+        repoMapContent,
         locale: currentLocale,
         tone: currentTone,
         capabilityTier: modelCaps.capabilityTier,
@@ -329,8 +375,11 @@ export function useAgentLoop({
         const initialMessageCount = messages.length;
 
         // Calculate thinking config if enabled and model supports it
+        const contextUsagePercent = contextManager
+          ? contextManager.getUsage(messages).usageRatio * 100
+          : 0;
         const thinkingConfig = thinkingEnabled && modelCaps.supportsThinking
-          ? { type: "enabled" as const, budget_tokens: calculateThinkingBudget(modelCaps) }
+          ? { type: "enabled" as const, budget_tokens: calculateThinkingBudget(modelCaps, contextUsagePercent) }
           : undefined;
 
         const result = await runAgentLoop(
@@ -346,6 +395,7 @@ export function useAgentLoop({
             checkpointManager,
             sessionId,
             thinking: thinkingConfig,
+            signal: controller.signal,
           },
           messages,
         );
@@ -407,7 +457,10 @@ export function useAgentLoop({
               });
             }
           }
-          void sessionManager.appendMessages(sessionId, sessionMessages);
+          sessionManager.appendMessages(sessionId, sessionMessages).catch((err: unknown) => {
+            const msg = err instanceof Error ? err.message : String(err);
+            process.stderr.write(`[session-save] Failed to persist messages: ${msg}\n`);
+          });
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
@@ -417,6 +470,9 @@ export function useAgentLoop({
             : undefined;
         setError(errorCause ? `${errorMsg}: ${errorCause}` : errorMsg);
       } finally {
+        // P0-3: Clear abort controller reference after loop completes
+        abortControllerRef.current = null;
+
         if (hookRunner) {
           await hookRunner.run("Stop", {
             event: "Stop",
@@ -455,6 +511,7 @@ export function useAgentLoop({
       events,
       projectInstructions,
       autoMemoryContent,
+      repoMapContent,
       currentTone,
       currentLocale,
       flushText,

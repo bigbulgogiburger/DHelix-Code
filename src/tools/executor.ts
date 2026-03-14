@@ -8,6 +8,8 @@ import {
 import { type ToolRegistry } from "./registry.js";
 import { type AppEventEmitter } from "../utils/events.js";
 import { parseToolArguments } from "./validation.js";
+import { correctToolCall } from "./tool-call-corrector.js";
+import { type CapabilityTier } from "../llm/model-capabilities.js";
 import { getPlatform, getShellCommand, getShellArgs } from "../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../constants.js";
 import { spawn, type ChildProcess } from "node:child_process";
@@ -35,6 +37,7 @@ export async function executeTool(
     signal?: AbortSignal;
     events?: AppEventEmitter;
     toolCallId?: string;
+    capabilityTier?: CapabilityTier;
   },
 ): Promise<ToolResult> {
   const timeoutMs = tool.timeoutMs ?? TOOL_TIMEOUTS.default;
@@ -62,7 +65,9 @@ export async function executeTool(
   };
 
   try {
-    const validatedArgs = parseToolArguments(tool.parameterSchema, args);
+    // Correct common tool call errors from lower-capability models (before validation)
+    const correctedArgs = correctToolCall(args, workingDirectory, options?.capabilityTier ?? "high");
+    const validatedArgs = parseToolArguments(tool.parameterSchema, correctedArgs);
 
     // Retry loop for transient errors
     let lastError: unknown;
@@ -100,6 +105,7 @@ export async function executeToolCall(
     workingDirectory?: string;
     signal?: AbortSignal;
     events?: AppEventEmitter;
+    capabilityTier?: CapabilityTier;
   },
 ): Promise<ToolCallResult> {
   const tool = registry.get(call.name);
@@ -117,6 +123,7 @@ export async function executeToolCall(
     signal: options?.signal,
     events: options?.events,
     toolCallId: call.id,
+    capabilityTier: options?.capabilityTier,
   });
   return {
     id: call.id,
