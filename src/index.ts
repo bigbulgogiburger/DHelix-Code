@@ -373,6 +373,9 @@ program
           import("./cli/renderer/synchronized-output.js"),
         ]);
 
+      // Pre-warm syntax highlighter (non-blocking)
+      import("./cli/renderer/syntax.js").then(m => m.initHighlighter()).catch(() => {});
+
       // Print logo to stdout BEFORE Ink render — prevents flickering
       printStartupLogo(config.llm.model);
 

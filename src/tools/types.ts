@@ -1,4 +1,5 @@
 import { type z } from "zod";
+import { type AppEventEmitter } from "../utils/events.js";
 
 /** Permission level for a tool */
 export type PermissionLevel = "safe" | "confirm" | "dangerous";
@@ -9,6 +10,10 @@ export interface ToolContext {
   readonly abortSignal: AbortSignal;
   readonly timeoutMs: number;
   readonly platform: "win32" | "darwin" | "linux";
+  /** Optional event emitter for streaming output (tool:output-delta) */
+  readonly events?: AppEventEmitter;
+  /** Tool call ID (for event correlation) */
+  readonly toolCallId?: string;
 }
 
 /** Result from a tool execution */

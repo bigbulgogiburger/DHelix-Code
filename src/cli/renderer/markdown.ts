@@ -1,5 +1,6 @@
 import { Marked } from "marked";
 import * as markedTerminalModule from "marked-terminal";
+import { highlightCodeSync, isLanguageSupported } from "./syntax.js";
 
 let markedInstance: Marked | undefined;
 
@@ -19,6 +20,19 @@ function getMarked(): Marked {
         reflowText: true,
         width: process.stdout.columns || 80,
         showSectionPrefix: false,
+        tab: 2,
+        unescape: true,
+        code: (code: string, language?: string) => {
+          if (language && isLanguageSupported(language)) {
+            const highlighted = highlightCodeSync(code, language);
+            return "\n" + highlighted + "\n";
+          }
+          return "\n" + code + "\n";
+        },
+        link: (href: string, _title: string | null | undefined, text: string) => {
+          // OSC 8 hyperlink for terminals that support it
+          return `\x1b]8;;${href}\x07${text || href}\x1b]8;;\x07`;
+        },
       }),
     );
   }

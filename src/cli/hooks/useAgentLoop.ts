@@ -18,6 +18,7 @@ import { join } from "node:path";
 import { buildSystemPrompt } from "../../core/system-prompt-builder.js";
 import { loadInstructions } from "../../instructions/loader.js";
 import { getModelCapabilities } from "../../llm/model-capabilities.js";
+import { calculateThinkingBudget } from "../../llm/thinking-budget.js";
 import { createEventEmitter } from "../../utils/events.js";
 import { ActivityCollector, type TurnActivity } from "../../core/activity.js";
 import { MemoryManager } from "../../memory/manager.js";
@@ -38,6 +39,7 @@ export interface UseAgentLoopOptions {
   readonly initialLocale?: string;
   readonly initialTone?: string;
   readonly mcpConnector?: MCPManagerConnector;
+  readonly thinkingEnabled?: boolean;
 }
 
 export function useAgentLoop({
@@ -55,6 +57,7 @@ export function useAgentLoop({
   initialLocale = "ko",
   initialTone = "normal",
   mcpConnector,
+  thinkingEnabled = false,
 }: UseAgentLoopOptions) {
   const {
     conversation,
@@ -86,6 +89,9 @@ export function useAgentLoop({
   const [outputTokens, setOutputTokens] = useState(0);
   const [totalCost, setTotalCost] = useState(0);
   const prevUsageRef = useRef({ prompt: 0, completion: 0 });
+
+  // Streaming output tracking for long-running tools (e.g., bash_exec)
+  const streamingOutputsRef = useRef<Map<string, string>>(new Map());
 
   // Activity tracking
   const activityRef = useRef(new ActivityCollector());
@@ -169,7 +175,13 @@ export function useAgentLoop({
       output?: string;
       metadata?: Readonly<Record<string, unknown>>;
     }) => {
+      streamingOutputsRef.current.delete(id);
       activityRef.current.addEntry("tool-complete", { name, id, isError, output, metadata });
+      syncCurrentTurn();
+    };
+    const onToolOutputDelta = ({ id, chunk }: { id: string; name: string; chunk: string }) => {
+      const current = streamingOutputsRef.current.get(id) ?? "";
+      streamingOutputsRef.current.set(id, current + chunk);
       syncCurrentTurn();
     };
     const onTextDelta = ({ text }: { text: string }) => {
@@ -201,11 +213,13 @@ export function useAgentLoop({
 
     events.on("tool:start", onToolStart);
     events.on("tool:complete", onToolComplete);
+    events.on("tool:output-delta", onToolOutputDelta);
     events.on("llm:text-delta", onTextDelta);
     events.on("agent:assistant-message", onAssistantMessage);
     return () => {
       events.off("tool:start", onToolStart);
       events.off("tool:complete", onToolComplete);
+      events.off("tool:output-delta", onToolOutputDelta);
       events.off("llm:text-delta", onTextDelta);
       events.off("agent:assistant-message", onAssistantMessage);
     };
@@ -314,6 +328,11 @@ export function useAgentLoop({
       try {
         const initialMessageCount = messages.length;
 
+        // Calculate thinking config if enabled and model supports it
+        const thinkingConfig = thinkingEnabled && modelCaps.supportsThinking
+          ? { type: "enabled" as const, budget_tokens: calculateThinkingBudget(modelCaps) }
+          : undefined;
+
         const result = await runAgentLoop(
           {
             client,
@@ -326,6 +345,7 @@ export function useAgentLoop({
             checkPermission,
             checkpointManager,
             sessionId,
+            thinking: thinkingConfig,
           },
           messages,
         );
@@ -443,6 +463,7 @@ export function useAgentLoop({
       checkPermission,
       checkpointManager,
       mcpConnector,
+      thinkingEnabled,
     ],
   );
 
@@ -558,5 +579,6 @@ export function useAgentLoop({
     totalCost,
     interactiveSelect,
     setInteractiveSelect,
+    streamingOutputs: streamingOutputsRef,
   } as const;
 }

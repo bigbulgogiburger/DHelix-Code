@@ -10,6 +10,7 @@ import {
 const DEFAULT_THEME: BundledTheme = "github-dark";
 
 let highlighterPromise: Promise<Highlighter> | undefined;
+let highlighterInstance: Highlighter | undefined;
 
 /**
  * Get or create the shiki highlighter instance (lazy singleton).
@@ -22,6 +23,35 @@ function getHighlighter(lang: BundledLanguage, theme: BundledTheme): Promise<Hig
     });
   }
   return highlighterPromise;
+}
+
+/** Pre-warm the highlighter singleton. Call at startup. */
+export async function initHighlighter(): Promise<void> {
+  try {
+    const h = await getHighlighter("typescript" as BundledLanguage, DEFAULT_THEME);
+    highlighterInstance = h;
+  } catch {
+    // Silently fail — highlighting will be unavailable
+  }
+}
+
+/** Synchronous highlight using pre-warmed highlighter. Falls back to plain text. */
+export function highlightCodeSync(code: string, language: string): string {
+  if (!highlighterInstance) return code;
+
+  const lang = resolveLanguage(language);
+  if (!lang) return code;
+
+  try {
+    // Ensure language is loaded (best-effort sync)
+    const { tokens } = highlighterInstance.codeToTokens(code, {
+      lang,
+      theme: DEFAULT_THEME,
+    });
+    return tokensToAnsi(tokens);
+  } catch {
+    return code;
+  }
 }
 
 /**

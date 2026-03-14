@@ -25,6 +25,10 @@ export interface ModelCapabilities {
   readonly capabilityTier: CapabilityTier;
   /** Whether the provider supports explicit prompt caching (Anthropic only) */
   readonly supportsCaching: boolean;
+  /** Whether the model supports extended thinking (Claude models) */
+  readonly supportsThinking: boolean;
+  /** Default thinking budget in tokens (0 = auto-calculate based on context) */
+  readonly defaultThinkingBudget: number;
 }
 
 /** Default pricing fallback for unknown/local models ($1/M input, $3/M output) */
@@ -46,6 +50,8 @@ const DEFAULTS: ModelCapabilities = {
   useMaxCompletionTokens: true,
   capabilityTier: "medium",
   supportsCaching: false,
+  supportsThinking: false,
+  defaultThinkingBudget: 0,
 };
 
 /** Known model capability overrides (partial, merged with defaults) */
@@ -220,6 +226,8 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 15, outputPerMillion: 75 },
       capabilityTier: "high",
       supportsCaching: true,
+      supportsThinking: true,
+      defaultThinkingBudget: 16384,
     },
   ],
   [
@@ -231,6 +239,8 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
       capabilityTier: "high",
       supportsCaching: true,
+      supportsThinking: true,
+      defaultThinkingBudget: 10000,
     },
   ],
   [
@@ -242,6 +252,8 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 0.8, outputPerMillion: 4 },
       capabilityTier: "medium",
       supportsCaching: true,
+      supportsThinking: true,
+      defaultThinkingBudget: 5000,
     },
   ],
   [
@@ -253,6 +265,8 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 15, outputPerMillion: 75 },
       capabilityTier: "high",
       supportsCaching: true,
+      supportsThinking: true,
+      defaultThinkingBudget: 16384,
     },
   ],
   [
@@ -264,6 +278,8 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 0.25, outputPerMillion: 1.25 },
       capabilityTier: "medium",
       supportsCaching: true,
+      supportsThinking: true,
+      defaultThinkingBudget: 5000,
     },
   ],
   [
@@ -275,6 +291,8 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
       capabilityTier: "high",
       supportsCaching: true,
+      supportsThinking: true,
+      defaultThinkingBudget: 10000,
     },
   ],
   [
@@ -286,6 +304,8 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
       capabilityTier: "high",
       supportsCaching: true,
+      supportsThinking: true,
+      defaultThinkingBudget: 10000,
     },
   ],
 

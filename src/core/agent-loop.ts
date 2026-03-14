@@ -1,4 +1,4 @@
-import { type LLMProvider, type ChatMessage, type ChatResponse } from "../llm/provider.js";
+import { type LLMProvider, type ChatMessage, type ChatResponse, type ThinkingConfig } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { type ExtractedToolCall, type ToolCallResult, type ToolDefinitionForLLM } from "../tools/types.js";
@@ -41,6 +41,8 @@ export interface AgentLoopConfig {
   readonly checkpointManager?: CheckpointManager;
   /** Session ID for checkpoint metadata */
   readonly sessionId?: string;
+  /** Extended thinking configuration (for Claude models) */
+  readonly thinking?: ThinkingConfig;
 }
 
 /** Result of a permission check */
@@ -364,6 +366,7 @@ export async function runAgentLoop(
       temperature: config.temperature ?? 0,
       maxTokens: config.maxTokens ?? 4096,
       signal: config.signal,
+      thinking: config.thinking,
     };
 
     let response: ChatResponse | undefined;
@@ -584,6 +587,7 @@ export async function runAgentLoop(
           let result = await executeToolCall(config.toolRegistry, call, {
             workingDirectory: config.workingDirectory ?? process.cwd(),
             signal: config.signal,
+            events: config.events,
           });
 
           // Apply output guardrails

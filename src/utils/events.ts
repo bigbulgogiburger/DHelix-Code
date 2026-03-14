@@ -95,6 +95,9 @@ export type AppEvents = {
 
   /** Voice input toggle (from /voice command) */
   "voice:toggle": { enabled: boolean };
+
+  /** Tool output streaming delta (for long-running tools like bash) */
+  "tool:output-delta": { id: string; name: string; chunk: string };
 };
 
 /** Typed event emitter for the application */

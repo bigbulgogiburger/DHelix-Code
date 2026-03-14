@@ -129,4 +129,23 @@ describe("getModelCapabilities", () => {
       expect(getModelCapabilities("custom-local-model").capabilityTier).toBe("medium");
     });
   });
+
+  describe("thinking capabilities", () => {
+    it("Claude models should support thinking", () => {
+      expect(getModelCapabilities("claude-opus-4").supportsThinking).toBe(true);
+      expect(getModelCapabilities("claude-sonnet-4").supportsThinking).toBe(true);
+      expect(getModelCapabilities("claude-haiku-4").supportsThinking).toBe(true);
+    });
+
+    it("Non-Claude models should not support thinking", () => {
+      expect(getModelCapabilities("gpt-4o").supportsThinking).toBe(false);
+      expect(getModelCapabilities("deepseek-chat").supportsThinking).toBe(false);
+    });
+
+    it("Claude Opus should have highest thinking budget", () => {
+      const opus = getModelCapabilities("claude-opus-4");
+      const sonnet = getModelCapabilities("claude-sonnet-4");
+      expect(opus.defaultThinkingBudget).toBeGreaterThan(sonnet.defaultThinkingBudget);
+    });
+  });
 });

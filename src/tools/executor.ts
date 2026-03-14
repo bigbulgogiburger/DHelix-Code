@@ -6,6 +6,7 @@ import {
   type ToolCallResult,
 } from "./types.js";
 import { type ToolRegistry } from "./registry.js";
+import { type AppEventEmitter } from "../utils/events.js";
 import { parseToolArguments } from "./validation.js";
 import { getPlatform, getShellCommand, getShellArgs } from "../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../constants.js";
@@ -22,7 +23,12 @@ export async function executeTool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tool: ToolDefinition<any>,
   args: Record<string, unknown>,
-  options?: { workingDirectory?: string; signal?: AbortSignal },
+  options?: {
+    workingDirectory?: string;
+    signal?: AbortSignal;
+    events?: AppEventEmitter;
+    toolCallId?: string;
+  },
 ): Promise<ToolResult> {
   const timeoutMs = tool.timeoutMs ?? TOOL_TIMEOUTS.default;
   const controller = new AbortController();
@@ -44,6 +50,8 @@ export async function executeTool(
     abortSignal: controller.signal,
     timeoutMs,
     platform: getPlatform(),
+    events: options?.events,
+    toolCallId: options?.toolCallId,
   };
 
   try {
@@ -67,7 +75,11 @@ export async function executeTool(
 export async function executeToolCall(
   registry: ToolRegistry,
   call: ExtractedToolCall,
-  options?: { workingDirectory?: string; signal?: AbortSignal },
+  options?: {
+    workingDirectory?: string;
+    signal?: AbortSignal;
+    events?: AppEventEmitter;
+  },
 ): Promise<ToolCallResult> {
   const tool = registry.get(call.name);
   if (!tool) {
@@ -79,7 +91,12 @@ export async function executeToolCall(
     };
   }
 
-  const result = await executeTool(tool, call.arguments, options);
+  const result = await executeTool(tool, call.arguments, {
+    workingDirectory: options?.workingDirectory,
+    signal: options?.signal,
+    events: options?.events,
+    toolCallId: call.id,
+  });
   return {
     id: call.id,
     name: call.name,

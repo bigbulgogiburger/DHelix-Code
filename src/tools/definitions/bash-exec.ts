@@ -133,8 +133,28 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       stdio: ["ignore", "pipe", "pipe"],
     });
 
-    proc.stdout.on("data", (chunk: Buffer) => chunks.push(chunk));
-    proc.stderr.on("data", (chunk: Buffer) => errChunks.push(chunk));
+    proc.stdout.on("data", (chunk: Buffer) => {
+      chunks.push(chunk);
+      if (context.events && context.toolCallId) {
+        const text = chunk.toString("utf-8");
+        context.events.emit("tool:output-delta", {
+          id: context.toolCallId,
+          name: "bash_exec",
+          chunk: text,
+        });
+      }
+    });
+    proc.stderr.on("data", (chunk: Buffer) => {
+      errChunks.push(chunk);
+      if (context.events && context.toolCallId) {
+        const text = chunk.toString("utf-8");
+        context.events.emit("tool:output-delta", {
+          id: context.toolCallId,
+          name: "bash_exec",
+          chunk: text,
+        });
+      }
+    });
 
     const timer = setTimeout(() => {
       proc.kill("SIGTERM");

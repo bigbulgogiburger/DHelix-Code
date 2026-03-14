@@ -95,6 +95,9 @@ export function App({
     toolRegistry,
   );
 
+  // Extended thinking toggle state (declared before useAgentLoop so it can be passed)
+  const [thinkingEnabled, setThinkingEnabled] = useState(false);
+
   const {
     isProcessing,
     streamingText,
@@ -127,6 +130,7 @@ export function App({
     initialLocale,
     initialTone,
     mcpConnector,
+    thinkingEnabled,
   });
 
   // Voice input
@@ -154,9 +158,6 @@ export function App({
 
   // Verbose mode toggle state
   const [verboseMode, setVerboseMode] = useState(false);
-
-  // Extended thinking toggle state
-  const [thinkingEnabled, setThinkingEnabled] = useState(false);
 
   // Permission mode state (mirrors permissionManager but drives UI)
   const [permissionMode, setPermissionMode] = useState<PermissionMode>(permissionManager.getMode());
@@ -199,6 +200,11 @@ export function App({
         process.exit(0);
       },
       "toggle-thinking": () => {
+        const caps = getModelCapabilities(activeModel);
+        if (!caps.supportsThinking) {
+          showNotification("This model does not support extended thinking");
+          return;
+        }
         setThinkingEnabled((prev) => {
           const next = !prev;
           showNotification(`Extended thinking: ${next ? "ON" : "OFF"}`);
@@ -211,7 +217,7 @@ export function App({
         }
       },
     }),
-    [isProcessing, events, permissionMode, permissionManager, showNotification, voiceEnabled, toggleRecording],
+    [isProcessing, events, permissionMode, permissionManager, showNotification, voiceEnabled, toggleRecording, activeModel],
   );
 
   // Build keybindings from config + defaults

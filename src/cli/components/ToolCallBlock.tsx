@@ -16,6 +16,8 @@ interface ToolCallBlockProps {
   readonly metadata?: Readonly<Record<string, unknown>>;
   readonly isExpanded?: boolean;
   readonly startTime?: number;
+  /** Live streaming output from long-running tools */
+  readonly streamingOutput?: string;
 }
 
 function useSpinner(active: boolean): string {
@@ -99,6 +101,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   metadata,
   isExpanded = false,
   startTime,
+  streamingOutput,
 }: ToolCallBlockProps) {
   const spinnerChar = useSpinner(status === "running");
   const duration = startTime && status !== "running" ? Date.now() - startTime : undefined;
@@ -126,6 +129,17 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         <Box marginLeft={1}>
           <Text dimColor>{"⎿  "}</Text>
           <Text>{headerInfo.subtext}</Text>
+        </Box>
+      )}
+
+      {/* Live streaming output during execution */}
+      {status === "running" && streamingOutput && (
+        <Box marginLeft={4} flexDirection="column">
+          {streamingOutput.split("\n").slice(-8).map((line, i) => (
+            <Text key={i} color="gray" wrap="truncate-end">
+              {line}
+            </Text>
+          ))}
         </Box>
       )}
 
