@@ -43,4 +43,5 @@ export const DEFAULT_CONFIG: AppConfig = {
     language: "ko",
     model: "whisper-1",
   },
+  deferredTools: true,
 };

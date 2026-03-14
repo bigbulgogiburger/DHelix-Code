@@ -1,6 +1,7 @@
 import { describe, it, expect, afterAll } from "vitest";
 import {
   buildSystemPrompt,
+  buildStructuredSystemPrompt,
   buildSystemReminder,
   type SessionState,
   type PromptSection,
@@ -395,5 +396,34 @@ describe("backward compatibility", () => {
     });
     expect(prompt).toContain("Test instructions");
     expect(prompt).toContain("Plan Mode");
+  });
+});
+
+describe("buildStructuredSystemPrompt", () => {
+  it("should return text and blocks", () => {
+    const result = buildStructuredSystemPrompt();
+    expect(result.text).toBeTruthy();
+    expect(result.blocks.length).toBeGreaterThan(0);
+  });
+
+  it("should mark static sections with cache_control", () => {
+    const result = buildStructuredSystemPrompt();
+    const cachedBlocks = result.blocks.filter((b) => b.cache_control);
+    expect(cachedBlocks.length).toBeGreaterThan(0);
+  });
+
+  it("should not cache environment section", () => {
+    const result = buildStructuredSystemPrompt({ workingDirectory: "/tmp" });
+    const envBlock = result.blocks.find((b) => b.text.includes("# Environment"));
+    // Environment is dynamic, should NOT have cache_control
+    if (envBlock) {
+      expect(envBlock.cache_control).toBeUndefined();
+    }
+  });
+
+  it("should produce blocks whose text concatenation matches the full text", () => {
+    const result = buildStructuredSystemPrompt();
+    const reconstructed = result.blocks.map((b) => b.text).join("\n\n---\n\n");
+    expect(reconstructed).toBe(result.text);
   });
 });

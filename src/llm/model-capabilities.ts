@@ -23,6 +23,8 @@ export interface ModelCapabilities {
   readonly useMaxCompletionTokens: boolean;
   /** Capability tier for adaptive prompt/context strategies */
   readonly capabilityTier: CapabilityTier;
+  /** Whether the provider supports explicit prompt caching (Anthropic only) */
+  readonly supportsCaching: boolean;
 }
 
 /** Default pricing fallback for unknown/local models ($1/M input, $3/M output) */
@@ -43,6 +45,7 @@ const DEFAULTS: ModelCapabilities = {
   pricing: DEFAULT_PRICING,
   useMaxCompletionTokens: true,
   capabilityTier: "medium",
+  supportsCaching: false,
 };
 
 /** Known model capability overrides (partial, merged with defaults) */
@@ -216,6 +219,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 15, outputPerMillion: 75 },
       capabilityTier: "high",
+      supportsCaching: true,
     },
   ],
   [
@@ -226,6 +230,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
       capabilityTier: "high",
+      supportsCaching: true,
     },
   ],
   [
@@ -236,6 +241,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.8, outputPerMillion: 4 },
       capabilityTier: "medium",
+      supportsCaching: true,
     },
   ],
   [
@@ -246,6 +252,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 15, outputPerMillion: 75 },
       capabilityTier: "high",
+      supportsCaching: true,
     },
   ],
   [
@@ -256,6 +263,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.25, outputPerMillion: 1.25 },
       capabilityTier: "medium",
+      supportsCaching: true,
     },
   ],
   [
@@ -266,6 +274,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
       capabilityTier: "high",
+      supportsCaching: true,
     },
   ],
   [
@@ -276,6 +285,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 3, outputPerMillion: 15 },
       capabilityTier: "high",
+      supportsCaching: true,
     },
   ],
 

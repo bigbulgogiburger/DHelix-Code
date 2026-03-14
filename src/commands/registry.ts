@@ -60,6 +60,8 @@ export interface CommandResult {
   readonly newTone?: string;
   /** Updated locale setting (if changed) */
   readonly newLocale?: string;
+  /** Voice input toggle (true = enabled, false = disabled) */
+  readonly voiceEnabled?: boolean;
 }
 
 /** Definition of a slash command */

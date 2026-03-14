@@ -12,6 +12,7 @@ import { CheckpointManager } from "../../core/checkpoint-manager.js";
 import { type SkillManager } from "../../skills/manager.js";
 import { type CommandRegistry, type InteractiveSelect } from "../../commands/registry.js";
 import { type ExtractedToolCall } from "../../tools/types.js";
+import { type MCPManagerConnector } from "../../mcp/manager-connector.js";
 import { SESSIONS_DIR } from "../../constants.js";
 import { join } from "node:path";
 import { buildSystemPrompt } from "../../core/system-prompt-builder.js";
@@ -34,6 +35,9 @@ export interface UseAgentLoopOptions {
   readonly skillManager?: SkillManager;
   readonly sessionId?: string;
   readonly checkPermission: (call: ExtractedToolCall) => Promise<PermissionResult>;
+  readonly initialLocale?: string;
+  readonly initialTone?: string;
+  readonly mcpConnector?: MCPManagerConnector;
 }
 
 export function useAgentLoop({
@@ -48,6 +52,9 @@ export function useAgentLoop({
   skillManager,
   sessionId,
   checkPermission,
+  initialLocale = "ko",
+  initialTone = "normal",
+  mcpConnector,
 }: UseAgentLoopOptions) {
   const {
     conversation,
@@ -69,6 +76,10 @@ export function useAgentLoop({
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(initialModel);
   const [interactiveSelect, setInteractiveSelect] = useState<InteractiveSelect | null>(null);
+
+  // Tone and locale state (wired through to buildSystemPrompt)
+  const [currentTone, setCurrentTone] = useState(initialTone);
+  const [currentLocale] = useState(initialLocale);
 
   // Token usage and cost tracking
   const [inputTokens, setInputTokens] = useState(0);
@@ -107,6 +118,13 @@ export function useAgentLoop({
       })
       .catch(() => {});
   }, []);
+
+  // Wire MCP tool search into the tool registry
+  useEffect(() => {
+    if (mcpConnector) {
+      toolRegistry.setToolSearch(mcpConnector.getToolSearch());
+    }
+  }, [mcpConnector, toolRegistry]);
 
   // Message queue
   const messageQueueRef = useRef<string[]>([]);
@@ -258,16 +276,28 @@ export function useAgentLoop({
         }
       }
 
+      const modelCaps = getModelCapabilities(activeModel);
       const systemPrompt = buildSystemPrompt({
         toolRegistry,
         workingDirectory: process.cwd(),
         projectInstructions,
         skillsPromptSection: skillManager?.buildPromptSection() ?? undefined,
         autoMemoryContent,
+        locale: currentLocale,
+        tone: currentTone,
+        capabilityTier: modelCaps.capabilityTier,
       });
 
+      let finalSystemPrompt = systemPrompt;
+      if (mcpConnector) {
+        const mcpSections = mcpConnector.generateSystemPromptSections();
+        if (mcpSections.deferredTools) {
+          finalSystemPrompt += "\n\n" + mcpSections.deferredTools;
+        }
+      }
+
       let messages: ChatMessage[] = [
-        { role: "system", content: systemPrompt },
+        { role: "system", content: finalSystemPrompt },
         ...conversation.toMessagesForLLM().map((m) => ({
           role: m.role as ChatMessage["role"],
           content: m.content,
@@ -282,7 +312,6 @@ export function useAgentLoop({
       }
 
       try {
-        const modelCaps = getModelCapabilities(activeModel);
         const initialMessageCount = messages.length;
 
         const result = await runAgentLoop(
@@ -406,11 +435,14 @@ export function useAgentLoop({
       events,
       projectInstructions,
       autoMemoryContent,
+      currentTone,
+      currentLocale,
       flushText,
       resetText,
       syncCurrentTurn,
       checkPermission,
       checkpointManager,
+      mcpConnector,
     ],
   );
 
@@ -449,6 +481,12 @@ export function useAgentLoop({
           }
           if (result.newModel) {
             setActiveModel(result.newModel);
+          }
+          if (result.newTone) {
+            setCurrentTone(result.newTone);
+          }
+          if (result.voiceEnabled !== undefined) {
+            events.emit("voice:toggle", { enabled: result.voiceEnabled });
           }
           if (result.refreshInstructions) {
             loadInstructions(process.cwd())

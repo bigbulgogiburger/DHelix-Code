@@ -82,4 +82,6 @@ export const configSchema = z.object({
   tone: z.enum(["normal", "cute", "senior", "friend", "mentor", "minimal"]).default("normal"),
   /** Voice input settings */
   voice: voiceConfigSchema,
+  /** Enable deferred tool loading for MCP tools */
+  deferredTools: z.boolean().default(true),
 });

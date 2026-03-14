@@ -129,7 +129,9 @@ describe("AnthropicProvider", () => {
 
       const fetchCall = mockFetch.mock.calls[0];
       const body = JSON.parse(fetchCall[1].body as string);
-      expect(body.system).toBe("You are helpful.");
+      // System is now an array of cachable blocks
+      expect(Array.isArray(body.system)).toBe(true);
+      expect(body.system[0].text).toBe("You are helpful.");
       expect(body.messages).toHaveLength(1);
       expect(body.messages[0].role).toBe("user");
     });
@@ -571,6 +573,103 @@ describe("AnthropicProvider", () => {
     });
   });
 
+  describe("prompt caching", () => {
+    it("should send anthropic-beta header for caching", async () => {
+      const provider = await getProvider();
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          id: "msg_cache",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: { input_tokens: 5, output_tokens: 1 },
+        }),
+      );
+
+      await provider.chat({
+        model: "claude-sonnet-4-20250514",
+        messages: [{ role: "user", content: "Hi" }],
+      });
+
+      const fetchCall = mockFetch.mock.calls[0];
+      const headers = fetchCall[1].headers;
+      expect(headers["anthropic-beta"]).toBe("prompt-caching-2024-07-31");
+    });
+
+    it("should split system prompt into cachable blocks", async () => {
+      const provider = await getProvider();
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          id: "msg_cache2",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: { input_tokens: 20, output_tokens: 2 },
+        }),
+      );
+
+      const systemPrompt = "# System\n\nIdentity section\n\n---\n\n# Environment\n\nDynamic stuff\n\n---\n\n# Code quality\n\nStatic section";
+      await provider.chat({
+        model: "claude-sonnet-4-20250514",
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: "Hi" },
+        ],
+      });
+
+      const fetchCall = mockFetch.mock.calls[0];
+      const body = JSON.parse(fetchCall[1].body as string);
+
+      // system should be an array of blocks, not a string
+      expect(Array.isArray(body.system)).toBe(true);
+      expect(body.system.length).toBeGreaterThan(1);
+
+      // Environment block should NOT have cache_control
+      const envBlock = body.system.find((b: Record<string, unknown>) =>
+        (b.text as string).includes("# Environment"),
+      );
+      expect(envBlock).toBeDefined();
+      expect(envBlock.cache_control).toBeUndefined();
+
+      // Static blocks should have cache_control
+      const cachedBlocks = body.system.filter(
+        (b: Record<string, unknown>) => b.cache_control !== undefined,
+      );
+      expect(cachedBlocks.length).toBeGreaterThan(0);
+    });
+
+    it("should cache single-block system prompt", async () => {
+      const provider = await getProvider();
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          id: "msg_cache3",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: { input_tokens: 10, output_tokens: 1 },
+        }),
+      );
+
+      await provider.chat({
+        model: "claude-sonnet-4-20250514",
+        messages: [
+          { role: "system", content: "Simple system prompt without separators" },
+          { role: "user", content: "Hi" },
+        ],
+      });
+
+      const fetchCall = mockFetch.mock.calls[0];
+      const body = JSON.parse(fetchCall[1].body as string);
+
+      expect(Array.isArray(body.system)).toBe(true);
+      expect(body.system).toHaveLength(1);
+      expect(body.system[0].cache_control).toEqual({ type: "ephemeral" });
+    });
+  });
+
   describe("message conversion", () => {
     it("should merge multiple system messages", async () => {
       const provider = await getProvider();
@@ -596,7 +695,10 @@ describe("AnthropicProvider", () => {
 
       const fetchCall = mockFetch.mock.calls[0];
       const body = JSON.parse(fetchCall[1].body as string);
-      expect(body.system).toBe("You are helpful.\n\nBe concise.");
+      // System is now an array of cachable blocks
+      expect(Array.isArray(body.system)).toBe(true);
+      // Single block since no "---" separator in merged content
+      expect(body.system[0].text).toBe("You are helpful.\n\nBe concise.");
     });
 
     it("should send correct headers", async () => {
@@ -622,6 +724,7 @@ describe("AnthropicProvider", () => {
       expect(headers["x-api-key"]).toBe("test-key-123");
       expect(headers["anthropic-version"]).toBe("2023-06-01");
       expect(headers["content-type"]).toBe("application/json");
+      expect(headers["anthropic-beta"]).toBe("prompt-caching-2024-07-31");
     });
   });
 });

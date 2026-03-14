@@ -92,6 +92,9 @@ export type AppEvents = {
     readonly toolCallCount: number;
     readonly aborted: boolean;
   };
+
+  /** Voice input toggle (from /voice command) */
+  "voice:toggle": { enabled: boolean };
 };
 
 /** Typed event emitter for the application */

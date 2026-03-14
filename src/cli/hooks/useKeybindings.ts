@@ -37,6 +37,7 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, string>> = {
   "ctrl+o": "toggle-verbose",
   "ctrl+d": "exit",
   "alt+t": "toggle-thinking",
+  "alt+v": "toggle-voice",
 } as const;
 
 /** Human-readable descriptions for each action */
@@ -47,6 +48,7 @@ export const ACTION_DESCRIPTIONS: Readonly<Record<string, string>> = {
   "toggle-verbose": "Toggle verbose mode (show/hide full tool outputs)",
   exit: "Exit the application",
   "toggle-thinking": "Toggle extended thinking on/off",
+  "toggle-voice": "Start/stop voice recording (push-to-talk)",
 } as const;
 
 /**

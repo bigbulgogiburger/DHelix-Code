@@ -13,7 +13,7 @@ export const voiceCommand: SlashCommand = {
     const toggle = args.trim().toLowerCase();
 
     if (toggle === "off") {
-      return { output: "Voice input disabled.", success: true };
+      return { output: "Voice input disabled.", success: true, voiceEnabled: false };
     }
 
     const soxInstalled = await checkSoxInstalled();
@@ -41,6 +41,7 @@ export const voiceCommand: SlashCommand = {
     return {
       output: "Voice input enabled. Press SPACE to start/stop recording.",
       success: true,
+      voiceEnabled: true,
     };
   },
 };

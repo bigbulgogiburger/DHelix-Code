@@ -1,7 +1,7 @@
 import { type LLMProvider, type ChatMessage, type ChatResponse } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
-import { type ExtractedToolCall, type ToolCallResult } from "../tools/types.js";
+import { type ExtractedToolCall, type ToolCallResult, type ToolDefinitionForLLM } from "../tools/types.js";
 import { executeToolCall } from "../tools/executor.js";
 import { consumeStream } from "../llm/streaming.js";
 import { type AppEventEmitter } from "../utils/events.js";
@@ -343,7 +343,15 @@ export async function runAgentLoop(
     const managedMessages = [...(await contextManager.prepare(messages))];
 
     // Prepare request with tool definitions
-    const toolDefs = config.toolRegistry.getDefinitionsForLLM();
+    // Deferred mode: hot tools only by default, plus schemas for recently used deferred tools
+    let toolDefs: readonly ToolDefinitionForLLM[];
+    if (config.toolRegistry.isDeferredMode) {
+      const hotDefs = config.toolRegistry.getHotDefinitionsForLLM();
+      const resolvedDeferred = resolveDeferredFromHistory(managedMessages, config.toolRegistry);
+      toolDefs = [...hotDefs, ...resolvedDeferred];
+    } else {
+      toolDefs = config.toolRegistry.getDefinitionsForLLM();
+    }
     const prepared = config.strategy.prepareRequest(managedMessages, toolDefs);
 
     // Call LLM with retry logic
@@ -669,4 +677,33 @@ export async function runAgentLoop(
   });
 
   return { messages, iterations, aborted: false, usage: finalUsage };
+}
+
+/** Resolve deferred tool schemas from message history for re-inclusion in next request */
+function resolveDeferredFromHistory(
+  messages: readonly ChatMessage[],
+  registry: ToolRegistry,
+): readonly ToolDefinitionForLLM[] {
+  const resolved = new Map<string, ToolDefinitionForLLM>();
+  let assistantsSeen = 0;
+
+  // Scan recent assistant messages for MCP tool calls that need schema
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const msg = messages[i];
+    if (msg.role !== "assistant" || !msg.toolCalls) continue;
+
+    assistantsSeen++;
+
+    for (const tc of msg.toolCalls) {
+      if (tc.name.startsWith("mcp__") && !resolved.has(tc.name)) {
+        const def = registry.resolveDeferredTool(tc.name);
+        if (def) resolved.set(tc.name, def);
+      }
+    }
+
+    // Only check recent 3 assistant messages
+    if (assistantsSeen >= 3) break;
+  }
+
+  return [...resolved.values()];
 }

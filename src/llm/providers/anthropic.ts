@@ -380,6 +380,7 @@ export class AnthropicProvider implements LLMProvider {
           "content-type": "application/json",
           "x-api-key": this.apiKey,
           "anthropic-version": ANTHROPIC_VERSION,
+          "anthropic-beta": "prompt-caching-2024-07-31",
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -483,6 +484,7 @@ export class AnthropicProvider implements LLMProvider {
           "content-type": "application/json",
           "x-api-key": this.apiKey,
           "anthropic-version": ANTHROPIC_VERSION,
+          "anthropic-beta": "prompt-caching-2024-07-31",
         },
         body: JSON.stringify(body),
         signal: controller.signal,
@@ -607,7 +609,8 @@ export class AnthropicProvider implements LLMProvider {
     };
 
     if (system) {
-      body.system = system;
+      // Split system prompt for caching — static parts get cache_control
+      body.system = this.buildCachableSystemBlocks(system);
     }
     if (request.temperature !== undefined) {
       body.temperature = request.temperature;
@@ -620,6 +623,57 @@ export class AnthropicProvider implements LLMProvider {
     }
 
     return body;
+  }
+
+  /**
+   * Convert system prompt string to Anthropic cache-friendly block format.
+   * Sections separated by "---" are split into blocks.
+   * All blocks except dynamic ones get cache_control for caching.
+   */
+  private buildCachableSystemBlocks(
+    system: string,
+  ): Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }> {
+    const parts = system.split("\n\n---\n\n").filter((p) => p.trim().length > 0);
+
+    if (parts.length <= 1) {
+      // Single block — cache the whole thing
+      return [{ type: "text", text: system, cache_control: { type: "ephemeral" } }];
+    }
+
+    // Dynamic section prefixes (change between requests)
+    const dynamicPrefixes = ["# Environment"];
+
+    const blocks: Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }> =
+      [];
+    let staticBuffer = "";
+
+    for (const part of parts) {
+      const isDynamic = dynamicPrefixes.some((prefix) => part.trimStart().startsWith(prefix));
+
+      if (isDynamic) {
+        if (staticBuffer) {
+          blocks.push({
+            type: "text",
+            text: staticBuffer.trim(),
+            cache_control: { type: "ephemeral" },
+          });
+          staticBuffer = "";
+        }
+        blocks.push({ type: "text", text: part.trim() });
+      } else {
+        staticBuffer += (staticBuffer ? "\n\n---\n\n" : "") + part;
+      }
+    }
+
+    if (staticBuffer) {
+      blocks.push({
+        type: "text",
+        text: staticBuffer.trim(),
+        cache_control: { type: "ephemeral" },
+      });
+    }
+
+    return blocks;
   }
 
   countTokens(text: string): number {

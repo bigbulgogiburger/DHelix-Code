@@ -400,7 +400,7 @@ export class OpenAICompatibleClient implements LLMProvider {
     const toolCalls: ToolCallRequest[] =
       choice.message.tool_calls
         ?.filter(
-          (tc): tc is OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall =>
+          (tc): tc is OpenAI.Chat.Completions.ChatCompletionMessageToolCall =>
             tc.type === "function",
         )
         .map((tc) => ({
@@ -445,7 +445,7 @@ export class OpenAICompatibleClient implements LLMProvider {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const response = await (this.client.responses as any).create(params, {
+    const response = await (this.client as any).responses.create(params, {
       signal: request.signal,
     });
 
@@ -617,7 +617,7 @@ export class OpenAICompatibleClient implements LLMProvider {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const stream = await (this.client.responses as any).create(params, {
+    const stream = await (this.client as any).responses.create(params, {
       signal: request.signal,
     });
 

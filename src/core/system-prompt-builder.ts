@@ -120,6 +120,18 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
     });
   }
 
+  // Deferred tools section (between tools and mcp priority)
+  if (options?.toolRegistry && options.toolRegistry.isDeferredMode) {
+    const deferredSummary = options.toolRegistry.getDeferredToolsSummary();
+    if (deferredSummary) {
+      sections.push({
+        id: "deferred-tools",
+        content: deferredSummary,
+        priority: 84, // Between tools(85) and mcp(82)
+      });
+    }
+  }
+
   // Tone section (priority 76, after skills)
   sections.push({
     id: "tone",
@@ -613,4 +625,71 @@ function buildLocaleSection(locale: string): string {
 Respond in ${langName}.
 All explanations, comments, and documentation should be in ${langName}.
 Code identifiers (variable names, function names) remain in English.`;
+}
+
+/** A block of system prompt content with optional caching hints */
+export interface SystemPromptBlock {
+  readonly type: "text";
+  readonly text: string;
+  readonly cache_control?: { readonly type: "ephemeral" };
+}
+
+/** Structured system prompt for providers that support explicit caching */
+export interface StructuredSystemPrompt {
+  /** Full text (for providers without caching support) */
+  readonly text: string;
+  /** Blocks with cache hints (for Anthropic) */
+  readonly blocks: readonly SystemPromptBlock[];
+}
+
+/**
+ * Build a structured system prompt with static/dynamic block separation.
+ * Static blocks get cache_control hints for Anthropic prompt caching.
+ * The separator between sections is "\n\n---\n\n" (from assembleSections).
+ */
+export function buildStructuredSystemPrompt(
+  options?: BuildSystemPromptOptions,
+): StructuredSystemPrompt {
+  const text = buildSystemPrompt(options);
+
+  // Split sections by separator
+  const parts = text.split("\n\n---\n\n");
+
+  // Dynamic section IDs — these change between requests
+  // environment contains date and git status which change every call
+  const dynamicPrefixes = ["# Environment", "# Project Instructions", "# Auto Memory"];
+
+  const blocks: SystemPromptBlock[] = [];
+  let staticBuffer = "";
+
+  for (const part of parts) {
+    const isDynamic = dynamicPrefixes.some((prefix) => part.trimStart().startsWith(prefix));
+
+    if (isDynamic) {
+      // Flush accumulated static content with cache hint
+      if (staticBuffer) {
+        blocks.push({
+          type: "text",
+          text: staticBuffer.trim(),
+          cache_control: { type: "ephemeral" },
+        });
+        staticBuffer = "";
+      }
+      // Add dynamic block without cache hint
+      blocks.push({ type: "text", text: part.trim() });
+    } else {
+      staticBuffer += (staticBuffer ? "\n\n---\n\n" : "") + part;
+    }
+  }
+
+  // Flush remaining static content
+  if (staticBuffer) {
+    blocks.push({
+      type: "text",
+      text: staticBuffer.trim(),
+      cache_control: { type: "ephemeral" },
+    });
+  }
+
+  return { text, blocks };
 }

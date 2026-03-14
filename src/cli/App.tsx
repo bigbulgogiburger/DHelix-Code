@@ -1,5 +1,5 @@
 import { Box, Text } from "ink";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { UserInput } from "./components/UserInput.js";
 import { AgentStatus } from "./components/AgentStatus.js";
 import { SelectList } from "./components/SelectList.js";
@@ -28,8 +28,11 @@ import { type HookRunner } from "../hooks/runner.js";
 import { type Task } from "../core/task-manager.js";
 import { type SessionManager } from "../core/session-manager.js";
 import { type SkillManager } from "../skills/manager.js";
+import { type MCPManagerConnector } from "../mcp/manager-connector.js";
 import { type PermissionMode } from "../permissions/types.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
+import { VoiceIndicator } from "./components/VoiceIndicator.js";
+import { useVoice } from "./hooks/useVoice.js";
 
 /** Permission mode cycle order */
 const PERMISSION_MODE_CYCLE: readonly PermissionMode[] = [
@@ -63,6 +66,9 @@ interface AppProps {
   readonly tasks?: readonly Task[];
   readonly sessionId?: string;
   readonly showStatusBar?: boolean;
+  readonly initialLocale?: string;
+  readonly initialTone?: string;
+  readonly mcpConnector?: MCPManagerConnector;
 }
 
 /** Root application component */
@@ -80,6 +86,9 @@ export function App({
   tasks,
   sessionId,
   showStatusBar = true,
+  initialLocale = "ko",
+  initialTone = "normal",
+  mcpConnector,
 }: AppProps) {
   const { pendingPermission, handlePermissionResponse, checkPermission } = usePermissionPrompt(
     permissionManager,
@@ -115,7 +124,28 @@ export function App({
     skillManager,
     sessionId,
     checkPermission,
+    initialLocale,
+    initialTone,
+    mcpConnector,
   });
+
+  // Voice input
+  const { isRecording, isTranscribing, lastTranscription, voiceEnabled, setVoiceEnabled, toggleRecording } = useVoice({
+    onTranscription: (text) => {
+      void handleSubmit(text);
+    },
+  });
+
+  // Wire voice toggle events from /voice command
+  useEffect(() => {
+    const handleVoiceToggle = ({ enabled }: { enabled: boolean }) => {
+      setVoiceEnabled(enabled);
+    };
+    events.on("voice:toggle", handleVoiceToggle);
+    return () => {
+      events.off("voice:toggle", handleVoiceToggle);
+    };
+  }, [events, setVoiceEnabled]);
 
   // Track current input value for slash command menu
   const [inputValue, setInputValue] = useState("");
@@ -175,8 +205,13 @@ export function App({
           return next;
         });
       },
+      "toggle-voice": () => {
+        if (voiceEnabled) {
+          toggleRecording();
+        }
+      },
     }),
-    [isProcessing, events, permissionMode, permissionManager, showNotification],
+    [isProcessing, events, permissionMode, permissionManager, showNotification, voiceEnabled, toggleRecording],
   );
 
   // Build keybindings from config + defaults
@@ -228,6 +263,14 @@ export function App({
         <Box marginY={1}>
           <Text>{commandOutput}</Text>
         </Box>
+      ) : null}
+
+      {voiceEnabled ? (
+        <VoiceIndicator
+          isRecording={isRecording}
+          isTranscribing={isTranscribing}
+          lastTranscription={lastTranscription}
+        />
       ) : null}
 
       {error ? <ErrorBanner message={error} /> : null}

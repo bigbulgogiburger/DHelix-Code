@@ -394,6 +394,9 @@ program
           sessionId,
           showStatusBar: config.ui.statusBar,
           skillManager,
+          initialLocale: config.locale,
+          initialTone: config.tone,
+          mcpConnector: undefined,  // MCP initialization is a future task — wiring only
         }),
       );
     },
