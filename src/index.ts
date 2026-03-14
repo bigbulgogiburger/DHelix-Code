@@ -124,6 +124,7 @@ program
         { reviewCommand },
         { commitCommand },
         { toneCommand },
+        { bugCommand },
         { voiceCommand },
       ] = await Promise.all([
         import("./config/loader.js"),
@@ -186,6 +187,7 @@ program
         import("./commands/review.js"),
         import("./commands/commit.js"),
         import("./commands/tone.js"),
+        import("./commands/bug.js"),
         import("./commands/voice.js"),
       ]);
 
@@ -319,6 +321,7 @@ program
         reviewCommand,
         commitCommand,
         toneCommand,
+        bugCommand,
         voiceCommand,
       ];
       // Register skill-based custom commands (user-invocable skills become /commands)

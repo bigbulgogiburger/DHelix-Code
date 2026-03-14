@@ -237,8 +237,8 @@ describe("export command", () => {
     const content = await readFile(join(exportDir, "test-export.md"), "utf-8");
     expect(content).toContain("Hello there");
     expect(content).toContain("How can I help");
-    expect(content).toContain("**User**");
-    expect(content).toContain("**Assistant**");
+    expect(content).toContain("### User");
+    expect(content).toContain("### Assistant");
   });
 
   it("should export with empty messages", async () => {
@@ -416,8 +416,8 @@ describe("stats command", () => {
 
     const result = await statsCommand.execute("", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("#"); // input bar
-    expect(result.output).toContain("="); // output bar
+    expect(result.output).toContain("\u2588"); // visual bar character
+    expect(result.output).toContain("Tokens:"); // tokens section
   });
 
   it("should show N/A for missing session", async () => {
@@ -435,7 +435,7 @@ describe("doctor command", () => {
     const result = await doctorCommand.execute("", baseContext);
     expect(result.success).toBe(true);
     expect(result.output).toContain("Doctor");
-    expect(result.output).toContain("[OK]");
+    expect(result.output).toContain("\u2713");
     expect(result.output).toContain("Node.js");
     expect(result.output).toContain("Git");
   });
@@ -455,7 +455,7 @@ describe("doctor command", () => {
       ...baseContext,
       model: "",
     });
-    expect(result.output).toContain("[FAIL]");
+    expect(result.output).toContain("\u2717");
     expect(result.output).toContain("No model configured");
     expect(result.success).toBe(false);
   });

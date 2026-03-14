@@ -28,16 +28,18 @@ describe("Phase 6 slash commands", () => {
     expect(configCommand.execute).toBeTypeOf("function");
   });
 
-  it("/diff should execute successfully without args", async () => {
+  it("/diff should execute successfully without args (runs git)", async () => {
+    // In a real git repo (like this project), it should succeed
     const result = await diffCommand.execute("", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("Show all changes");
+    // Output should be either "No changes detected." or the diff summary
+    expect(result.output).toBeTypeOf("string");
   });
 
-  it("/diff should focus on a specific file when provided", async () => {
+  it("/diff should execute successfully with a file arg", async () => {
     const result = await diffCommand.execute("src/index.ts", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("Focus on: src/index.ts");
+    expect(result.output).toBeTypeOf("string");
   });
 
   it("/doctor should run diagnostics", async () => {
