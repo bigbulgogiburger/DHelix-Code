@@ -15,6 +15,7 @@ import { z } from "zod";
 import { type ToolDefinition, type ToolResult } from "../tools/types.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { BaseError } from "../utils/error.js";
+import { getLogger } from "../utils/logger.js";
 import { type MCPClient } from "./client.js";
 import { type MCPToolDefinition } from "./types.js";
 
@@ -117,6 +118,14 @@ function bridgeMCPTool(
     execute: async (params: unknown): Promise<ToolResult> => {
       try {
         const args = (params ?? {}) as Record<string, unknown>;
+
+        // MCP 도구 호출 디버그 로깅 — 전달되는 인수를 기록하여 문제 진단에 활용
+        const logger = getLogger();
+        logger.debug(
+          { tool: namespacedName, args: JSON.stringify(args, null, 2) },
+          `[MCP Bridge] Calling tool: ${mcpTool.name}`,
+        );
+
         // MCP 서버에 도구 호출 요청
         const result = await client.callTool(mcpTool.name, args);
 
@@ -136,15 +145,36 @@ function bridgeMCPTool(
           };
         }
 
+        // MCP 서버가 에러를 반환한 경우 디버그 로깅
+        if (result.isError) {
+          logger.warn(
+            { tool: namespacedName, output: output.slice(0, 300), args: JSON.stringify(args).slice(0, 300) },
+            `[MCP Bridge] Tool returned error: ${mcpTool.name}`,
+          );
+        }
+
         return {
           output,
           isError: result.isError === true,
           metadata: { serverName },
         };
       } catch (error) {
-        // 에러 발생 시 에러 메시지를 출력으로 반환
+        // 에러 발생 시 인수와 함께 로깅하여 디버깅 지원
+        const logger = getLogger();
+        const args = (params ?? {}) as Record<string, unknown>;
+        logger.error(
+          {
+            tool: namespacedName,
+            args: JSON.stringify(args, null, 2),
+            error: error instanceof Error ? error.message : String(error),
+          },
+          `[MCP Bridge] Tool call failed: ${mcpTool.name}`,
+        );
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        // 에러 메시지에 전달된 인수를 포함하여 LLM이 디버깅할 수 있도록 함
+        const argsPreview = JSON.stringify(args).slice(0, 500);
         return {
-          output: `MCP tool error: ${error instanceof Error ? error.message : String(error)}`,
+          output: `MCP tool error: ${errorMsg}\n\n[Debug] Arguments sent: ${argsPreview}`,
           isError: true,
           metadata: { serverName },
         };
