@@ -143,7 +143,6 @@ export function App({
     isProcessing,
     streamingText,
     completedTurns,
-    currentTurn,
     liveTurn,
     handleSubmit,
     error,
@@ -294,9 +293,7 @@ export function App({
         isExpanded={verboseMode}
       />
 
-      {isProcessing &&
-      !streamingText &&
-      !currentTurn?.entries.some((e) => e.type === "tool-start") ? (
+      {isProcessing && !streamingText ? (
         <Box marginY={1}>
           <AgentStatus tokenCount={tokenCount} />
         </Box>
