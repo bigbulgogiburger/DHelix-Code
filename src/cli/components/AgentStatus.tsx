@@ -7,7 +7,7 @@
  *
  * React.memo로 감싸서 불필요한 리렌더링을 방지합니다.
  */
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Text } from "ink";
 
 /** 에이전트 처리 중 랜덤으로 표시되는 한국어 상태 메시지 목록 */
@@ -44,8 +44,6 @@ const STATUS_MESSAGES: readonly string[] = [
 const STAR_FRAMES = ["✦", "✧"] as const;
 /** 별 깜빡임 간격 (400ms) */
 const STAR_INTERVAL = 400;
-/** 상태 메시지 변경 간격 (4초) */
-const MESSAGE_INTERVAL = 4000;
 /** 경과 시간 업데이트 간격 (1초) */
 const ELAPSED_INTERVAL = 1000;
 
@@ -54,16 +52,6 @@ const ELAPSED_INTERVAL = 1000;
  */
 interface AgentStatusProps {
   readonly tokenCount?: number;
-}
-
-/** 이전 인덱스와 다른 랜덤 인덱스를 선택 (같은 메시지가 연속으로 나오지 않게) */
-function pickRandomIndex(length: number, excludeIndex: number): number {
-  if (length <= 1) return 0;
-  let next: number;
-  do {
-    next = Math.floor(Math.random() * length);
-  } while (next === excludeIndex);
-  return next;
 }
 
 /** 경과 시간을 "N초" 또는 "N분 N초" 형식의 한국어 문자열로 변환 */
@@ -91,11 +79,9 @@ function buildMeta(elapsed: number, tokenCount: number): string {
 export const AgentStatus = React.memo(function AgentStatus({ tokenCount = 0 }: AgentStatusProps) {
   const [starIndex, setStarIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
-  const [messageIndex, setMessageIndex] = useState(() =>
+  const [messageIndex] = useState(() =>
     Math.floor(Math.random() * STATUS_MESSAGES.length),
   );
-  const messageIndexRef = useRef(messageIndex);
-
   // Star toggle animation
   useEffect(() => {
     const timer = setInterval(() => {
@@ -112,15 +98,8 @@ export const AgentStatus = React.memo(function AgentStatus({ tokenCount = 0 }: A
     return () => clearInterval(timer);
   }, []);
 
-  // Random message cycling (never repeats consecutively)
-  useEffect(() => {
-    const timer = setInterval(() => {
-      const nextIndex = pickRandomIndex(STATUS_MESSAGES.length, messageIndexRef.current);
-      messageIndexRef.current = nextIndex;
-      setMessageIndex(nextIndex);
-    }, MESSAGE_INTERVAL);
-    return () => clearInterval(timer);
-  }, []);
+  // 메시지는 컴포넌트 마운트 시 1회만 랜덤 선택 (순환하지 않음)
+  // AgentStatus가 표시될 때마다 새 메시지가 선택됨
 
   const star = STAR_FRAMES[starIndex];
   const message = STATUS_MESSAGES[messageIndex];
