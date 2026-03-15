@@ -141,7 +141,7 @@ export function App({
 
   const {
     isProcessing,
-    streamingText,
+    isStreamingFinal,
     completedTurns,
     liveTurn,
     handleSubmit,
@@ -293,7 +293,7 @@ export function App({
         isExpanded={verboseMode}
       />
 
-      {isProcessing && !streamingText ? (
+      {isProcessing && !isStreamingFinal ? (
         <Box marginY={1}>
           <AgentStatus tokenCount={tokenCount} />
         </Box>

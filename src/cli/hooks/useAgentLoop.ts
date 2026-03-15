@@ -110,6 +110,9 @@ export function useAgentLoop({
   } = useConversation("main");
 
   const [isProcessing, setIsProcessing] = useState(false);
+  // LLM이 최종 응답(도구 호출 없이 끝나는 응답)을 스트리밍 중인지 여부
+  // true이면 AgentStatus 스피너를 숨기고 스트리밍 텍스트를 표시한다
+  const [isStreamingFinal, setIsStreamingFinal] = useState(false);
   const {
     text: streamingText,
     appendText,
@@ -263,6 +266,11 @@ export function useAgentLoop({
       iteration: number;
       isFinal: boolean;
     }) => {
+      // 최종 응답이면 스피너를 숨기고 스트리밍 텍스트를 표시한다
+      // isFinal = true: 도구 호출 없이 끝나는 최종 응답
+      // isFinal = false: 이후 도구 호출이 따라오는 중간 응답
+      setIsStreamingFinal(isFinal);
+
       // Only track intermediate messages (those followed by tool calls).
       // The final message is already handled after runAgentLoop returns.
       if (!isFinal && content) {
@@ -373,6 +381,7 @@ export function useAgentLoop({
         if (hookResult.blocked) {
           setError(`Blocked by hook: ${hookResult.blockReason ?? "Unknown reason"}`);
           setIsProcessing(false);
+          setIsStreamingFinal(false);
           return;
         }
       }
@@ -524,6 +533,7 @@ export function useAgentLoop({
         }
 
         setIsProcessing(false);
+        setIsStreamingFinal(false);
         resetText();
 
         activityRef.current.completeTurn();
@@ -666,6 +676,7 @@ export function useAgentLoop({
   return {
     isProcessing,
     streamingText,
+    isStreamingFinal,
     completedTurns,
     currentTurn,
     liveTurn,
