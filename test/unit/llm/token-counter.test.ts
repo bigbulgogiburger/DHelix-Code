@@ -100,7 +100,7 @@ describe("TokenCountCache", () => {
     expect(cache.get("b")).toBeUndefined();
   });
 
-  it("should track hits and misses", () => {
+  it("should track hits, misses, and hitRate", () => {
     const cache = new TokenCountCache(10);
     cache.set("x", 10);
 
@@ -111,7 +111,14 @@ describe("TokenCountCache", () => {
     const stats = cache.getStats();
     expect(stats.hits).toBe(2);
     expect(stats.misses).toBe(1);
+    expect(stats.hitRate).toBeCloseTo(2 / 3);
     expect(stats.size).toBe(1);
+  });
+
+  it("should return hitRate of 0 when no lookups performed", () => {
+    const cache = new TokenCountCache(10);
+    const stats = cache.getStats();
+    expect(stats.hitRate).toBe(0);
   });
 
   it("should clear cache and reset stats", () => {

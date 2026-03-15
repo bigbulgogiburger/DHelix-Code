@@ -8,6 +8,8 @@ export { detectInjection } from "./injection-detector.js";
 export type { InjectionDetectionResult } from "./injection-detector.js";
 export { limitOutput } from "./output-limiter.js";
 export type { OutputLimitResult } from "./output-limiter.js";
+export { shannonEntropy, detectHighEntropySecrets } from "./entropy-scanner.js";
+export type { SecretCandidate } from "./entropy-scanner.js";
 
 import type { GuardrailResult } from "./types.js";
 import { checkCommand } from "./command-filter.js";

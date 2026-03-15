@@ -8,6 +8,7 @@ import {
   type ToolDefinitionForLLM,
 } from "../provider.js";
 import { LLMError } from "../../utils/error.js";
+import type { AppEventEmitter } from "../../utils/events.js";
 
 const ANTHROPIC_API_URL = "https://api.anthropic.com/v1/messages";
 const ANTHROPIC_VERSION = "2023-06-01";
@@ -64,6 +65,8 @@ interface AnthropicResponse {
   readonly usage: {
     readonly input_tokens: number;
     readonly output_tokens: number;
+    readonly cache_creation_input_tokens?: number;
+    readonly cache_read_input_tokens?: number;
   };
 }
 
@@ -120,6 +123,7 @@ export interface AnthropicProviderConfig {
   readonly apiKey?: string;
   readonly baseURL?: string;
   readonly timeout?: number;
+  readonly eventEmitter?: AppEventEmitter;
 }
 
 /** Extract system messages and convert remaining to Anthropic format */
@@ -328,6 +332,7 @@ export class AnthropicProvider implements LLMProvider {
   private readonly apiKey: string;
   private readonly baseURL: string;
   private readonly timeout: number;
+  private readonly eventEmitter?: AppEventEmitter;
 
   constructor(config: AnthropicProviderConfig = {}) {
     const apiKey = config.apiKey ?? process.env.ANTHROPIC_API_KEY;
@@ -339,6 +344,7 @@ export class AnthropicProvider implements LLMProvider {
     this.apiKey = apiKey;
     this.baseURL = config.baseURL ?? ANTHROPIC_API_URL;
     this.timeout = config.timeout ?? 120_000;
+    this.eventEmitter = config.eventEmitter;
   }
 
   async chat(request: ChatRequest): Promise<ChatResponse> {
@@ -408,10 +414,10 @@ export class AnthropicProvider implements LLMProvider {
     }
 
     const data = (await response.json()) as AnthropicResponse;
-    return this._parseResponse(data);
+    return this._parseResponse(data, request.model);
   }
 
-  private _parseResponse(data: AnthropicResponse): ChatResponse {
+  private _parseResponse(data: AnthropicResponse, model: string): ChatResponse {
     let textContent = "";
     let thinkingContent = "";
     const toolCalls: ToolCallRequest[] = [];
@@ -429,6 +435,9 @@ export class AnthropicProvider implements LLMProvider {
         });
       }
     }
+
+    // Emit cache statistics if available
+    this._emitCacheStats(data.usage, model);
 
     return {
       content: textContent,
@@ -542,6 +551,8 @@ export class AnthropicProvider implements LLMProvider {
         switch (event.type) {
           case "message_start": {
             inputTokens = event.message.usage.input_tokens;
+            // Emit cache statistics from the initial message
+            this._emitCacheStats(event.message.usage, request.model);
             break;
           }
 
@@ -690,6 +701,31 @@ export class AnthropicProvider implements LLMProvider {
     }
 
     return blocks;
+  }
+
+  /**
+   * Emit cache statistics via the event emitter if available.
+   * Tracks cache_creation_input_tokens and cache_read_input_tokens
+   * from the Anthropic response usage.
+   */
+  private _emitCacheStats(
+    usage: {
+      readonly cache_creation_input_tokens?: number;
+      readonly cache_read_input_tokens?: number;
+    },
+    model: string,
+  ): void {
+    const cacheCreation = usage.cache_creation_input_tokens ?? 0;
+    const cacheRead = usage.cache_read_input_tokens ?? 0;
+
+    // Only emit if there is any cache activity
+    if (cacheCreation > 0 || cacheRead > 0) {
+      this.eventEmitter?.emit("llm:cache-stats", {
+        cacheCreationInputTokens: cacheCreation,
+        cacheReadInputTokens: cacheRead,
+        model,
+      });
+    }
   }
 
   countTokens(text: string): number {

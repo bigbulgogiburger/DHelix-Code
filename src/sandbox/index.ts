@@ -58,8 +58,38 @@ export async function executeSandboxed(
     return executeBubblewrap(bwrapConfig);
   }
 
-  // Windows/other: no sandbox, execute directly
+  // Windows/other: no sandbox available — execute directly with warning
+  logSandboxWarning();
   return executeUnsandboxed(config);
+}
+
+/** Track whether the sandbox warning has been emitted to avoid log spam */
+let sandboxWarningEmitted = false;
+
+/**
+ * Log a clear warning when commands are executed without sandbox protection.
+ * Only emits once per process lifetime to avoid flooding logs.
+ */
+function logSandboxWarning(): void {
+  if (!sandboxWarningEmitted) {
+    sandboxWarningEmitted = true;
+    // eslint-disable-next-line no-console
+    console.warn(
+      "[SECURITY WARNING] No sandbox available on this platform. " +
+        "Commands will execute without filesystem or network isolation. " +
+        "Untrusted commands may access or modify any file on this system. " +
+        "Consider running on macOS (Seatbelt) or Linux with bubblewrap installed " +
+        "for sandboxed execution.",
+    );
+  }
+}
+
+/**
+ * Reset the sandbox warning state. Exposed for testing only.
+ * @internal
+ */
+export function _resetSandboxWarning(): void {
+  sandboxWarningEmitted = false;
 }
 
 /**
@@ -143,9 +173,12 @@ export async function getSandboxStatus(): Promise<SandboxStatus> {
     };
   }
 
-  // Windows/other: no sandbox
+  // Windows/other: no sandbox — clear security warning
   warnings.push(
-    "No sandbox available on this platform. Commands will execute without filesystem isolation.",
+    "[SECURITY WARNING] No sandbox available on this platform. " +
+      "Commands will execute without filesystem or network isolation. " +
+      "Untrusted commands may access or modify any file on this system. " +
+      "Consider running on macOS (Seatbelt) or Linux with bubblewrap for sandboxed execution.",
   );
   return {
     available: false,

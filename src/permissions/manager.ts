@@ -13,6 +13,7 @@ import {
   matchesPermissionPattern,
   type ParsedPermissionPattern,
 } from "./pattern-parser.js";
+import { AuditLogger } from "./audit-log.js";
 
 /**
  * A parsed persistent permission rule (allow or deny).
@@ -75,6 +76,8 @@ export class PermissionManager {
   private persistentAllowRules: readonly PersistentRule[];
   private persistentDenyRules: readonly PersistentRule[];
   private persistentRulesList: readonly PersistentPermissionRule[];
+  private readonly auditLogger: AuditLogger | null;
+  private sessionId: string;
 
   constructor(
     mode: PermissionMode = "default",
@@ -83,6 +86,10 @@ export class PermissionManager {
       readonly allow?: readonly string[];
       readonly deny?: readonly string[];
     },
+    options?: {
+      readonly auditLogPath?: string;
+      readonly sessionId?: string;
+    },
   ) {
     this.mode = mode;
     this.rules = [...rules];
@@ -90,6 +97,8 @@ export class PermissionManager {
     this.persistentAllowRules = parsePersistentRules(persistentRules?.allow ?? []);
     this.persistentDenyRules = parsePersistentRules(persistentRules?.deny ?? []);
     this.persistentRulesList = [];
+    this.auditLogger = options?.auditLogPath ? new AuditLogger(options.auditLogPath) : null;
+    this.sessionId = options?.sessionId ?? "unknown";
   }
 
   /** Get current permission mode */
@@ -131,6 +140,7 @@ export class PermissionManager {
   ): PermissionCheckResult {
     // 1. Check persistent deny rules — deny always takes priority
     if (this.matchesPersistent(this.persistentDenyRules, toolName, args)) {
+      this.logAudit(toolName, "denied", "Persistent deny rule");
       return {
         allowed: false,
         requiresPrompt: false,
@@ -140,11 +150,13 @@ export class PermissionManager {
 
     // 2. Check session approvals
     if (this.sessionStore.isApproved(toolName, args)) {
+      this.logAudit(toolName, "auto-approved", "Session approved");
       return { allowed: true, requiresPrompt: false, reason: "Session approved" };
     }
 
     // 3. Check persistent allow rules
     if (this.matchesPersistent(this.persistentAllowRules, toolName, args)) {
+      this.logAudit(toolName, "auto-approved", "Persistent allow rule");
       return {
         allowed: true,
         requiresPrompt: false,
@@ -155,6 +167,7 @@ export class PermissionManager {
     // 4. Check explicit rules
     const matchedRule = findMatchingRule(this.rules, toolName, args);
     if (matchedRule) {
+      this.logAudit(toolName, matchedRule.allowed ? "auto-approved" : "denied", matchedRule.allowed ? "Rule: allowed" : "Rule: denied");
       return {
         allowed: matchedRule.allowed,
         requiresPrompt: false,
@@ -199,6 +212,21 @@ export class PermissionManager {
   /** Clear session approvals */
   clearSession(): void {
     this.sessionStore.clear();
+  }
+
+  /** Log a permission decision to the audit log (fire-and-forget) */
+  private logAudit(
+    toolName: string,
+    decision: "approved" | "denied" | "auto-approved",
+    reason?: string,
+  ): void {
+    this.auditLogger?.log({
+      timestamp: new Date().toISOString(),
+      sessionId: this.sessionId,
+      toolName,
+      decision,
+      reason,
+    }).catch(() => { /* swallow audit log errors */ });
   }
 
   /** Check if any persistent rule in the list matches the given tool call */

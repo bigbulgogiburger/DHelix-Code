@@ -1,6 +1,20 @@
 import { Command } from "commander";
 import { VERSION, APP_NAME, LLM_DEFAULTS } from "./constants.js";
 
+/** Startup profiling — only active when DBCODE_VERBOSE is set */
+const _startupT0 = performance.now();
+const _verbose = !!process.env.DBCODE_VERBOSE;
+
+function _profileLog(label: string, since: number): number {
+  const now = performance.now();
+  if (_verbose) {
+    process.stderr.write(
+      `[startup] ${label}: ${(now - since).toFixed(1)}ms (total: ${(now - _startupT0).toFixed(1)}ms)\n`,
+    );
+  }
+  return now;
+}
+
 const program = new Command();
 
 // Subcommand: dbcode init
@@ -47,7 +61,9 @@ program
       addDir?: string[];
     }) => {
       // Load dotenv only when running the action (not for --help / --version)
+      let _t = _profileLog("CLI parse", _startupT0);
       await import("dotenv/config");
+      _t = _profileLog("dotenv", _t);
 
       // First-run setup wizard: prompt for model + API key if not configured
       if (!opts.print && !opts.apiKey) {
@@ -62,6 +78,7 @@ program
       }
 
       // Dynamic imports — keep startup fast for --help / --version
+      _t = _profileLog("setup wizard check", _t);
       const { join } = await import("node:path");
       const [
         { loadConfig },
@@ -107,6 +124,7 @@ program
         { diffCommand },
         { doctorCommand },
         { statsCommand },
+        { analyticsCommand },
         { statusCommand },
         { contextCommand },
         { copyCommand },
@@ -171,6 +189,7 @@ program
         import("./commands/diff.js"),
         import("./commands/doctor.js"),
         import("./commands/stats.js"),
+        import("./commands/analytics.js"),
         import("./commands/status.js"),
         import("./commands/context.js"),
         import("./commands/copy.js"),
@@ -193,6 +212,8 @@ program
         import("./commands/dual-model.js"),
       ]);
 
+      _t = _profileLog("dynamic imports", _t);
+
       // Only pass explicitly-set CLI options as overrides
       const llmOverrides: Record<string, unknown> = {
         temperature: LLM_DEFAULTS.temperature,
@@ -210,6 +231,7 @@ program
       });
 
       const config = resolved.config;
+      _t = _profileLog("config loaded", _t);
 
       const client = isResponsesOnlyModel(config.llm.model)
         ? new ResponsesAPIClient({
@@ -243,6 +265,8 @@ program
         todoWriteTool,
       ]);
 
+      _t = _profileLog("tools registered", _t);
+
       // Select tool call strategy
       const strategy = selectStrategy(config.llm.model);
 
@@ -268,6 +292,8 @@ program
       const hookConfig = await loadHookConfig(join(process.cwd(), ".dbcode"));
       const hookRunner = new HookRunner(hookConfig);
 
+      _t = _profileLog("hooks loaded", _t);
+
       // Run SessionStart hooks
       await hookRunner.run("SessionStart", {
         event: "SessionStart",
@@ -286,6 +312,8 @@ program
       const { SkillManager } = await import("./skills/manager.js");
       const skillManager = new SkillManager();
       await skillManager.loadAll(process.cwd());
+
+      _t = _profileLog("skills loaded", _t);
 
       // Register slash commands
       const commandRegistry = new CommandRegistry();
@@ -306,6 +334,7 @@ program
         diffCommand,
         doctorCommand,
         statsCommand,
+        analyticsCommand,
         statusCommand,
         contextCommand,
         copyCommand,
@@ -338,6 +367,8 @@ program
         commandRegistry.register(cmd);
       }
       setHelpCommands(commands);
+
+      _t = _profileLog("commands registered", _t);
 
       // Headless mode: run prompt and exit
       if (opts.print) {
@@ -455,6 +486,8 @@ program
       // Terminals that support it (Ghostty, iTerm2, WezTerm, VSCode) will
       // display each frame atomically, eliminating flickering entirely.
       patchInkRendering();
+
+      _profileLog("ready to render", _t);
 
       render(
         React.createElement(App, {

@@ -8,14 +8,30 @@ export function createLogger(options?: { level?: string; file?: string }): pino.
 
   return pino({
     level,
-    transport: {
-      targets: [
-        {
-          target: "pino/file",
-          options: { destination: file, mkdir: true },
-          level,
-        },
+    redact: {
+      paths: [
+        "apiKey",
+        "*.apiKey",
+        "headers.authorization",
+        "*.headers.authorization",
+        "*.token",
+        "*.secret",
+        "*.password",
+        "token",
+        "secret",
+        "password",
+        "authorization",
+        "*.authorization",
+        "*.api_key",
+        "api_key",
+        "*.accessToken",
+        "accessToken",
       ],
+      censor: "[REDACTED]",
+    },
+    transport: {
+      target: "pino/file",
+      options: { destination: file, mkdir: true },
     },
     formatters: {
       level(label) {

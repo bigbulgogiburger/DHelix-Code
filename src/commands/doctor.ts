@@ -1,8 +1,9 @@
 import { execSync } from "node:child_process";
-import { existsSync, accessSync, constants } from "node:fs";
+import { existsSync, accessSync, constants, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { type SlashCommand } from "./registry.js";
+import { getTokenCacheStats } from "../llm/token-counter.js";
 
 interface DiagnosticCheck {
   readonly name: string;
@@ -11,9 +12,17 @@ interface DiagnosticCheck {
   readonly fix?: string;
 }
 
+/** Format bytes to human-readable string */
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 /**
  * /doctor — Diagnostic checks for installation, config, and connectivity.
- * Runs 8 checks: Node.js, Git, Git repo, Model, API key, Disk space, Config dir, Syntax highlighter.
+ * Runs 12 checks: Node.js, Git, Git repo, Model, API key, Disk space, Config dir,
+ * Syntax highlighter, LLM connectivity, Memory usage, Token cache, Session lock.
  */
 export const doctorCommand: SlashCommand = {
   name: "doctor",
@@ -160,6 +169,143 @@ export const doctorCommand: SlashCommand = {
         status: "warn",
         detail: "not initialized",
         fix: "Run dbcode once to initialize Shiki",
+      });
+    }
+
+    // 9. LLM connectivity test
+    try {
+      const apiKey =
+        process.env["OPENAI_API_KEY"] ||
+        process.env["DBCODE_API_KEY"] ||
+        process.env["ANTHROPIC_API_KEY"];
+      const baseUrl = process.env["OPENAI_BASE_URL"] || "https://api.openai.com/v1";
+
+      if (apiKey) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 5_000);
+        const response = await fetch(`${baseUrl}/models`, {
+          method: "GET",
+          headers: { Authorization: `Bearer ${apiKey}` },
+          signal: controller.signal,
+        });
+        clearTimeout(timeout);
+
+        if (response.ok) {
+          checks.push({
+            name: "LLM connectivity",
+            status: "ok",
+            detail: `${baseUrl} reachable`,
+          });
+        } else {
+          checks.push({
+            name: "LLM connectivity",
+            status: "warn",
+            detail: `${baseUrl} responded with ${response.status}`,
+            fix: "Check your API key and endpoint configuration",
+          });
+        }
+      } else {
+        checks.push({
+          name: "LLM connectivity",
+          status: "warn",
+          detail: "Skipped (no API key)",
+          fix: "Set an API key to enable connectivity check",
+        });
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      const isAbort = message.includes("abort");
+      checks.push({
+        name: "LLM connectivity",
+        status: "warn",
+        detail: isAbort ? "Connection timed out (5s)" : `Connection failed: ${message}`,
+        fix: "Check your network connection and API endpoint",
+      });
+    }
+
+    // 10. Memory usage
+    try {
+      const mem = process.memoryUsage();
+      const rss = mem.rss;
+      const heapUsed = mem.heapUsed;
+      const heapTotal = mem.heapTotal;
+      const heapPct = heapTotal > 0 ? (heapUsed / heapTotal) * 100 : 0;
+
+      // Warn if RSS > 512MB or heap usage > 90%
+      const isHighMemory = rss > 512 * 1024 * 1024 || heapPct > 90;
+      checks.push({
+        name: "Memory usage",
+        status: isHighMemory ? "warn" : "ok",
+        detail: `RSS: ${formatBytes(rss)}, Heap: ${formatBytes(heapUsed)}/${formatBytes(heapTotal)} (${heapPct.toFixed(0)}%)`,
+        fix: isHighMemory ? "Consider restarting dbcode to free memory" : undefined,
+      });
+    } catch {
+      checks.push({
+        name: "Memory usage",
+        status: "warn",
+        detail: "Could not read memory usage",
+      });
+    }
+
+    // 11. Token cache status
+    try {
+      const cacheStats = getTokenCacheStats();
+      const hitRate =
+        cacheStats.hits + cacheStats.misses > 0
+          ? ((cacheStats.hits / (cacheStats.hits + cacheStats.misses)) * 100).toFixed(1)
+          : "0.0";
+      checks.push({
+        name: "Token cache",
+        status: "ok",
+        detail: `${cacheStats.size} entries, ${hitRate}% hit rate (${cacheStats.hits} hits, ${cacheStats.misses} misses)`,
+      });
+    } catch {
+      checks.push({
+        name: "Token cache",
+        status: "warn",
+        detail: "Could not read token cache stats",
+      });
+    }
+
+    // 12. Session lock freshness
+    if (context.sessionId) {
+      try {
+        const sessionsDir = join(homedir(), ".dbcode", "sessions");
+        const lockDir = join(sessionsDir, context.sessionId, ".lock");
+        if (existsSync(lockDir)) {
+          const lockStat = statSync(lockDir);
+          const ageMs = Date.now() - lockStat.mtimeMs;
+          const ageMinutes = Math.floor(ageMs / 60000);
+
+          // Lock older than 30 minutes might be stale
+          const isStale = ageMinutes > 30;
+          checks.push({
+            name: "Session lock",
+            status: isStale ? "warn" : "ok",
+            detail: isStale
+              ? `Lock is ${ageMinutes}m old (may be stale)`
+              : `Active (${ageMinutes < 1 ? "< 1" : ageMinutes}m old)`,
+            fix: isStale ? "Restart dbcode if session feels stuck" : undefined,
+          });
+        } else {
+          checks.push({
+            name: "Session lock",
+            status: "ok",
+            detail: "No lock file (session not locked)",
+          });
+        }
+      } catch {
+        checks.push({
+          name: "Session lock",
+          status: "warn",
+          detail: "Could not check session lock",
+        });
+      }
+    } else {
+      checks.push({
+        name: "Session lock",
+        status: "ok",
+        detail: "No active session",
       });
     }
 

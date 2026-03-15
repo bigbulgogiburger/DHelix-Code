@@ -92,6 +92,68 @@ const INJECTION_PATTERNS: readonly InjectionPattern[] = [
     regex: /(?:execute|run|eval)\s*\(\s*(?:atob|Buffer\.from)\s*\(/i,
     severity: "warn",
   },
+
+  // Path traversal targeting sensitive files/directories — block (checked before generic warn)
+  {
+    name: "path_traversal",
+    regex: /(?:\.\.(?:\/|\\))+(?:\.?(?:etc|passwd|shadow|ssh|gnupg|config|credentials|aws|kube))\b/i,
+    severity: "block",
+  },
+  {
+    name: "path_traversal",
+    regex: /(?:\.\.(?:\/|\\))+(?:windows|system32|boot\.ini)/i,
+    severity: "block",
+  },
+  // Generic deep path traversal (3+ levels) — warn
+  {
+    name: "path_traversal",
+    regex: /(?:\.\.\/){3,}/,
+    severity: "warn",
+  },
+
+  // Prompt injection — "ignore previous instructions" variants — block
+  {
+    name: "prompt_injection",
+    regex: /(?:please\s+)?ignore\s+(?:all\s+)?(?:the\s+)?(?:previous|prior|above|earlier|preceding)\s+(?:instructions?|context|prompts?|rules?|guidelines?|directions?)/i,
+    severity: "block",
+  },
+  {
+    name: "prompt_injection",
+    regex: /(?:override|replace|reset|clear|wipe)\s+(?:all\s+)?(?:previous|prior|existing|current|your)\s+(?:instructions?|context|prompts?|rules?|guidelines?|directions?)/i,
+    severity: "block",
+  },
+  {
+    name: "prompt_injection",
+    regex: /new\s+system\s+prompt/i,
+    severity: "block",
+  },
+  {
+    name: "prompt_injection",
+    regex: /(?:here\s+(?:is|are)\s+)?(?:your\s+)?new\s+(?:instructions?|rules?|guidelines?|directions?)/i,
+    severity: "block",
+  },
+  {
+    name: "prompt_injection",
+    regex: /do\s+not\s+follow\s+(?:any\s+)?(?:previous|prior|above|earlier)\s+(?:instructions?|rules?|guidelines?)/i,
+    severity: "block",
+  },
+  {
+    name: "prompt_injection",
+    regex: /(?:stop|cease|quit)\s+(?:being|acting\s+as)\s+(?:a\s+)?(?:coding|programming|development)\s+(?:assistant|tool|agent)/i,
+    severity: "block",
+  },
+  {
+    name: "prompt_injection",
+    regex: /(?:instead|now)\s+(?:you\s+(?:are|will|should|must))\s+(?:be\s+)?(?:a\s+)?/i,
+    severity: "warn",
+  },
+
+  // Data exfiltration attempts — block
+  {
+    name: "data_exfiltration",
+    regex: /(?:send|post|upload|transmit|exfiltrate)\s+(?:all\s+)?(?:the\s+)?(?:data|files?|contents?|secrets?|credentials?|tokens?|keys?)\s+(?:to|at)\s+/i,
+    severity: "block",
+  },
 ];
 
 /**

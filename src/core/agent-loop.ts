@@ -12,6 +12,9 @@ import { type CheckpointManager } from "./checkpoint-manager.js";
 import { applyInputGuardrails, applyOutputGuardrails } from "../guardrails/index.js";
 import { countTokens } from "../llm/token-counter.js";
 import { findRecoveryStrategy } from "./recovery-strategy.js";
+import { executeRecovery, resetRetryState } from "./recovery-executor.js";
+import { CircuitBreaker } from "./circuit-breaker.js";
+import { applyObservationMasking } from "./observation-masking.js";
 import { type DualModelRouter, detectPhase } from "../llm/dual-model-router.js";
 
 /** Configuration for the agent loop */
@@ -198,6 +201,56 @@ function extractFilePath(call: ExtractedToolCall): string | undefined {
 }
 
 /**
+ * Validate that a tool call has properly formed arguments.
+ * During streaming, tool call arguments are assembled incrementally from deltas.
+ * If the stream disconnects mid-response, arguments may be incomplete JSON.
+ * This function validates that arguments are a non-empty object (not the `{}`
+ * fallback produced by NativeFunctionCallingStrategy on parse failure).
+ *
+ * Returns true if the tool call should be executed.
+ */
+function isValidToolCall(call: ExtractedToolCall): boolean {
+  // Tool calls with no required parameters are always valid
+  // (the arguments object may legitimately be empty)
+  const args = call.arguments;
+  if (args === null || args === undefined) return false;
+  if (typeof args !== "object") return false;
+
+  // Re-serialize to verify round-trip integrity
+  try {
+    JSON.stringify(args);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Filter tool calls, removing ones with invalid/incomplete arguments.
+ * Emits a warning event for each dropped tool call so the user is informed.
+ */
+export function filterValidToolCalls(
+  calls: readonly ExtractedToolCall[],
+  events: AppEventEmitter,
+): readonly ExtractedToolCall[] {
+  const valid: ExtractedToolCall[] = [];
+
+  for (const call of calls) {
+    if (isValidToolCall(call)) {
+      valid.push(call);
+    } else {
+      events.emit("llm:error", {
+        error: new Error(
+          `Dropped incomplete tool call "${call.name}" (id: ${call.id}): arguments failed validation`,
+        ),
+      });
+    }
+  }
+
+  return valid;
+}
+
+/**
  * Group tool calls into batches for parallel execution.
  *
  * Rules:
@@ -319,6 +372,8 @@ export async function runAgentLoop(
   const messages: ChatMessage[] = [...initialMessages];
   let iterations = 0;
   const usageAggregator = new UsageAggregator();
+  const circuitBreaker = new CircuitBreaker(maxIterations);
+  resetRetryState();
 
   // Context manager for auto-compaction when token budget is exceeded
   const contextManager = new ContextManager({
@@ -330,7 +385,7 @@ export async function runAgentLoop(
     },
   });
 
-  while (iterations < maxIterations) {
+  while (iterations < maxIterations && circuitBreaker.shouldContinue()) {
     if (config.signal?.aborted) {
       const usage = usageAggregator.snapshot();
       config.events.emit("agent:complete", {
@@ -357,8 +412,10 @@ export async function runAgentLoop(
       activeModel = routing.model;
     }
 
+    // Apply observation masking to reduce token usage before compaction
+    const maskedMessages = applyObservationMasking(messages, { keepRecentN: 5 });
     // Apply context compaction if messages exceed token budget
-    const managedMessages = [...(await contextManager.prepare(messages))];
+    const managedMessages = [...(await contextManager.prepare(maskedMessages))];
 
     // Prepare request with tool definitions
     // Deferred mode: hot tools only by default, plus schemas for recently used deferred tools
@@ -428,13 +485,31 @@ export async function runAgentLoop(
         lastError = error;
         const errorClass = classifyLLMError(error);
 
-        // Check recovery strategies before giving up
+        // Check recovery strategies and execute them
         if (error instanceof Error) {
           const recovery = findRecoveryStrategy(error);
           if (recovery) {
             config.events.emit("llm:error", {
               error: new Error(`Recovery strategy: ${recovery.description}`),
             });
+            try {
+              const recoveryResult = await executeRecovery(
+                recovery,
+                error,
+                messages,
+                { maxContextTokens: config.maxContextTokens, signal: config.signal },
+              );
+              if (recoveryResult.action === "retry") {
+                // Apply compacted messages if recovery provided them
+                if (recoveryResult.messages) {
+                  messages.length = 0;
+                  messages.push(...recoveryResult.messages);
+                }
+                continue; // Restart the iteration with recovered state
+              }
+            } catch {
+              // Recovery failed — fall through to normal error handling
+            }
           }
         }
 
@@ -486,8 +561,9 @@ export async function runAgentLoop(
     };
     messages.push(assistantMessage);
 
-    // Extract tool calls
-    const extractedCalls = config.strategy.extractToolCalls(response.content, response.toolCalls);
+    // Extract tool calls and filter out incomplete ones with invalid JSON arguments
+    const rawExtractedCalls = config.strategy.extractToolCalls(response.content, response.toolCalls);
+    const extractedCalls = filterValidToolCalls(rawExtractedCalls, config.events);
 
     // Emit assistant message event (intermediate if tool calls follow, final otherwise)
     config.events.emit("agent:assistant-message", {
@@ -696,6 +772,28 @@ export async function runAgentLoop(
     // Append tool results as messages
     const toolMessages = config.strategy.formatToolResults(truncatedResults);
     messages.push(...toolMessages);
+
+    // Track iteration for circuit breaker (detect no-progress loops)
+    const filesModified = new Set<string>();
+    for (const call of extractedCalls) {
+      if (FILE_WRITE_TOOLS.has(call.name)) {
+        const fp = extractFilePath(call);
+        if (fp) filesModified.add(fp);
+      }
+    }
+    circuitBreaker.recordIteration({
+      filesModified,
+      hasOutput: response.content.length > 0,
+      error: results.some((r) => r.isError) ? results.find((r) => r.isError)?.output : undefined,
+    });
+
+    // If circuit breaker opened, inform user and stop
+    if (!circuitBreaker.shouldContinue()) {
+      const status = circuitBreaker.getStatus();
+      config.events.emit("llm:error", {
+        error: new Error(`Circuit breaker opened: ${status.reason ?? "No progress detected"}`),
+      });
+    }
   }
 
   const finalUsage = usageAggregator.snapshot();

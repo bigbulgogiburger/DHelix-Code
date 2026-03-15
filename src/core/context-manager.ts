@@ -43,9 +43,6 @@ const REHYDRATION_FILE_COUNT = 5;
 /** Default cold storage TTL in milliseconds (24 hours) */
 const COLD_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
-/** Run garbage collection every N compactions */
-const GC_COMPACTION_INTERVAL = 10;
-
 /** Tools that produce write/mutation results (higher priority in hot tail) */
 const WRITE_TOOLS = new Set(["file_edit", "file_write"]);
 
@@ -404,10 +401,11 @@ export class ContextManager {
       result = [...compacted];
     }
 
-    // Periodic cold storage garbage collection
+    // Periodic cold storage garbage collection (adaptive interval)
+    const gcInterval = this.getAdaptiveGcInterval(result);
     if (
       this.compactionCount > 0 &&
-      this.compactionCount - this.lastGcCompactionCount >= GC_COMPACTION_INTERVAL
+      this.compactionCount - this.lastGcCompactionCount >= gcInterval
     ) {
       this.lastGcCompactionCount = this.compactionCount;
       // Run GC in the background — don't block prepare()
@@ -569,6 +567,25 @@ export class ContextManager {
   trackColdRefAccess(hash: string): void {
     const currentCount = this.coldRefAccessCount.get(hash) ?? 0;
     this.coldRefAccessCount.set(hash, currentCount + 1);
+  }
+
+  /**
+   * Calculate adaptive GC interval based on current context window usage.
+   * Higher usage → more frequent GC to free up space aggressively.
+   *
+   *   usage > 80%  → interval 1  (GC every compaction)
+   *   usage 50-80% → interval 5
+   *   usage < 50%  → interval 15
+   */
+  private getAdaptiveGcInterval(messages: readonly ChatMessage[]): number {
+    const usage = this.getUsage(messages);
+    if (usage.usageRatio > 0.8) {
+      return 1;
+    }
+    if (usage.usageRatio >= 0.5) {
+      return 5;
+    }
+    return 15;
   }
 
   /**

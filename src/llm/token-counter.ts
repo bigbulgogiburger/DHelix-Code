@@ -30,6 +30,7 @@ function hashString(str: string): string {
 export interface TokenCacheStats {
   readonly hits: number;
   readonly misses: number;
+  readonly hitRate: number;
   readonly size: number;
 }
 
@@ -76,9 +77,11 @@ export class TokenCountCache {
 
   /** Get cache hit/miss statistics */
   getStats(): TokenCacheStats {
+    const total = this.hits + this.misses;
     return {
       hits: this.hits,
       misses: this.misses,
+      hitRate: total > 0 ? this.hits / total : 0,
       size: this.cache.size,
     };
   }
@@ -92,7 +95,7 @@ export class TokenCountCache {
 }
 
 /** Singleton token count cache */
-const tokenCache = new TokenCountCache(100);
+const tokenCache = new TokenCountCache(500);
 
 /**
  * Count tokens in a text string using tiktoken (accurate).

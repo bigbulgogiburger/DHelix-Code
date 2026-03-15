@@ -32,6 +32,7 @@ import { type MCPManagerConnector } from "../mcp/manager-connector.js";
 import { type PermissionMode } from "../permissions/types.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 import { VoiceIndicator } from "./components/VoiceIndicator.js";
+import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { useVoice } from "./hooks/useVoice.js";
 
 /** Permission mode cycle order */
@@ -243,6 +244,7 @@ export function App({
   useKeybindings(keybindings, !pendingPermission);
 
   return (
+    <ErrorBoundary>
     <Box flexDirection="column" padding={1}>
       <ActivityFeed
         completedTurns={completedTurns}
@@ -344,5 +346,6 @@ export function App({
         />
       ) : null}
     </Box>
+    </ErrorBoundary>
   );
 }

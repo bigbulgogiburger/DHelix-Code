@@ -1,5 +1,8 @@
 import mitt from "mitt";
 
+/** Default threshold — warn when any single event type exceeds this many listeners */
+export const LISTENER_WARN_THRESHOLD = 20;
+
 /** All application event types */
 export type AppEvents = {
   /** LLM streaming started */
@@ -21,6 +24,13 @@ export type AppEvents = {
   };
   /** LLM streaming errored */
   "llm:error": { error: Error };
+
+  /** Anthropic prompt cache hit/miss statistics per request */
+  "llm:cache-stats": {
+    readonly cacheCreationInputTokens: number;
+    readonly cacheReadInputTokens: number;
+    readonly model: string;
+  };
 
   /** Agent loop iteration started */
   "agent:iteration": { iteration: number };
@@ -105,6 +115,28 @@ export type AppEvents = {
 
 /** Typed event emitter for the application */
 export type AppEventEmitter = ReturnType<typeof mitt<AppEvents>>;
+
+/**
+ * Check listener counts across all event types on a mitt emitter.
+ * Emits a warning to stderr if any event type exceeds the threshold.
+ * Returns the maximum listener count found (useful for testing).
+ */
+export function checkListenerLeaks(
+  emitter: AppEventEmitter,
+  threshold: number = LISTENER_WARN_THRESHOLD,
+): number {
+  let maxCount = 0;
+  for (const [eventType, handlers] of emitter.all) {
+    const count = handlers?.length ?? 0;
+    if (count > maxCount) maxCount = count;
+    if (count > threshold) {
+      process.stderr.write(
+        `[events] Warning: "${String(eventType)}" has ${count} listeners (threshold: ${threshold}). Possible memory leak.\n`,
+      );
+    }
+  }
+  return maxCount;
+}
 
 /** Create a new typed event emitter */
 export function createEventEmitter(): AppEventEmitter {

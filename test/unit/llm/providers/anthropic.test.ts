@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { createEventEmitter } from "../../../../src/utils/events.js";
 
 // Store original env
 const originalEnv = { ...process.env };
@@ -667,6 +668,178 @@ describe("AnthropicProvider", () => {
       expect(Array.isArray(body.system)).toBe(true);
       expect(body.system).toHaveLength(1);
       expect(body.system[0].cache_control).toEqual({ type: "ephemeral" });
+    });
+  });
+
+  describe("cache stats emission", () => {
+    it("should emit llm:cache-stats event when cache tokens are present in chat response", async () => {
+      const emitter = createEventEmitter();
+      const cacheStatsHandler = vi.fn();
+      emitter.on("llm:cache-stats", cacheStatsHandler);
+
+      const mod = await import("../../../../src/llm/providers/anthropic.js");
+      const provider = new mod.AnthropicProvider({ apiKey: "test-key-123", eventEmitter: emitter });
+
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          id: "msg_cache_stats",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: {
+            input_tokens: 100,
+            output_tokens: 5,
+            cache_creation_input_tokens: 2000,
+            cache_read_input_tokens: 500,
+          },
+        }),
+      );
+
+      await provider.chat({
+        model: "claude-sonnet-4-20250514",
+        messages: [{ role: "user", content: "Hi" }],
+      });
+
+      expect(cacheStatsHandler).toHaveBeenCalledTimes(1);
+      expect(cacheStatsHandler).toHaveBeenCalledWith({
+        cacheCreationInputTokens: 2000,
+        cacheReadInputTokens: 500,
+        model: "claude-sonnet-4-20250514",
+      });
+    });
+
+    it("should not emit llm:cache-stats when no cache tokens in response", async () => {
+      const emitter = createEventEmitter();
+      const cacheStatsHandler = vi.fn();
+      emitter.on("llm:cache-stats", cacheStatsHandler);
+
+      const mod = await import("../../../../src/llm/providers/anthropic.js");
+      const provider = new mod.AnthropicProvider({ apiKey: "test-key-123", eventEmitter: emitter });
+
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          id: "msg_no_cache",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: { input_tokens: 10, output_tokens: 5 },
+        }),
+      );
+
+      await provider.chat({
+        model: "claude-sonnet-4-20250514",
+        messages: [{ role: "user", content: "Hi" }],
+      });
+
+      expect(cacheStatsHandler).not.toHaveBeenCalled();
+    });
+
+    it("should emit llm:cache-stats during streaming from message_start", async () => {
+      const emitter = createEventEmitter();
+      const cacheStatsHandler = vi.fn();
+      emitter.on("llm:cache-stats", cacheStatsHandler);
+
+      const mod = await import("../../../../src/llm/providers/anthropic.js");
+      const provider = new mod.AnthropicProvider({ apiKey: "test-key-123", eventEmitter: emitter });
+
+      mockFetch.mockResolvedValueOnce(
+        createStreamResponse([
+          {
+            event: "message_start",
+            data: {
+              type: "message_start",
+              message: {
+                id: "msg_stream_cache",
+                type: "message",
+                role: "assistant",
+                content: [],
+                stop_reason: null,
+                usage: {
+                  input_tokens: 100,
+                  output_tokens: 0,
+                  cache_creation_input_tokens: 1500,
+                  cache_read_input_tokens: 300,
+                },
+              },
+            },
+          },
+          {
+            event: "content_block_start",
+            data: {
+              type: "content_block_start",
+              index: 0,
+              content_block: { type: "text", text: "" },
+            },
+          },
+          {
+            event: "content_block_delta",
+            data: {
+              type: "content_block_delta",
+              index: 0,
+              delta: { type: "text_delta", text: "Hello" },
+            },
+          },
+          {
+            event: "content_block_stop",
+            data: { type: "content_block_stop", index: 0 },
+          },
+          {
+            event: "message_delta",
+            data: {
+              type: "message_delta",
+              delta: { stop_reason: "end_turn" },
+              usage: { output_tokens: 2 },
+            },
+          },
+          {
+            event: "message_stop",
+            data: { type: "message_stop" },
+          },
+        ]),
+      );
+
+      const chunks = [];
+      for await (const chunk of provider.stream({
+        model: "claude-sonnet-4-20250514",
+        messages: [{ role: "user", content: "Hi" }],
+      })) {
+        chunks.push(chunk);
+      }
+
+      expect(cacheStatsHandler).toHaveBeenCalledTimes(1);
+      expect(cacheStatsHandler).toHaveBeenCalledWith({
+        cacheCreationInputTokens: 1500,
+        cacheReadInputTokens: 300,
+        model: "claude-sonnet-4-20250514",
+      });
+    });
+
+    it("should work without event emitter (no error thrown)", async () => {
+      const provider = await getProvider();
+      mockFetch.mockResolvedValueOnce(
+        createMockResponse({
+          id: "msg_no_emitter",
+          type: "message",
+          role: "assistant",
+          content: [{ type: "text", text: "OK" }],
+          stop_reason: "end_turn",
+          usage: {
+            input_tokens: 10,
+            output_tokens: 5,
+            cache_creation_input_tokens: 100,
+            cache_read_input_tokens: 50,
+          },
+        }),
+      );
+
+      // Should not throw even with cache tokens but no emitter
+      const result = await provider.chat({
+        model: "claude-sonnet-4-20250514",
+        messages: [{ role: "user", content: "Hi" }],
+      });
+      expect(result.content).toBe("OK");
     });
   });
 

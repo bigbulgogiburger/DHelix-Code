@@ -281,10 +281,17 @@ describe("runAgentLoop", () => {
       expect(client.chat).toHaveBeenCalledTimes(1);
     });
 
-    it("should throw 'request too large' as permanent error without retrying", async () => {
+    it("should attempt recovery on 'request too large' via compact strategy", async () => {
       const tooLargeError = new Error("Request too large for model context window");
+      // Recovery compacts messages and retries; provide a success response for the retry
+      const successResponse: ChatResponse = {
+        content: "Recovered after compaction",
+        toolCalls: [],
+        usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+        finishReason: "stop",
+      };
 
-      const client = createErrorClient([tooLargeError]);
+      const client = createErrorClient([tooLargeError], successResponse);
       const config: AgentLoopConfig = {
         client,
         model: "gpt-4o",
@@ -294,11 +301,10 @@ describe("runAgentLoop", () => {
         maxRetries: 2,
       };
 
-      await expect(runAgentLoop(config, [{ role: "user", content: "Hi" }])).rejects.toThrow(
-        "Request too large",
-      );
-
-      expect(client.chat).toHaveBeenCalledTimes(1);
+      const result = await runAgentLoop(config, [{ role: "user", content: "Hi" }]);
+      // Recovery should have compacted and retried successfully
+      expect(result.aborted).toBe(false);
+      expect(client.chat).toHaveBeenCalledTimes(2); // 1st fails, recovery compacts, 2nd succeeds
     });
 
     it("should throw LLMError directly without wrapping (already classified)", async () => {
