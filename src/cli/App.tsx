@@ -155,6 +155,8 @@ export function App({
     outputTokens,
     interactiveSelect,
     setInteractiveSelect,
+    pendingAskUser,
+    setPendingAskUser,
   } = useAgentLoop({
     client,
     model,
@@ -179,6 +181,22 @@ export function App({
       void handleSubmit(text);
     },
   });
+
+  // 사용자 입력 제출 핸들러 — ask_user 대기 중이면 응답으로 전달, 아니면 일반 처리
+  const onUserSubmit = useCallback(
+    (input: string) => {
+      if (pendingAskUser && !pendingAskUser.choices?.length) {
+        events.emit("ask_user:response", {
+          toolCallId: pendingAskUser.toolCallId,
+          answer: input,
+        });
+        setPendingAskUser(null);
+        return;
+      }
+      void handleSubmit(input);
+    },
+    [pendingAskUser, events, handleSubmit, setPendingAskUser],
+  );
 
   // /voice 명령에서 발생하는 voice:toggle 이벤트를 감지하여 음성 기능 활성화/비활성화
   useEffect(() => {
@@ -319,6 +337,34 @@ export function App({
         />
       ) : null}
 
+      {pendingAskUser ? (
+        pendingAskUser.choices && pendingAskUser.choices.length > 0 ? (
+          <SelectList
+            prompt={pendingAskUser.question}
+            options={pendingAskUser.choices.map((c) => ({ label: String(c), value: String(c) }))}
+            onSelect={(value) => {
+              events.emit("ask_user:response", {
+                toolCallId: pendingAskUser.toolCallId,
+                answer: value,
+              });
+              setPendingAskUser(null);
+            }}
+            onCancel={() => {
+              events.emit("ask_user:response", {
+                toolCallId: pendingAskUser.toolCallId,
+                answer: "[User cancelled]",
+              });
+              setPendingAskUser(null);
+            }}
+          />
+        ) : (
+          <Box marginY={1}>
+            <Text color="cyan">{"? "}</Text>
+            <Text bold>{pendingAskUser.question}</Text>
+          </Box>
+        )
+      ) : null}
+
       {commandOutput ? (
         <Box marginY={1}>
           <Text>{commandOutput}</Text>
@@ -345,7 +391,7 @@ export function App({
 
       <Box marginTop={1}>
         <UserInput
-          onSubmit={handleSubmit}
+          onSubmit={onUserSubmit}
           onChange={setInputValue}
           slashMenuVisible={slashMenuVisible}
         />

@@ -1,17 +1,14 @@
 /**
  * 사용자 질문 도구 — LLM이 사용자에게 직접 질문하거나 확인을 요청할 때 사용하는 도구
  *
- * LLM이 작업 중 추가 정보가 필요하거나, 중요한 결정을 사용자에게 맡기고 싶을 때
- * 이 도구를 호출하여 사용자와 대화합니다.
- *
  * 실행 흐름:
  * 1. LLM이 질문 텍스트와 선택지(선택사항)를 전달
- * 2. 도구가 "[AWAITING_USER_INPUT]" 마커와 함께 질문을 반환
- * 3. 에이전트 루프(Agent Loop)가 이 마커를 감지하여 UI에 질문을 표시
- * 4. 사용자가 응답하면 에이전트 루프가 LLM에 응답을 전달
+ * 2. "ask_user:prompt" 이벤트를 발행하여 UI에 질문을 표시
+ * 3. 사용자가 응답할 때까지 Promise로 대기 ("ask_user:response" 이벤트 수신)
+ * 4. 사용자의 응답을 도구 결과로 반환 → LLM이 이어서 처리
  *
- * 참고: 실제 사용자 상호작용은 UI 레이어(Ink/React)에서 비동기적으로 처리됩니다.
- * 이 도구는 에이전트 루프가 특별히 처리하는 "특수 도구"입니다.
+ * Claude Code 방식: 질문은 일반 텍스트로 표시되고,
+ * 사용자가 일반 입력창에 답하면 다음 턴으로 이어감
  */
 import { z } from "zod";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
@@ -33,29 +30,58 @@ const paramSchema = z.object({
 type Params = z.infer<typeof paramSchema>;
 
 /**
- * 도구 실행 함수 — 사용자 입력 대기 마커를 포함한 결과를 반환
- *
- * 이 함수는 실제로 사용자와 상호작용하지 않습니다.
- * 대신 "[AWAITING_USER_INPUT]" 마커를 출력에 포함시키면,
- * 에이전트 루프가 이를 감지하여 사용자 입력을 처리합니다.
+ * 도구 실행 함수 — 이벤트를 통해 UI에 질문을 보내고 사용자 응답을 대기
  *
  * @param params - 검증된 매개변수 (질문 텍스트, 선택지)
- * @param _context - 실행 컨텍스트 (이 도구에서는 사용하지 않음)
- * @returns 사용자 입력 대기 마커가 포함된 결과
+ * @param context - 실행 컨텍스트 (이벤트 에미터, AbortSignal 포함)
+ * @returns 사용자의 응답 텍스트가 담긴 결과
  */
-async function execute(params: Params, _context: ToolContext): Promise<ToolResult> {
-  // 선택지가 있으면 번호를 붙여 텍스트로 변환
-  // 예: ["A", "B"] → "\nChoices: [1] A, [2] B"
-  const choicesText = params.choices
-    ? `\nChoices: ${params.choices.map((c, i) => `[${i + 1}] ${c}`).join(", ")}`
-    : "";
+async function execute(params: Params, context: ToolContext): Promise<ToolResult> {
+  const { events, abortSignal } = context;
+
+  // 이벤트 에미터가 없으면 폴백 — 헤드리스 모드 등에서 이벤트 없이 실행될 수 있음
+  if (!events) {
+    return {
+      output: `[Question for user] ${params.question}`,
+      isError: false,
+      metadata: { question: params.question, choices: params.choices },
+    };
+  }
+
+  // 고유한 도구 호출 ID 생성 — 질문과 응답을 매칭하는 데 사용
+  const toolCallId = `ask_${Date.now()}`;
+
+  // Promise로 사용자 응답을 대기
+  const answer = await new Promise<string>((resolve) => {
+    // 응답 이벤트 리스너 등록
+    const onResponse = (data: { toolCallId: string; answer: string }) => {
+      if (data.toolCallId === toolCallId) {
+        events.off("ask_user:response", onResponse);
+        resolve(data.answer);
+      }
+    };
+    events.on("ask_user:response", onResponse);
+
+    // AbortSignal 처리 — 사용자가 Esc로 취소할 경우
+    if (abortSignal) {
+      abortSignal.addEventListener("abort", () => {
+        events.off("ask_user:response", onResponse);
+        resolve("[User cancelled]");
+      }, { once: true });
+    }
+
+    // UI에 질문 표시 요청 이벤트 발행
+    events.emit("ask_user:prompt", {
+      toolCallId,
+      question: params.question,
+      choices: params.choices,
+    });
+  });
 
   return {
-    // "[AWAITING_USER_INPUT]" 마커 — 에이전트 루프가 이 텍스트를 감지하여 사용자 입력 모드로 전환
-    output: `[AWAITING_USER_INPUT] ${params.question}${choicesText}`,
+    output: `User responded: ${answer}`,
     isError: false,
-    // metadata에 구조화된 데이터를 포함 — UI 레이어에서 질문과 선택지를 파싱 없이 바로 사용
-    metadata: { question: params.question, choices: params.choices },
+    metadata: { question: params.question, answer, choices: params.choices },
   };
 }
 

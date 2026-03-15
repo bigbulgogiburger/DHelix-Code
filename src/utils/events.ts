@@ -142,6 +142,18 @@ export type AppEvents = {
 
   /** 도구 출력 스트리밍 델타 — bash 같은 장시간 실행 도구의 실시간 출력 */
   "tool:output-delta": { id: string; name: string; chunk: string };
+
+  /** ask_user 도구가 사용자에게 질문을 보냄 — UI에서 입력 프롬프트를 표시해야 함 */
+  "ask_user:prompt": {
+    readonly toolCallId: string;
+    readonly question: string;
+    readonly choices?: readonly string[];
+  };
+  /** 사용자가 ask_user 질문에 응답함 — 도구 실행이 완료됨 */
+  "ask_user:response": {
+    readonly toolCallId: string;
+    readonly answer: string;
+  };
 };
 
 /**

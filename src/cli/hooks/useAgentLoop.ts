@@ -125,6 +125,13 @@ export function useAgentLoop({
   const [activeModel, setActiveModel] = useState(initialModel);
   const [interactiveSelect, setInteractiveSelect] = useState<InteractiveSelect | null>(null);
 
+  // ask_user 도구가 사용자에게 질문을 보냈을 때의 대기 상태
+  const [pendingAskUser, setPendingAskUser] = useState<{
+    readonly toolCallId: string;
+    readonly question: string;
+    readonly choices?: readonly string[];
+  } | null>(null);
+
   // Tone and locale state (wired through to buildSystemPrompt)
   const [currentTone, setCurrentTone] = useState(initialTone);
   const [currentLocale] = useState(initialLocale);
@@ -284,17 +291,28 @@ export function useAgentLoop({
       }
     };
 
+    // ask_user 도구가 사용자에게 질문을 보낼 때 UI에 표시
+    const onAskUserPrompt = (data: {
+      toolCallId: string;
+      question: string;
+      choices?: readonly string[];
+    }) => {
+      setPendingAskUser(data);
+    };
+
     events.on("tool:start", onToolStart);
     events.on("tool:complete", onToolComplete);
     events.on("tool:output-delta", onToolOutputDelta);
     events.on("llm:text-delta", onTextDelta);
     events.on("agent:assistant-message", onAssistantMessage);
+    events.on("ask_user:prompt", onAskUserPrompt);
     return () => {
       events.off("tool:start", onToolStart);
       events.off("tool:complete", onToolComplete);
       events.off("tool:output-delta", onToolOutputDelta);
       events.off("llm:text-delta", onTextDelta);
       events.off("agent:assistant-message", onAssistantMessage);
+      events.off("ask_user:prompt", onAskUserPrompt);
     };
   }, [events, appendText, syncCurrentTurn]);
 
@@ -692,6 +710,8 @@ export function useAgentLoop({
     totalCost,
     interactiveSelect,
     setInteractiveSelect,
+    pendingAskUser,
+    setPendingAskUser,
     streamingOutputs: streamingOutputsRef,
   } as const;
 }
