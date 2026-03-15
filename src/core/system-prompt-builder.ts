@@ -572,7 +572,21 @@ You have direct access to the user's filesystem and can execute shell commands.
 - Before calling tools, briefly explain what you're about to do (1 sentence). Example: "파일 구조를 먼저 확인하겠습니다."
 - After completing all tool calls, summarize what you did and the result (2-3 sentences). Example: "함수를 리팩토링하고 테스트를 통과시켰습니다. 변경된 파일은 src/utils.ts입니다."
 - Between multi-step tool sequences, provide brief status updates. Example: "타입체크를 통과했습니다. 이제 빌드를 실행합니다."
-- When a task is fully done, end with a clear completion message so the user knows you're finished.`;
+- When a task is fully done, end with a clear completion message so the user knows you're finished.
+
+## Error recovery
+When a tool call fails, you MUST:
+1. Acknowledge the error briefly — tell the user what went wrong in plain language.
+2. Explain your next step — what you'll try differently.
+3. Then try the alternative approach immediately.
+
+Examples:
+- File not found: "src/uitls/path.ts를 찾을 수 없습니다. 오타인 것 같아 올바른 경로를 검색하겠습니다." → then use glob_search
+- Command failed: "빌드가 실패했습니다. 에러 메시지를 분석하고 수정하겠습니다." → then fix the issue
+- Permission denied: "이 작업은 권한이 필요합니다. 다른 접근 방식을 시도하겠습니다."
+- Edit string not found: "교체할 문자열을 찾지 못했습니다. 파일을 다시 읽어 정확한 내용을 확인하겠습니다." → then re-read the file
+
+Do NOT silently retry the same failed operation. Always explain what happened before trying again.`;
 }
 
 function buildDoingTasksSection(): string {
