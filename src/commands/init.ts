@@ -1,6 +1,6 @@
 import { mkdir, writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
-import { APP_NAME, PROJECT_CONFIG_FILE, PROJECT_CONFIG_DIR } from "../constants.js";
+import { APP_NAME, PROJECT_CONFIG_FILE, PROJECT_CONFIG_DIR, DEFAULT_MODEL } from "../constants.js";
 import { type SlashCommand } from "./registry.js";
 
 /** Project initialization directory name */
@@ -11,7 +11,7 @@ const LOCAL_INSTRUCTIONS_FILE = `${APP_NAME.toUpperCase()}.local.md`;
 
 /** Default settings */
 const DEFAULT_SETTINGS = {
-  model: "gpt-5-mini",
+  model: DEFAULT_MODEL,
   allowedTools: ["file_read", "file_write", "file_edit", "bash_exec", "glob_search", "grep_search"],
 };
 

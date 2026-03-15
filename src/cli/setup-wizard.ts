@@ -2,20 +2,19 @@ import { mkdir, writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { createInterface } from "node:readline/promises";
 import { stdin, stdout } from "node:process";
-import { CONFIG_DIR, APP_NAME } from "../constants.js";
+import { CONFIG_DIR, APP_NAME, DEFAULT_MODEL } from "../constants.js";
 
 /** Available model presets */
 const MODEL_PRESETS = [
-  { name: "Default (프로젝트 .env 설정 사용)", model: "", baseUrl: "" },
-  {
-    name: "GPT-5-mini (추천 — 저렴하고 고성능)",
-    model: "gpt-5-mini",
-    baseUrl: "https://api.openai.com/v1",
-  },
-  { name: "GPT-5-nano (가장 저렴)", model: "gpt-5-nano", baseUrl: "https://api.openai.com/v1" },
-  { name: "GPT-4.1", model: "gpt-4.1", baseUrl: "https://api.openai.com/v1" },
+  { name: `Default (env: ${DEFAULT_MODEL})`, model: "", baseUrl: "" },
+  // OpenAI
+  { name: "GPT-4o-mini (저렴)", model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" },
   { name: "GPT-4o", model: "gpt-4o", baseUrl: "https://api.openai.com/v1" },
-  { name: "GPT-4o-mini", model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" },
+  // Anthropic
+  { name: "Claude Sonnet 4.5", model: "claude-sonnet-4-5-20250514", baseUrl: "https://api.anthropic.com/v1" },
+  { name: "Claude Haiku 3.5", model: "claude-3-5-haiku-20241022", baseUrl: "https://api.anthropic.com/v1" },
+  // Local (Ollama)
+  { name: "Ollama (로컬 모델)", model: "qwen3:8b", baseUrl: "http://localhost:11434/v1" },
 ] as const;
 
 /** User config file path */
@@ -84,8 +83,8 @@ export async function runSetupWizard(): Promise<SetupConfig> {
       baseUrl = preset.baseUrl;
       stdout.write(`  Selected: ${preset.name}\n\n`);
     } else {
-      model = (await rl.question("  Model name: ")).trim() || "gpt-5-mini";
-      baseUrl = (await rl.question("  API base URL: ")).trim() || "https://api.openai.com/v1";
+      model = (await rl.question(`  Model name [${DEFAULT_MODEL}]: `)).trim() || DEFAULT_MODEL;
+      baseUrl = (await rl.question("  API base URL [https://api.openai.com/v1]: ")).trim() || "https://api.openai.com/v1";
       stdout.write("\n");
     }
 

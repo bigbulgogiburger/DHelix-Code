@@ -57,10 +57,18 @@ export const TOOL_TIMEOUTS = {
   default: 30_000,
 } as const;
 
+/**
+ * Resolve default model from environment.
+ * Priority: DBCODE_MODEL > OPENAI_MODEL > built-in fallback.
+ * This is the single source of truth — no other file should hardcode a model name.
+ */
+export const DEFAULT_MODEL =
+  process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
+
 /** Token counter defaults */
 export const TOKEN_DEFAULTS = {
   /** Default model for token counting */
-  defaultModel: "gpt-5-mini",
+  defaultModel: DEFAULT_MODEL,
   /** Maximum context window size (tokens) */
   maxContextWindow: 1_000_000,
 } as const;
@@ -68,9 +76,9 @@ export const TOKEN_DEFAULTS = {
 /** LLM defaults */
 export const LLM_DEFAULTS = {
   /** Default API base URL (OpenAI-compatible) */
-  baseUrl: "https://api.openai.com/v1",
-  /** Default model name */
-  model: "gpt-5-mini",
+  baseUrl: process.env.DBCODE_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+  /** Default model name — resolved from env */
+  model: DEFAULT_MODEL,
   /** Default temperature */
   temperature: 0.0,
   /** Default max tokens for response */

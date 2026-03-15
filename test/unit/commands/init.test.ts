@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { initProject, initCommand } from "../../../src/commands/init.js";
 import { CommandRegistry } from "../../../src/commands/registry.js";
-import { APP_NAME } from "../../../src/constants.js";
+import { APP_NAME, DEFAULT_MODEL } from "../../../src/constants.js";
 
 describe("initProject", () => {
   let tempDir: string;
@@ -33,7 +33,7 @@ describe("initProject", () => {
     // Verify settings.json inside .dbcode/
     const settingsRaw = await readFile(join(result.path, "settings.json"), "utf-8");
     const settings = JSON.parse(settingsRaw);
-    expect(settings.model).toBe("gpt-5-mini");
+    expect(settings.model).toBe(DEFAULT_MODEL);
     expect(settings.allowedTools).toContain("file_read");
   });
 
@@ -120,7 +120,7 @@ describe("initCommand", () => {
     // Verify settings.json was created
     const settingsRaw = await readFile(join(projectPath, "settings.json"), "utf-8");
     const settings = JSON.parse(settingsRaw);
-    expect(settings.model).toBe("gpt-5-mini");
+    expect(settings.model).toBe(DEFAULT_MODEL);
   });
 
   it("should include 'create' instructions when DBCODE.md does not exist", async () => {

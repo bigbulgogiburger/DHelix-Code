@@ -1,12 +1,13 @@
 import { type AppConfig } from "./types.js";
+import { DEFAULT_MODEL, LLM_DEFAULTS } from "../constants.js";
 
 /** Default configuration values */
 export const DEFAULT_CONFIG: AppConfig = {
   llm: {
-    baseUrl: "https://api.openai.com/v1",
-    model: "gpt-5.1-codex-mini",
-    temperature: 0.0,
-    maxTokens: 32768,
+    baseUrl: LLM_DEFAULTS.baseUrl,
+    model: DEFAULT_MODEL,
+    temperature: LLM_DEFAULTS.temperature,
+    maxTokens: LLM_DEFAULTS.maxTokens,
     contextWindow: 1_000_000,
     timeout: 60_000,
   },
