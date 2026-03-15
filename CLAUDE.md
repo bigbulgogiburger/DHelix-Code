@@ -8,26 +8,26 @@ Node.js 20+ / TypeScript 5.x / ESM only / Ink 5.x (React for CLI) / Vitest / tsu
 ```mermaid
 graph TD
     subgraph CLI["Layer 1: CLI (Ink/React)"]
-        APP[App.tsx]
+        APP[App.tsx + ErrorBoundary]
         COMP[Components]
         HOOKS[React Hooks]
-        REND[Renderer]
     end
     subgraph CORE["Layer 2: Core (Zero UI imports)"]
-        AGENT[Agent Loop — ReAct]
-        CONV[Conversation]
-        CTX[Context Manager]
-        PROMPT[System Prompt Builder]
+        AGENT[Agent Loop — ReAct + Circuit Breaker]
+        CTX[Context Manager — Adaptive GC + Observation Masking]
+        RECOVER[Recovery Executor — compact/retry/fallback]
+        PROMPT[System Prompt Builder + Cache]
     end
     subgraph INFRA["Layer 3: Infrastructure"]
-        LLM[LLM Client — OpenAI SDK]
-        TOOLS[Tool System — 14 built-in]
-        PERM[Permissions]
+        LLM[LLM Client — OpenAI SDK + Dual-Model Router]
+        TOOLS[Tool System — 18+ built-in + Adaptive Schema]
+        GUARD[Guardrails — injection, entropy, secrets]
+        PERM[Permissions + Audit Log]
         MCP_[MCP Client]
     end
     subgraph LEAF["Layer 4: Leaf Modules"]
         UTILS[Utils — logger, events, path]
-        CONFIG[Config — 5-level hierarchy]
+        CONFIG["Config — env-based DEFAULT_MODEL"]
         SKILLS[Skills — 4 load dirs]
     end
 
@@ -37,6 +37,8 @@ graph TD
     AGENT --> TOOLS
     AGENT --> PERM
     AGENT --> CTX
+    AGENT --> RECOVER
+    TOOLS --> GUARD
     TOOLS --> UTILS
     LLM --> UTILS
     CONFIG --> UTILS

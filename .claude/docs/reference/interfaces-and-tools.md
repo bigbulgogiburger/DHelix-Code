@@ -55,6 +55,29 @@ interface ToolCallStrategy {
 - **Native function-calling** (`strategies/native-function-calling.ts`): GPT-4o, Claude 등 함수 호출 네이티브 지원 모델
 - **Text parsing** (`strategies/text-parsing.ts`): XML 태그 기반 폴백 — 함수 호출 미지원 모델용
 
+## Adaptive Schema & Lazy Loading (Sprint 6)
+
+Tool schemas adapt to model capability tiers:
+
+| Tier   | Schema Detail | Loading    | Description                                |
+| ------ | ------------- | ---------- | ------------------------------------------ |
+| HIGH   | Full          | Eager      | All params, descriptions, examples         |
+| MEDIUM | Reduced       | Lazy       | Required params only, minimal descriptions |
+| LOW    | Minimal       | On-demand  | Name + essential params only               |
+
+- **adaptive-schema.ts** (`src/tools/`): Selects schema detail level based on model capability tier
+- **lazy-tool-loader.ts** (`src/tools/`): Defers schema loading for MEDIUM/LOW tier tools until first use
+
+## Tool Retry & Self-Healing (Sprint 6)
+
+- **tool-retry.ts** (`src/tools/`): Auto-corrects failed tool calls:
+  - **Levenshtein path correction**: Suggests closest valid file path when tool call references a non-existent path
+  - **JSON repair**: Fixes malformed JSON arguments (trailing commas, missing quotes)
+
+## Structured Output (Sprint 6)
+
+- **structured-output.ts** (`src/llm/`): Enforces structured output per provider — JSON mode for OpenAI, tool_choice for Anthropic
+
 ## Tool Display Pipeline
 
 `tool-display.ts`의 `toolDisplayMap`에서 도구별 표시 설정:
@@ -69,3 +92,5 @@ interface ToolCallStrategy {
 - 새 도구 추가 시: `src/tools/definitions/`에 파일 생성 → `registry.ts`에 등록 → `tool-display.ts`에 표시 설정 추가
 - `ToolResult.metadata`는 executor에서 자동 전달 → activity → UI까지 파이프라인 확인은 `verify-tool-metadata-pipeline` 스킬 사용
 - permissionLevel 변경은 보안 영향 — "safe"는 자동 실행, "confirm"은 사용자 승인 필요
+- adaptive-schema 변경 시: 3개 티어 모두에서 tool 동작 검증 필요
+- tool-retry는 agent-loop 내부에서 자동 적용 — 수동 호출 불필요

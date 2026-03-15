@@ -31,11 +31,20 @@ user_invocable: true
 Skill prompt content with $ARGUMENTS substitution...
 ```
 
-## Slash Commands (29 total)
+## Slash Commands (30 total)
 
 All functional: help, clear, compact, model, config, cost, context, resume,
 rewind, effort, fast, simplify, batch, debug, mcp, diff, doctor, stats,
-export, copy, fork, rename, output-style, update, memory, keybindings, init, plan, status
+export, copy, fork, rename, output-style, update, memory, keybindings, init, plan, status, **analytics**
+
+### /analytics (Sprint 6)
+
+Session analytics dashboard — displays:
+- Token usage breakdown (input/output/cache hits)
+- Tool call frequency and success rates
+- Context compaction history
+- Cost per turn and cumulative cost
+- Implementation: `src/cli/analytics.ts`
 
 새 명령 추가: `src/commands/`에 파일 생성 → `registry.ts`에 등록
 

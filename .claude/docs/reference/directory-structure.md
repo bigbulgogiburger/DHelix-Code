@@ -10,6 +10,8 @@ src/
 ├── constants.ts          # Version, paths, limits, getProjectConfigPaths(), INPUT_HISTORY_FILE
 ├── cli/                  # Layer 1: Terminal UI
 │   ├── App.tsx           # Root Ink component (keyboard shortcuts, permission cycling)
+│   ├── ErrorBoundary.tsx  # React error boundary for crash recovery
+│   ├── analytics.ts       # /analytics — session analytics dashboard command
 │   ├── components/       # UI components (.tsx)
 │   │   ├── ActivityFeed  # Progressive Static flushing (anti-flicker)
 │   │   ├── TurnBlock     # Single turn: user msg + assistant + tool calls
@@ -32,30 +34,41 @@ src/
 │       ├── tool-display.ts # Tool output formatting, tense switching (Reading→Read)
 │       └── synchronized-output.ts # DEC Mode 2026 atomic frame rendering
 ├── core/                 # Layer 2: Business logic (ZERO UI imports)
-│   ├── agent-loop.ts     # ReAct loop with parallel tool execution + auto-checkpointing
+│   ├── agent-loop.ts     # ReAct loop + recovery-executor, circuit-breaker, observation-masking, filterValidToolCalls
 │   ├── activity.ts       # ActivityCollector — turn/entry tracking + intermediate messages
 │   ├── conversation.ts   # Immutable conversation state
-│   ├── context-manager.ts # 3-layer compaction (micro → structured summary → rehydration)
+│   ├── context-manager.ts # 3-layer compaction + adaptive GC (usage-based dynamic intervals)
 │   ├── session-manager.ts
 │   ├── checkpoint-manager.ts # File state checkpointing and rewind
 │   ├── message-types.ts
 │   ├── system-prompt-builder.ts # Dynamic conditional prompt assembly + system reminders
+│   ├── system-prompt-cache.ts # SHA-256 mtime-based prompt caching
+│   ├── recovery-executor.ts # Executes recovery strategies (compact/retry/fallback)
+│   ├── circuit-breaker.ts # Ralph Loop pattern — prevents infinite agent loops
+│   ├── observation-masking.ts # JetBrains Research — masks re-readable tool outputs
+│   ├── code-review-agent.ts # Generator-Critic pattern code review
+│   ├── adaptive-context.ts # Task complexity estimation + context strategy
+│   ├── update-checker.ts # Weekly npm version check
 │   └── task-manager.ts
 ├── llm/                  # Layer 3: LLM client
 │   ├── provider.ts       # LLMProvider interface + ThinkingConfig
 │   ├── client.ts         # OpenAI SDK wrapper (baseURL configurable)
 │   ├── streaming.ts      # SSE stream consumer + backpressure (1MB limit)
-│   ├── token-counter.ts  # js-tiktoken + LRU cache (100 entries)
+│   ├── token-counter.ts  # js-tiktoken + LRU cache (500 entries) + hitRate stats
+│   ├── structured-output.ts # Provider-specific structured output enforcement
 │   ├── model-router.ts   # Hybrid mode routing
 │   ├── model-capabilities.ts # Per-model context limits
 │   ├── tool-call-strategy.ts
 │   ├── strategies/       # native-function-calling.ts, text-parsing.ts
-│   └── providers/        # anthropic.ts (Extended Thinking support)
+│   └── providers/        # anthropic.ts (Extended Thinking + prompt cache monitoring via llm:cache-stats)
 ├── tools/                # Layer 4: Tool system
 │   ├── registry.ts       # Tool registration, lazy loading
 │   ├── types.ts          # ToolDefinition, ToolResult, PermissionLevel
 │   ├── executor.ts       # Timeout, AbortController, BackgroundProcessManager
 │   ├── validation.ts     # Zod → JSON Schema conversion
+│   ├── adaptive-schema.ts # Adapts tool schema per capability tier (HIGH/MEDIUM/LOW)
+│   ├── lazy-tool-loader.ts # On-demand schema loading for MEDIUM/LOW tier
+│   ├── tool-retry.ts     # Levenshtein path correction, JSON repair
 │   └── definitions/      # 14 built-in tools (see interfaces-and-tools.md)
 ├── commands/             # Slash commands (/clear, /model, /help, /undo, /rewind, etc.)
 │   ├── registry.ts       # Command registration and dispatch (+ skill bridge support)
@@ -68,9 +81,12 @@ src/
 │   ├── manager.ts        # Check + approve/deny
 │   ├── rules.ts          # Glob pattern matching
 │   ├── modes.ts          # default/acceptEdits/plan/dontAsk/bypassPermissions
-│   └── session-store.ts  # Session approval cache
+│   ├── session-store.ts  # Session approval cache
+│   └── audit-log.ts      # JSONL permission audit logging
 ├── guardrails/           # Security (input/output filters, secret scanner)
-├── sandbox/              # OS-level: macOS Seatbelt (sandbox-exec profiles)
+│   ├── entropy-scanner.ts # Shannon entropy secret detection
+│   └── injection-detector.ts # Path traversal + prompt injection pattern detection
+├── sandbox/              # OS-level: macOS Seatbelt (sandbox-exec profiles) + unsandboxed execution warning
 ├── hooks/                # Pre/post tool-use hooks (loader + runner)
 ├── subagents/            # Agent spawning with worktree isolation
 │   ├── spawner.ts        # spawnSubagent(), spawnParallelSubagents(), agent history store
@@ -92,7 +108,7 @@ src/
 ├── indexing/             # Codebase indexing
 ├── mentions/             # @mention resolution
 ├── types/                # Shared type definitions
-└── utils/                # logger(pino), events(mitt), error, path, platform
+└── utils/                # logger(pino + API key redaction), events(mitt + llm:cache-stats), error, path, platform
 ```
 
 ## 주의사항
