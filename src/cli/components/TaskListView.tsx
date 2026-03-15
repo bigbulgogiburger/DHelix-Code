@@ -1,7 +1,16 @@
+/**
+ * TaskListView.tsx — 작업 목록을 트리 형태로 표시하는 컴포넌트
+ *
+ * 에이전트의 작업(Task) 목록을 계층적 트리 뷰로 보여줍니다.
+ * 각 작업의 상태(pending, in_progress, completed, failed, cancelled)를
+ * 아이콘과 색상으로 구분하며, 부모-자식 관계를 들여쓰기로 표현합니다.
+ *
+ * 상태 아이콘: ○ 대기, ◐ 진행 중, ● 완료, ✕ 실패, ⊘ 취소
+ */
 import { Box, Text } from "ink";
 import { type Task, type TaskStatus } from "../../core/task-manager.js";
 
-/** Status indicator colors */
+/** 작업 상태별 표시 색상 — pending=회색, in_progress=노랑, completed=초록 등 */
 const STATUS_COLORS: Record<TaskStatus, string> = {
   pending: "gray",
   in_progress: "yellow",
@@ -10,7 +19,7 @@ const STATUS_COLORS: Record<TaskStatus, string> = {
   cancelled: "gray",
 };
 
-/** Status indicator symbols */
+/** 작업 상태별 유니코드 심볼 — 각 상태를 시각적으로 구분 */
 const STATUS_SYMBOLS: Record<TaskStatus, string> = {
   pending: "○",
   in_progress: "◐",
@@ -25,7 +34,7 @@ interface TaskItemProps {
   readonly children?: readonly Task[];
 }
 
-/** Render a single task item with indentation */
+/** 단일 작업 항목을 들여쓰기와 함께 렌더링 — 자식 작업은 재귀적으로 표시 */
 function TaskItem({ task, depth, children }: TaskItemProps) {
   const indent = "  ".repeat(depth);
   const symbol = STATUS_SYMBOLS[task.status];
@@ -55,8 +64,11 @@ interface TaskListViewProps {
 }
 
 /**
- * Task list UI component — displays tasks in a hierarchical tree view.
- * Groups tasks by parent, showing status, progress, and dependencies.
+ * 작업 목록 UI 컴포넌트 — 작업을 계층적 트리 뷰로 표시
+ *
+ * 내부적으로 parentId 기반의 부모-자식 맵을 구축하여
+ * 루트 작업 → 자식 작업 순으로 재귀 렌더링합니다.
+ * 상단에는 "Tasks (완료/전체 complete)" 요약을 표시합니다.
  */
 export function TaskListView({ tasks, title }: TaskListViewProps) {
   if (tasks.length === 0) {

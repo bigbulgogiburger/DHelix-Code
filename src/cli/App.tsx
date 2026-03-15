@@ -1,10 +1,20 @@
+/**
+ * App.tsx — dbcode CLI 애플리케이션의 최상위(Root) 컴포넌트
+ *
+ * Ink(터미널에서 React를 사용할 수 있게 해주는 라이브러리)를 기반으로
+ * 전체 CLI UI를 구성합니다. 사용자 입력, 에이전트 상태, 권한 관리,
+ * 슬래시 명령 메뉴, 음성 입력, 키보드 단축키 등을 총괄합니다.
+ *
+ * 이 파일은 CLI 레이어(Layer 1)의 진입점으로, 모든 하위 컴포넌트와
+ * 훅(hook)을 조합하여 하나의 통합 인터페이스를 제공합니다.
+ */
 import { Box, Text } from "ink";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { UserInput } from "./components/UserInput.js";
 import { AgentStatus } from "./components/AgentStatus.js";
 import { SelectList } from "./components/SelectList.js";
 import { StatusBar } from "./components/StatusBar.js";
-// Logo is now printed to stdout before Ink render (see src/index.ts)
+// 로고는 Ink 렌더링 전에 stdout에 직접 출력됩니다 (src/index.ts 참조)
 import { ErrorBanner } from "./components/ErrorBanner.js";
 import { PermissionPrompt } from "./components/PermissionPrompt.js";
 import { SlashCommandMenu } from "./components/SlashCommandMenu.js";
@@ -35,7 +45,10 @@ import { VoiceIndicator } from "./components/VoiceIndicator.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { useVoice } from "./hooks/useVoice.js";
 
-/** Permission mode cycle order */
+/**
+ * 권한 모드 순환 순서 — Shift+Tab으로 순환하는 권한 모드 목록
+ * default → acceptEdits → plan → dontAsk → bypassPermissions → default...
+ */
 const PERMISSION_MODE_CYCLE: readonly PermissionMode[] = [
   "default",
   "acceptEdits",
@@ -44,7 +57,7 @@ const PERMISSION_MODE_CYCLE: readonly PermissionMode[] = [
   "bypassPermissions",
 ] as const;
 
-/** Short labels for permission modes shown in status area */
+/** 상태 바에 표시할 권한 모드의 짧은 레이블 (사용자가 현재 모드를 빠르게 확인할 수 있도록) */
 const MODE_LABELS: Readonly<Record<PermissionMode, string>> = {
   default: "Default",
   acceptEdits: "Accept Edits",
@@ -53,6 +66,26 @@ const MODE_LABELS: Readonly<Record<PermissionMode, string>> = {
   bypassPermissions: "Bypass",
 };
 
+/**
+ * App 컴포넌트의 Props 인터페이스
+ *
+ * @param client - LLM API와 통신하는 프로바이더 (OpenAI, Anthropic 등)
+ * @param model - 사용할 LLM 모델명 (예: "gpt-4o", "claude-sonnet-4-5-20250514")
+ * @param toolRegistry - 사용 가능한 도구(file_read, bash_exec 등)를 관리하는 레지스트리
+ * @param strategy - 도구 호출 전략 (순차/병렬 등)
+ * @param permissionManager - 도구 실행 권한을 관리하는 매니저
+ * @param commandRegistry - 슬래시 명령(/model, /compact 등)을 관리하는 레지스트리
+ * @param contextManager - LLM에 보낼 컨텍스트(대화 히스토리)를 관리
+ * @param hookRunner - 사용자 정의 훅(UserPromptSubmit, Stop 등)을 실행
+ * @param sessionManager - 대화 세션의 저장/복원을 관리
+ * @param skillManager - 스킬(재사용 가능한 프롬프트 템플릿)을 관리
+ * @param tasks - 표시할 작업 목록 (TaskListView에 전달)
+ * @param sessionId - 현재 세션의 고유 ID
+ * @param showStatusBar - 하단 상태 바 표시 여부 (기본값: true)
+ * @param initialLocale - 초기 언어 설정 (기본값: "ko")
+ * @param initialTone - 초기 어조 설정 (기본값: "normal")
+ * @param mcpConnector - MCP(Model Context Protocol) 서버 연결 커넥터
+ */
 interface AppProps {
   readonly client: LLMProvider;
   readonly model: string;
@@ -72,7 +105,14 @@ interface AppProps {
   readonly mcpConnector?: MCPManagerConnector;
 }
 
-/** Root application component */
+/**
+ * 루트 애플리케이션 컴포넌트
+ *
+ * Ink를 사용하여 터미널에 React 컴포넌트 트리를 렌더링합니다.
+ * ErrorBoundary로 감싸서 렌더링 에러를 포착하고,
+ * 내부에서 에이전트 루프, 권한 프롬프트, 음성 입력, 키바인딩 등을
+ * 조합하여 전체 CLI 인터페이스를 구성합니다.
+ */
 export function App({
   client,
   model,
@@ -96,7 +136,7 @@ export function App({
     toolRegistry,
   );
 
-  // Extended thinking toggle state (declared before useAgentLoop so it can be passed)
+  // 확장 사고(Extended Thinking) 토글 상태 — useAgentLoop에 전달하기 위해 여기서 선언
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
 
   const {
@@ -134,14 +174,14 @@ export function App({
     thinkingEnabled,
   });
 
-  // Voice input
+  // 음성 입력 — 마이크 녹음 → Whisper API로 텍스트 변환 → 에이전트에게 전달
   const { isRecording, isTranscribing, lastTranscription, voiceEnabled, setVoiceEnabled, toggleRecording } = useVoice({
     onTranscription: (text) => {
       void handleSubmit(text);
     },
   });
 
-  // Wire voice toggle events from /voice command
+  // /voice 명령에서 발생하는 voice:toggle 이벤트를 감지하여 음성 기능 활성화/비활성화
   useEffect(() => {
     const handleVoiceToggle = ({ enabled }: { enabled: boolean }) => {
       setVoiceEnabled(enabled);
@@ -152,7 +192,7 @@ export function App({
     };
   }, [events, setVoiceEnabled]);
 
-  // Wire permission mode change events from /plan command
+  // /plan 명령에서 발생하는 permission:mode-change 이벤트를 감지하여 권한 모드 변경
   useEffect(() => {
     const handleModeChange = ({ mode }: { mode: string }) => {
       const validMode = mode as PermissionMode;
@@ -165,18 +205,20 @@ export function App({
     };
   }, [events, permissionManager]);
 
-  // Track current input value for slash command menu
+  // 슬래시 명령 메뉴 표시를 위해 현재 입력값을 추적
   const [inputValue, setInputValue] = useState("");
+  // 슬래시 메뉴가 보일 조건: 에이전트가 처리 중이 아니고, 권한 프롬프트가 없고,
+  // 입력이 "/"로 시작하면서 공백이 없을 때 (아직 명령어 이름만 입력 중일 때)
   const slashMenuVisible =
     !isProcessing && !pendingPermission && inputValue.startsWith("/") && !inputValue.includes(" ");
 
-  // Verbose mode toggle state
+  // 상세 모드(Verbose mode) — Ctrl+O로 토글, 도구 실행 결과를 확장해서 보여줌
   const [verboseMode, setVerboseMode] = useState(false);
 
-  // Permission mode state (mirrors permissionManager but drives UI)
+  // 권한 모드 상태 — permissionManager의 상태를 미러링하여 UI를 구동
   const [permissionMode, setPermissionMode] = useState<PermissionMode>(permissionManager.getMode());
 
-  // Notification banner for shortcut feedback
+  // 단축키 피드백용 알림 배너 (2초 후 자동 사라짐)
   const [notification, setNotification] = useState<string | null>(null);
 
   const showNotification = useCallback((message: string) => {
@@ -184,7 +226,7 @@ export function App({
     setTimeout(() => setNotification(null), 2000);
   }, []);
 
-  // Action handlers for keybindings
+  // 키바인딩에 연결할 액션 핸들러 — 각 단축키가 실행할 동작을 정의
   const actionHandlers = useMemo(
     () => ({
       cancel: () => {
@@ -234,7 +276,7 @@ export function App({
     [isProcessing, events, permissionMode, permissionManager, showNotification, voiceEnabled, toggleRecording, activeModel],
   );
 
-  // Build keybindings from config + defaults
+  // 사용자 설정 파일(~/.dbcode/keybindings.json)과 기본값을 병합하여 키바인딩 구성
   const keybindings = useMemo(() => {
     const userConfig = loadKeybindingConfig();
     const effective = getEffectiveBindings(userConfig);

@@ -1,3 +1,25 @@
+/**
+ * 컨텍스트 관리자(Context Manager) 모듈
+ *
+ * LLM의 컨텍스트 윈도우(대화 길이 제한)를 효율적으로 관리합니다.
+ * 3단계 압축 전략으로 토큰 사용량을 최적화합니다:
+ *
+ * Layer 1 — 마이크로 압축(Microcompaction): 연속적으로 실행
+ *   대용량 도구 출력을 디스크("콜드 스토리지")에 저장하고 짧은 참조로 교체합니다.
+ *   최근 N개의 도구 결과는 인라인으로 유지합니다.
+ *
+ * Layer 2 — 자동 압축(Auto-compaction): 임계값 초과 시 실행
+ *   컨텍스트 사용량이 ~83.5%에 도달하면 오래된 대화를 구조화된 요약으로 교체합니다.
+ *
+ * Layer 3 — 리하이드레이션(Rehydration): 압축 후 실행
+ *   압축 후 최근 사용한 파일의 내용을 다시 읽어 LLM에게 신선한 컨텍스트를 제공합니다.
+ *
+ * 주니어 개발자를 위한 설명:
+ * - LLM은 한 번에 처리할 수 있는 텍스트 양(토큰 수)에 제한이 있습니다
+ * - 대화가 길어지면 이전 메시지를 요약하거나 제거해야 합니다
+ * - "콜드 스토리지"는 자주 안 쓰는 데이터를 디스크에 보관하는 개념입니다
+ * - "리하이드레이션"은 필요한 정보를 다시 메모리에 올리는 것입니다
+ */
 import { mkdir, writeFile, readFile, readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
@@ -8,7 +30,13 @@ import { loadInstructions } from "../instructions/loader.js";
 import { buildSystemPrompt } from "./system-prompt-builder.js";
 import type { CapabilityTier } from "../llm/model-capabilities.js";
 
-/** Tier-based context configuration for adaptive compaction behavior */
+/**
+ * 모델 능력 수준(tier)별 컨텍스트 압축 설정을 반환합니다.
+ * 소형 모델은 더 일찍, 더 공격적으로 압축하여 컨텍스트를 절약합니다.
+ *
+ * @param tier - 모델 능력 수준 (high/medium/low)
+ * @returns compactionThreshold: 압축 트리거 사용량 비율, preserveRecentTurns: 보존할 최근 턴 수
+ */
 export function getContextConfig(tier: CapabilityTier): {
   readonly compactionThreshold: number;
   readonly preserveRecentTurns: number;
@@ -23,7 +51,7 @@ export function getContextConfig(tier: CapabilityTier): {
   }
 }
 
-/** Tools whose outputs are eligible for cold storage (bulky read-only outputs) */
+/** 콜드 스토리지 대상 도구 — 대용량 읽기 전용 출력을 디스크에 보관할 수 있는 도구들 */
 const COLD_STORAGE_ELIGIBLE_TOOLS = new Set([
   "file_read",
   "bash_exec",
@@ -31,22 +59,22 @@ const COLD_STORAGE_ELIGIBLE_TOOLS = new Set([
   "glob_search",
 ]);
 
-/** Minimum token count for a tool result to be moved to cold storage */
+/** 콜드 스토리지로 이동시키는 최소 토큰 수 (이 이하는 인라인 유지) */
 const COLD_STORAGE_MIN_TOKENS = 200;
 
-/** Number of most recent tool results to keep inline ("hot tail") */
+/** 인라인으로 유지할 최근 도구 결과 수 ("핫 테일") */
 const HOT_TAIL_SIZE = 5;
 
-/** Number of most recently accessed files to re-read after compaction */
+/** 압축 후 다시 읽을 최근 파일 수 (리하이드레이션) */
 const REHYDRATION_FILE_COUNT = 5;
 
-/** Default cold storage TTL in milliseconds (24 hours) */
+/** 콜드 스토리지 파일의 기본 만료 시간 (24시간, 밀리초) */
 const COLD_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
 
-/** Tools that produce write/mutation results (higher priority in hot tail) */
+/** 파일을 수정/생성하는 도구 (핫 테일에서 높은 우선순위를 가짐) */
 const WRITE_TOOLS = new Set(["file_edit", "file_write"]);
 
-/** Context window usage statistics */
+/** 컨텍스트 윈도우 사용량 통계 */
 export interface ContextUsage {
   readonly totalTokens: number;
   readonly maxTokens: number;
@@ -54,13 +82,13 @@ export interface ContextUsage {
   readonly messageCount: number;
 }
 
-/** Result of cold storage garbage collection */
+/** 콜드 스토리지 가비지 컬렉션(GC) 결과 */
 export interface CleanupResult {
   readonly removedFiles: number;
   readonly bytesFreed: number;
 }
 
-/** Metrics about compaction effectiveness */
+/** 압축 효과를 측정하는 메트릭 */
 export interface CompactionMetrics {
   readonly compactionCount: number;
   readonly totalTokensSaved: number;
@@ -70,10 +98,10 @@ export interface CompactionMetrics {
   readonly lastCompactionAt: string | null;
 }
 
-/** Rehydration strategy for post-compaction file re-reading */
+/** 압축 후 파일 재읽기 전략 — "recency"(최근 접근), "frequency"(빈번 접근), "mixed"(혼합) */
 export type RehydrationStrategy = "recency" | "frequency" | "mixed";
 
-/** Configuration for context management */
+/** 컨텍스트 관리자 설정 */
 export interface ContextManagerConfig {
   /** Maximum context window size in tokens */
   readonly maxContextTokens?: number;
@@ -99,7 +127,7 @@ export interface ContextManagerConfig {
   readonly rehydrationStrategy?: RehydrationStrategy;
 }
 
-/** Result of a compaction operation */
+/** 압축 작업의 결과 (원본/압축 토큰 수, 제거된 메시지 수, 요약) */
 export interface CompactionResult {
   readonly originalTokens: number;
   readonly compactedTokens: number;
@@ -107,7 +135,7 @@ export interface CompactionResult {
   readonly summary: string;
 }
 
-/** A reference to tool output stored on disk */
+/** 디스크에 저장된 도구 출력에 대한 참조 (해시, 경로, 원본 토큰 수) */
 export interface ColdStorageRef {
   readonly hash: string;
   readonly path: string;

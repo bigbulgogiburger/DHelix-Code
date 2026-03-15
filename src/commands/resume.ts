@@ -1,3 +1,15 @@
+/**
+ * /resume 명령어 핸들러 — 이전 세션 목록 조회 또는 재개
+ *
+ * 사용자가 /resume를 입력하면:
+ *   - 인자 없음: 저장된 세션 목록을 대화형 선택 리스트로 표시
+ *   - /resume <세션ID>: 해당 세션을 재개 (부분 ID 매칭 지원)
+ *
+ * 세션(session)이란? 하나의 대화 흐름을 나타내며,
+ * 메시지 히스토리가 디스크에 저장되어 나중에 이어서 사용할 수 있습니다.
+ *
+ * 사용 시점: 이전에 중단한 작업을 이어서 하고 싶을 때
+ */
 import {
   type SlashCommand,
   type CommandResult,
@@ -6,10 +18,6 @@ import {
 } from "./registry.js";
 import { SessionManager } from "../core/session-manager.js";
 
-/**
- * /resume [id] — List sessions or resume a specific session.
- * Without arguments, lists available sessions.
- */
 export const resumeCommand: SlashCommand = {
   name: "resume",
   description: "List or resume a previous session",

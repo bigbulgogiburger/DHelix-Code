@@ -1,17 +1,39 @@
+/**
+ * /cost 명령어 핸들러 — 토큰 사용량 및 비용 상세 분석
+ *
+ * 사용자가 /cost를 입력하면 현재 세션의 토큰 사용량(입력/출력),
+ * 예상 비용, 모델별 가격 정보, 효율성 메트릭(턴당 비용, 출력 비율 등)을
+ * 상세하게 보여줍니다.
+ *
+ * 사용 시점: API 비용을 추적하고 싶을 때, 비용 효율적인 모델로
+ * 전환해야 하는지 판단할 때
+ */
 import { type SlashCommand } from "./registry.js";
 import { metrics, COUNTERS } from "../telemetry/metrics.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 
 /**
- * Format a number with comma separators and right-align to a given width.
+ * 토큰 수를 천 단위 구분자와 함께 포맷하고 우측 정렬하는 함수
+ *
+ * @param n - 포맷할 숫자
+ * @param width - 최소 출력 너비 (우측 정렬을 위한 패딩)
+ * @returns 포맷된 문자열 (예: "  12,345")
  */
 export function formatTokenCount(n: number, width: number): string {
   return n.toLocaleString("en-US").padStart(width);
 }
 
 /**
- * Format a dollar amount with consistent precision.
- * Uses 3 decimal places for sub-dollar amounts, 2 otherwise.
+ * 달러 금액을 일관된 정밀도로 포맷하는 함수
+ *
+ * 금액 크기에 따라 적절한 소수점 자릿수를 적용합니다:
+ * - $0: "$0.00"
+ * - $0.01 미만: 소수점 4자리 (예: "$0.0023")
+ * - $1 미만: 소수점 3자리 (예: "$0.123")
+ * - $1 이상: 소수점 2자리 (예: "$1.50")
+ *
+ * @param cost - 포맷할 달러 금액
+ * @returns 포맷된 금액 문자열 (예: "$0.0023")
  */
 export function formatCost(cost: number): string {
   if (cost === 0) return "$0.00";
@@ -21,7 +43,13 @@ export function formatCost(cost: number): string {
 }
 
 /**
- * Calculate efficiency metrics from token usage and turn count.
+ * 토큰 사용량과 턴 수로부터 효율성 메트릭을 계산하는 함수
+ *
+ * @param inputTokens - 입력 토큰 수 (사용자 → LLM으로 보낸 토큰)
+ * @param outputTokens - 출력 토큰 수 (LLM → 사용자에게 생성한 토큰)
+ * @param totalCost - 총 비용 (달러)
+ * @param turns - 사용자 턴 수 (대화 회차)
+ * @returns costPerTurn(턴당 비용), tokensPerTurn(턴당 토큰), outputRatio(출력 비율 %)
  */
 export function calculateEfficiency(
   inputTokens: number,
@@ -45,7 +73,10 @@ export function calculateEfficiency(
 }
 
 /**
- * /cost — Show detailed token usage breakdown, pricing, and efficiency metrics.
+ * /cost 슬래시 명령어 정의 — 토큰 사용량, 가격, 효율성 메트릭 상세 표시
+ *
+ * 현재 모델의 입력/출력 토큰 수, 비용, 가격 정보,
+ * 턴당 비용/토큰 효율성을 한눈에 보여줍니다.
  */
 export const costCommand: SlashCommand = {
   name: "cost",

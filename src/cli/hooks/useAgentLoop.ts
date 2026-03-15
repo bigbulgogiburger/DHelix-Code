@@ -1,3 +1,25 @@
+/**
+ * useAgentLoop.ts — 에이전트 루프를 관리하는 핵심 React 훅
+ *
+ * 사용자 입력을 받아 LLM에 전달하고, 도구 호출을 처리하고,
+ * 결과를 대화 히스토리에 저장하는 전체 에이전트 사이클을 관리합니다.
+ *
+ * 이 훅이 담당하는 역할:
+ * - 대화 히스토리 관리 (useConversation)
+ * - LLM 스트리밍 텍스트 버퍼링 (useTextBuffering)
+ * - 시스템 프롬프트 빌드 (프로젝트 지침, 스킬, 메모리, 레포맵 포함)
+ * - 에이전트 루프 실행 및 결과 처리
+ * - 활동(Activity) 추적 및 UI 상태 동기화
+ * - 토큰 사용량 및 비용 추적
+ * - 슬래시 명령 처리 위임
+ * - 메시지 큐잉 (에이전트 실행 중 추가 입력 대기)
+ * - AbortController를 통한 취소 지원 (Escape)
+ * - MCP 도구 검색 연동
+ *
+ * 상태 흐름:
+ * 사용자 입력 → handleSubmit → (슬래시 명령?) → processMessage
+ *   → buildSystemPrompt → runAgentLoop → 결과 저장 → UI 업데이트
+ */
 import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useConversation } from "./useConversation.js";
 import { useTextBuffering } from "./useTextBuffering.js";
@@ -24,6 +46,10 @@ import { ActivityCollector, type TurnActivity } from "../../core/activity.js";
 import { MemoryManager } from "../../memory/manager.js";
 import { metrics, COUNTERS } from "../../telemetry/metrics.js";
 
+/**
+ * useAgentLoop 훅의 옵션 인터페이스
+ * App.tsx에서 필요한 의존성을 모두 전달받습니다.
+ */
 export interface UseAgentLoopOptions {
   readonly client: LLMProvider;
   readonly model: string;
@@ -42,6 +68,22 @@ export interface UseAgentLoopOptions {
   readonly thinkingEnabled?: boolean;
 }
 
+/**
+ * 에이전트 루프 관리 훅 — 사용자 입력부터 LLM 응답까지의 전체 사이클을 담당
+ *
+ * 반환값:
+ * - isProcessing: 에이전트가 현재 처리 중인지 여부
+ * - streamingText: LLM이 스트리밍 중인 텍스트
+ * - completedTurns: 완료된 대화 턴 목록
+ * - currentTurn/liveTurn: 현재 진행 중인 턴 데이터
+ * - handleSubmit: 사용자 입력 처리 함수
+ * - error/commandOutput: 에러 및 명령 출력
+ * - tokenCount/inputTokens/outputTokens/totalCost: 토큰 및 비용 추적
+ * - activeModel: 현재 사용 중인 모델명
+ * - events: 이벤트 이미터
+ * - messageQueueRef: 대기 중인 메시지 큐
+ * - interactiveSelect: 대화형 선택 UI 데이터
+ */
 export function useAgentLoop({
   client,
   model: initialModel,

@@ -1,9 +1,24 @@
+/**
+ * useInput.ts — 입력 히스토리를 관리하는 React 훅
+ *
+ * 사용자가 이전에 입력한 내용을 위/아래 화살표로 탐색할 수 있도록
+ * 히스토리를 메모리와 디스크에 동시 관리합니다.
+ *
+ * 히스토리는 ~/.dbcode/input-history.json에 JSON 배열로 저장되며,
+ * 최대 INPUT_HISTORY_MAX(상수)개까지 유지됩니다.
+ * 같은 입력이 중복되면 기존 항목을 제거하고 최신으로 이동합니다.
+ *
+ * 사용 방식:
+ * - addToHistory(input): 새 입력 추가
+ * - navigateUp(): ↑ 키 — 이전 입력으로 이동
+ * - navigateDown(): ↓ 키 — 다음 입력으로 이동 (빈 문자열이면 현재 입력 복원)
+ */
 import { useState, useCallback, useEffect, useRef } from "react";
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import { INPUT_HISTORY_FILE, INPUT_HISTORY_MAX } from "../../constants.js";
 
-/** Load persisted history from disk */
+/** 디스크에서 저장된 히스토리를 로드 — JSON 배열 형태, 실패 시 빈 배열 반환 */
 function loadHistory(): readonly string[] {
   try {
     const raw = readFileSync(INPUT_HISTORY_FILE, "utf-8");
@@ -17,7 +32,7 @@ function loadHistory(): readonly string[] {
   }
 }
 
-/** Save history to disk */
+/** 히스토리를 디스크에 저장 — JSON 배열로 직렬화, 실패 시 조용히 무시 */
 function saveHistory(history: readonly string[]): void {
   try {
     mkdirSync(dirname(INPUT_HISTORY_FILE), { recursive: true });
@@ -27,7 +42,16 @@ function saveHistory(history: readonly string[]): void {
   }
 }
 
-/** Hook for managing input history with disk persistence */
+/**
+ * 디스크 영속성을 가진 입력 히스토리 관리 훅
+ *
+ * 상태:
+ * - history: 히스토리 배열 (최신이 인덱스 0)
+ * - historyIndex: 현재 탐색 위치 (-1이면 현재 입력 모드)
+ *
+ * 디스크 동기화: history가 변경될 때마다 자동으로 파일에 저장
+ * (첫 렌더링 시에는 저장하지 않음)
+ */
 export function useInputHistory(maxHistory = INPUT_HISTORY_MAX) {
   const loaded = useRef(false);
   const [history, setHistory] = useState<readonly string[]>(() => {

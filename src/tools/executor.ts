@@ -1,3 +1,17 @@
+/**
+ * 도구 실행 엔진 — LLM이 요청한 도구 호출을 실제로 실행하는 모듈
+ *
+ * 도구 이름으로 레지스트리에서 정의를 찾고, Zod로 인수를 검증한 뒤,
+ * 타임아웃과 AbortSignal을 설정하여 안전하게 실행합니다.
+ *
+ * 주요 기능:
+ * - 도구 인수 자동 교정 (저성능 모델의 잘못된 호출 보정)
+ * - 타임아웃 관리 (AbortController 기반)
+ * - 일시적 에러 자동 재시도 (네트워크 오류 등)
+ * - 백그라운드 프로세스 관리 (장시간 실행 명령을 비동기로 관리)
+ *
+ * AbortController — 비동기 작업을 외부에서 취소할 수 있게 하는 웹 표준 API
+ */
 import {
   type ToolDefinition,
   type ToolContext,
@@ -18,15 +32,41 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { randomUUID } from "node:crypto";
 
+/** 일시적 에러 발생 시 최대 재시도 횟수 */
 const MAX_TOOL_RETRIES = 1;
 
+/**
+ * 일시적(transient) 에러인지 판별 — 재시도하면 해결될 수 있는 네트워크 오류 확인
+ *
+ * 다음 에러 코드가 포함되어 있으면 일시적 에러로 판단합니다:
+ * - ECONNRESET: 연결이 강제로 끊김
+ * - ETIMEDOUT: 연결 시간 초과
+ * - ENOTFOUND: DNS 조회 실패
+ * - EPIPE: 파이프가 깨짐 (상대방이 연결을 닫음)
+ * - EAI_AGAIN: DNS 조회 일시적 실패
+ *
+ * @param error - 판별할 에러 객체
+ * @returns 일시적 에러이면 true
+ */
 function isTransientError(error: unknown): boolean {
   const msg = error instanceof Error ? error.message : String(error);
   return /ECONNRESET|ETIMEDOUT|ENOTFOUND|EPIPE|EAI_AGAIN/.test(msg);
 }
 
 /**
- * Execute a single tool call with timeout, validation, and error handling.
+ * 단일 도구 실행 — 타임아웃, 검증, 에러 처리를 포함한 안전한 실행
+ *
+ * 실행 흐름:
+ * 1. AbortController로 타임아웃과 부모 취소 신호를 연결
+ * 2. 저성능 모델의 인수 오류를 자동 교정 (correctToolCall)
+ * 3. Zod 스키마로 인수 검증 (parseToolArguments)
+ * 4. 도구 실행 (일시적 에러 시 자동 재시도)
+ * 5. 타임아웃/에러 발생 시 안전한 에러 결과 반환
+ *
+ * @param tool - 실행할 도구 정의
+ * @param args - LLM이 전달한 원시 인수
+ * @param options - 작업 디렉토리, 취소 신호, 이벤트 발행기 등 (선택사항)
+ * @returns 도구 실행 결과 (출력 텍스트와 에러 여부)
  */
 export async function executeTool(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -40,21 +80,26 @@ export async function executeTool(
     capabilityTier?: CapabilityTier;
   },
 ): Promise<ToolResult> {
+  // 도구별 타임아웃이 지정되어 있으면 사용, 없으면 전역 기본값 사용
   const timeoutMs = tool.timeoutMs ?? TOOL_TIMEOUTS.default;
+  // AbortController — 이 도구 실행만을 위한 독립적인 취소 제어기 생성
   const controller = new AbortController();
   const workingDirectory = options?.workingDirectory ?? process.cwd();
 
-  // Link parent abort signal
+  // 부모 취소 신호(abort signal)와 연결 — 사용자가 Esc를 누르면 이 도구도 취소됨
   if (options?.signal) {
+    // 이미 취소된 상태라면 즉시 "Aborted" 반환
     if (options.signal.aborted) {
       return { output: "Aborted", isError: true };
     }
+    // 부모 신호가 취소되면 이 컨트롤러도 취소하도록 이벤트 연결
     options.signal.addEventListener("abort", () => controller.abort(), { once: true });
   }
 
-  // Timeout
+  // 지정된 시간이 지나면 자동으로 취소하는 타이머 설정
   const timeout = setTimeout(() => controller.abort(), timeoutMs);
 
+  // 도구 실행에 필요한 컨텍스트(환경 정보) 객체 생성
   const context: ToolContext = {
     workingDirectory,
     abortSignal: controller.signal,
@@ -65,38 +110,54 @@ export async function executeTool(
   };
 
   try {
-    // Correct common tool call errors from lower-capability models (before validation)
+    // 저성능 모델(low/medium tier)의 흔한 인수 오류를 자동 교정
+    // 예: 상대 경로 → 절대 경로, 문자열 "true" → boolean true
     const correctedArgs = correctToolCall(args, workingDirectory, options?.capabilityTier ?? "high");
+    // Zod 스키마로 인수 검증 — 잘못된 인수면 에러를 던짐
     const validatedArgs = parseToolArguments(tool.parameterSchema, correctedArgs);
 
-    // Retry loop for transient errors
+    // 재시도 루프 — 일시적 네트워크 에러 시 지수 백오프(exponential backoff)로 재시도
     let lastError: unknown;
     for (let attempt = 0; attempt <= MAX_TOOL_RETRIES; attempt++) {
       try {
         return await tool.execute(validatedArgs, context);
       } catch (execError) {
         lastError = execError;
+        // 재시도 가능한 일시적 에러이고 재시도 횟수가 남아있으면 대기 후 재시도
         if (attempt < MAX_TOOL_RETRIES && isTransientError(execError)) {
+          // 지수 백오프: 1초, 2초, ... (attempt + 1)초 대기
           await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
           continue;
         }
         throw execError;
       }
     }
+    // 모든 재시도 실패 시 마지막 에러를 throw
     throw lastError;
   } catch (error) {
+    // AbortSignal이 활성화됨 = 타임아웃 또는 사용자 취소
     if (controller.signal.aborted) {
       return { output: `Tool "${tool.name}" timed out after ${timeoutMs}ms`, isError: true };
     }
+    // 기타 에러 — 에러 메시지를 포함한 실패 결과 반환
     const message = error instanceof Error ? error.message : String(error);
     return { output: `Tool "${tool.name}" failed: ${message}`, isError: true };
   } finally {
+    // 타이머 정리 — 메모리 누수 방지
     clearTimeout(timeout);
   }
 }
 
 /**
- * Execute a tool call by looking it up in the registry.
+ * 레지스트리에서 도구를 찾아 실행 — executeTool의 상위 래퍼(wrapper)
+ *
+ * 레지스트리에서 도구 이름으로 정의를 조회한 뒤, executeTool을 호출합니다.
+ * 도구를 찾을 수 없으면 "Unknown tool" 에러 결과를 반환합니다.
+ *
+ * @param registry - 도구 레지스트리 (등록된 모든 도구가 있는 저장소)
+ * @param call - LLM 응답에서 추출한 도구 호출 정보 (이름, ID, 인수)
+ * @param options - 실행 옵션 (작업 디렉토리, 취소 신호 등)
+ * @returns 도구 호출 결과 (ID, 이름, 출력, 에러 여부 포함)
  */
 export async function executeToolCall(
   registry: ToolRegistry,
@@ -108,8 +169,10 @@ export async function executeToolCall(
     capabilityTier?: CapabilityTier;
   },
 ): Promise<ToolCallResult> {
+  // 레지스트리에서 도구를 이름으로 조회
   const tool = registry.get(call.name);
   if (!tool) {
+    // 등록되지 않은 도구를 호출한 경우 — LLM이 존재하지 않는 도구를 "환각(hallucinate)"했을 가능성
     return {
       id: call.id,
       name: call.name,
@@ -118,6 +181,7 @@ export async function executeToolCall(
     };
   }
 
+  // 찾은 도구를 실행하고 결과에 호출 ID를 포함하여 반환
   const result = await executeTool(tool, call.arguments, {
     workingDirectory: options?.workingDirectory,
     signal: options?.signal,
@@ -134,57 +198,108 @@ export async function executeToolCall(
   };
 }
 
-/** Status of a background process */
+/**
+ * 백그라운드 프로세스 상태 정보 — 외부에서 프로세스 상태를 조회할 때 반환하는 인터페이스
+ */
 export interface BackgroundProcessStatus {
+  /** 운영체제 PID (Process ID) — 프로세스 고유 번호 */
   readonly pid: number;
+  /** 사람이 읽기 쉬운 프로세스 ID (예: "bg-1", "bg-2") */
   readonly processId: string;
+  /** 실행 중인 명령어 */
   readonly command: string;
+  /** 현재 실행 중 여부 */
   readonly running: boolean;
+  /** 종료 코드 (아직 실행 중이면 null, 0이면 성공, 그 외는 에러) */
   readonly exitCode: number | null;
+  /** 출력이 기록되는 임시 파일 경로 */
   readonly outputFile: string;
 }
 
-/** Info for listing background processes */
+/**
+ * 백그라운드 프로세스 목록 정보 — list() 메서드에서 반환하는 간략한 프로세스 정보
+ */
 export interface BackgroundProcessInfo {
+  /** 사람이 읽기 쉬운 프로세스 ID */
   readonly processId: string;
+  /** 운영체제 PID */
   readonly pid: number;
+  /** 실행 중인 명령어 */
   readonly command: string;
+  /** 현재 실행 중 여부 */
   readonly running: boolean;
+  /** 종료 코드 */
   readonly exitCode: number | null;
 }
 
+/**
+ * 내부 백그라운드 프로세스 항목 — 프로세스 관리에 필요한 모든 내부 상태를 담는 인터페이스
+ */
 interface BackgroundProcess {
+  /** 운영체제 PID */
   readonly pid: number;
+  /** 사람이 읽기 쉬운 프로세스 ID */
   readonly processId: string;
+  /** 실행된 명령어 */
   readonly command: string;
+  /** 출력이 기록되는 임시 파일 경로 */
   readonly outputFile: string;
+  /** Node.js 자식 프로세스(ChildProcess) 객체 — kill 등 프로세스 제어에 사용 */
   readonly proc: ChildProcess;
+  /** 현재 실행 중 여부 (프로세스 종료 시 false로 변경) */
   running: boolean;
+  /** 종료 코드 */
   exitCode: number | null;
+  /** 프로세스 완료 시 호출할 콜백 함수 목록 */
   completionCallbacks: Array<(exitCode: number) => void>;
-  /** Byte offset for incremental output reads */
+  /** 증분 읽기(incremental read)를 위한 바이트 오프셋 — 마지막으로 읽은 위치 */
   lastReadOffset: number;
 }
 
 /**
- * Manages background shell processes with detached execution.
- * Processes run independently and their output is written to temp files.
- * Each process is assigned a human-readable ID (e.g., "bg-1", "bg-2").
+ * 백그라운드 프로세스 관리자 — 장시간 실행 명령을 비동기적으로 관리하는 클래스
+ *
+ * 사용자가 "npm run dev"처럼 오래 걸리는 명령을 백그라운드에서 실행하고,
+ * 나중에 출력을 확인하거나 종료할 수 있게 합니다.
+ *
+ * 각 프로세스는 임시 파일에 출력을 기록하며, "bg-1", "bg-2" 같은
+ * 사람이 읽기 쉬운 ID로 식별됩니다.
+ *
+ * detached 모드로 실행하여 부모 프로세스가 종료되어도 독립적으로 실행됩니다.
  */
 export class BackgroundProcessManager {
+  /** PID로 프로세스를 조회하는 Map */
   private readonly processes = new Map<number, BackgroundProcess>();
+  /** 사람이 읽기 쉬운 ID("bg-1")로 프로세스를 조회하는 Map */
   private readonly processIdMap = new Map<string, BackgroundProcess>();
+  /** 다음에 할당할 프로세스 번호 (순차 증가) */
   private nextId = 1;
 
+  /**
+   * 백그라운드 프로세스 시작
+   *
+   * 셸 명령을 detached(분리) 모드로 실행하고, 출력을 임시 파일에 기록합니다.
+   * unref()를 호출하여 이 프로세스가 Node.js 이벤트 루프를 블로킹하지 않게 합니다.
+   *
+   * @param command - 실행할 셸 명령어
+   * @param cwd - 작업 디렉토리
+   * @returns 프로세스 PID, 프로세스 ID, 출력 파일 경로
+   */
   start(command: string, cwd: string): { pid: number; processId: string; outputFile: string } {
+    // 고유한 파일명을 위해 UUID의 앞 8자리 사용
     const fileId = randomUUID().slice(0, 8);
+    // 사람이 읽기 쉬운 순차 ID 할당
     const processId = `bg-${this.nextId++}`;
+    // 임시 디렉토리에 출력 로그 파일 생성
     const outputFile = join(tmpdir(), `dbcode-bg-${fileId}.log`);
     const shell = getShellCommand();
     const args = getShellArgs(command);
 
+    // 추가(append) 모드로 출력 파일 스트림 생성
     const outStream = createWriteStream(outputFile, { flags: "a" });
 
+    // detached: true — 프로세스 그룹을 분리하여 독립 실행
+    // stdio: ["ignore", "pipe", "pipe"] — stdin 무시, stdout/stderr를 파이프로 캡처
     const proc = spawn(shell, [...args], {
       cwd,
       detached: true,
@@ -193,6 +308,7 @@ export class BackgroundProcessManager {
 
     const pid = proc.pid!;
 
+    // stdout과 stderr를 모두 같은 출력 파일로 파이프
     proc.stdout?.pipe(outStream);
     proc.stderr?.pipe(outStream);
 
@@ -208,29 +324,39 @@ export class BackgroundProcessManager {
       lastReadOffset: 0,
     };
 
+    // 프로세스가 종료되면 상태 업데이트 및 콜백 호출
     proc.on("close", (code) => {
       entry.running = false;
       entry.exitCode = code ?? 1;
       outStream.end();
+      // 등록된 모든 완료 콜백을 실행
       for (const cb of entry.completionCallbacks) {
         cb(entry.exitCode);
       }
     });
 
+    // 프로세스 시작 에러 처리
     proc.on("error", () => {
       entry.running = false;
       entry.exitCode = 1;
       outStream.end();
     });
 
+    // unref() — 이 자식 프로세스가 부모의 이벤트 루프 종료를 막지 않도록 참조 해제
     proc.unref();
 
+    // 두 가지 Map에 모두 등록 (PID 및 프로세스 ID로 조회 가능)
     this.processes.set(pid, entry);
     this.processIdMap.set(processId, entry);
     return { pid, processId, outputFile };
   }
 
-  /** Resolve a process by either human-readable ID ("bg-1") or numeric PID */
+  /**
+   * 프로세스 조회 — 사람이 읽기 쉬운 ID("bg-1") 또는 숫자 PID로 프로세스를 찾음
+   *
+   * @param idOrPid - 프로세스 ID 문자열 또는 숫자 PID
+   * @returns 프로세스 항목 또는 undefined
+   */
   private resolve(idOrPid: string | number): BackgroundProcess | undefined {
     if (typeof idOrPid === "string") {
       return this.processIdMap.get(idOrPid) ?? this.findByPidString(idOrPid);
@@ -238,7 +364,14 @@ export class BackgroundProcessManager {
     return this.processes.get(idOrPid);
   }
 
-  /** Try to parse a string as a numeric PID and look it up */
+  /**
+   * 문자열을 숫자 PID로 파싱하여 조회 시도
+   *
+   * 사용자가 "bg-1" 대신 PID를 문자열로 입력한 경우를 처리합니다.
+   *
+   * @param str - PID 문자열 (예: "12345")
+   * @returns 프로세스 항목 또는 undefined
+   */
   private findByPidString(str: string): BackgroundProcess | undefined {
     const num = parseInt(str, 10);
     if (!isNaN(num)) {
@@ -247,6 +380,12 @@ export class BackgroundProcessManager {
     return undefined;
   }
 
+  /**
+   * 프로세스 상태 조회
+   *
+   * @param idOrPid - 프로세스 ID 또는 PID
+   * @returns 프로세스 상태 정보 또는 undefined (프로세스를 찾을 수 없는 경우)
+   */
   getStatus(idOrPid: string | number): BackgroundProcessStatus | undefined {
     const entry = this.resolve(idOrPid);
     if (!entry) return undefined;
@@ -260,7 +399,12 @@ export class BackgroundProcessManager {
     };
   }
 
-  /** Read all output from a background process (full contents) */
+  /**
+   * 프로세스의 전체 출력을 읽기 — 출력 파일의 전체 내용을 반환
+   *
+   * @param idOrPid - 프로세스 ID 또는 PID
+   * @returns 전체 출력 텍스트 (프로세스를 찾을 수 없으면 빈 문자열)
+   */
   getOutput(idOrPid: string | number): string {
     const entry = this.resolve(idOrPid);
     if (!entry) return "";
@@ -271,7 +415,17 @@ export class BackgroundProcessManager {
     }
   }
 
-  /** Read only new output since the last incremental read */
+  /**
+   * 프로세스의 새로운 출력만 읽기 (증분 읽기, incremental read)
+   *
+   * 마지막으로 읽은 바이트 위치(lastReadOffset)부터 새로 추가된 내용만 읽습니다.
+   * 이를 통해 LLM이 이미 본 출력을 중복 수신하지 않습니다.
+   *
+   * 저수준 파일 I/O(openSync, readSync)를 사용하여 정확한 바이트 오프셋부터 읽습니다.
+   *
+   * @param idOrPid - 프로세스 ID 또는 PID
+   * @returns 새 출력 텍스트, 실행 상태, 종료 코드
+   */
   getIncrementalOutput(idOrPid: string | number): {
     output: string;
     running: boolean;
@@ -282,15 +436,19 @@ export class BackgroundProcessManager {
       return { output: "", running: false, exitCode: null };
     }
     try {
+      // 파일의 현재 크기를 확인
       const stats = statSync(entry.outputFile);
       const totalBytes = stats.size;
+      // 마지막 읽은 위치 이후에 새 데이터가 없으면 빈 문자열 반환
       if (totalBytes <= entry.lastReadOffset) {
         return { output: "", running: entry.running, exitCode: entry.exitCode };
       }
+      // 새로 추가된 바이트만 읽기 (정확한 오프셋에서 시작)
       const fd = openSync(entry.outputFile, "r");
       const buffer = Buffer.alloc(totalBytes - entry.lastReadOffset);
       readSync(fd, buffer, 0, buffer.length, entry.lastReadOffset);
       closeSync(fd);
+      // 읽은 위치를 업데이트하여 다음 읽기에서 중복 방지
       entry.lastReadOffset = totalBytes;
       return { output: buffer.toString("utf-8"), running: entry.running, exitCode: entry.exitCode };
     } catch {
@@ -298,36 +456,62 @@ export class BackgroundProcessManager {
     }
   }
 
-  /** Kill a background process with a specific signal */
+  /**
+   * 백그라운드 프로세스에 시그널을 보내 종료
+   *
+   * 먼저 프로세스 그룹(-pid)에 시그널을 보내고,
+   * 실패하면 개별 프로세스에 직접 시그널을 보냅니다.
+   * 프로세스 그룹에 보내면 자식 프로세스들도 함께 종료됩니다.
+   *
+   * @param idOrPid - 프로세스 ID 또는 PID
+   * @param signal - 보낼 시그널 (기본값: SIGTERM — 정상 종료 요청)
+   * @returns 시그널 전송 성공 여부
+   */
   kill(idOrPid: string | number, signal: NodeJS.Signals = "SIGTERM"): boolean {
     const entry = this.resolve(idOrPid);
     if (!entry) return false;
     if (!entry.running) return false;
     try {
+      // -pid: 음수 PID는 프로세스 그룹 전체에 시그널을 보냄
       process.kill(-entry.pid, signal);
       return true;
     } catch {
       try {
+        // 프로세스 그룹 시그널이 실패하면 개별 프로세스에 직접 시도
         entry.proc.kill(signal);
         return true;
       } catch {
-        // Process already exited
+        // 프로세스가 이미 종료된 경우 — 에러를 무시
         return false;
       }
     }
   }
 
+  /**
+   * 프로세스 완료 시 콜백 등록 — 프로세스가 종료되면 콜백 함수를 호출
+   *
+   * 이미 종료된 프로세스에 대해 호출하면 즉시 콜백을 실행합니다.
+   *
+   * @param idOrPid - 프로세스 ID 또는 PID
+   * @param callback - 종료 코드를 인수로 받는 콜백 함수
+   */
   onComplete(idOrPid: string | number, callback: (exitCode: number) => void): void {
     const entry = this.resolve(idOrPid);
     if (!entry) return;
+    // 이미 종료된 프로세스 — 즉시 콜백 실행
     if (!entry.running) {
       callback(entry.exitCode ?? 1);
       return;
     }
+    // 아직 실행 중 — 콜백 목록에 추가하여 종료 시 호출
     entry.completionCallbacks.push(callback);
   }
 
-  /** List all tracked background processes */
+  /**
+   * 추적 중인 모든 백그라운드 프로세스 목록 반환
+   *
+   * @returns 프로세스 정보 배열 (ID, PID, 명령어, 실행 상태, 종료 코드)
+   */
   list(): readonly BackgroundProcessInfo[] {
     return [...this.processIdMap.values()].map((entry) => ({
       processId: entry.processId,
@@ -338,7 +522,11 @@ export class BackgroundProcessManager {
     }));
   }
 
-  /** Terminate all running background processes */
+  /**
+   * 모든 실행 중인 백그라운드 프로세스 종료 — 애플리케이션 종료 시 정리(cleanup)에 사용
+   *
+   * SIGTERM 시그널을 보내 정상 종료를 요청합니다.
+   */
   cleanup(): void {
     for (const entry of this.processes.values()) {
       if (entry.running) {
@@ -348,7 +536,7 @@ export class BackgroundProcessManager {
           try {
             entry.proc.kill("SIGTERM");
           } catch {
-            // Process already exited
+            // 프로세스가 이미 종료된 경우 — 에러를 무시
           }
         }
       }
@@ -356,5 +544,10 @@ export class BackgroundProcessManager {
   }
 }
 
-/** Singleton background process manager */
+/**
+ * 싱글톤(Singleton) 백그라운드 프로세스 관리자 인스턴스
+ *
+ * 애플리케이션 전체에서 하나의 인스턴스만 사용하여
+ * 모든 백그라운드 프로세스를 중앙에서 관리합니다.
+ */
 export const backgroundProcessManager = new BackgroundProcessManager();

@@ -1,22 +1,45 @@
+/**
+ * /init 명령어 핸들러 — 프로젝트 초기화 및 DBCODE.md 생성
+ *
+ * 사용자가 /init을 입력하면 현재 디렉토리의 프로젝트 구조를 분석하고,
+ * LLM을 활용하여 프로젝트에 맞는 DBCODE.md(프로젝트 설정 파일)를
+ * 자동 생성합니다.
+ *
+ * 초기화 과정:
+ *   1. .dbcode/ 디렉토리 구조 생성 (settings.json, rules/ 등)
+ *   2. DBCODE.md 파일 존재 여부 확인 (생성 vs 업데이트 모드 결정)
+ *   3. LLM에게 코드베이스 분석 프롬프트를 주입하여 DBCODE.md 자동 생성
+ *
+ * DBCODE.md란? 프로젝트별 AI 어시스턴트 설정 파일로,
+ * 빌드 명령어, 아키텍처 설명, 코딩 규칙 등을 담습니다.
+ * Claude Code의 CLAUDE.md와 동일한 개념입니다.
+ *
+ * 두 가지 실행 모드:
+ *   - CLI 모드 (dbcode init): LLM 없이 정적 템플릿 생성
+ *   - 세션 내 모드 (/init): LLM이 코드베이스를 분석하여 풍부한 내용 생성
+ */
 import { mkdir, writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
 import { APP_NAME, PROJECT_CONFIG_FILE, PROJECT_CONFIG_DIR, DEFAULT_MODEL } from "../constants.js";
 import { type SlashCommand } from "./registry.js";
 
-/** Project initialization directory name */
+/** 프로젝트 설정 디렉토리 이름 (.dbcode) */
 const PROJECT_DIR = PROJECT_CONFIG_DIR;
 
-/** Local instructions filename (should be gitignored) */
+/** 로컬 지시 파일명 — .gitignore에 추가되어 git에 커밋되지 않는 개인 설정 */
 const LOCAL_INSTRUCTIONS_FILE = `${APP_NAME.toUpperCase()}.local.md`;
 
-/** Default settings */
+/** 기본 설정값 — .dbcode/settings.json에 기록되는 초기 설정 */
 const DEFAULT_SETTINGS = {
   model: DEFAULT_MODEL,
   allowedTools: ["file_read", "file_write", "file_edit", "bash_exec", "glob_search", "grep_search"],
 };
 
 /**
- * Check if a file exists at the given path.
+ * 주어진 경로에 파일이 존재하는지 확인하는 헬퍼 함수
+ *
+ * @param filePath - 확인할 파일의 절대 경로
+ * @returns 파일이 존재하면 true, 없으면 false
  */
 async function fileExists(filePath: string): Promise<boolean> {
   try {
@@ -28,7 +51,12 @@ async function fileExists(filePath: string): Promise<boolean> {
 }
 
 /**
- * Append DBCODE.local.md to .gitignore if .gitignore exists and the entry is not already present.
+ * .gitignore에 DBCODE.local.md 항목을 추가하는 함수
+ *
+ * .gitignore가 존재하고 해당 항목이 아직 없는 경우에만 추가합니다.
+ * 로컬 설정 파일이 git에 커밋되지 않도록 보호합니다.
+ *
+ * @param cwd - 프로젝트 루트 디렉토리
  */
 async function ensureGitignoreEntry(cwd: string): Promise<void> {
   const gitignorePath = join(cwd, ".gitignore");
@@ -46,8 +74,16 @@ async function ensureGitignoreEntry(cwd: string): Promise<void> {
 }
 
 /**
- * Create .dbcode/ directory structure if it doesn't exist.
- * Returns true if the directory was newly created.
+ * .dbcode/ 디렉토리 구조를 생성하는 함수 (없는 경우에만)
+ *
+ * 생성되는 구조:
+ *   .dbcode/
+ *     settings.json    — 모델 및 도구 설정
+ *     rules/           — 커스텀 규칙 파일 디렉토리
+ *       .gitkeep       — 빈 디렉토리 유지용
+ *
+ * @param cwd - 프로젝트 루트 디렉토리
+ * @returns 새로 생성됐으면 true, 이미 존재하면 false
  */
 async function ensureConfigDir(cwd: string): Promise<boolean> {
   const projectPath = join(cwd, PROJECT_DIR);
@@ -65,8 +101,16 @@ async function ensureConfigDir(cwd: string): Promise<boolean> {
 }
 
 /**
- * Detect project info from common config files and generate a static DBCODE.md template.
- * Used as fallback for CLI `dbcode init` (outside agent loop, no LLM available).
+ * 프로젝트 설정 파일들을 감지하여 정적 DBCODE.md 템플릿을 생성하는 함수
+ *
+ * package.json, tsconfig.json, Cargo.toml, go.mod, pyproject.toml 등
+ * 프로젝트 설정 파일을 읽어 프로젝트 정보를 자동 감지합니다.
+ *
+ * CLI에서 `dbcode init` 실행 시 (에이전트 루프 외부, LLM 없이)
+ * 폴백(fallback)으로 사용됩니다.
+ *
+ * @param cwd - 프로젝트 루트 디렉토리
+ * @returns DBCODE.md 템플릿 문자열
  */
 async function generateTemplate(cwd: string): Promise<string> {
   const lines: string[] = [`# ${APP_NAME.toUpperCase()}.md — Project Instructions`, ""];
@@ -147,10 +191,15 @@ async function generateTemplate(cwd: string): Promise<string> {
 }
 
 /**
- * Build the LLM analysis prompt for comprehensive DBCODE.md generation.
- * This prompt is injected as a user message so the LLM uses its tools
- * to analyze the codebase and create a rich DBCODE.md — similar to
- * how Claude Code's /init works.
+ * LLM 분석 프롬프트를 구성하는 함수 — 종합적인 DBCODE.md 생성용
+ *
+ * 이 프롬프트는 사용자 메시지로 주입되어 LLM이 도구(file_read, glob_search 등)를
+ * 사용하여 코드베이스를 분석하고 풍부한 DBCODE.md를 생성하도록 합니다.
+ * Claude Code의 /init과 동일한 방식입니다.
+ *
+ * @param isUpdate - true면 기존 DBCODE.md 업데이트 모드, false면 새로 생성
+ * @param configDirCreated - .dbcode/ 디렉토리가 새로 생성되었는지 여부
+ * @returns LLM에게 전달할 분석 프롬프트 문자열
  */
 function buildAnalysisPrompt(isUpdate: boolean, configDirCreated: boolean): string {
   const contextLines: string[] = [];
@@ -217,7 +266,13 @@ Write the result to \`${PROJECT_CONFIG_FILE}\` at the project root using file_wr
   return contextLines.join("\n") + instructions;
 }
 
-/** Result of project initialization */
+/**
+ * 프로젝트 초기화 결과 인터페이스
+ *
+ * @property created - 새로 생성된 항목이 있으면 true
+ * @property path - 프로젝트 설정 디렉토리 경로
+ * @property detail - 세부 생성 정보 (DBCODE.md, .dbcode/ 각각 생성 여부)
+ */
 export interface InitResult {
   readonly created: boolean;
   readonly path: string;
@@ -228,16 +283,19 @@ export interface InitResult {
 }
 
 /**
- * Initialize a dbcode project in the given directory.
- * Creates DBCODE.md at project root (convention) and .dbcode/ for settings and rules.
+ * dbcode 프로젝트를 초기화하는 함수 (CLI 폴백용)
  *
- * This is the CLI fallback (used by `dbcode init` outside the agent loop).
- * For LLM-driven init, use the /init slash command inside a dbcode session.
+ * 프로젝트 루트에 DBCODE.md와 .dbcode/ 디렉토리를 생성합니다.
+ * CLI에서 `dbcode init` 명령으로 호출됩니다 (에이전트 루프 외부).
+ * 세션 내 LLM 기반 초기화는 /init 슬래시 명령어를 사용하세요.
  *
- * The two artifacts are independent:
- * - .dbcode/ directory may already exist (e.g., from git clone) while DBCODE.md is missing
- * - DBCODE.md at root may exist without .dbcode/ directory
- * Both are created if missing; existing ones are left untouched.
+ * 두 산출물(DBCODE.md와 .dbcode/)은 독립적입니다:
+ * - git clone으로 .dbcode/만 있고 DBCODE.md가 없을 수 있음
+ * - DBCODE.md만 있고 .dbcode/가 없을 수도 있음
+ * 각각 없는 경우에만 생성하고, 이미 있으면 건드리지 않습니다.
+ *
+ * @param cwd - 프로젝트 루트 디렉토리
+ * @returns 초기화 결과 (생성 여부, 경로, 세부 정보)
  */
 export async function initProject(cwd: string): Promise<InitResult> {
   const projectPath = join(cwd, PROJECT_DIR);
@@ -273,7 +331,15 @@ export async function initProject(cwd: string): Promise<InitResult> {
   return { created: true, path: projectPath, detail };
 }
 
-/** Slash command wrapper for /init — LLM-driven DBCODE.md generation */
+/**
+ * /init 슬래시 명령어 정의 — LLM 기반 DBCODE.md 자동 생성
+ *
+ * 세션 내에서 사용되며, LLM이 코드베이스를 분석하여
+ * 풍부한 내용의 DBCODE.md를 생성합니다.
+ *
+ * shouldInjectAsUserMessage: true → 프롬프트가 사용자 메시지로 주입됨
+ * refreshInstructions: true → 생성 후 프로젝트 설정을 다시 로드
+ */
 export const initCommand: SlashCommand = {
   name: "init",
   description: "Initialize project with AI-analyzed DBCODE.md (LLM-driven)",

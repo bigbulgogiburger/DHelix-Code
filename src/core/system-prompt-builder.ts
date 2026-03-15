@@ -1,3 +1,16 @@
+/**
+ * 시스템 프롬프트 빌더(System Prompt Builder) 모듈
+ *
+ * LLM에게 전달하는 시스템 프롬프트를 모듈화된 섹션들로 조립합니다.
+ * 각 섹션은 우선순위를 가지며, 조건부 포함, 토큰 예산 제한, 캐싱 등을 지원합니다.
+ *
+ * 주니어 개발자를 위한 설명:
+ * - 시스템 프롬프트란? LLM에게 "너는 어떤 AI이고, 어떻게 행동해야 해"를 알려주는 텍스트입니다
+ * - 이 모듈은 여러 조각(identity, environment, tools, conventions 등)을 조합합니다
+ * - 각 섹션에 우선순위가 있어서 토큰 예산을 초과하면 낮은 우선순위부터 제거됩니다
+ * - 모델의 능력 수준(high/medium/low)에 따라 프롬프트 복잡도가 자동 조절됩니다
+ * - 정적 섹션은 캐싱 힌트를 통해 LLM 호출 비용을 줄일 수 있습니다
+ */
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -8,7 +21,20 @@ import { estimateTokens } from "../llm/token-counter.js";
 import { type CapabilityTier } from "../llm/model-capabilities.js";
 import { getToneProfile } from "./tone-profiles.js";
 
-/** Tier-based token budget allocation for system prompt sections */
+/**
+ * 모델 능력 수준(tier)별 토큰 예산 배분
+ *
+ * - high: 대형 모델 (GPT-4, Claude 등) — 넉넉한 예산
+ * - medium: 중형 모델 — 균형 잡힌 예산
+ * - low: 소형 모델 — 최소한의 예산으로 핵심만 포함
+ *
+ * 각 항목의 의미:
+ * - totalBudget: 시스템 프롬프트 전체 토큰 상한
+ * - toolDescriptionBudget: 도구 설명 섹션의 토큰 상한
+ * - instructionsBudget: 지침 섹션의 토큰 상한
+ * - repoMapBudget: 저장소 맵(프로젝트 구조) 섹션의 토큰 상한
+ * - skillsBudget: 스킬(슬래시 명령) 섹션의 토큰 상한
+ */
 const TIER_BUDGETS: Readonly<Record<CapabilityTier, {
   readonly totalBudget: number;
   readonly toolDescriptionBudget: number;
@@ -21,7 +47,10 @@ const TIER_BUDGETS: Readonly<Record<CapabilityTier, {
   low: { totalBudget: 4_000, toolDescriptionBudget: 1_500, instructionsBudget: 1_000, repoMapBudget: 500, skillsBudget: 500 },
 };
 
-/** Explicit tool usage guide injected for LOW tier models */
+/**
+ * LOW 티어 모델을 위한 명시적 도구 사용 가이드
+ * 소형 모델은 도구 사용법을 잘 모를 수 있어서, 구체적인 예시를 제공합니다.
+ */
 const LOW_TIER_TOOL_GUIDE = `# Tool Usage Guide
 You have these tools available. Always use absolute paths.
 
@@ -41,8 +70,12 @@ Call bash_exec: {"command": "npm test"}
 Important: Always use the file_read tool before file_edit.`;
 
 /**
- * Compress a tool description for LOW tier models.
- * Keeps only the first sentence to reduce token usage.
+ * LOW 티어 모델용 도구 설명을 압축합니다.
+ * 첫 번째 문장만 유지하여 토큰 사용량을 줄입니다.
+ *
+ * @param description - 원본 도구 설명 문자열
+ * @param tier - 모델의 능력 수준
+ * @returns 압축된 설명 (low 티어가 아니면 원본 그대로 반환)
  */
 export function compressToolDescription(description: string, tier: CapabilityTier): string {
   if (tier !== "low") return description;
@@ -51,7 +84,16 @@ export function compressToolDescription(description: string, tier: CapabilityTie
   return description.slice(0, firstSentenceEnd + 1);
 }
 
-/** System prompt section with optional condition and token budget */
+/**
+ * 시스템 프롬프트의 개별 섹션
+ * 각 섹션은 ID, 내용, 우선순위를 가지며, 선택적으로 조건과 토큰 예산을 설정할 수 있습니다.
+ *
+ * @property id - 섹션 고유 식별자 (디버깅 및 추적용)
+ * @property content - 섹션의 실제 텍스트 내용
+ * @property priority - 우선순위 (높을수록 먼저 포함, 예산 초과 시 낮은 것부터 제거)
+ * @property condition - 조건 함수 (undefined면 항상 포함, false 반환 시 제외)
+ * @property tokenBudget - 이 섹션의 최대 토큰 수 (초과 시 잘라냄)
+ */
 export interface PromptSection {
   readonly id: string;
   readonly content: string;
@@ -62,7 +104,16 @@ export interface PromptSection {
   readonly tokenBudget?: number;
 }
 
-/** Session state for conditional prompt assembly */
+/**
+ * 세션 상태 — 조건부 프롬프트 조립에 사용됩니다
+ *
+ * @property mode - 현재 모드 ("normal" = 일반, "plan" = 계획 모드)
+ * @property isSubagent - 서브에이전트로 실행 중인지 여부
+ * @property subagentType - 서브에이전트 유형 (탐색/계획/일반)
+ * @property availableTools - 사용 가능한 도구 이름 목록
+ * @property extendedThinkingEnabled - 확장 사고(extended thinking) 활성화 여부
+ * @property features - 활성화된 기능 플래그 (키: 기능명, 값: 활성화 여부)
+ */
 export interface SessionState {
   readonly mode: "normal" | "plan";
   readonly isSubagent: boolean;
@@ -72,7 +123,10 @@ export interface SessionState {
   readonly features: Readonly<Record<string, boolean>>;
 }
 
-/** Options for building the system prompt */
+/**
+ * 시스템 프롬프트 빌드 옵션
+ * 프롬프트 조립에 필요한 모든 입력을 담고 있습니다.
+ */
 export interface BuildSystemPromptOptions {
   readonly projectInstructions?: string;
   readonly workingDirectory?: string;
@@ -96,14 +150,21 @@ export interface BuildSystemPromptOptions {
   readonly repoMapContent?: string;
 }
 
-/** Default token budget for system prompts (32k tokens) */
+/** 시스템 프롬프트의 기본 토큰 예산 (32,000 토큰) */
 const DEFAULT_TOTAL_TOKEN_BUDGET = 32_000;
 
 /**
- * Build the system prompt from modular sections.
- * Higher priority sections appear first.
- * Sections with conditions are only included when their condition returns true.
- * If total token budget is exceeded, lowest-priority sections are trimmed.
+ * 모듈화된 섹션들로 시스템 프롬프트를 빌드합니다.
+ *
+ * 동작 순서:
+ * 1. 각 섹션(identity, environment, tools 등)을 생성
+ * 2. 세션 상태에 따라 조건부 섹션 추가/제외
+ * 3. 우선순위 순으로 정렬 (높은 것 먼저)
+ * 4. 개별 섹션 토큰 예산 적용
+ * 5. 전체 토큰 예산 초과 시 낮은 우선순위 섹션부터 제거
+ *
+ * @param options - 빌드 옵션 (도구 레지스트리, 세션 상태, 토큰 예산 등)
+ * @returns 완성된 시스템 프롬프트 문자열
  */
 export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
   const cwd = options?.workingDirectory ?? process.cwd();
@@ -284,8 +345,14 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
 }
 
 /**
- * Build a mid-conversation system reminder for contextual guidance.
- * Use these to inject reminders between messages when patterns are detected.
+ * 대화 중간에 삽입하는 시스템 리마인더를 생성합니다.
+ *
+ * LLM이 반복적인 실수를 할 때 적절한 리마인더를 주입하여 행동을 교정합니다.
+ * 예: 도구 사용법 리마인더, 코드 품질 리마인더, git 안전 리마인더 등
+ *
+ * @param type - 리마인더 유형
+ * @param context - 리마인더에 포함할 동적 데이터
+ * @returns XML 태그로 감싼 리마인더 문자열
  */
 export function buildSystemReminder(
   type: "tool-usage" | "code-quality" | "git-safety" | "context-limit",
@@ -332,7 +399,11 @@ export function buildSystemReminder(
 }
 
 /**
- * Assemble sections: filter by condition, sort by priority, enforce token budget.
+ * 섹션들을 조립합니다: 조건 필터링 → 우선순위 정렬 → 토큰 예산 적용
+ *
+ * @param sections - 모든 후보 섹션 목록
+ * @param totalTokenBudget - 전체 토큰 예산 (초과 시 낮은 우선순위 제거)
+ * @returns 조립된 최종 프롬프트 문자열
  */
 function assembleSections(sections: readonly PromptSection[], totalTokenBudget?: number): string {
   // Filter sections by condition
@@ -371,8 +442,12 @@ function assembleSections(sections: readonly PromptSection[], totalTokenBudget?:
 }
 
 /**
- * Truncate content to approximately fit within a token budget.
- * Cuts at line boundaries to preserve readability.
+ * 텍스트를 토큰 예산에 맞게 잘라냅니다.
+ * 가독성을 위해 줄 단위로 잘라냅니다 (줄 중간에서 자르지 않음).
+ *
+ * @param content - 잘라낼 텍스트
+ * @param budget - 토큰 예산
+ * @returns 예산 내에 맞는 텍스트 (초과 시 "...(truncated)" 추가)
  */
 function truncateToTokenBudget(content: string, budget: number): string {
   const lines = content.split("\n");
@@ -392,7 +467,7 @@ function truncateToTokenBudget(content: string, budget: number): string {
   return result.join("\n");
 }
 
-/** Feature flag -> prompt section content mapping */
+/** 기능 플래그 → 프롬프트 섹션 내용 매핑 (기능이 활성화되면 해당 섹션이 프롬프트에 포함) */
 const FEATURE_SECTIONS: Readonly<Record<string, string>> = {
   "parallel-tools": [
     "# Parallel Tool Execution",
@@ -541,7 +616,7 @@ function buildEnvironmentSection(cwd: string): string {
   return lines.join("\n");
 }
 
-/** Safely detect git context — returns null if not a git repo. */
+/** git 컨텍스트를 안전하게 감지합니다 — git 저장소가 아니면 null 반환 */
 function detectGitContext(cwd: string): {
   readonly branch: string;
   readonly dirty: boolean;
@@ -585,7 +660,7 @@ function detectGitContext(cwd: string): {
   }
 }
 
-/** Detect project type from files in cwd. */
+/** 작업 디렉토리의 파일로부터 프로젝트 유형(Node.js, Python 등)을 감지합니다 */
 function detectProjectType(cwd: string): string | null {
   if (existsSync(join(cwd, "package.json"))) return "Node.js";
   if (existsSync(join(cwd, "Cargo.toml"))) return "Rust";
@@ -596,7 +671,7 @@ function detectProjectType(cwd: string): string | null {
   return null;
 }
 
-/** Load project instructions from DBCODE.md (root first, .dbcode/ fallback) */
+/** DBCODE.md에서 프로젝트 지침을 로드합니다 (루트 우선, .dbcode/ 폴백) */
 function loadProjectInstructions(cwd: string): string | null {
   const paths = getProjectConfigPaths(cwd);
 
@@ -680,7 +755,7 @@ function buildConventionsSection(): string {
 - Use conventional commit format: feat(scope): description.`;
 }
 
-/** Map locale code to human-readable language name */
+/** 로캘 코드를 사람이 읽을 수 있는 언어 이름으로 매핑합니다 */
 function localeToLanguageName(locale: string): string {
   const map: Record<string, string> = {
     ko: "Korean (한국어)",
@@ -702,14 +777,26 @@ All explanations, comments, and documentation should be in ${langName}.
 Code identifiers (variable names, function names) remain in English.`;
 }
 
-/** A block of system prompt content with optional caching hints */
+/**
+ * 시스템 프롬프트의 블록 단위 (캐싱 힌트 포함 가능)
+ *
+ * @property type - 블록 유형 (현재는 "text"만 지원)
+ * @property text - 블록의 텍스트 내용
+ * @property cache_control - Anthropic API용 캐싱 힌트 (정적 블록에 설정)
+ */
 export interface SystemPromptBlock {
   readonly type: "text";
   readonly text: string;
   readonly cache_control?: { readonly type: "ephemeral" };
 }
 
-/** Structured system prompt for providers that support explicit caching */
+/**
+ * 구조화된 시스템 프롬프트 — 프롬프트 캐싱을 지원하는 프로바이더용
+ * 정적(변하지 않는) 블록과 동적(매 요청마다 변하는) 블록을 분리합니다.
+ *
+ * @property text - 전체 텍스트 (캐싱 미지원 프로바이더용)
+ * @property blocks - 캐싱 힌트가 포함된 블록 배열 (Anthropic용)
+ */
 export interface StructuredSystemPrompt {
   /** Full text (for providers without caching support) */
   readonly text: string;
@@ -718,9 +805,17 @@ export interface StructuredSystemPrompt {
 }
 
 /**
- * Build a structured system prompt with static/dynamic block separation.
- * Static blocks get cache_control hints for Anthropic prompt caching.
- * The separator between sections is "\n\n---\n\n" (from assembleSections).
+ * 정적/동적 블록을 분리한 구조화된 시스템 프롬프트를 빌드합니다.
+ *
+ * 정적 블록(identity, tools, conventions 등)에는 cache_control 힌트를 추가하여
+ * Anthropic 프롬프트 캐싱을 활용합니다. 이렇게 하면 같은 내용을 반복 전송할 때
+ * API 비용을 절약할 수 있습니다.
+ *
+ * 동적 블록(environment, project instructions 등)은 매 요청마다 변하므로
+ * 캐싱 힌트를 붙이지 않습니다.
+ *
+ * @param options - 빌드 옵션
+ * @returns 텍스트와 블록 배열을 모두 포함한 구조화된 프롬프트
  */
 export function buildStructuredSystemPrompt(
   options?: BuildSystemPromptOptions,

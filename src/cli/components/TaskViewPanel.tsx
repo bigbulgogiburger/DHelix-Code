@@ -1,9 +1,23 @@
+/**
+ * TaskViewPanel.tsx — 작업(Task) 관리 패널 오버레이 컴포넌트
+ *
+ * 멀티 에이전트 작업의 진행 상황을 테이블 형태로 보여주는 패널입니다.
+ * Ctrl+T로 표시/숨김을 토글할 수 있으며, 우선순위/상태별 정렬,
+ * 진행률 요약 등을 제공합니다.
+ *
+ * 이 파일에는 다음이 포함됩니다:
+ * - 표시용 타입 정의 (TaskDisplayItem, TaskViewOptions, TaskStats)
+ * - 상수 정의 (아이콘, 색상, 우선순위, 정렬 가중치)
+ * - 헬퍼 함수 (정렬, 통계, 아이콘/색상 조회)
+ * - 서브 컴포넌트 (TaskRow, TaskSummaryBar)
+ * - 메인 패널 컴포넌트 (TaskViewPanel)
+ */
 import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 
-// ─── Display Types ──────────────────────────────────────────────────────────
+// ─── 표시용 타입 정의 ──────────────────────────────────────────────────────
 
-/** Simplified task data for display */
+/** 표시용으로 간소화된 작업 데이터 */
 export interface TaskDisplayItem {
   readonly id: string;
   readonly title: string;
@@ -15,14 +29,14 @@ export interface TaskDisplayItem {
   readonly results?: string;
 }
 
-/** Task sorting and filtering options */
+/** 작업 정렬 및 필터링 옵션 */
 export interface TaskViewOptions {
   readonly sortBy: "priority" | "status" | "created";
   readonly filterStatus?: string;
   readonly showCompleted: boolean;
 }
 
-/** Aggregated task statistics */
+/** 집계된 작업 통계 — 전체, 완료, 실행 중, 대기, 차단, 실패, 취소 각각의 수 */
 export interface TaskStats {
   readonly total: number;
   readonly completed: number;
@@ -33,9 +47,9 @@ export interface TaskStats {
   readonly cancelled: number;
 }
 
-// ─── Constants ──────────────────────────────────────────────────────────────
+// ─── 상수 정의 ──────────────────────────────────────────────────────────────
 
-/** Status icons matching TeammateStatus conventions */
+/** 상태별 아이콘 — TeammateStatus 컴포넌트와 동일한 규칙 사용 */
 const STATUS_ICONS: Readonly<Record<string, string>> = {
   pending: "○",
   in_progress: "◐",
@@ -45,7 +59,7 @@ const STATUS_ICONS: Readonly<Record<string, string>> = {
   cancelled: "⊘",
 };
 
-/** Status colors matching TeammateStatus conventions */
+/** 상태별 색상 — TeammateStatus 컴포넌트와 동일한 규칙 사용 */
 const STATUS_COLORS: Readonly<Record<string, string>> = {
   pending: "gray",
   in_progress: "yellow",
@@ -55,7 +69,7 @@ const STATUS_COLORS: Readonly<Record<string, string>> = {
   cancelled: "gray",
 };
 
-/** Priority stars (higher = more stars) */
+/** 우선순위별 별 표시 (높을수록 별이 많음) — critical=★★★★, high=★★★ */
 const PRIORITY_STARS: Readonly<Record<string, string>> = {
   critical: "★★★★",
   high: "★★★",
@@ -63,7 +77,7 @@ const PRIORITY_STARS: Readonly<Record<string, string>> = {
   low: "★",
 };
 
-/** Priority colors */
+/** 우선순위별 색상 — critical=빨강, high=노랑, medium=파랑, low=회색 */
 const PRIORITY_COLORS: Readonly<Record<string, string>> = {
   critical: "red",
   high: "yellow",
@@ -71,7 +85,7 @@ const PRIORITY_COLORS: Readonly<Record<string, string>> = {
   low: "gray",
 };
 
-/** Numeric weight for priority-based sorting (lower = higher priority) */
+/** 우선순위 기반 정렬용 가중치 (숫자가 작을수록 높은 우선순위) */
 const PRIORITY_WEIGHT: Readonly<Record<string, number>> = {
   critical: 0,
   high: 1,
@@ -79,7 +93,7 @@ const PRIORITY_WEIGHT: Readonly<Record<string, number>> = {
   low: 3,
 };
 
-/** Numeric weight for status-based sorting (lower = earlier in list) */
+/** 상태 기반 정렬용 가중치 (숫자가 작을수록 목록 앞에 표시) */
 const STATUS_WEIGHT: Readonly<Record<string, number>> = {
   in_progress: 0,
   pending: 1,
@@ -89,36 +103,36 @@ const STATUS_WEIGHT: Readonly<Record<string, number>> = {
   cancelled: 5,
 };
 
-/** Maximum title length before truncation */
+/** 제목 최대 길이 — 이를 초과하면 말줄임(…)으로 자름 */
 const MAX_TITLE_LENGTH = 40;
 
-// ─── Helper Functions ───────────────────────────────────────────────────────
+// ─── 헬퍼 함수 ───────────────────────────────────────────────────────────
 
-/** Get the status icon character for a given status */
+/** 상태에 해당하는 아이콘 문자를 반환 */
 export function getStatusIcon(status: string): string {
   return STATUS_ICONS[status] ?? "?";
 }
 
-/** Get the ink color name for a given status */
+/** 상태에 해당하는 Ink 색상명을 반환 */
 export function getStatusColor(status: string): string {
   return STATUS_COLORS[status] ?? "gray";
 }
 
-/** Get priority stars string for a given priority level */
+/** 우선순위에 해당하는 별 문자열을 반환 */
 export function getPriorityStars(priority: string): string {
   return PRIORITY_STARS[priority] ?? "★";
 }
 
-/** Get the ink color name for a given priority level */
+/** 우선순위에 해당하는 Ink 색상명을 반환 */
 export function getPriorityColor(priority: string): string {
   return PRIORITY_COLORS[priority] ?? "gray";
 }
 
 /**
- * Sort tasks by the specified criteria.
- * - "priority": critical first, then high, medium, low
- * - "status": in_progress first, then pending, blocked, failed, completed, cancelled
- * - "created": falls back to original order (stable sort by index)
+ * 지정된 기준으로 작업을 정렬합니다.
+ * - "priority": critical → high → medium → low 순
+ * - "status": in_progress → pending → blocked → failed → completed → cancelled 순
+ * - "created": 원래 순서 유지 (안정 정렬)
  */
 export function sortTasks(
   tasks: readonly TaskDisplayItem[],
@@ -144,7 +158,7 @@ export function sortTasks(
   return items;
 }
 
-/** Compute aggregate statistics from a list of tasks */
+/** 작업 목록에서 상태별 집계 통계를 계산 */
 export function getTaskStats(tasks: readonly TaskDisplayItem[]): TaskStats {
   let completed = 0;
   let running = 0;
@@ -188,7 +202,7 @@ export function getTaskStats(tasks: readonly TaskDisplayItem[]): TaskStats {
   };
 }
 
-/** Truncate a title to the maximum length, appending ellipsis if needed */
+/** 제목을 최대 길이로 자르고, 초과 시 말줄임(…) 추가 */
 export function truncateTitle(title: string, maxLength: number = MAX_TITLE_LENGTH): string {
   if (title.length <= maxLength) {
     return title;
@@ -196,19 +210,19 @@ export function truncateTitle(title: string, maxLength: number = MAX_TITLE_LENGT
   return title.slice(0, maxLength - 1) + "…";
 }
 
-/** Format a human-readable status label from the status key */
+/** 상태 키를 사람이 읽기 쉬운 레이블로 변환 — "in_progress" → "running" */
 function formatStatusLabel(status: string): string {
   if (status === "in_progress") return "running";
   return status;
 }
 
-// ─── Sub-Components ─────────────────────────────────────────────────────────
+// ─── 서브 컴포넌트 ─────────────────────────────────────────────────────────
 
 interface TaskRowProps {
   readonly task: TaskDisplayItem;
 }
 
-/** Renders a single task row with priority, status, title, and assignment */
+/** 단일 작업 행을 렌더링 — 우선순위(★), 상태(아이콘), 제목, 담당자를 가로로 배치 */
 export const TaskRow = React.memo(function TaskRow({ task }: TaskRowProps) {
   const stars = getPriorityStars(task.priority);
   const priorityColor = getPriorityColor(task.priority);
@@ -251,7 +265,7 @@ interface TaskSummaryBarProps {
   readonly stats: TaskStats;
 }
 
-/** Renders a summary bar showing task counts by status */
+/** 상태별 작업 수를 요약하는 바 — "5/10 complete | 2 running | 1 failed" */
 export const TaskSummaryBar = React.memo(function TaskSummaryBar({ stats }: TaskSummaryBarProps) {
   const parts: string[] = [`${stats.completed}/${stats.total} complete`];
 
@@ -275,7 +289,7 @@ export const TaskSummaryBar = React.memo(function TaskSummaryBar({ stats }: Task
   );
 });
 
-// ─── Main Panel ─────────────────────────────────────────────────────────────
+// ─── 메인 패널 ─────────────────────────────────────────────────────────────
 
 export interface TaskViewPanelProps {
   /** Whether the panel overlay is visible */
@@ -289,17 +303,14 @@ export interface TaskViewPanelProps {
 }
 
 /**
- * Toggleable overlay panel that displays SharedTaskList contents.
+ * 토글 가능한 오버레이 패널 — SharedTaskList의 내용을 표시합니다.
  *
- * Keyboard integration notes:
- * - Ctrl+T toggles visibility (handled by the parent component, e.g. App.tsx)
- * - The parent should maintain `taskViewVisible` state:
- *   ```tsx
- *   const [taskViewVisible, setTaskViewVisible] = useState(false);
- *   // In keybinding setup:
- *   // "toggle-task-view": () => setTaskViewVisible(v => !v)
- *   ```
- * - This component itself does NOT handle keyboard input.
+ * 키보드 연동 참고:
+ * - Ctrl+T로 표시/숨김 토글 (부모 컴포넌트 App.tsx에서 처리)
+ * - 이 컴포넌트 자체는 키보드 입력을 처리하지 않습니다.
+ * - 부모에서 `taskViewVisible` 상태를 관리해야 합니다.
+ *
+ * 표시 구조: 헤더 → 열 제목 → 구분선 → 작업 행들 → 요약 바 → 안내문
  */
 export const TaskViewPanel = React.memo(function TaskViewPanel({
   visible,

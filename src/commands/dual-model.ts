@@ -1,10 +1,27 @@
+/**
+ * 듀얼 모델(Architect/Editor) 라우팅 관련 명령어 핸들러 모음
+ *
+ * 이 파일은 세 가지 명령어를 정의합니다:
+ *   /architect — 아키텍트 모델 설정 (기획/분석/리뷰용 고성능 모델)
+ *   /editor   — 에디터 모델 설정 (코드 생성용 비용 효율적 모델)
+ *   /dual     — 듀얼 모델 라우팅 활성화/비활성화
+ *
+ * 듀얼 모델 라우팅이란?
+ *   작업 유형에 따라 서로 다른 LLM 모델을 자동으로 선택하는 방식입니다.
+ *   - 기획/분석/리뷰 → 고성능 모델 (예: claude-opus-4-6)
+ *   - 코드 생성/실행 → 비용 효율 모델 (예: gpt-4o-mini)
+ *   이를 통해 품질은 유지하면서 비용을 절감할 수 있습니다.
+ */
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 
 /**
- * /architect [model] — Set or show the architect model for dual-model routing.
+ * /architect 슬래시 명령어 정의 — 아키텍트 모델 설정 또는 조회
  *
- * The architect model handles planning, analysis, and review phases.
- * Typically a high-capability model like claude-opus-4-6.
+ * 아키텍트 모델은 기획, 분석, 리뷰 단계에서 사용됩니다.
+ * 일반적으로 claude-opus-4-6 같은 고성능 모델을 지정합니다.
+ *
+ * 인자 없이 호출하면 현재 상태를 보여주고,
+ * 모델명을 인자로 전달하면 아키텍트 모델을 설정합니다.
  */
 export const architectCommand: SlashCommand = {
   name: "architect",
@@ -38,10 +55,13 @@ export const architectCommand: SlashCommand = {
 };
 
 /**
- * /editor [model] — Set or show the editor model for dual-model routing.
+ * /editor 슬래시 명령어 정의 — 에디터 모델 설정 또는 조회
  *
- * The editor model handles code generation and execution phases.
- * Typically a cost-effective model like gpt-4o-mini or claude-haiku.
+ * 에디터 모델은 코드 생성 및 실행 단계에서 사용됩니다.
+ * 일반적으로 gpt-4o-mini나 claude-haiku 같은 비용 효율적 모델을 지정합니다.
+ *
+ * 인자 없이 호출하면 현재 상태를 보여주고,
+ * 모델명을 인자로 전달하면 에디터 모델을 설정합니다.
  */
 export const editorCommand: SlashCommand = {
   name: "editor",
@@ -75,10 +95,14 @@ export const editorCommand: SlashCommand = {
 };
 
 /**
- * /dual [on|off|status] — Toggle or show dual-model routing status.
+ * /dual 슬래시 명령어 정의 — 듀얼 모델 라우팅 토글 및 상태 조회
  *
- * When enabled, the system automatically routes requests to the architect model
- * for planning/review and to the editor model for code execution.
+ * /dual on  → 듀얼 모델 라우팅 활성화 (기획은 아키텍트, 코드는 에디터 모델 사용)
+ * /dual off → 단일 모델 모드로 전환
+ * /dual     → 현재 상태 및 사용법 표시
+ *
+ * 활성화 시 사용자 메시지의 키워드(plan, review, design 등)를 감지하여
+ * 자동으로 적절한 모델로 라우팅합니다.
  */
 export const dualCommand: SlashCommand = {
   name: "dual",

@@ -1,34 +1,40 @@
 /**
- * DEC Mode 2026 — Synchronized Output for terminal rendering.
+ * synchronized-output.ts — 터미널 렌더링을 위한 동기화 출력 (DEC Mode 2026)
  *
- * When supported by the terminal (Ghostty, iTerm2 3.5+, WezTerm, kitty,
- * recent VSCode terminal, tmux 3.4+), this wraps write operations in
- * begin/end markers that tell the terminal to buffer all output and
- * display it atomically. This eliminates flickering caused by partial
- * screen updates.
+ * 터미널이 지원하는 경우 (Ghostty, iTerm2 3.5+, WezTerm, kitty,
+ * 최신 VSCode 터미널, tmux 3.4+), 출력을 begin/end 마커로 감싸서
+ * 터미널이 모든 출력을 버퍼링한 후 한꺼번에 표시하게 합니다.
+ * 이렇게 하면 부분적인 화면 업데이트로 인한 깜빡임이 제거됩니다.
  *
- * Terminals that don't support this mode simply ignore the escape sequences.
+ * 이 모드를 지원하지 않는 터미널은 이스케이프 시퀀스를 무시합니다.
+ *
+ * 기능:
+ * - withSynchronizedOutput(fn): 함수 실행을 동기화 마커로 감싸기
+ * - patchInkRendering(): Ink의 stdout.write를 패치하여 자동 동기화
+ * - enableSynchronizedOutput() / disableSynchronizedOutput(): 기능 토글
  */
 
-// DEC Private Mode 2026 escape sequences
+// DEC Private Mode 2026 이스케이프 시퀀스
+// h = 시작(hold), l = 끝(let go) — 터미널에 버퍼링 시작/종료를 알림
 const BEGIN_SYNCHRONIZED = "\x1b[?2026h";
 const END_SYNCHRONIZED = "\x1b[?2026l";
 
 let syncOutputEnabled = true;
 
-/** Disable synchronized output (for terminals known to not support it) */
+/** 동기화 출력 비활성화 — 지원하지 않는 것으로 알려진 터미널에서 사용 */
 export function disableSynchronizedOutput(): void {
   syncOutputEnabled = false;
 }
 
-/** Enable synchronized output */
+/** 동기화 출력 활성화 */
 export function enableSynchronizedOutput(): void {
   syncOutputEnabled = true;
 }
 
 /**
- * Wrap a stdout write function with synchronized output markers.
- * The wrapped function sends BEGIN before writing and END after.
+ * stdout 쓰기 함수를 동기화 출력 마커로 감쌉니다.
+ * 함수 실행 전에 BEGIN을 보내고, 실행 후(에러가 나도) END를 보냅니다.
+ * syncOutputEnabled가 false이면 마커 없이 직접 실행합니다.
  */
 export function withSynchronizedOutput(fn: () => void): void {
   if (!syncOutputEnabled) {
@@ -45,11 +51,15 @@ export function withSynchronizedOutput(fn: () => void): void {
 }
 
 /**
- * Patch Ink's stdout to automatically wrap renders in synchronized output.
- * Call this once before Ink's render() to enable atomic frame display.
+ * Ink의 stdout을 패치하여 렌더링을 자동으로 동기화 출력으로 감쌉니다.
+ * Ink의 render() 전에 한 번만 호출하세요.
  *
- * This monkey-patches process.stdout.write to detect Ink's render cycles
- * (which start with cursor movement escape sequences) and wrap them.
+ * 동작 원리:
+ * process.stdout.write를 몽키패치하여 Ink의 렌더 사이클을 감지합니다.
+ * Ink의 렌더 사이클은 커서 이동 이스케이프 시퀀스(\x1b[...)로 시작하므로,
+ * 이를 감지하면 BEGIN_SYNCHRONIZED를 먼저 보내고,
+ * 다음 마이크로태스크에서 END_SYNCHRONIZED를 보냅니다.
+ * 이로써 Ink의 전체 프레임이 원자적으로 표시됩니다.
  */
 export function patchInkRendering(): void {
   if (!syncOutputEnabled) return;

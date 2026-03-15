@@ -1,23 +1,44 @@
+/**
+ * SelectList.tsx — 키보드로 탐색 가능한 선택 목록 컴포넌트
+ *
+ * 여러 옵션 중 하나를 선택할 수 있는 재사용 가능한 목록입니다.
+ * 위/아래 화살표로 이동, Enter로 선택, Escape로 취소합니다.
+ * 옵션이 많을 때는 자동으로 스크롤되며, 위/아래에 "↑ more"/"↓ more"가 표시됩니다.
+ *
+ * 사용 예: /model 명령에서 모델 선택, 기타 대화형 선택이 필요한 경우
+ */
 import { useState } from "react";
 import { Box, Text, useInput } from "ink";
 import { type SelectOption } from "../../commands/registry.js";
 
+/**
+ * SelectList 컴포넌트의 Props
+ *
+ * @param prompt - 목록 위에 표시할 프롬프트 텍스트
+ * @param options - 선택 가능한 옵션 배열 (value, label, description 포함)
+ * @param onSelect - Enter로 선택 확인 시 호출되는 콜백 (선택된 value 전달)
+ * @param onCancel - Escape로 취소 시 호출되는 콜백
+ * @param maxVisible - 한 번에 표시할 최대 옵션 수 (기본값: 8, 초과시 스크롤)
+ */
 export interface SelectListProps {
-  /** Prompt text displayed above the list */
+  /** 목록 위에 표시할 프롬프트 텍스트 */
   readonly prompt: string;
-  /** Available options to choose from */
+  /** 선택 가능한 옵션 배열 */
   readonly options: readonly SelectOption[];
-  /** Called when the user confirms a selection (Enter) */
+  /** Enter로 선택 확인 시 호출 */
   readonly onSelect: (value: string) => void;
-  /** Called when the user cancels (Escape) */
+  /** Escape로 취소 시 호출 */
   readonly onCancel: () => void;
-  /** Maximum number of options visible at once (default: 8) */
+  /** 한 번에 표시할 최대 옵션 수 (기본값: 8) */
   readonly maxVisible?: number;
 }
 
 /**
- * A reusable keyboard-navigable select list component.
- * Supports arrow key navigation, scrolling, and Enter/Escape.
+ * 키보드 탐색 가능한 선택 목록 컴포넌트
+ *
+ * 화살표 키로 이동하면 selectedIndex와 scrollOffset을 함께 관리하여
+ * 현재 선택된 항목이 항상 화면에 보이도록 합니다.
+ * 선택된 항목은 시안색 + 볼드 + ▸ 마커로 강조됩니다.
  */
 export function SelectList({
   prompt,

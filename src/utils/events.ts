@@ -1,93 +1,124 @@
+/**
+ * 이벤트 시스템 — mitt 기반 타입 안전 이벤트 에미터(event emitter)
+ *
+ * 앱 전체에서 사용하는 이벤트 타입을 정의하고, 타입 안전한 이벤트 발행/구독을 제공합니다.
+ * mitt는 작고 빠른 이벤트 라이브러리로, Node.js의 EventEmitter보다 가볍습니다.
+ *
+ * 주요 이벤트 카테고리:
+ * - llm:* — LLM(대규모 언어 모델) 스트리밍 관련 이벤트
+ * - agent:* — 에이전트 루프 라이프사이클 이벤트
+ * - tool:* — 도구 실행 관련 이벤트
+ * - context:* — 컨텍스트 관리 이벤트
+ * - conversation:* — 대화 상태 변경 이벤트
+ * - input:* — 사용자 입력 이벤트
+ * - lint:* — 자동 린트 요청 이벤트
+ * - checkpoint:* — 파일 체크포인트 이벤트
+ * - voice:* — 음성 입력 이벤트
+ * - permission:* — 권한 모드 변경 이벤트
+ *
+ * @example
+ * const events = createEventEmitter();
+ * events.on("tool:start", ({ name }) => console.log(`도구 실행 시작: ${name}`));
+ * events.emit("tool:start", { name: "file_read", id: "123" });
+ */
+
 import mitt from "mitt";
 
-/** Default threshold — warn when any single event type exceeds this many listeners */
+/**
+ * 기본 임계값 — 단일 이벤트 타입에 이 수 이상의 리스너가 등록되면 메모리 누수 경고를 출력합니다.
+ * Node.js의 EventEmitter.defaultMaxListeners(기본 10)보다 여유롭게 설정되어 있습니다.
+ */
 export const LISTENER_WARN_THRESHOLD = 20;
 
-/** All application event types */
+/**
+ * 앱 전체 이벤트 타입 정의.
+ * Record<이벤트명, 페이로드 타입> 형태로 모든 이벤트를 엄격하게 타이핑합니다.
+ * 새로운 이벤트를 추가하려면 여기에 타입을 정의하세요.
+ */
 export type AppEvents = {
-  /** LLM streaming started */
+  /** LLM 스트리밍이 시작됨 */
   "llm:start": { iteration: number };
-  /** LLM text delta received during streaming */
+  /** LLM 텍스트 델타(부분 응답) 수신 — 스트리밍 중 실시간으로 발생 */
   "llm:text-delta": { text: string };
-  /** LLM tool call delta received */
+  /** LLM 도구 호출 델타 수신 — 스트리밍 중 도구 호출 데이터 조각 */
   "llm:tool-delta": { toolName: string; args: string };
-  /** LLM streaming completed */
+  /** LLM 스트리밍 완료 */
   "llm:complete": { tokenCount: number };
-  /** LLM token usage reported during streaming (via stream_options.include_usage) */
+  /** LLM 토큰 사용량 보고 — stream_options.include_usage를 통해 수신 */
   "llm:usage": {
     usage: {
-      readonly promptTokens: number;
-      readonly completionTokens: number;
-      readonly totalTokens: number;
+      readonly promptTokens: number; // 프롬프트(입력) 토큰 수
+      readonly completionTokens: number; // 응답(출력) 토큰 수
+      readonly totalTokens: number; // 총 토큰 수
     };
-    model: string;
+    model: string; // 사용된 모델명
   };
-  /** LLM streaming errored */
+  /** LLM 스트리밍 중 에러 발생 */
   "llm:error": { error: Error };
 
-  /** Anthropic prompt cache hit/miss statistics per request */
+  /** Anthropic 프롬프트 캐시 적중/미스 통계 (요청별) */
   "llm:cache-stats": {
-    readonly cacheCreationInputTokens: number;
-    readonly cacheReadInputTokens: number;
+    readonly cacheCreationInputTokens: number; // 캐시 생성에 사용된 토큰
+    readonly cacheReadInputTokens: number; // 캐시에서 읽은 토큰
     readonly model: string;
   };
 
-  /** Agent loop iteration started */
+  /** 에이전트 루프 반복(iteration) 시작 */
   "agent:iteration": { iteration: number };
-  /** Assistant message produced during agent loop (intermediate or final) */
+  /** 에이전트가 어시스턴트 메시지를 생성함 (중간 또는 최종) */
   "agent:assistant-message": {
-    readonly content: string;
-    readonly toolCalls: readonly { readonly id: string; readonly name: string }[];
-    readonly iteration: number;
-    readonly isFinal: boolean;
+    readonly content: string; // 메시지 내용
+    readonly toolCalls: readonly { readonly id: string; readonly name: string }[]; // 호출한 도구 목록
+    readonly iteration: number; // 현재 반복 번호
+    readonly isFinal: boolean; // 최종 메시지 여부 (true면 에이전트 루프 종료)
   };
 
-  /** Tool execution started */
+  /** 도구 실행 시작 */
   "tool:start": { name: string; id: string; args?: Record<string, unknown> };
-  /** Tool execution completed */
+  /** 도구 실행 완료 */
   "tool:complete": {
     name: string;
     id: string;
-    isError: boolean;
-    output?: string;
-    metadata?: Readonly<Record<string, unknown>>;
+    isError: boolean; // 에러 발생 여부
+    output?: string; // 도구 출력 결과
+    metadata?: Readonly<Record<string, unknown>>; // 추가 메타데이터
   };
 
-  /** Context compaction is about to start */
+  /** 컨텍스트 압축(compaction)이 시작되기 직전 — 토큰 절약을 위해 대화 내용을 요약할 때 */
   "context:pre-compact": { compactionNumber: number };
 
-  /** Conversation message added */
+  /** 대화에 메시지가 추가됨 */
   "conversation:message": { role: string };
-  /** Conversation cleared */
+  /** 대화가 초기화(clear)됨 */
   "conversation:clear": undefined;
 
-  /** User input submitted */
+  /** 사용자가 입력을 제출함 */
   "input:submit": { content: string };
-  /** User requested abort */
+  /** 사용자가 중단(abort)을 요청함 (Esc 키 등) */
   "input:abort": undefined;
 
-  /** Auto-lint requested after file mutation */
+  /** 파일 수정 후 자동 린트(auto-lint) 요청 */
   "lint:request": {
-    toolName: string;
+    toolName: string; // 파일을 수정한 도구 이름 (예: "file_edit")
     toolId: string;
-    lintCommand: string;
-    testCommand?: string;
+    lintCommand: string; // 실행할 린트 명령어
+    testCommand?: string; // 실행할 테스트 명령어 (선택적)
   };
 
-  /** Checkpoint created after file-modifying tool execution */
+  /** 파일 수정 도구 실행 후 체크포인트가 생성됨 — /rewind로 복원 가능 */
   "checkpoint:created": {
     checkpointId: string;
     description: string;
-    fileCount: number;
+    fileCount: number; // 체크포인트에 포함된 파일 수
   };
-  /** Checkpoint restored via /rewind */
+  /** /rewind 명령으로 체크포인트가 복원됨 */
   "checkpoint:restored": {
     checkpointId: string;
-    restoredFiles: number;
-    skippedFiles: number;
+    restoredFiles: number; // 복원된 파일 수
+    skippedFiles: number; // 건너뛴 파일 수
   };
 
-  /** Agent loop usage update emitted after each LLM call with running totals */
+  /** 에이전트 루프 사용량 업데이트 — 각 LLM 호출 후 누적 토큰 수 */
   "agent:usage-update": {
     readonly promptTokens: number;
     readonly completionTokens: number;
@@ -95,37 +126,47 @@ export type AppEvents = {
     readonly iteration: number;
   };
 
-  /** Agent loop completed with full summary */
+  /** 에이전트 루프 전체 완료 — 최종 요약 정보 */
   "agent:complete": {
-    readonly iterations: number;
-    readonly totalTokens: number;
-    readonly toolCallCount: number;
-    readonly aborted: boolean;
+    readonly iterations: number; // 총 반복 횟수
+    readonly totalTokens: number; // 사용된 총 토큰 수
+    readonly toolCallCount: number; // 실행된 도구 호출 횟수
+    readonly aborted: boolean; // 사용자에 의해 중단되었는지 여부
   };
 
-  /** Voice input toggle (from /voice command) */
+  /** 음성 입력 토글 (/voice 명령으로 전환) */
   "voice:toggle": { enabled: boolean };
 
-  /** Permission mode changed (from /plan or other commands) */
+  /** 권한 모드 변경 (/plan 등의 명령으로 전환) */
   "permission:mode-change": { mode: string };
 
-  /** Tool output streaming delta (for long-running tools like bash) */
+  /** 도구 출력 스트리밍 델타 — bash 같은 장시간 실행 도구의 실시간 출력 */
   "tool:output-delta": { id: string; name: string; chunk: string };
 };
 
-/** Typed event emitter for the application */
+/**
+ * 타입 안전한 앱 이벤트 에미터 타입.
+ * mitt<AppEvents>를 사용하여 이벤트명과 페이로드 타입을 자동으로 검증합니다.
+ */
 export type AppEventEmitter = ReturnType<typeof mitt<AppEvents>>;
 
 /**
- * Check listener counts across all event types on a mitt emitter.
- * Emits a warning to stderr if any event type exceeds the threshold.
- * Returns the maximum listener count found (useful for testing).
+ * 모든 이벤트 타입의 리스너 수를 검사하여 메모리 누수를 감지합니다.
+ *
+ * 특정 이벤트 타입에 리스너가 너무 많이 등록되면(기본 20개 초과)
+ * stderr에 경고 메시지를 출력합니다. 이는 리스너 해제(off)를 빠뜨렸을 때
+ * 메모리 누수를 조기에 발견하기 위한 안전장치입니다.
+ *
+ * @param emitter - 검사할 이벤트 에미터
+ * @param threshold - 경고 기준값 (기본값: LISTENER_WARN_THRESHOLD = 20)
+ * @returns 가장 많은 리스너를 가진 이벤트 타입의 리스너 수 (테스트에 유용)
  */
 export function checkListenerLeaks(
   emitter: AppEventEmitter,
   threshold: number = LISTENER_WARN_THRESHOLD,
 ): number {
   let maxCount = 0;
+  // emitter.all은 모든 이벤트 타입과 핸들러 배열의 Map
   for (const [eventType, handlers] of emitter.all) {
     const count = handlers?.length ?? 0;
     if (count > maxCount) maxCount = count;
@@ -138,7 +179,18 @@ export function checkListenerLeaks(
   return maxCount;
 }
 
-/** Create a new typed event emitter */
+/**
+ * 새로운 타입 안전 이벤트 에미터를 생성합니다.
+ * 앱 전체에서 하나의 에미터를 공유하여 느슨한 결합(loose coupling)을 달성합니다.
+ *
+ * @returns AppEventEmitter 인스턴스
+ *
+ * @example
+ * const events = createEventEmitter();
+ * events.on("llm:complete", ({ tokenCount }) => {
+ *   console.log(`토큰 ${tokenCount}개 사용`);
+ * });
+ */
 export function createEventEmitter(): AppEventEmitter {
   return mitt<AppEvents>();
 }

@@ -1,10 +1,18 @@
+/**
+ * /update 명령어 핸들러 — dbcode를 최신 버전으로 업데이트
+ *
+ * 사용자가 /update를 입력하면:
+ *   1. npm 레지스트리에서 최신 버전 확인
+ *   2. 현재 버전과 비교
+ *   3. 차이가 있으면 npm install -g로 자동 업데이트
+ *
+ * 에어갭(air-gapped, 인터넷 차단) 환경에서는 수동 업데이트 방법을 안내합니다.
+ *
+ * 사용 시점: 새 기능이나 버그 수정이 릴리스되었을 때
+ */
 import { type SlashCommand } from "./registry.js";
 import { APP_NAME, VERSION } from "../constants.js";
 
-/**
- * /update — Self-update dbcode to the latest version.
- * Uses npm to check for and install the latest version.
- */
 export const updateCommand: SlashCommand = {
   name: "update",
   description: "Update dbcode to the latest version",
@@ -63,7 +71,15 @@ export const updateCommand: SlashCommand = {
   },
 };
 
-/** Run a shell command and return stdout */
+/**
+ * 셸 명령어를 실행하고 stdout을 반환하는 헬퍼 함수
+ *
+ * 30초 타임아웃이 설정되어 있어 네트워크 지연 시 자동 중단됩니다.
+ * child_process.exec를 promisify하여 async/await로 사용합니다.
+ *
+ * @param command - 실행할 셸 명령어
+ * @returns stdout 출력 문자열
+ */
 async function runCommand(command: string): Promise<string> {
   const { exec } = await import("node:child_process");
   const { promisify } = await import("node:util");

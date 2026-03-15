@@ -1,9 +1,20 @@
+/**
+ * /mcp 명령어 핸들러 — MCP 서버 연결 관리
+ *
+ * MCP(Model Context Protocol)란? LLM에게 외부 도구와 데이터 소스를
+ * 제공하기 위한 표준 프로토콜입니다. 데이터베이스, API, 파일 시스템 등을
+ * MCP 서버로 연결하면 LLM이 직접 해당 리소스에 접근할 수 있습니다.
+ *
+ * 주요 서브커맨드:
+ *   /mcp list              — 설정된 MCP 서버 목록 조회
+ *   /mcp add <이름> <명령어> — stdio 기반 MCP 서버 추가
+ *   /mcp remove <이름>     — MCP 서버 제거
+ *   /mcp serve             — dbcode를 MCP 서버로 노출 (미구현)
+ *
+ * 사용 시점: 외부 도구(DB, API 등)를 LLM에게 연결하고 싶을 때
+ */
 import { type SlashCommand } from "./registry.js";
 
-/**
- * /mcp — Manage MCP (Model Context Protocol) server connections.
- * Subcommands: add, remove, list, serve.
- */
 export const mcpCommand: SlashCommand = {
   name: "mcp",
   description: "Manage MCP server connections",

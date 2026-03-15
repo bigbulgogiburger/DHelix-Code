@@ -1,20 +1,59 @@
+/**
+ * 슬래시 명령어 레지스트리 — 명령어 등록, 조회, 실행을 관리하는 핵심 모듈
+ *
+ * 이 파일은 dbcode의 슬래시 명령어 시스템의 기반이 되는 타입과 클래스를 정의합니다.
+ *
+ * 주요 구성 요소:
+ *   - CommandContext: 명령어 실행에 필요한 세션 정보 (디렉토리, 모델, 메시지 등)
+ *   - CommandResult: 명령어 실행 결과 (출력 텍스트, 성공 여부, 부가 효과 등)
+ *   - SlashCommand: 개별 슬래시 명령어 정의 (이름, 설명, 실행 함수)
+ *   - CommandRegistry: 명령어를 등록하고 조회/실행하는 레지스트리 클래스
+ *
+ * 사용 흐름:
+ *   1. 각 명령어 파일(agents.ts, commit.ts 등)에서 SlashCommand 객체를 export
+ *   2. 앱 초기화 시 CommandRegistry에 register()로 등록
+ *   3. 사용자 입력이 "/"로 시작하면 execute()로 실행
+ *   4. CommandResult의 플래그(shouldClear, newModel 등)에 따라 부가 동작 수행
+ */
 import { BaseError } from "../utils/error.js";
 
-/** Command execution error */
+/**
+ * 명령어 실행 에러 클래스
+ *
+ * 슬래시 명령어 실행 중 발생하는 에러를 나타냅니다.
+ * BaseError를 상속하여 에러 코드와 컨텍스트 정보를 포함합니다.
+ */
 export class CommandError extends BaseError {
   constructor(message: string, context: Record<string, unknown> = {}) {
     super(message, "COMMAND_ERROR", context);
   }
 }
 
-/** A single option in an interactive select list */
+/**
+ * 대화형 선택 목록의 단일 옵션 인터페이스
+ *
+ * /model, /resume 등에서 사용자가 화살표 키로 선택할 수 있는
+ * 목록 항목을 정의합니다.
+ *
+ * @property label - 화면에 표시되는 텍스트
+ * @property value - 선택 시 전달되는 값
+ * @property description - 선택적 부가 설명
+ */
 export interface SelectOption {
   readonly label: string;
   readonly value: string;
   readonly description?: string;
 }
 
-/** Configuration for an interactive select prompt */
+/**
+ * 대화형 선택 프롬프트 설정 인터페이스
+ *
+ * 사용자에게 선택 목록을 보여주기 위한 구성입니다.
+ *
+ * @property options - 선택 가능한 옵션 배열
+ * @property prompt - 선택 안내 메시지 (예: "모델을 선택하세요:")
+ * @property onSelect - 선택 후 실행할 명령어 (예: "/resume")
+ */
 export interface InteractiveSelect {
   readonly options: readonly SelectOption[];
   readonly prompt: string;
@@ -22,69 +61,96 @@ export interface InteractiveSelect {
   readonly onSelect: string;
 }
 
-/** Context provided to command execution */
+/**
+ * 명령어 실행에 필요한 컨텍스트 인터페이스
+ *
+ * 모든 슬래시 명령어의 execute 함수가 두 번째 매개변수로 받는
+ * 세션 상태 정보입니다.
+ */
 export interface CommandContext {
-  /** Current working directory */
+  /** 현재 작업 디렉토리 (프로젝트 루트) */
   readonly workingDirectory: string;
-  /** Current session ID (if any) */
+  /** 현재 세션 ID (없을 수 있음) */
   readonly sessionId?: string;
-  /** Current model name */
+  /** 현재 활성 모델명 (예: "gpt-4o") */
   readonly model: string;
-  /** Emit an event */
+  /** 이벤트를 발생시키는 함수 (예: 체크포인트 복원 이벤트) */
   readonly emit: (event: string, data?: unknown) => void;
-  /** Current conversation messages (for export, etc.) */
+  /** 현재 대화 메시지 배열 (/export, /copy 등에서 대화 내역 참조용) */
   readonly messages?: readonly { readonly role: string; readonly content: string }[];
 }
 
-/** Result from executing a slash command */
+/**
+ * 슬래시 명령어 실행 결과 인터페이스
+ *
+ * 명령어의 출력 텍스트와 함께 부가 효과(side effect)를 전달합니다.
+ * 각 플래그는 상위 컴포넌트(App, AgentLoop)가 처리합니다.
+ */
 export interface CommandResult {
-  /** Text output to display to the user */
+  /** 사용자에게 표시할 텍스트 출력 */
   readonly output: string;
-  /** Whether the command was successful */
+  /** 명령어 성공 여부 */
   readonly success: boolean;
-  /** If true, should clear the conversation */
+  /** true면 대화 내역 초기화 (/clear에서 사용) */
   readonly shouldClear?: boolean;
-  /** If true, should exit the application */
+  /** true면 애플리케이션 종료 */
   readonly shouldExit?: boolean;
-  /** Updated model name (if changed) */
+  /** 변경된 모델명 (/model, /config에서 사용) */
   readonly newModel?: string;
-  /** If true, should reload project instructions from disk */
+  /** true면 프로젝트 설정(DBCODE.md 등)을 디스크에서 다시 로드 */
   readonly refreshInstructions?: boolean;
-  /** If true, output is a skill prompt that should be injected as a user message for the LLM */
+  /** true면 출력을 사용자 메시지로 LLM에 주입 (/commit, /review 등에서 사용) */
   readonly shouldInjectAsUserMessage?: boolean;
-  /** Override the model for processing the injected message */
+  /** 주입된 메시지 처리 시 사용할 모델 오버라이드 */
   readonly modelOverride?: string;
-  /** If set, display an interactive select list instead of text output */
+  /** 설정되면 텍스트 대신 대화형 선택 목록 표시 (/model, /resume에서 사용) */
   readonly interactiveSelect?: InteractiveSelect;
-  /** Updated permission mode (if changed by command) */
+  /** 변경된 권한 모드 (/plan에서 사용) */
   readonly newPermissionMode?: string;
-  /** Updated tone setting (if changed) */
+  /** 변경된 톤 설정 (/tone에서 사용) */
   readonly newTone?: string;
-  /** Updated locale setting (if changed) */
+  /** 변경된 로케일 설정 */
   readonly newLocale?: string;
-  /** Voice input toggle (true = enabled, false = disabled) */
+  /** 음성 입력 토글 (true=활성화, false=비활성화, /voice에서 사용) */
   readonly voiceEnabled?: boolean;
 }
 
-/** Definition of a slash command */
+/**
+ * 슬래시 명령어 정의 인터페이스
+ *
+ * 각 명령어 파일(agents.ts, commit.ts 등)에서 이 인터페이스를 구현한
+ * 객체를 export하여 CommandRegistry에 등록합니다.
+ */
 export interface SlashCommand {
-  /** Command name (without the `/` prefix) */
+  /** 명령어 이름 ("/" 접두사 제외, 예: "commit", "model") */
   readonly name: string;
-  /** Short description shown in help and autocomplete */
+  /** /help와 자동 완성에 표시되는 짧은 설명 */
   readonly description: string;
-  /** Usage syntax (e.g., "/compact [focus]") */
+  /** 사용법 구문 (예: "/compact [focus]") */
   readonly usage: string;
-  /** Execute the command */
+  /** 명령어 실행 함수 — args는 명령어 이름 뒤의 인자 문자열 */
   readonly execute: (args: string, context: CommandContext) => Promise<CommandResult>;
 }
 
 /**
- * Slash command registry — manages registration and lookup of slash commands.
+ * 슬래시 명령어 레지스트리 클래스 — 명령어의 등록, 조회, 실행을 관리
+ *
+ * Map 자료구조를 사용하여 명령어 이름을 키로 빠르게 조회합니다.
+ * 앱 초기화 시 모든 명령어를 register()로 등록한 후,
+ * 사용자 입력이 들어오면 execute()로 실행합니다.
  */
 export class CommandRegistry {
+  /** 명령어 이름 → SlashCommand 객체를 매핑하는 내부 저장소 */
   private readonly commands = new Map<string, SlashCommand>();
 
-  /** Register a slash command */
+  /**
+   * 슬래시 명령어를 레지스트리에 등록하는 메서드
+   *
+   * 같은 이름의 명령어가 이미 등록되어 있으면 CommandError를 throw합니다.
+   *
+   * @param command - 등록할 슬래시 명령어 객체
+   * @throws CommandError - 이름 중복 시
+   */
   register(command: SlashCommand): void {
     if (this.commands.has(command.name)) {
       throw new CommandError(`Command already registered: /${command.name}`, {
@@ -94,31 +160,54 @@ export class CommandRegistry {
     this.commands.set(command.name, command);
   }
 
-  /** Get a command by name */
+  /**
+   * 이름으로 명령어를 조회하는 메서드
+   *
+   * @param name - 명령어 이름 ("/" 접두사 제외)
+   * @returns 명령어 객체 (없으면 undefined)
+   */
   get(name: string): SlashCommand | undefined {
     return this.commands.get(name);
   }
 
-  /** Check if a command exists */
+  /**
+   * 명령어 존재 여부를 확인하는 메서드
+   *
+   * @param name - 확인할 명령어 이름
+   * @returns 존재하면 true
+   */
   has(name: string): boolean {
     return this.commands.has(name);
   }
 
-  /** Get all registered commands */
+  /** 등록된 모든 명령어를 배열로 반환하는 메서드 */
   getAll(): readonly SlashCommand[] {
     return [...this.commands.values()];
   }
 
-  /** Get command names matching a prefix (for autocomplete) */
+  /**
+   * 접두사에 매칭되는 명령어를 반환하는 메서드 (자동 완성용)
+   *
+   * 사용자가 "/co"를 입력하면 "commit", "compact", "config", "context", "copy", "cost"를 반환합니다.
+   *
+   * @param prefix - 검색할 접두사 (소문자로 비교)
+   * @returns 매칭되는 명령어 배열
+   */
   getCompletions(prefix: string): readonly SlashCommand[] {
     const lower = prefix.toLowerCase();
     return [...this.commands.values()].filter((cmd) => cmd.name.startsWith(lower));
   }
 
   /**
-   * Parse and execute a slash command from user input.
-   * Input should start with `/`.
-   * Returns null if input is not a slash command.
+   * 사용자 입력을 파싱하여 슬래시 명령어를 실행하는 메서드
+   *
+   * 입력이 "/"로 시작하지 않으면 null을 반환합니다.
+   * 명령어 이름과 인자를 분리하여 해당 명령어의 execute()를 호출합니다.
+   * 실행 중 에러가 발생하면 에러 메시지를 CommandResult로 래핑하여 반환합니다.
+   *
+   * @param input - 사용자 입력 문자열 (예: "/model gpt-4o")
+   * @param context - 명령어 실행 컨텍스트
+   * @returns 실행 결과 (슬래시 명령어가 아니면 null)
    */
   async execute(input: string, context: CommandContext): Promise<CommandResult | null> {
     const trimmed = input.trim();
@@ -146,7 +235,12 @@ export class CommandRegistry {
   }
 
   /**
-   * Check if an input string is a slash command.
+   * 입력 문자열이 슬래시 명령어인지 확인하는 메서드
+   *
+   * "/"로 시작하는 입력을 슬래시 명령어로 판단합니다.
+   *
+   * @param input - 확인할 입력 문자열
+   * @returns 슬래시 명령어이면 true
    */
   isCommand(input: string): boolean {
     return input.trim().startsWith("/");

@@ -1,9 +1,26 @@
+/**
+ * ThinkingBlock.tsx — LLM의 확장 사고(Extended Thinking) 내용을 표시하는 컴포넌트
+ *
+ * Claude 등 일부 모델이 지원하는 "확장 사고" 기능의 출력을 보여줍니다.
+ * 기본적으로 "Thinking..." 한 줄로 축소되지만, Ctrl+O(상세 모드)로
+ * 확장하면 사고 내용을 최대 20줄까지 표시합니다.
+ *
+ * 스트리밍 중에는 ASCII 스피너(|, /, -, \)가 회전합니다.
+ */
 import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 
+/** 사고 중 표시되는 ASCII 스피너 프레임 */
 const THINKING_SPINNER_FRAMES = ["|", "/", "-", "\\"];
+/** 스피너 프레임 전환 간격 (200ms) */
 const THINKING_SPINNER_INTERVAL_MS = 200;
 
+/**
+ * @param content - 사고 내용 텍스트
+ * @param tokenCount - 사고에 사용된 토큰 수 (선택적)
+ * @param isExpanded - 확장 표시 여부 (기본값: false, 축소)
+ * @param isStreaming - 현재 사고 스트리밍 중 여부 (true이면 스피너 표시)
+ */
 interface ThinkingBlockProps {
   readonly content: string;
   readonly tokenCount?: number;

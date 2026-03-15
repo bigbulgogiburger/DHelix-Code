@@ -1,7 +1,18 @@
+/**
+ * Logo.tsx — dbcode 브랜드 로고를 터미널에 표시하는 컴포넌트
+ *
+ * DB 로고를 유니코드 문자와 ANSI 색상을 사용하여 터미널에 렌더링합니다.
+ * 원본 SVG를 chafa(이미지→유니코드 변환 도구)로 변환한 결과입니다.
+ *
+ * 두 가지 렌더링 방식:
+ * 1. Logo 컴포넌트 — Ink 내부에서 React 컴포넌트로 렌더링
+ * 2. printStartupLogo() — Ink 시작 전에 stdout에 직접 출력 (깜빡임 방지)
+ */
 import { Box, Text } from "ink";
 import chalk from "chalk";
 import { VERSION, APP_NAME } from "../../constants.js";
 
+/** 로고의 한 세그먼트 — 텍스트, 전경색, 배경색으로 구성 */
 interface Segment {
   readonly text: string;
   readonly color?: string;
@@ -9,9 +20,10 @@ interface Segment {
 }
 
 /**
- * DB brand logo converted from original SVG via chafa (image-to-unicode).
- * Three shapes: orange half-circle (left), blue teardrop (top), green teardrop (right)
- * Plus "DB" text in dark green — gradient colors preserved from the original.
+ * DB 브랜드 로고 데이터 — 유니코드 블록 문자로 구성
+ *
+ * 3가지 도형: 주황색 반원(왼쪽), 파란색 물방울(위), 초록색 물방울(오른쪽)
+ * 그리고 "DB" 텍스트 — 원본의 그라데이션 색상을 보존
  */
 
 // prettier-ignore
@@ -24,12 +36,19 @@ const DB_LOGO: readonly (readonly Segment[])[] = [
   [{ text: "\u2585", bgColor: "#C23823" }, { text: "\u2585", bgColor: "#DF5E21" }, { text: "\u2586", bgColor: "#834010" }, { text: " " }, { text: "\u258b", bgColor: "#7CB038" }, { text: "\u2581", color: "#66912D", bgColor: "#8BC53F" }, { text: "\u2581", bgColor: "#75B83F" }, { text: "\u2583", bgColor: "#44983F" }],
 ];
 
+/**
+ * Logo 컴포넌트의 Props
+ * @param version - 표시할 버전 문자열 (기본값: 상수에서 가져옴)
+ * @param modelName - 현재 사용 중인 모델명 (선택적)
+ * @param showLogo - 로고 그래픽 표시 여부 (기본값: true)
+ */
 export interface LogoProps {
   readonly version?: string;
   readonly modelName?: string;
   readonly showLogo?: boolean;
 }
 
+/** Ink 내부에서 React 컴포넌트로 로고를 렌더링하는 컴포넌트 */
 export function Logo({ version = VERSION, modelName, showLogo = true }: LogoProps) {
   return (
     <Box flexDirection="column">
@@ -59,8 +78,11 @@ export function Logo({ version = VERSION, modelName, showLogo = true }: LogoProp
 }
 
 /**
- * Print the startup logo directly to stdout BEFORE Ink render starts.
- * This prevents flickering since the logo won't be part of Ink's dynamic area.
+ * Ink 렌더링이 시작되기 전에 로고를 stdout에 직접 출력합니다.
+ *
+ * Ink의 동적 영역에 포함되지 않으므로 깜빡임이 없습니다.
+ * chalk 라이브러리를 사용하여 ANSI 색상을 직접 적용합니다.
+ * src/index.ts에서 앱 시작 시 호출됩니다.
  */
 export function printStartupLogo(modelName?: string, version: string = VERSION): void {
   // Render each row of DB_LOGO using chalk

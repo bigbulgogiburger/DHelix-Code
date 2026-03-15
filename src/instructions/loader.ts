@@ -1,3 +1,20 @@
+/**
+ * 인스트럭션 로더 — 다층 계층 구조에서 DBCODE.md 인스트럭션을 로드하고 병합
+ *
+ * 인스트럭션(지시사항)은 LLM의 시스템 프롬프트에 주입되어
+ * AI의 행동 방식을 커스터마이징합니다.
+ *
+ * 병합 순서 (낮은 → 높은 우선순위):
+ * 1. 전역 사용자 인스트럭션 (~/.dbcode/DBCODE.md)
+ * 2. 전역 사용자 규칙 (~/.dbcode/rules/*.md)
+ * 3. 상위 디렉토리 DBCODE.md (cwd에서 프로젝트 루트까지 상향 탐색)
+ * 4. 프로젝트 인스트럭션 (DBCODE.md 또는 .dbcode/DBCODE.md)
+ * 5. 프로젝트 경로 조건부 규칙 (.dbcode/rules/*.md)
+ * 6. 로컬 오버라이드 (DBCODE.local.md — gitignore 대상)
+ *
+ * 각 레이어는 '\n\n---\n\n'으로 구분되어 합쳐집니다.
+ */
+
 import { readFile, readdir, stat, realpath } from "node:fs/promises";
 import { join, dirname, relative } from "node:path";
 import { homedir } from "node:os";
@@ -7,44 +24,55 @@ import { type PathRule, collectMatchingContent } from "./path-matcher.js";
 import { BaseError } from "../utils/error.js";
 import { matchPath } from "./path-matcher.js";
 
-/** Instruction loading error */
+/**
+ * 인스트럭션 로딩 에러
+ */
 export class InstructionLoadError extends BaseError {
   constructor(message: string, context: Record<string, unknown> = {}) {
     super(message, "INSTRUCTION_LOAD_ERROR", context);
   }
 }
 
-/** Loaded instruction result */
+/**
+ * 로드된 인스트럭션 결과 — 각 레이어별 내용과 최종 합산 내용을 포함
+ */
 export interface LoadedInstructions {
-  /** Global user instructions (from ~/.dbcode/DBCODE.md) */
+  /** 전역 사용자 인스트럭션 (~/.dbcode/DBCODE.md에서 로드) */
   readonly globalInstructions: string;
-  /** Global user rules (from ~/.dbcode/rules/*.md) */
+  /** 전역 사용자 규칙 (~/.dbcode/rules/*.md에서 로드) */
   readonly globalRules: string;
-  /** Parent directory DBCODE.md files (walking up from cwd) */
+  /** 상위 디렉토리 DBCODE.md 파일들 (cwd에서 프로젝트 루트까지 수집) */
   readonly parentInstructions: string;
-  /** The project-level instruction content (from DBCODE.md) */
+  /** 프로젝트 레벨 인스트럭션 (DBCODE.md에서 로드) */
   readonly projectInstructions: string;
-  /** Path-conditional rules content (.dbcode/rules/*.md) */
+  /** 경로 조건부 규칙 내용 (.dbcode/rules/*.md에서 현재 경로에 매칭된 것) */
   readonly pathRules: string;
-  /** Local override instructions (from DBCODE.local.md, gitignored) */
+  /** 로컬 오버라이드 인스트럭션 (DBCODE.local.md, gitignore 대상) */
   readonly localInstructions: string;
-  /** The combined instruction text for the system prompt */
+  /** 모든 레이어를 합산한 최종 인스트럭션 텍스트 (시스템 프롬프트에 주입) */
   readonly combined: string;
 }
 
-/** Options for loading instructions */
+/**
+ * 인스트럭션 로딩 옵션
+ */
 export interface LoadInstructionsOptions {
-  /** Glob patterns to exclude specific rule files */
+  /** 특정 규칙 파일을 제외할 glob 패턴 (예: ["test-*.md"]) */
   readonly excludePatterns?: readonly string[];
 }
 
 /**
- * Read a file safely, returning empty string if not found.
- * Resolves symlinks before reading to support shared instruction files
- * across projects via symlinks.
+ * 파일을 안전하게 읽는 유틸리티 — 파일이 없으면 빈 문자열 반환
+ *
+ * 심볼릭 링크(symlink)를 해석하여 실제 파일을 읽습니다.
+ * 여러 프로젝트에서 공유 인스트럭션 파일을 심볼릭 링크로 연결할 수 있습니다.
+ *
+ * @param filePath - 읽을 파일 경로
+ * @returns 파일 내용 또는 빈 문자열 (파일 없음/읽기 실패)
  */
 async function safeReadFile(filePath: string): Promise<string> {
   try {
+    // 심볼릭 링크를 해석하여 실제 파일 경로를 얻음
     const resolvedPath = await realpath(filePath);
     return await readFile(resolvedPath, "utf-8");
   } catch {
@@ -53,7 +81,11 @@ async function safeReadFile(filePath: string): Promise<string> {
 }
 
 /**
- * Check if a filename matches any of the exclude patterns.
+ * 파일명이 제외 패턴과 일치하는지 확인
+ *
+ * @param fileName - 확인할 파일명
+ * @param excludePatterns - 제외할 glob 패턴 배열
+ * @returns 패턴 중 하나라도 일치하면 true (이 파일을 건너뛰어야 함)
  */
 function isExcluded(fileName: string, excludePatterns: readonly string[]): boolean {
   if (excludePatterns.length === 0) return false;
@@ -61,39 +93,43 @@ function isExcluded(fileName: string, excludePatterns: readonly string[]): boole
 }
 
 /**
- * Find the project root by searching upward for DBCODE.md or .dbcode/ directory.
+ * 프로젝트 루트 디렉토리를 찾기 위해 상향 탐색
  *
- * Detection order per directory (first match wins):
- * 1. DBCODE.md at directory root (primary convention)
- * 2. .dbcode/DBCODE.md (backward compatible fallback)
- * 3. .dbcode/ directory exists (project indicator even without DBCODE.md)
+ * 현재 디렉토리에서 시작하여 파일 시스템 루트까지 올라가며
+ * 프로젝트 루트 마커를 검색합니다.
  *
- * Returns the directory that qualifies as the project root, or null if not found.
+ * 탐지 순서 (디렉토리당, 첫 매칭 적용):
+ * 1. DBCODE.md — 프로젝트 루트에 직접 위치 (권장 방식)
+ * 2. .dbcode/DBCODE.md — 하위 호환 폴백
+ * 3. .dbcode/ 디렉토리 존재 — DBCODE.md 없이도 프로젝트 표시
+ *
+ * @param startDir - 탐색 시작 디렉토리
+ * @returns 프로젝트 루트 경로 또는 null (찾지 못한 경우)
  */
 async function findProjectRoot(startDir: string): Promise<string | null> {
   let current = startDir;
   const root = dirname(current) === current ? current : undefined;
 
   while (true) {
-    // 1. Check for DBCODE.md at root (primary)
+    // 1. DBCODE.md가 루트에 직접 있는지 확인 (권장 방식)
     const rootConfigPath = join(current, PROJECT_CONFIG_FILE);
     try {
       await stat(rootConfigPath);
       return current;
     } catch {
-      // Not found at root, try fallback
+      // 이 디렉토리에는 없음, 폴백 확인
     }
 
-    // 2. Check for .dbcode/DBCODE.md (backward compatible)
+    // 2. .dbcode/DBCODE.md 확인 (하위 호환)
     const fallbackConfigPath = join(current, `.${APP_NAME}`, PROJECT_CONFIG_FILE);
     try {
       await stat(fallbackConfigPath);
       return current;
     } catch {
-      // Not found in .dbcode/ either
+      // .dbcode/ 내에도 없음
     }
 
-    // 3. Check for .dbcode/ directory (project indicator)
+    // 3. .dbcode/ 디렉토리 자체가 있는지 확인 (프로젝트 표시 역할)
     const configDir = join(current, `.${APP_NAME}`);
     try {
       const dirStat = await stat(configDir);
@@ -101,24 +137,29 @@ async function findProjectRoot(startDir: string): Promise<string | null> {
         return current;
       }
     } catch {
-      // No .dbcode/ directory
+      // .dbcode/ 디렉토리 없음
     }
 
+    // 상위 디렉토리로 이동
     const parent = dirname(current);
     if (parent === current || parent === root) {
-      return null;
+      return null; // 파일 시스템 루트에 도달 — 프로젝트 루트 없음
     }
     current = parent;
   }
 }
 
 /**
- * Walk up from startDir to filesystem root, collecting DBCODE.md files
- * from parent directories (excluding the project root itself, which is
- * loaded separately as projectInstructions).
+ * cwd에서 프로젝트 루트까지 상향 탐색하며 DBCODE.md 파일 수집
  *
- * Returns contents ordered from farthest ancestor to closest parent
- * (lowest to highest priority).
+ * 프로젝트 루트의 DBCODE.md는 별도로 로드되므로 여기서 제외합니다.
+ * 결과는 가장 먼 조상부터 가장 가까운 부모 순서로 정렬됩니다.
+ * (낮은 우선순위 → 높은 우선순위)
+ *
+ * @param startDir - 탐색 시작 디렉토리 (보통 cwd)
+ * @param projectRoot - 프로젝트 루트 경로 (여기서 멈춤)
+ * @param excludePatterns - 제외할 패턴 배열
+ * @returns 상위 디렉토리 DBCODE.md 내용을 합산한 문자열
  */
 async function loadParentInstructions(
   startDir: string,
@@ -131,18 +172,20 @@ async function loadParentInstructions(
   let current = dirname(startDir);
 
   while (true) {
-    // Stop if we've reached the project root (it's loaded separately)
+    // 프로젝트 루트에 도달하면 중단 (프로젝트 루트는 별도 처리)
     if (projectRoot && current === projectRoot) break;
 
     const parent = dirname(current);
-    if (parent === current) break; // filesystem root
+    if (parent === current) break; // 파일 시스템 루트에 도달
 
     const configPath = join(current, PROJECT_CONFIG_FILE);
     const content = await safeReadFile(configPath);
     if (content) {
+      // @import 지시어 해석 포함
       const parsed = await parseInstructions(content, current);
       if (parsed) {
-        parentContents.unshift(parsed); // prepend so ancestors come first
+        // unshift로 앞에 추가하여 먼 조상이 먼저 오도록 정렬
+        parentContents.unshift(parsed);
       }
     }
 
@@ -153,20 +196,27 @@ async function loadParentInstructions(
 }
 
 /**
- * Regex to match frontmatter block (--- ... ---) at the start of a file.
- * Captures the entire frontmatter block including delimiters.
+ * 프론트매터 블록 매칭 정규식 — 파일 시작의 --- ... --- 영역
  */
 const FRONTMATTER_REGEX = /^---\s*\n([\s\S]*?)\n---/;
 
 /**
- * Parse frontmatter from a rule file to extract path patterns.
+ * 규칙 파일의 프론트매터에서 경로 패턴을 추출
  *
- * Supports two formats:
- * - Legacy single pattern: pattern: "src/wildcard"
- * - Multi-glob paths array with YAML list items
+ * 지원 형식:
+ * 1. 다중 경로 (권장):
+ *    paths:
+ *      - "src/components/**"
+ *      - "src/pages/**"
  *
- * The paths field takes precedence if both are present.
- * Returns a catch-all pattern if no frontmatter is found.
+ * 2. 단일 경로 (레거시):
+ *    pattern: "src/**"
+ *
+ * paths가 있으면 pattern보다 우선합니다.
+ * 프론트매터가 없거나 패턴이 없으면 "**"(모든 경로 매칭)을 사용합니다.
+ *
+ * @param content - 규칙 파일의 전체 내용
+ * @returns 경로 패턴 배열과 프론트매터를 제외한 규칙 본문
  */
 function parseFrontmatterPatterns(content: string): {
   readonly patterns: readonly string[];
@@ -174,14 +224,16 @@ function parseFrontmatterPatterns(content: string): {
 } {
   const frontmatterMatch = content.match(FRONTMATTER_REGEX);
 
+  // 프론트매터가 없으면 모든 경로에 적용 (기본 ***)
   if (!frontmatterMatch) {
     return { patterns: ["**"], ruleContent: content };
   }
 
   const frontmatterBody = frontmatterMatch[1];
+  // 프론트매터 이후의 내용이 실제 규칙 본문
   const ruleContent = content.slice(frontmatterMatch[0].length).trim();
 
-  // Try to extract `paths:` array (takes precedence)
+  // paths: 배열 형식 추출 시도 (우선)
   const pathsMatch = frontmatterBody.match(/paths:\s*\n((?:\s*-\s*"?[^"\n]+"?\s*\n?)+)/);
   if (pathsMatch) {
     const pathLines = pathsMatch[1];
@@ -199,18 +251,25 @@ function parseFrontmatterPatterns(content: string): {
     }
   }
 
-  // Fall back to legacy single `pattern:` field
+  // 레거시 단일 pattern: 필드 폴백
   const patternMatch = frontmatterBody.match(/pattern:\s*"?([^"\n]+?)"?\s*$/m);
   if (patternMatch) {
     return { patterns: [patternMatch[1].trim()], ruleContent };
   }
 
-  // Frontmatter present but no pattern/paths — match everything
+  // 프론트매터는 있지만 경로 패턴 없음 — 모든 경로 매칭
   return { patterns: ["**"], ruleContent };
 }
 
 /**
- * Load path-based rules from a rules directory (*.md files).
+ * rules 디렉토리에서 경로 기반 규칙 파일(*.md)을 로드
+ *
+ * 각 .md 파일의 프론트매터에서 경로 패턴을 추출하고,
+ * 본문을 규칙 내용으로 파싱합니다.
+ *
+ * @param rulesDir - 규칙 파일이 있는 디렉토리 경로
+ * @param excludePatterns - 제외할 파일명 패턴
+ * @returns 파싱된 PathRule 배열
  */
 async function loadPathRules(
   rulesDir: string,
@@ -221,7 +280,9 @@ async function loadPathRules(
     const rules: PathRule[] = [];
 
     for (const entry of entries) {
+      // .md 파일만 처리
       if (!entry.endsWith(".md")) continue;
+      // 제외 패턴에 매칭되면 건너뜀
       if (isExcluded(entry, excludePatterns)) continue;
 
       const filePath = join(rulesDir, entry);
@@ -234,28 +295,31 @@ async function loadPathRules(
       rules.push({
         patterns,
         content: ruleContent,
-        description: entry.replace(/\.md$/, ""),
+        description: entry.replace(/\.md$/, ""), // 파일명에서 확장자 제거하여 설명으로 사용
       });
     }
 
     return rules;
   } catch {
+    // 디렉토리가 없거나 읽기 실패 시 빈 배열 반환
     return [];
   }
 }
 
 /**
- * Instruction loader — loads instructions from multiple layers with proper hierarchy.
+ * 인스트럭션 로더 메인 함수 — 6개 레이어에서 인스트럭션을 수집하고 합산
  *
- * Merge order (lowest → highest priority):
- * 1. Global user instructions (~/.dbcode/DBCODE.md)
- * 2. Global user rules (~/.dbcode/rules/*.md)
- * 3. Parent directory DBCODE.md files (walking up from cwd, farthest first)
- * 4. Project instructions (DBCODE.md or .dbcode/DBCODE.md found by searching upward)
- * 5. Project path-conditional rules (.dbcode/rules/*.md)
- * 6. Local override instructions (DBCODE.local.md in project root)
+ * 병합 순서 (낮은 → 높은 우선순위):
+ * 1. 전역 인스트럭션 (~/.dbcode/DBCODE.md) — 모든 프로젝트에 적용
+ * 2. 전역 규칙 (~/.dbcode/rules/*.md) — 경로 조건부 전역 규칙
+ * 3. 상위 디렉토리 DBCODE.md — 모노레포 등 중첩 프로젝트 지원
+ * 4. 프로젝트 인스트럭션 (DBCODE.md) — 프로젝트 고유 지시사항
+ * 5. 프로젝트 규칙 (.dbcode/rules/*.md) — 경로 조건부 프로젝트 규칙
+ * 6. 로컬 오버라이드 (DBCODE.local.md) — 개인 설정 (gitignore)
  *
- * Layers are joined with '\n\n---\n\n'.
+ * @param workingDirectory - 현재 작업 디렉토리
+ * @param options - 로딩 옵션 (제외 패턴 등)
+ * @returns 각 레이어별 내용과 합산된 최종 인스트럭션
  */
 export async function loadInstructions(
   workingDirectory: string,
@@ -264,7 +328,7 @@ export async function loadInstructions(
   const excludePatterns = options?.excludePatterns ?? [];
   const globalDir = join(homedir(), `.${APP_NAME}`);
 
-  // 1. Global user instructions (~/.dbcode/DBCODE.md)
+  // 레이어 1: 전역 사용자 인스트럭션 (~/.dbcode/DBCODE.md)
   let globalInstructions = "";
   if (!isExcluded(PROJECT_CONFIG_FILE, excludePatterns)) {
     const globalConfigPath = join(globalDir, PROJECT_CONFIG_FILE);
@@ -272,29 +336,29 @@ export async function loadInstructions(
     globalInstructions = globalRaw ? await parseInstructions(globalRaw, globalDir) : "";
   }
 
-  // 2. Global user rules (~/.dbcode/rules/*.md)
+  // 레이어 2: 전역 사용자 규칙 (~/.dbcode/rules/*.md)
   const globalRulesDir = join(globalDir, "rules");
   const globalPathRules = await loadPathRules(globalRulesDir, excludePatterns);
   const globalRules = collectMatchingContent(globalPathRules, workingDirectory);
 
-  // 3. Project-level instructions (DBCODE.md found by searching upward)
+  // 프로젝트 루트 탐색 (상향)
   const projectRoot = await findProjectRoot(workingDirectory);
 
-  // 3a. Parent directory DBCODE.md files (between cwd and project root)
+  // 레이어 3: 상위 디렉토리 DBCODE.md (cwd와 프로젝트 루트 사이)
   const parentInstructions = await loadParentInstructions(
     workingDirectory,
     projectRoot,
     excludePatterns,
   );
 
-  // 3b. Project root DBCODE.md (with .dbcode/DBCODE.md fallback)
+  // 레이어 4: 프로젝트 루트 DBCODE.md (+ .dbcode/DBCODE.md 폴백)
   let projectInstructions = "";
   if (projectRoot && !isExcluded(PROJECT_CONFIG_FILE, excludePatterns)) {
-    // Primary: DBCODE.md at project root
+    // 기본: DBCODE.md (프로젝트 루트에 직접)
     const rootConfigPath = join(projectRoot, PROJECT_CONFIG_FILE);
     let rawContent = await safeReadFile(rootConfigPath);
 
-    // Fallback: .dbcode/DBCODE.md (backward compatible)
+    // 폴백: .dbcode/DBCODE.md (하위 호환)
     if (!rawContent) {
       const fallbackPath = join(projectRoot, `.${APP_NAME}`, PROJECT_CONFIG_FILE);
       rawContent = await safeReadFile(fallbackPath);
@@ -305,12 +369,13 @@ export async function loadInstructions(
     }
   }
 
-  // 4. Project path-conditional rules (.dbcode/rules/*.md)
+  // 레이어 5: 프로젝트 경로 조건부 규칙 (.dbcode/rules/*.md)
   const configDir = join(workingDirectory, `.${APP_NAME}`);
   const rulesDir = join(configDir, "rules");
   const pathRules = await loadPathRules(rulesDir, excludePatterns);
   let pathRulesContent = collectMatchingContent(pathRules, workingDirectory);
 
+  // 프로젝트 루트가 cwd와 다를 경우, 프로젝트 루트의 규칙도 로드
   if (projectRoot) {
     const projectRulesDir = join(projectRoot, `.${APP_NAME}`, "rules");
     const projectRules = await loadPathRules(projectRulesDir, excludePatterns);
@@ -318,7 +383,7 @@ export async function loadInstructions(
     pathRulesContent = [pathRulesContent, projectPathRulesContent].filter(Boolean).join("\n\n");
   }
 
-  // 5. Local override instructions (DBCODE.local.md)
+  // 레이어 6: 로컬 오버라이드 (DBCODE.local.md — 개인 설정, gitignore 대상)
   let localInstructions = "";
   if (projectRoot) {
     const localFileName = `${APP_NAME.toUpperCase()}.local.md`;
@@ -331,7 +396,7 @@ export async function loadInstructions(
     }
   }
 
-  // Build combined instructions in merge order
+  // 모든 레이어를 순서대로 합산 — 빈 레이어는 제외
   const parts = [
     globalInstructions,
     globalRules,
@@ -348,91 +413,113 @@ export async function loadInstructions(
     projectInstructions,
     pathRules: pathRulesContent,
     localInstructions,
-    combined: parts.join("\n\n---\n\n"),
+    combined: parts.join("\n\n---\n\n"), // 각 레이어를 수평선으로 구분
   };
 }
 
 /**
- * Lazy instruction loader — loads subdirectory DBCODE.md files on demand
- * when files in that directory are accessed.
+ * 지연(Lazy) 인스트럭션 로더 — 파일 접근 시 해당 디렉토리의 DBCODE.md를 온디맨드 로드
  *
- * Instead of loading all instruction files at startup, subdirectory
- * instructions are loaded only when a tool accesses a file in that
- * directory (or any child directory).
+ * 시작 시 모든 인스트럭션을 로드하는 대신, 도구가 특정 파일에 접근할 때
+ * 해당 디렉토리의 DBCODE.md를 그때 로드합니다.
+ *
+ * 이를 통해 대규모 프로젝트에서 불필요한 인스트럭션 로딩을 방지하고,
+ * 실제로 작업하는 디렉토리의 규칙만 적용할 수 있습니다.
+ *
+ * 결과는 디렉토리별로 캐시되어, 같은 디렉토리 접근 시 재로딩하지 않습니다.
  */
 export class LazyInstructionLoader {
+  /** 디렉토리 → 인스트럭션 내용 캐시 (중복 로딩 방지) */
   private readonly cache = new Map<string, string>();
+  /** 프로젝트 루트 경로 (탐색 상한선) */
   private readonly projectRoot: string;
 
+  /**
+   * @param projectRoot - 프로젝트 루트 경로 (이 위로는 탐색하지 않음)
+   */
   constructor(projectRoot: string) {
     this.projectRoot = projectRoot;
   }
 
   /**
-   * Get instructions relevant to a specific file path.
+   * 특정 파일 경로에 관련된 인스트럭션을 수집
    *
-   * Walks from the file's directory up to the project root, collecting
-   * DBCODE.md content from each directory that has one. Results are
-   * cached per directory for subsequent lookups.
+   * 파일의 디렉토리에서 프로젝트 루트까지 상향 탐색하며,
+   * 각 디렉토리의 DBCODE.md 내용을 수집합니다.
    *
-   * Returns concatenated instructions from all matching directories,
-   * ordered from closest ancestor to the project root (closest first).
+   * 결과 순서: 가장 가까운 디렉토리 → 프로젝트 루트 (가까운 것이 먼저)
+   *
+   * @param filePath - 인스트럭션을 검색할 대상 파일 경로
+   * @returns 수집된 인스트럭션을 합산한 문자열
    */
   async getInstructionsForFile(filePath: string): Promise<string> {
     const normalizedFile = filePath.replace(/\\/g, "/");
     const normalizedRoot = this.projectRoot.replace(/\\/g, "/");
 
-    // Ensure the file is within the project root
+    // 파일이 프로젝트 루트 내에 있는지 확인
     const rel = relative(normalizedRoot, normalizedFile);
     if (rel.startsWith("..") || rel.startsWith("/")) {
-      return "";
+      return ""; // 프로젝트 외부 파일은 인스트럭션 없음
     }
 
     const instructions: string[] = [];
     let current = dirname(normalizedFile);
 
     while (true) {
-      // Stop when we go above the project root
+      // 프로젝트 루트 위로 나가면 중단
       const relDir = relative(normalizedRoot, current);
       if (relDir.startsWith("..") || relDir.startsWith("/")) {
         break;
       }
 
+      // 현재 디렉토리의 DBCODE.md 로드 (캐시 활용)
       const dirInstructions = await this.loadDirectoryInstructions(current);
       if (dirInstructions) {
         instructions.push(dirInstructions);
       }
 
-      // Stop at the project root
+      // 프로젝트 루트에 도달하면 중단
       if (current === normalizedRoot || current === this.projectRoot) {
         break;
       }
 
       const parent = dirname(current);
-      if (parent === current) break; // filesystem root
+      if (parent === current) break; // 파일 시스템 루트
       current = parent;
     }
 
     return instructions.filter(Boolean).join("\n\n");
   }
 
-  /** Invalidate cached instructions for a specific directory */
+  /**
+   * 특정 디렉토리의 캐시된 인스트럭션을 무효화
+   *
+   * DBCODE.md가 수정되었을 때 호출하여 다음 접근 시 재로딩되도록 합니다.
+   *
+   * @param dirPath - 캐시를 무효화할 디렉토리 경로
+   */
   invalidate(dirPath: string): void {
     const normalized = dirPath.replace(/\\/g, "/");
     this.cache.delete(normalized);
   }
 
-  /** Clear all cached instructions */
+  /**
+   * 모든 캐시된 인스트럭션을 삭제
+   */
   clearCache(): void {
     this.cache.clear();
   }
 
   /**
-   * Load DBCODE.md from a specific directory, using cache if available.
+   * 특정 디렉토리의 DBCODE.md를 로드 (캐시가 있으면 캐시 반환)
+   *
+   * @param dirPath - DBCODE.md를 검색할 디렉토리 경로
+   * @returns 파싱된 인스트럭션 내용 (파일이 없으면 빈 문자열)
    */
   private async loadDirectoryInstructions(dirPath: string): Promise<string> {
     const normalized = dirPath.replace(/\\/g, "/");
 
+    // 캐시에 있으면 즉시 반환 (디스크 I/O 없음)
     if (this.cache.has(normalized)) {
       return this.cache.get(normalized)!;
     }
@@ -442,9 +529,11 @@ export class LazyInstructionLoader {
 
     let parsed = "";
     if (content) {
+      // @import 지시어 해석 포함
       parsed = await parseInstructions(content, dirPath);
     }
 
+    // 결과를 캐시에 저장 (빈 문자열도 캐시하여 반복 디스크 접근 방지)
     this.cache.set(normalized, parsed);
     return parsed;
   }

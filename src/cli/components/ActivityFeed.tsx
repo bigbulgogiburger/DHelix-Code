@@ -1,3 +1,15 @@
+/**
+ * ActivityFeed.tsx — 대화 활동(턴)을 표시하는 핵심 피드 컴포넌트
+ *
+ * 사용자 메시지, AI 응답, 도구 호출 결과 등 대화의 모든 활동을
+ * 시간순으로 표시합니다. Ink의 <Static> 컴포넌트를 사용하여 완료된
+ * 항목은 한 번만 렌더링하고 다시 그리지 않아 깜빡임을 최소화합니다.
+ *
+ * 주요 최적화:
+ * - 완료된 항목 → Static 영역 (한 번 렌더링 후 고정)
+ * - 진행 중인 항목 → 동적 영역 (실시간 업데이트)
+ * - 연속 file_read → ReadGroupBlock으로 그룹화하여 간결하게 표시
+ */
 import { Box, Static, Text } from "ink";
 import React, { useState, useEffect, useRef, useMemo } from "react";
 import { type TurnActivity, type ActivityEntry } from "../../core/activity.js";
@@ -5,13 +17,24 @@ import { ToolCallBlock } from "./ToolCallBlock.js";
 import { ReadGroupBlock, type ReadGroupEntry } from "./ReadGroupBlock.js";
 import { StreamingMessage } from "./StreamingMessage.js";
 
+/**
+ * ActivityFeed 컴포넌트의 Props
+ *
+ * @param completedTurns - 완료된 대화 턴 목록 (Static 영역에 렌더링)
+ * @param currentTurn - 현재 진행 중인 턴 (동적 영역에 렌더링)
+ * @param isExpanded - true이면 도구 출력을 확장해서 보여줌 (Ctrl+O로 토글)
+ */
 interface ActivityFeedProps {
   readonly completedTurns: readonly TurnActivity[];
   readonly currentTurn?: TurnActivity | null;
   readonly isExpanded?: boolean;
 }
 
-/** Group consecutive file_read tool-complete entries for compact display */
+/**
+ * 연속된 file_read 도구 완료 항목을 하나의 그룹으로 묶어 간결하게 표시합니다.
+ * 예: 5개 파일을 연속으로 읽었다면 "Read 5 files" 한 줄로 압축
+ * 2개 미만이면 그룹화하지 않고 개별 표시합니다.
+ */
 export function groupConsecutiveReads(
   entries: readonly ActivityEntry[],
 ): readonly (
@@ -47,7 +70,7 @@ export function groupConsecutiveReads(
   return result;
 }
 
-/** Find metadata from a tool-complete entry matching the given tool ID */
+/** 주어진 도구 ID와 일치하는 tool-complete 항목에서 메타데이터를 찾음 */
 function findMetadata(
   entries: readonly ActivityEntry[],
   toolId: string | undefined,
@@ -57,7 +80,17 @@ function findMetadata(
   return completeEntry?.data.metadata as Readonly<Record<string, unknown>> | undefined;
 }
 
-/** Render a single activity entry */
+/**
+ * 단일 활동 항목을 렌더링하는 함수
+ *
+ * 항목 타입에 따라 다른 컴포넌트를 반환합니다:
+ * - user-message: 사용자 입력 (초록색 ">" 프롬프트)
+ * - assistant-text: AI 응답 (마크다운 렌더링)
+ * - assistant-intermediate: 중간 AI 응답 (도구 호출 사이의 텍스트)
+ * - tool-start/tool-complete/tool-denied: 도구 호출 블록
+ * - error: 에러 메시지 (빨간색)
+ * - read-group: 그룹화된 파일 읽기 블록
+ */
 function renderEntry(
   entry:
     | ActivityEntry
@@ -178,13 +211,16 @@ interface FlushedItem {
 }
 
 /**
- * ActivityFeed with progressive Static flushing.
+ * 점진적 Static 플러싱을 사용하는 ActivityFeed 컴포넌트
  *
- * Completed entries are immediately moved to Ink's <Static> so they're
- * rendered once and never re-drawn. Only truly in-progress entries
- * (running tools, incomplete streaming text) stay in the dynamic area.
+ * 완료된 항목은 즉시 Ink의 <Static>으로 이동하여 한 번만 렌더링합니다.
+ * 실행 중인 도구나 미완성 스트리밍 텍스트만 동적 영역에 남습니다.
+ * 이 방식으로 동적 영역 크기를 극적으로 줄여 깜빡임을 최소화합니다.
  *
- * This dramatically reduces the dynamic area size, minimizing flickering.
+ * 동작 원리:
+ * 1. completedTurns가 증가하면 → 새 턴의 항목들을 Static으로 플러시
+ * 2. currentTurn의 항목이 완료되면 → 즉시 Static으로 이동
+ * 3. 아직 완료되지 않은 항목만 → 동적 영역(liveEntries)에 표시
  */
 export const ActivityFeed = React.memo(function ActivityFeed({
   completedTurns,

@@ -1,14 +1,42 @@
+/**
+ * /diff 명령어 핸들러 — git diff 변경 사항 요약 표시
+ *
+ * 사용자가 /diff를 입력하면 현재 작업 디렉토리의 git 변경 사항을
+ * 스테이징(staged)과 언스테이징(unstaged)으로 구분하여
+ * 파일별 추가/삭제 줄 수와 함께 포맷된 요약을 보여줍니다.
+ *
+ * 사용 예시:
+ *   /diff              → 전체 변경 사항 요약
+ *   /diff src/index.ts → 특정 파일의 변경 사항만 표시
+ *
+ * staged란? git add로 커밋 대기 중인 변경 사항
+ * unstaged란? 아직 git add하지 않은 변경 사항
+ */
 import { execSync } from "node:child_process";
 import { type SlashCommand } from "./registry.js";
 
-/** Parsed entry from git diff --numstat */
+/**
+ * git diff --numstat 출력에서 파싱된 항목 인터페이스
+ *
+ * @property additions - 추가된 줄 수
+ * @property deletions - 삭제된 줄 수
+ * @property file - 파일 경로
+ */
 interface DiffEntry {
   readonly additions: number;
   readonly deletions: number;
   readonly file: string;
 }
 
-/** Parse git diff --numstat output into structured entries */
+/**
+ * git diff --numstat 출력을 구조화된 DiffEntry 배열로 파싱하는 함수
+ *
+ * --numstat 출력 형식: "추가수\t삭제수\t파일경로"
+ * 바이너리 파일은 추가/삭제가 "-"로 표시되므로 0으로 처리합니다.
+ *
+ * @param output - git diff --numstat의 원시 출력 문자열
+ * @returns 파싱된 DiffEntry 배열
+ */
 function parseNumstat(output: string): readonly DiffEntry[] {
   if (!output.trim()) return [];
 
@@ -31,7 +59,13 @@ function parseNumstat(output: string): readonly DiffEntry[] {
     .filter((entry): entry is DiffEntry => entry !== null);
 }
 
-/** Format a single diff entry line */
+/**
+ * 단일 diff 항목을 포맷된 한 줄 문자열로 변환하는 함수
+ *
+ * @param entry - diff 항목
+ * @param prefix - 상태 접두사 ("M"=수정됨, "A"=스테이징됨)
+ * @returns 포맷된 문자열 (예: "    M src/index.ts    (+5, -3)")
+ */
 function formatEntry(entry: DiffEntry, prefix: string): string {
   const adds = entry.additions > 0 ? `+${entry.additions}` : "";
   const dels = entry.deletions > 0 ? `-${entry.deletions}` : "";
@@ -39,7 +73,13 @@ function formatEntry(entry: DiffEntry, prefix: string): string {
   return `    ${prefix} ${entry.file}${stats ? `    (${stats})` : ""}`;
 }
 
-/** Run a git command and return its output, or null on failure */
+/**
+ * git 명령어를 실행하고 출력을 반환하는 헬퍼 함수
+ *
+ * @param command - 실행할 git 명령어
+ * @param cwd - 작업 디렉토리
+ * @returns 명령어 출력 (실패 시 null)
+ */
 function runGit(
   command: string,
   cwd: string,
@@ -56,9 +96,10 @@ function runGit(
 }
 
 /**
- * /diff — Show git diff of current changes.
- * Directly runs git commands and presents a formatted summary
- * of staged and unstaged changes.
+ * /diff 슬래시 명령어 정의 — git diff 변경 사항 포맷 표시
+ *
+ * git 명령어를 직접 실행하여 스테이징/언스테이징 변경 사항의
+ * 파일 수, 추가/삭제 줄 수를 포맷된 요약으로 보여줍니다.
  */
 export const diffCommand: SlashCommand = {
   name: "diff",

@@ -1,11 +1,38 @@
+/**
+ * /review 명령어 핸들러 — 코드 변경 사항 리뷰 (버그, 보안, 품질)
+ *
+ * 사용자가 /review를 입력하면 git diff를 수집하여 LLM에게
+ * 체계적인 코드 리뷰를 요청하는 프롬프트를 주입합니다.
+ *
+ * 리뷰 항목:
+ *   1. 버그 — 로직 에러, null/undefined 위험, 경계값 에러, 경쟁 조건
+ *   2. 보안 — 인젝션 취약점, 노출된 비밀, 안전하지 않은 작업
+ *   3. 코드 품질 — 가독성, 네이밍, 중복, 에러 처리 누락
+ *   4. 에러 처리 — 처리되지 않은 예외, 누락된 엣지 케이스
+ *
+ * 각 이슈는 CRITICAL/HIGH/MEDIUM/LOW 심각도와 수정 제안과 함께 보고됩니다.
+ *
+ * 사용 예시:
+ *   /review            → 모든 변경 사항 리뷰
+ *   /review --staged   → 스테이징된 변경만 리뷰
+ *   /review src/app.ts → 특정 파일만 리뷰
+ *
+ * 사용 시점: 커밋 전에 코드 품질과 보안을 점검하고 싶을 때
+ */
 import { execSync } from "node:child_process";
 import { type SlashCommand } from "./registry.js";
 
-/** Maximum diff size in bytes before truncation */
+/** diff 크기가 이 값(바이트)을 초과하면 잘라냄 — 너무 큰 diff는 LLM 컨텍스트를 낭비 */
 const MAX_DIFF_SIZE = 50 * 1024;
 
 /**
- * Run a git command and return stdout, or empty string on failure.
+ * git 명령어를 실행하고 stdout을 반환하는 헬퍼 함수
+ *
+ * 실패 시 빈 문자열을 반환하여 안전하게 처리합니다.
+ *
+ * @param cmd - 실행할 git 명령어
+ * @param cwd - 작업 디렉토리
+ * @returns 명령어 출력 (실패 시 빈 문자열)
  */
 function gitExec(cmd: string, cwd: string): string {
   try {
@@ -16,8 +43,11 @@ function gitExec(cmd: string, cwd: string): string {
 }
 
 /**
- * /review — Review current code changes for bugs, security, and quality issues.
- * Gathers the diff and injects a review prompt into the conversation for the agent to process.
+ * /review 슬래시 명령어 정의 — 코드 변경 리뷰
+ *
+ * git diff를 수집하고 리뷰 프롬프트를 생성하여
+ * shouldInjectAsUserMessage로 LLM에게 전달합니다.
+ * 대용량 diff는 MAX_DIFF_SIZE로 잘라 컨텍스트를 보호합니다.
  */
 export const reviewCommand: SlashCommand = {
   name: "review",

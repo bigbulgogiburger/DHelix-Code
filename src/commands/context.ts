@@ -1,17 +1,40 @@
+/**
+ * /context 명령어 핸들러 — 컨텍스트 윈도우 사용량 시각화
+ *
+ * 사용자가 /context를 입력하면 현재 컨텍스트 윈도우의 사용 상태를
+ * 진행 막대(progress bar)로 시각적으로 보여줍니다.
+ *
+ * 컨텍스트 윈도우란? LLM이 한 번에 처리할 수 있는 텍스트의 최대 크기입니다.
+ * 예: 128K 컨텍스트 = 약 128,000 토큰까지의 대화 내역을 기억할 수 있음
+ *
+ * 표시 정보:
+ *   - 모델명과 최대 컨텍스트/출력 토큰 수
+ *   - 현재 사용량 시각적 막대와 백분율
+ *   - 압축(compaction) 트리거까지 남은 토큰 수
+ *   - 메시지 수 (사용자/어시스턴트별)
+ *
+ * 사용 시점: 대화가 길어져서 컨텍스트 한계에 가까운지 확인하고 싶을 때
+ */
 import { type SlashCommand } from "./registry.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 import { countMessageTokens } from "../llm/token-counter.js";
 import { AGENT_LOOP } from "../constants.js";
 
 /**
- * Format a token count with thousands separators for display.
+ * 토큰 수를 천 단위 구분자와 함께 포맷하는 헬퍼 함수
+ *
+ * @param count - 포맷할 토큰 수
+ * @returns 포맷된 문자열 (예: 12,345)
  */
 function formatTokenCount(count: number): string {
   return count.toLocaleString("en-US");
 }
 
 /**
- * /context — Show context window usage with visual bar.
+ * /context 슬래시 명령어 정의 — 컨텍스트 윈도우 사용 현황 표시
+ *
+ * 현재 모델의 최대 컨텍스트 크기 대비 사용량을
+ * 시각적 진행 막대와 수치로 표시합니다.
  */
 export const contextCommand: SlashCommand = {
   name: "context",

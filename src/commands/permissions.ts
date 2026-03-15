@@ -1,3 +1,24 @@
+/**
+ * /permissions 명령어 핸들러 — 영구 권한 규칙 관리
+ *
+ * dbcode의 도구(tool) 사용 권한을 세밀하게 제어합니다.
+ *
+ * 권한 시스템이란? LLM이 파일 쓰기, 명령 실행 등의 도구를 호출할 때
+ * 사용자의 허가가 필요한지 여부를 결정하는 보안 메커니즘입니다.
+ *
+ * 규칙 형식:
+ *   - "tool_name" — 도구 이름으로 매칭 (예: "bash_exec")
+ *   - "ToolName(arg_pattern)" — 도구+인자 패턴으로 매칭 (예: "Bash(npm *)")
+ *
+ * 주요 서브커맨드:
+ *   /permissions                  — 현재 권한 상태 표시
+ *   /permissions allow <패턴>     — 영구 허용 규칙 추가
+ *   /permissions deny <패턴>      — 영구 거부 규칙 추가
+ *   /permissions remove <패턴>    — 규칙 제거
+ *   /permissions reset            — 모든 규칙 초기화
+ *
+ * 규칙은 ~/.dbcode/settings.json의 permissions 섹션에 영구 저장됩니다.
+ */
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { CONFIG_DIR } from "../constants.js";
@@ -5,18 +26,27 @@ import { type PermissionMode } from "../permissions/types.js";
 import { getModeDescription } from "../permissions/modes.js";
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 
-/** Path to the global settings file */
+/** 전역 설정 파일 경로 (~/.dbcode/settings.json) */
 const SETTINGS_PATH = join(CONFIG_DIR, "settings.json");
 
-/** Shape of the permissions section in settings.json */
+/**
+ * settings.json의 permissions 섹션 구조 인터페이스
+ *
+ * @property allow - 허용 규칙 배열 (이 패턴에 매칭되는 도구는 자동 허용)
+ * @property deny - 거부 규칙 배열 (이 패턴에 매칭되는 도구는 자동 거부)
+ */
 interface PermissionsSettings {
   readonly allow: readonly string[];
   readonly deny: readonly string[];
 }
 
 /**
- * Read the full settings.json, returning a mutable object.
- * Returns an empty object if the file does not exist.
+ * settings.json 전체를 읽어 변경 가능한 객체로 반환하는 함수
+ *
+ * 파일이 없으면(ENOENT) 빈 객체를 반환합니다.
+ *
+ * @returns settings.json의 내용 객체
+ * @throws 파일 읽기/파싱 실패 시 (ENOENT 제외)
  */
 async function readSettings(): Promise<Record<string, unknown>> {
   try {
@@ -37,7 +67,9 @@ async function readSettings(): Promise<Record<string, unknown>> {
 }
 
 /**
- * Write settings back to disk, ensuring the directory exists.
+ * 설정을 디스크에 기록하는 함수 (디렉토리 자동 생성)
+ *
+ * @param settings - 기록할 설정 객체
  */
 async function writeSettings(settings: Record<string, unknown>): Promise<void> {
   await mkdir(CONFIG_DIR, { recursive: true });
@@ -45,7 +77,12 @@ async function writeSettings(settings: Record<string, unknown>): Promise<void> {
 }
 
 /**
- * Extract the permissions section from settings, with defaults.
+ * 설정에서 permissions 섹션을 기본값과 함께 추출하는 함수
+ *
+ * allow/deny 배열이 없으면 빈 배열을 기본값으로 사용합니다.
+ *
+ * @param settings - 전체 설정 객체
+ * @returns 권한 설정 (allow, deny 배열)
  */
 function getPermissionsFromSettings(settings: Record<string, unknown>): PermissionsSettings {
   const perms = settings.permissions as Record<string, unknown> | undefined;
@@ -56,13 +93,14 @@ function getPermissionsFromSettings(settings: Record<string, unknown>): Permissi
 }
 
 /**
- * Validate a permission pattern.
+ * 권한 패턴의 유효성을 검증하는 함수
  *
- * Valid formats:
- *   - `tool_name` — matches a tool by name (e.g., `file_read`, `bash_exec`)
- *   - `ToolName(arg_pattern)` — matches a tool with an argument glob (e.g., `Bash(npm *)`)
+ * 유효한 형식:
+ *   - `tool_name` — 도구 이름으로 매칭 (예: file_read, bash_exec)
+ *   - `ToolName(arg_pattern)` — 도구 + 인자 글로브 패턴 (예: Bash(npm *))
  *
- * Returns null if valid, or an error message if invalid.
+ * @param pattern - 검증할 패턴 문자열
+ * @returns 유효하면 null, 무효하면 에러 메시지 문자열
  */
 export function validatePattern(pattern: string): string | null {
   const trimmed = pattern.trim();
@@ -97,7 +135,13 @@ export function validatePattern(pattern: string): string | null {
 }
 
 /**
- * Format the display for `/permissions` (no args) — show current state.
+ * /permissions (인자 없음) 화면 포맷 — 현재 권한 상태 표시
+ *
+ * 현재 권한 모드, 허용 규칙, 거부 규칙을 포맷하여 보여줍니다.
+ *
+ * @param mode - 현재 권한 모드 ("default", "plan" 등)
+ * @param perms - 현재 허용/거부 규칙
+ * @returns 포맷된 상태 문자열
  */
 function formatPermissionStatus(mode: PermissionMode, perms: PermissionsSettings): string {
   const lines: string[] = [];
@@ -141,7 +185,12 @@ function formatPermissionStatus(mode: PermissionMode, perms: PermissionsSettings
 }
 
 /**
- * Handle `/permissions allow <pattern>`.
+ * /permissions allow <pattern> 핸들러 — 영구 허용 규칙 추가
+ *
+ * 패턴을 검증한 후 중복 여부를 확인하고 settings.json에 저장합니다.
+ *
+ * @param pattern - 추가할 허용 패턴
+ * @returns 작업 결과
  */
 async function handleAllow(pattern: string): Promise<CommandResult> {
   const validationError = validatePattern(pattern);
@@ -169,7 +218,12 @@ async function handleAllow(pattern: string): Promise<CommandResult> {
 }
 
 /**
- * Handle `/permissions deny <pattern>`.
+ * /permissions deny <pattern> 핸들러 — 영구 거부 규칙 추가
+ *
+ * 패턴을 검증한 후 중복 여부를 확인하고 settings.json에 저장합니다.
+ *
+ * @param pattern - 추가할 거부 패턴
+ * @returns 작업 결과
  */
 async function handleDeny(pattern: string): Promise<CommandResult> {
   const validationError = validatePattern(pattern);
@@ -197,7 +251,12 @@ async function handleDeny(pattern: string): Promise<CommandResult> {
 }
 
 /**
- * Handle `/permissions remove <pattern>`.
+ * /permissions remove <pattern> 핸들러 — 허용 또는 거부 규칙 제거
+ *
+ * allow와 deny 양쪽에서 패턴을 찾아 제거합니다.
+ *
+ * @param pattern - 제거할 패턴
+ * @returns 작업 결과
  */
 async function handleRemove(pattern: string): Promise<CommandResult> {
   const trimmed = pattern.trim();
@@ -231,7 +290,11 @@ async function handleRemove(pattern: string): Promise<CommandResult> {
 }
 
 /**
- * Handle `/permissions reset`.
+ * /permissions reset 핸들러 — 모든 영구 규칙 초기화
+ *
+ * allow와 deny 배열을 모두 비우고 settings.json에 저장합니다.
+ *
+ * @returns 초기화 결과
  */
 async function handleReset(): Promise<CommandResult> {
   const settings = await readSettings();
@@ -256,14 +319,10 @@ async function handleReset(): Promise<CommandResult> {
 }
 
 /**
- * /permissions — Manage persistent permission rules.
+ * /permissions 슬래시 명령어 정의 — 영구 권한 규칙 관리
  *
- * Subcommands:
- *   /permissions                  — Show current permission state
- *   /permissions allow <pattern>  — Add a persistent allow rule
- *   /permissions deny <pattern>   — Add a persistent deny rule
- *   /permissions remove <pattern> — Remove a rule from allow or deny
- *   /permissions reset            — Clear all persistent rules
+ * 서브커맨드를 파싱하여 해당 핸들러로 라우팅합니다.
+ * 인자 없이 호출하면 현재 권한 상태를 표시합니다.
  */
 export const permissionsCommand: SlashCommand = {
   name: "permissions",

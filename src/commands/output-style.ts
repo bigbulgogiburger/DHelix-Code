@@ -1,13 +1,24 @@
+/**
+ * /output-style 명령어 핸들러 — 응답 스타일 변경
+ *
+ * 사용자가 /output-style을 입력하면 LLM의 응답 스타일을 변경합니다.
+ * 시스템 프롬프트를 조정하여 LLM의 출력 행동을 바꿉니다.
+ *
+ * 스타일 옵션:
+ *   - default     — 균형 잡힌 응답 (기본)
+ *   - explanatory — 이유와 함께 상세한 설명
+ *   - learning    — 교육적 설명, 예시와 맥락 제공
+ *   - concise     — 최소한의 직접적인 답변
+ *
+ * 사용 시점: LLM의 응답이 너무 길거나 짧을 때 스타일을 조절할 때
+ */
 import { type SlashCommand } from "./registry.js";
 
-/** Valid output styles */
+/** 유효한 출력 스타일 상수 배열 */
 const VALID_STYLES = ["default", "explanatory", "learning", "concise"] as const;
+/** 출력 스타일 타입 ("default" | "explanatory" | "learning" | "concise") */
 type OutputStyle = (typeof VALID_STYLES)[number];
 
-/**
- * /output-style — Change the response style.
- * Adjusts the system prompt to alter LLM output behavior.
- */
 export const outputStyleCommand: SlashCommand = {
   name: "output-style",
   description: "Change response output style",

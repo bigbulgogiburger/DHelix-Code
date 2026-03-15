@@ -1,10 +1,32 @@
+/**
+ * /stats 명령어 핸들러 — 세션 통계 표시
+ *
+ * 사용자가 /stats를 입력하면 현재 세션의 종합 사용 통계를 보여줍니다.
+ *
+ * 표시 정보:
+ *   - 세션 지속 시간, 활성 모델, 세션 ID
+ *   - 토큰 사용량 (입력/출력 비율을 시각적 막대로)
+ *   - 예상 비용
+ *   - 도구별 사용 빈도 (시각적 막대 차트)
+ *   - 사용자 턴 수, 에러 횟수
+ *
+ * /analytics보다 간결한 요약을 제공합니다.
+ *
+ * 이 파일은 formatDuration, getToolBreakdown 등 다른 명령어에서도
+ * 재사용되는 유틸리티 함수도 export합니다.
+ */
 import { type SlashCommand } from "./registry.js";
 import { metrics, COUNTERS } from "../telemetry/metrics.js";
 
-/** Session start timestamp for duration calculation */
+/** 세션 시작 시각 — 세션 지속 시간 계산에 사용 */
 const sessionStartedAt = Date.now();
 
-/** Format a duration in milliseconds to a human-readable string */
+/**
+ * 밀리초 단위의 시간을 사람이 읽기 쉬운 형식으로 변환하는 함수
+ *
+ * @param ms - 밀리초 단위 시간
+ * @returns 포맷된 문자열 (예: "2h 15m 30s", "45m 12s", "30s")
+ */
 export function formatDuration(ms: number): string {
   const totalSeconds = Math.floor(ms / 1000);
   const hours = Math.floor(totalSeconds / 3600);
@@ -20,12 +42,17 @@ export function formatDuration(ms: number): string {
   return `${seconds}s`;
 }
 
-/** Create a visual bar of a given length using block characters */
+/**
+ * 블록 문자(\u2588)로 시각적 막대를 생성하는 함수
+ *
+ * @param length - 막대 길이 (반복 횟수)
+ * @returns 블록 문자열
+ */
 function makeBar(length: number): string {
   return "\u2588".repeat(length);
 }
 
-/** Common tool names to check for breakdown */
+/** 분석할 도구(tool) 이름 목록 — 메트릭에서 사용량을 확인할 도구들 */
 const KNOWN_TOOLS: readonly string[] = [
   "file_read",
   "file_edit",
@@ -42,7 +69,15 @@ const KNOWN_TOOLS: readonly string[] = [
   "task",
 ] as const;
 
-/** Collect per-tool invocation counts from metrics */
+/**
+ * 메트릭에서 도구별 호출 횟수를 수집하는 함수
+ *
+ * 알려진 도구 목록(KNOWN_TOOLS)을 먼저 확인한 후,
+ * 카운터 데이터에서 추가 도구도 스캔합니다.
+ * 결과는 호출 횟수 내림차순으로 정렬됩니다.
+ *
+ * @returns 도구명과 호출 횟수의 배열
+ */
 export function getToolBreakdown(): ReadonlyArray<{ readonly name: string; readonly count: number }> {
   const toolCounts: Array<{ readonly name: string; readonly count: number }> = [];
 
@@ -85,7 +120,10 @@ export function getToolBreakdown(): ReadonlyArray<{ readonly name: string; reado
 }
 
 /**
- * /stats — Display comprehensive session statistics.
+ * /stats 슬래시 명령어 정의 — 세션 종합 통계 표시
+ *
+ * 지속 시간, 모델, 토큰 사용량, 비용, 도구 사용 빈도,
+ * 사용자 턴 수, 에러 횟수를 시각적 막대와 함께 보여줍니다.
  */
 export const statsCommand: SlashCommand = {
   name: "stats",

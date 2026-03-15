@@ -1,9 +1,21 @@
+/**
+ * TeammateStatus.tsx — 멀티 에이전트 팀 상태를 표시하는 컴포넌트 모음
+ *
+ * 멀티 에이전트 실행 시 팀원(에이전트)들의 상태를 시각적으로 보여줍니다.
+ * 세 가지 수준의 표시를 제공합니다:
+ *
+ * 1. TeammateIndicator — 상태 바에 한 줄로 표시 "[Teams: 2 active | 5/8 members done]"
+ * 2. TeammateDetailPanel — 팀별 멤버 행을 보여주는 상세 패널
+ * 3. TeamMemberRow — 개별 멤버의 상태(아이콘, 이름, 경과시간) 표시
+ *
+ * 이 파일에는 타입 정의, 헬퍼 함수, 컴포넌트가 모두 포함되어 있습니다.
+ */
 import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
+// ─── 타입 정의 ───────────────────────────────────────────────────────────────
 
-/** Simplified team member data for display purposes */
+/** 표시용 팀 멤버 데이터 (간소화) */
 export interface TeamMemberSummary {
   readonly name: string;
   readonly role: string;
@@ -11,7 +23,7 @@ export interface TeamMemberSummary {
   readonly elapsed?: number; // milliseconds
 }
 
-/** Simplified team session data for display purposes */
+/** 표시용 팀 세션 데이터 (간소화) */
 export interface TeamSessionSummary {
   readonly id: string;
   readonly name: string;
@@ -21,29 +33,29 @@ export interface TeamSessionSummary {
   readonly completedAt?: number;
 }
 
-/** Props for the compact teammate indicator (shown in StatusBar area) */
+/** 상태 바에 표시되는 간략 팀 인디케이터의 Props */
 export interface TeammateIndicatorProps {
   readonly teams: readonly TeamSessionSummary[];
 }
 
-/** Props for the detailed teammate panel (shown below activity feed) */
+/** 활동 피드 아래에 표시되는 상세 팀 패널의 Props */
 export interface TeammateDetailPanelProps {
   readonly teams: readonly TeamSessionSummary[];
   readonly expanded?: boolean;
 }
 
-/** Props for a single team member row */
+/** 개별 팀 멤버 행의 Props */
 export interface TeamMemberRowProps {
   readonly member: TeamMemberSummary;
   readonly maxNameLength?: number;
 }
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── 상수 정의 ───────────────────────────────────────────────────────────────
 
 const MAX_DISPLAY_NAME_LENGTH = 20;
 const MAX_TEAM_NAME_LENGTH = 40;
 
-/** Status icons for team member states */
+/** 팀 멤버 상태별 유니코드 아이콘 — ○ 대기, ◐ 실행 중, ● 완료, ✕ 실패, ⊘ 취소 */
 const STATUS_ICONS: Record<string, string> = {
   pending: "\u25CB", // ○
   running: "\u25D0", // ◐
@@ -52,7 +64,7 @@ const STATUS_ICONS: Record<string, string> = {
   cancelled: "\u2298", // ⊘
 };
 
-/** Status colors for team member states */
+/** 팀 멤버 상태별 색상 — 대기=회색, 실행 중=노랑, 완료=초록, 실패=빨강, 취소=회색 */
 const STATUS_COLORS: Record<string, string> = {
   pending: "gray",
   running: "yellow",
@@ -61,19 +73,19 @@ const STATUS_COLORS: Record<string, string> = {
   cancelled: "gray",
 };
 
-// ─── Helper Functions ────────────────────────────────────────────────────────
+// ─── 헬퍼 함수 ────────────────────────────────────────────────────────────
 
-/** Get status icon for a member status */
+/** 멤버 상태에 해당하는 아이콘 문자를 반환 */
 export function getStatusIcon(status: string): string {
   return STATUS_ICONS[status] ?? "?";
 }
 
-/** Get status color for a member status */
+/** 멤버 상태에 해당하는 색상명을 반환 */
 export function getStatusColor(status: string): string {
   return STATUS_COLORS[status] ?? "white";
 }
 
-/** Format elapsed time in milliseconds to human-readable string */
+/** 밀리초 단위 경과 시간을 사람이 읽기 쉬운 문자열로 변환 — "5s", "2m 30s", "1h 15m" */
 export function formatElapsedTime(ms: number): string {
   if (ms < 0) {
     return "0s";
@@ -92,7 +104,7 @@ export function formatElapsedTime(ms: number): string {
   return remainingMinutes > 0 ? `${hours}h ${remainingMinutes}m` : `${hours}h`;
 }
 
-/** Calculate team progress: how many members completed vs total */
+/** 팀 진행률 계산 — 완료된 멤버 수 vs 전체 멤버 수 */
 export function getTeamProgress(members: readonly TeamMemberSummary[]): {
   readonly completed: number;
   readonly total: number;
@@ -101,12 +113,12 @@ export function getTeamProgress(members: readonly TeamMemberSummary[]): {
   return { completed, total: members.length };
 }
 
-/** Count active (non-completed, non-cancelled, non-failed) teams */
+/** 활성 팀 수 계산 (완료/취소/실패가 아닌 팀만 카운트) */
 export function countActiveTeams(teams: readonly TeamSessionSummary[]): number {
   return teams.filter((t) => t.status === "active" || t.status === "running").length;
 }
 
-/** Truncate a string to a max length, adding ellipsis if needed */
+/** 문자열을 최대 길이로 자르고, 초과 시 말줄임(…) 추가 */
 export function truncateString(str: string, maxLength: number): string {
   if (str.length <= maxLength) {
     return str;
@@ -114,7 +126,7 @@ export function truncateString(str: string, maxLength: number): string {
   return str.slice(0, maxLength - 1) + "\u2026";
 }
 
-/** Get aggregate member counts across all teams */
+/** 모든 팀의 멤버 수를 합산하여 전체 완료/전체 수를 반환 */
 export function getAggregateMemberCounts(teams: readonly TeamSessionSummary[]): {
   readonly completed: number;
   readonly total: number;
@@ -129,9 +141,9 @@ export function getAggregateMemberCounts(teams: readonly TeamSessionSummary[]): 
   return { completed, total };
 }
 
-// ─── Components ──────────────────────────────────────────────────────────────
+// ─── 컴포넌트 ──────────────────────────────────────────────────────────────
 
-/** Render a single team member row with status icon, name, status, and elapsed time */
+/** 개별 팀 멤버 행 — 상태 아이콘, 이름, 상태 텍스트, 경과 시간을 한 줄로 표시 */
 export const TeamMemberRow = React.memo(function TeamMemberRow({
   member,
   maxNameLength = MAX_DISPLAY_NAME_LENGTH,
@@ -160,9 +172,9 @@ export const TeamMemberRow = React.memo(function TeamMemberRow({
 });
 
 /**
- * Compact teammate indicator for StatusBar area.
- * Shows a single-line summary: [Teams: N active | X/Y members done]
- * Returns null when there are no teams to display.
+ * 상태 바용 간략 팀 인디케이터
+ * 한 줄로 팀 요약을 표시: [Teams: N active | X/Y members done]
+ * 팀이 없으면 null을 반환하여 표시하지 않습니다.
  */
 export const TeammateIndicator = React.memo(function TeammateIndicator({
   teams,
@@ -187,9 +199,11 @@ export const TeammateIndicator = React.memo(function TeammateIndicator({
 });
 
 /**
- * Detailed teammate panel showing all teams and their member statuses.
- * Renders a bordered box per team with member rows and progress.
- * When collapsed (expanded=false), shows only the team header with progress.
+ * 상세 팀 패널 — 모든 팀과 멤버 상태를 표시
+ *
+ * 팀마다 테두리가 있는 박스로 표시하며, 내부에 멤버 행과 진행률을 보여줍니다.
+ * 축소(expanded=false)시에는 팀 헤더와 진행률만 표시합니다.
+ * 모든 멤버가 완료되면 테두리가 초록색, 아니면 노란색으로 변합니다.
  */
 export const TeammateDetailPanel = React.memo(function TeammateDetailPanel({
   teams,

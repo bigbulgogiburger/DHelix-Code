@@ -1,3 +1,21 @@
+/**
+ * ToolCallBlock.tsx — 도구 호출 결과를 리치하게 표시하는 블록 컴포넌트
+ *
+ * 에이전트가 도구(file_read, bash_exec, file_edit 등)를 호출할 때의
+ * 상태와 결과를 시각적으로 표시합니다. tool-display.ts의 렌더러를 사용하여
+ * 각 도구에 맞는 의미 있는 헤더와 미리보기를 생성합니다.
+ *
+ * 표시 구조:
+ * [스피너/아이콘] 동사 인수 (소요시간)
+ *  ⎿  서브텍스트 (추가 정보)
+ *     [diff 미리보기 또는 출력 요약]
+ *
+ * 상태별 표시:
+ * - running: 노란색 스피너 + "Reading"/"Running" 등
+ * - complete: 성공 아이콘 + "Read"/"Ran" 등
+ * - error: 빨간색 ✗ + 에러 정보
+ * - denied: 빨간색 ! + 거부 메시지
+ */
 import React, { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 
@@ -8,6 +26,18 @@ import {
   SPINNER_FRAMES,
 } from "../renderer/tool-display.js";
 
+/**
+ * ToolCallBlock 컴포넌트의 Props
+ *
+ * @param name - 도구 이름 (예: "file_read", "bash_exec")
+ * @param status - 현재 상태 ("running" | "complete" | "error" | "denied")
+ * @param args - 도구에 전달된 인수 (파일 경로, 명령어 등)
+ * @param output - 도구 실행 결과 출력 문자열
+ * @param metadata - 도구 실행에 대한 추가 메타데이터 (줄 수, 종료 코드 등)
+ * @param isExpanded - 출력을 확장해서 보여줄지 여부 (Ctrl+O)
+ * @param startTime - 도구 실행 시작 시간 (소요시간 계산용, Date.now() 값)
+ * @param streamingOutput - 장시간 실행 도구(bash_exec 등)의 실시간 출력
+ */
 interface ToolCallBlockProps {
   readonly name: string;
   readonly status: "running" | "complete" | "error" | "denied";
@@ -16,10 +46,11 @@ interface ToolCallBlockProps {
   readonly metadata?: Readonly<Record<string, unknown>>;
   readonly isExpanded?: boolean;
   readonly startTime?: number;
-  /** Live streaming output from long-running tools */
+  /** 장시간 실행 도구의 실시간 스트리밍 출력 */
   readonly streamingOutput?: string;
 }
 
+/** 스피너 애니메이션 훅 — active가 true일 때 500ms 간격으로 프레임 순환 */
 function useSpinner(active: boolean): string {
   const [frame, setFrame] = useState(0);
 
@@ -34,7 +65,7 @@ function useSpinner(active: boolean): string {
   return SPINNER_FRAMES[frame];
 }
 
-/** Parse a diff line into its components */
+/** diff 한 줄을 줄 번호, 마커(+/-/공백), 내용으로 파싱 */
 function parseDiffLine(line: string): {
   lineNum: string;
   marker: "+" | "-" | " ";
@@ -51,7 +82,7 @@ function parseDiffLine(line: string): {
   return { lineNum: "", marker: " ", content: line };
 }
 
-/** Render a diff preview with colored +/- lines */
+/** file_edit의 diff 미리보기를 색상 있는 +/- 줄로 렌더링 (초록=추가, 빨강=삭제) */
 function DiffPreview({ preview }: { readonly preview: string }) {
   const lines = preview.split("\n");
   return (
@@ -92,7 +123,11 @@ function DiffPreview({ preview }: { readonly preview: string }) {
   );
 }
 
-/** Rich tool call display with semantic header and tree connector */
+/**
+ * 리치 도구 호출 표시 블록 — 의미 있는 헤더와 트리 커넥터(⎿)로 계층 표현
+ * tool-display.ts의 getToolHeaderInfo/getToolPreview를 사용하여
+ * 각 도구 유형에 맞는 동사, 인수, 서브텍스트, 미리보기를 생성합니다.
+ */
 export const ToolCallBlock = React.memo(function ToolCallBlock({
   name,
   status,

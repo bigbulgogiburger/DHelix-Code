@@ -1,3 +1,12 @@
+/**
+ * /analytics 명령어 핸들러 — 세션 분석 및 성능 메트릭 표시
+ *
+ * 사용자가 /analytics를 입력하면 현재 세션의 상세한 분석 데이터를 보여줍니다.
+ * 토큰 사용량, 비용, 모델 분포, 도구 사용 빈도, 에이전트 성능,
+ * 토큰 캐시 통계, 활동 타임라인 등 종합적인 세션 통계를 제공합니다.
+ *
+ * /stats보다 더 상세한 분석 정보를 원할 때 사용합니다.
+ */
 import { type SlashCommand } from "./registry.js";
 import { metrics, COUNTERS, HISTOGRAMS } from "../telemetry/metrics.js";
 import { formatDuration, getToolBreakdown } from "./stats.js";
@@ -5,23 +14,42 @@ import { formatCost } from "./cost.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 import { getTokenCacheStats } from "../llm/token-counter.js";
 
-/** Session start timestamp for duration calculation */
+/** 세션 시작 시각 — 세션 지속 시간 계산에 사용 (밀리초 타임스탬프) */
 const sessionStartedAt = Date.now();
 
-/** Create a simple text-based bar chart */
+/**
+ * 텍스트 기반 막대 차트를 생성하는 헬퍼 함수
+ *
+ * 블록 문자(\u2588)를 반복하여 터미널에서 시각적 막대를 만듭니다.
+ *
+ * @param length - 막대 길이 (0 이상)
+ * @param maxLength - 최대 막대 길이 (기본값: 20)
+ * @returns 블록 문자로 구성된 막대 문자열
+ */
 function makeBar(length: number, maxLength = 20): string {
   const clamped = Math.max(0, Math.min(length, maxLength));
   return "\u2588".repeat(clamped);
 }
 
-/** Format a percentage with 1 decimal place */
+/**
+ * 백분율을 소수점 1자리로 포맷하는 헬퍼 함수
+ *
+ * @param value - 백분율 값 (예: 85.123)
+ * @returns 포맷된 백분율 문자열 (예: "85.1%")
+ */
 function formatPercent(value: number): string {
   return `${value.toFixed(1)}%`;
 }
 
 /**
- * Collect model distribution from counter data.
- * Returns an array of { model, inputTokens, outputTokens } sorted by total tokens descending.
+ * 카운터 데이터에서 모델별 토큰 분포를 수집하는 함수
+ *
+ * 텔레메트리(telemetry, 사용량 추적 시스템)에서 모델별 입력/출력 토큰 수를
+ * 집계하여 총 토큰 수 내림차순으로 정렬된 배열을 반환합니다.
+ *
+ * 토큰이란? LLM이 텍스트를 처리하는 최소 단위로, 대략 영어 4글자 = 1토큰입니다.
+ *
+ * @returns 모델별 입력/출력 토큰 수 배열 (총 토큰 수 기준 내림차순)
  */
 export function getModelDistribution(): ReadonlyArray<{
   readonly model: string;
@@ -60,7 +88,12 @@ export function getModelDistribution(): ReadonlyArray<{
 }
 
 /**
- * Calculate tool success rate from counter data.
+ * 도구(tool) 성공률을 카운터 데이터에서 계산하는 함수
+ *
+ * 도구란? LLM이 파일 읽기, 검색, 명령 실행 등을 수행하기 위해 호출하는
+ * 기능 단위입니다. 각 도구 호출의 성공/실패를 집계하여 성공률을 산출합니다.
+ *
+ * @returns 전체 호출 수, 성공 수, 실패 수, 성공률(백분율)
  */
 export function getToolSuccessRate(): {
   readonly total: number;
@@ -98,7 +131,13 @@ export function getToolSuccessRate(): {
 }
 
 /**
- * Get average agent iterations from histogram data.
+ * 히스토그램 데이터에서 에이전트 평균 반복 횟수를 구하는 함수
+ *
+ * 에이전트 루프(agent loop)란? LLM이 사용자 요청을 처리하기 위해
+ * "생각 → 도구 호출 → 결과 확인"을 반복하는 과정입니다.
+ * 이 함수는 요청당 평균 몇 번의 반복이 필요했는지를 계산합니다.
+ *
+ * @returns 평균 반복 횟수 (데이터가 없으면 0)
  */
 export function getAverageIterations(): number {
   const histData = metrics.getHistogramData();
@@ -116,7 +155,11 @@ export function getAverageIterations(): number {
 }
 
 /**
- * /analytics — Show detailed session analytics and performance metrics.
+ * /analytics 슬래시 명령어 정의 — 상세 세션 분석 및 성능 메트릭 표시
+ *
+ * 세션 개요(지속 시간, 모델, 사용자 턴 수), 토큰 사용량과 비용,
+ * 모델별 분포 차트, 도구 사용 빈도/성공률, 에이전트 성능,
+ * 토큰 캐시 통계, 활동 타임라인을 종합적으로 보여줍니다.
  */
 export const analyticsCommand: SlashCommand = {
   name: "analytics",

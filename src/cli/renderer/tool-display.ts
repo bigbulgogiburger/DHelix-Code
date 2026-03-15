@@ -1,11 +1,45 @@
+/**
+ * tool-display.ts — 도구 호출을 사람이 읽기 쉬운 형태로 변환하는 렌더러
+ *
+ * 각 도구(file_read, file_edit, bash_exec 등)의 호출 상태와 결과를
+ * 의미 있는 헤더, 서브텍스트, 미리보기로 변환합니다.
+ *
+ * 예시 출력:
+ * - "Read src/cli/App.tsx (352 lines)" — file_read 완료
+ * - "Running ls -la" — bash_exec 실행 중
+ * - "Update src/utils/path.ts (+3 -1)" — file_edit 완료 (diff 미리보기 포함)
+ *
+ * 이 모듈은 ToolCallBlock 컴포넌트에서 사용됩니다.
+ * toolDisplayMap에 각 도구별 표시 설정이 정의되어 있으며,
+ * 새 도구를 추가할 때 이 맵에 항목을 추가하면 됩니다.
+ */
+
+/** 도구 상태 — running(실행 중), complete(완료), error(에러), denied(거부됨) */
 type ToolStatus = "running" | "complete" | "error" | "denied";
 
+/**
+ * 도구 헤더 정보 — ToolCallBlock에서 상단에 표시
+ * @param header - 메인 헤더 텍스트 (예: "Read src/App.tsx")
+ * @param color - 헤더 색상 (Ink 색상명)
+ * @param subtext - 추가 정보 텍스트 (예: "352 lines")
+ */
 export interface ToolHeaderInfo {
   readonly header: string;
   readonly color: string;
   readonly subtext?: string;
 }
 
+/**
+ * 도구별 표시 설정 — 각 도구의 실행/완료 메시지, 색상, 상세 정보 추출 방법을 정의
+ *
+ * @param running/complete - 실행 중/완료 시 동사 (예: "Reading"/"Read")
+ * @param headerVerb/runningHeaderVerb - 헤더에 표시할 동사
+ * @param headerColor - 헤더 색상
+ * @param extractDetail - 인수/출력/메타데이터에서 상세 정보 추출
+ * @param extractPreview - diff 또는 출력 미리보기 추출
+ * @param extractHeaderArg - 헤더에 표시할 주요 인수 추출 (파일 경로, 명령어 등)
+ * @param extractSubtext - 서브텍스트 추출 (줄 수, 바이트 수 등)
+ */
 interface ToolDisplayConfig {
   readonly running: string;
   readonly complete: string;
@@ -32,7 +66,7 @@ interface ToolDisplayConfig {
   ) => string | undefined;
 }
 
-/** Shorten a file path to just filename for display, keep full if short enough */
+/** 파일 경로를 표시용으로 축약 — 충분히 짧으면 그대로 유지, 길면 "…/dir/file" 형태로 */
 function shortenPath(filePath: string, maxLen = 60): string {
   if (filePath.length <= maxLen) return filePath;
   const parts = filePath.split("/");
@@ -41,7 +75,7 @@ function shortenPath(filePath: string, maxLen = 60): string {
   return `…/${parts[parts.length - 2]}/${filename}`;
 }
 
-/** Build a diff with ±3 context lines, removed lines (-), and added lines (+) */
+/** 컨텍스트 줄 포함 diff 생성 — 삭제 줄(-), 추가 줄(+), 주변 컨텍스트 줄을 포함 */
 function formatContextDiff(
   contextLines: readonly string[],
   contextStartLine: number,
@@ -114,7 +148,7 @@ function formatContextDiff(
   return result.join("\n");
 }
 
-/** Generate a unified-diff-like preview for file_edit with line numbers and context */
+/** file_edit를 위한 unified-diff 스타일 미리보기 생성 — 줄 번호와 컨텍스트 포함 */
 function formatEditDiff(args?: Record<string, unknown>, _output?: string): string | undefined {
   const oldStr = typeof args?.old_string === "string" ? args.old_string : undefined;
   const newStr = typeof args?.new_string === "string" ? args.new_string : undefined;
@@ -167,7 +201,7 @@ function formatEditDiff(args?: Record<string, unknown>, _output?: string): strin
   return lines.length > 0 ? lines.join("\n") : undefined;
 }
 
-/** Build a change summary like "Added 3 lines, removed 1 line" */
+/** 변경 요약 생성 — "Added 3 lines, removed 1 line" 형태의 문자열 */
 function formatChangeSummary(args?: Record<string, unknown>): string | undefined {
   const oldStr = typeof args?.old_string === "string" ? args.old_string : undefined;
   const newStr = typeof args?.new_string === "string" ? args.new_string : undefined;
@@ -182,7 +216,7 @@ function formatChangeSummary(args?: Record<string, unknown>): string | undefined
   return parts.length > 0 ? parts.join(", ") : undefined;
 }
 
-/** Format bash output preview */
+/** bash 출력 미리보기 포맷 — 최대 5줄까지 표시, 실행 중에는 미리보기 없음 */
 function formatBashPreview(
   _args?: Record<string, unknown>,
   output?: string,
@@ -198,13 +232,13 @@ function formatBashPreview(
   return preview.join("\n");
 }
 
-/** Format a duration string for subtext, returning undefined if not meaningful */
+/** 서브텍스트용 소요시간 문자열 포맷 — 의미 없는 값(0 이하)이면 undefined 반환 */
 function formatDurationSubtext(duration?: number): string | undefined {
   if (duration === undefined || duration <= 0) return undefined;
   return formatDuration(duration);
 }
 
-/** Count non-empty lines in output */
+/** 출력에서 비어있지 않은 줄 수를 카운트 */
 function countNonEmptyLines(output?: string): number {
   if (!output) return 0;
   return output
@@ -213,6 +247,14 @@ function countNonEmptyLines(output?: string): number {
     .filter((l) => l.length > 0).length;
 }
 
+/**
+ * 도구별 표시 설정 맵 — 각 도구의 렌더링 규칙을 정의
+ *
+ * 새 도구를 추가할 때:
+ * 1. 이 맵에 도구 이름을 키로 새 항목을 추가합니다.
+ * 2. running/complete 동사, 색상, 상세 정보 추출기를 설정합니다.
+ * 3. 필요시 extractPreview로 미리보기(diff 등)를 제공합니다.
+ */
 const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   file_read: {
     running: "Reading",
@@ -651,7 +693,7 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   },
 };
 
-/** Format duration in ms to human-readable string */
+/** 밀리초 단위 소요시간을 사람이 읽기 쉬운 문자열로 변환 — "150ms", "1.5s", "2m 30s" */
 export function formatDuration(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
@@ -660,6 +702,11 @@ export function formatDuration(ms: number): string {
   return `${minutes}m ${seconds}s`;
 }
 
+/**
+ * 도구의 헤더 정보를 생성합니다.
+ * toolDisplayMap에 정의된 설정을 기반으로 동사, 인수, 서브텍스트를 조합합니다.
+ * 맵에 없는 도구는 기본 형식("Running tool_name" / "Tool tool_name")으로 표시합니다.
+ */
 export function getToolHeaderInfo(
   name: string,
   status: ToolStatus,
@@ -691,6 +738,10 @@ export function getToolHeaderInfo(
   return { header, color: config.headerColor, subtext };
 }
 
+/**
+ * 도구의 상태를 한 줄 텍스트로 반환합니다.
+ * 예: "Read src/App.tsx — 352 lines (1.2s)"
+ */
 export function getToolDisplayText(
   name: string,
   status: ToolStatus,
@@ -712,7 +763,7 @@ export function getToolDisplayText(
   return duration && status !== "running" ? `${base} (${formatDuration(duration)})` : base;
 }
 
-/** Get a preview snippet for display below the tool status line */
+/** 도구 상태 줄 아래에 표시할 미리보기 스니펫을 가져옴 (diff, 출력 요약 등) */
 export function getToolPreview(
   name: string,
   status: ToolStatus,
@@ -724,6 +775,7 @@ export function getToolPreview(
   return config?.extractPreview?.(args, output, status, metadata);
 }
 
+/** 도구 상태에 해당하는 아이콘 문자를 반환 — running=⠋(스피너), complete=✓, error=✗, denied=! */
 export function getToolStatusIcon(status: ToolStatus): string {
   switch (status) {
     case "running":

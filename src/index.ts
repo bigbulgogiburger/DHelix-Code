@@ -1,10 +1,46 @@
+/**
+ * 애플리케이션 진입점(Entry Point) — CLI 명령 파싱부터 UI 렌더링까지의 부트스트랩
+ *
+ * 이 파일은 dbcode 애플리케이션의 메인 실행 파일입니다.
+ * Commander.js로 CLI 인자를 파싱하고, 필요한 모듈을 동적 import하여
+ * 최종적으로 Ink(React for CLI) 앱을 렌더링합니다.
+ *
+ * 부트스트랩 흐름:
+ * 1. CLI 인자 파싱 (commander)
+ * 2. dotenv 로드 (.env 파일에서 환경변수 읽기)
+ * 3. 초기 설정 마법사 (첫 실행 시)
+ * 4. 동적 import — 필요한 모듈만 로드 (--help, --version은 빠르게 응답)
+ * 5. 설정 로드 (5단계 계층 병합)
+ * 6. LLM 클라이언트 생성
+ * 7. 도구(Tool) 등록
+ * 8. 스킬/커맨드 로드 및 등록
+ * 9. MCP 서버 연결
+ * 10. Ink 앱 렌더링 또는 헤드리스 모드 실행
+ *
+ * 성능 최적화:
+ * - 동적 import로 --help / --version 응답 시간 최소화
+ * - Promise.all로 독립 모듈 병렬 로드
+ * - 구문 강조, worktree 정리 등은 논블로킹(non-blocking)으로 처리
+ */
+
 import { Command } from "commander";
 import { VERSION, APP_NAME, LLM_DEFAULTS } from "./constants.js";
 
-/** Startup profiling — only active when DBCODE_VERBOSE is set */
+/** 시작 시간 기록 — 부트스트랩 성능 프로파일링용 */
 const _startupT0 = performance.now();
+/** 상세 모드 여부 — DBCODE_VERBOSE 환경변수로 제어 */
 const _verbose = !!process.env.DBCODE_VERBOSE;
 
+/**
+ * 성능 프로파일링 로그 출력 — 각 초기화 단계의 소요 시간 측정
+ *
+ * DBCODE_VERBOSE=true일 때만 stderr에 출력됩니다.
+ * 부트스트랩이 느릴 때 병목 지점을 찾는 데 유용합니다.
+ *
+ * @param label - 단계 이름 (예: "dotenv", "dynamic imports")
+ * @param since - 이전 단계의 타임스탬프
+ * @returns 현재 타임스탬프 (다음 단계 측정용)
+ */
 function _profileLog(label: string, since: number): number {
   const now = performance.now();
   if (_verbose) {
@@ -15,9 +51,10 @@ function _profileLog(label: string, since: number): number {
   return now;
 }
 
+// Commander.js 인스턴스 생성 — CLI 명령줄 파서
 const program = new Command();
 
-// Subcommand: dbcode init
+// 서브커맨드: dbcode init — 프로젝트 초기화
 program
   .command("init")
   .description("Initialize a dbcode project in the current directory")
@@ -31,6 +68,7 @@ program
     }
   });
 
+// 메인 커맨드 정의 — dbcode [options] [prompt]
 program
   .name(APP_NAME)
   .description("AI coding assistant for local/external LLMs")
@@ -60,24 +98,30 @@ program
       outputFormat: string;
       addDir?: string[];
     }) => {
-      // Load dotenv only when running the action (not for --help / --version)
+      // ── 단계 1: dotenv 로드 ──
+      // .env 파일에서 환경변수를 읽어 process.env에 주입
+      // --help, --version에서는 이 action이 실행되지 않으므로 불필요한 로드 방지
       let _t = _profileLog("CLI parse", _startupT0);
       await import("dotenv/config");
       _t = _profileLog("dotenv", _t);
 
-      // First-run setup wizard: prompt for model + API key if not configured
+      // ── 단계 2: 초기 설정 마법사 ──
+      // 첫 실행 시 모델과 API 키를 대화형으로 설정
+      // 헤드리스 모드(-p)나 API 키가 이미 있으면 건너뜀
       if (!opts.print && !opts.apiKey) {
         const { needsSetup, runSetupWizard } = await import("./cli/setup-wizard.js");
         if (await needsSetup()) {
           const wizardResult = await runSetupWizard();
-          // Apply wizard results as defaults for this session
+          // 마법사 결과를 현재 세션의 기본값으로 적용
           if (!opts.model && wizardResult.llm.model) opts.model = wizardResult.llm.model;
           if (!opts.baseUrl && wizardResult.llm.baseUrl) opts.baseUrl = wizardResult.llm.baseUrl;
           if (wizardResult.llm.apiKey) opts.apiKey = wizardResult.llm.apiKey;
         }
       }
 
-      // Dynamic imports — keep startup fast for --help / --version
+      // ── 단계 3: 동적 import ──
+      // 필요한 모든 모듈을 Promise.all로 병렬 로드
+      // --help / --version일 때는 이 코드에 도달하지 않으므로 빠른 시작 보장
       _t = _profileLog("setup wizard check", _t);
       const { join } = await import("node:path");
       const [
@@ -214,13 +258,15 @@ program
 
       _t = _profileLog("dynamic imports", _t);
 
-      // Only pass explicitly-set CLI options as overrides
+      // ── 단계 4: 설정 로드 ──
+      // CLI 플래그를 오버라이드로 전달하여 5단계 계층 병합 수행
       const llmOverrides: Record<string, unknown> = {
         temperature: LLM_DEFAULTS.temperature,
         maxTokens: LLM_DEFAULTS.maxTokens,
         contextWindow: 128_000,
         timeout: 60_000,
       };
+      // CLI에서 명시적으로 전달된 옵션만 오버라이드에 추가
       if (opts.model) llmOverrides.model = opts.model;
       if (opts.baseUrl) llmOverrides.baseUrl = opts.baseUrl;
       if (opts.apiKey) llmOverrides.apiKey = opts.apiKey;
@@ -233,6 +279,10 @@ program
       const config = resolved.config;
       _t = _profileLog("config loaded", _t);
 
+      // ── 단계 5: LLM 클라이언트 생성 ──
+      // 모델 종류에 따라 적절한 클라이언트 선택:
+      // - Responses API 전용 모델 → ResponsesAPIClient (OpenAI o1, o3 등)
+      // - 그 외 → OpenAICompatibleClient (Chat Completions API)
       const client = isResponsesOnlyModel(config.llm.model)
         ? new ResponsesAPIClient({
             baseURL: config.llm.baseUrl,
@@ -245,7 +295,9 @@ program
             timeout: config.llm.timeout,
           });
 
-      // Register tools
+      // ── 단계 6: 도구(Tool) 등록 ──
+      // 16개의 기본 도구를 레지스트리에 등록
+      // 각 도구는 AI가 파일 읽기, 셸 명령 실행 등을 수행하는 데 사용
       const toolRegistry = new ToolRegistry();
       toolRegistry.registerAll([
         fileReadTool,
@@ -267,10 +319,11 @@ program
 
       _t = _profileLog("tools registered", _t);
 
-      // Select tool call strategy
+      // 모델에 맞는 도구 호출 전략(strategy) 선택
+      // 모델마다 tool call 형식이 다를 수 있음 (function calling vs tool use)
       const strategy = selectStrategy(config.llm.model);
 
-      // Register agent tool (requires client, model, strategy, toolRegistry)
+      // Agent 도구 등록 — 서브에이전트 생성 기능 (클라이언트, 모델, 전략, 도구 필요)
       toolRegistry.register(
         createAgentTool({
           client,
@@ -280,27 +333,28 @@ program
         }),
       );
 
-      // Create permission manager
+      // ── 단계 7: 권한/컨텍스트/훅 매니저 초기화 ──
+      // 도구 실행 시 사용자 확인을 관리하는 권한 매니저
       const permissionManager = new PermissionManager("default");
 
-      // Create context manager
+      // 컨텍스트 윈도우 관리자 — 토큰 사용량 추적, 자동 컴팩션
       const contextManager = new ContextManager({
         maxContextTokens: config.llm.contextWindow,
       });
 
-      // Load hook configuration
+      // 훅(Hook) 시스템 — 이벤트 기반 자동 작업 (예: 파일 저장 후 린트)
       const hookConfig = await loadHookConfig(join(process.cwd(), ".dbcode"));
       const hookRunner = new HookRunner(hookConfig);
 
       _t = _profileLog("hooks loaded", _t);
 
-      // Run SessionStart hooks
+      // 세션 시작 훅 실행
       await hookRunner.run("SessionStart", {
         event: "SessionStart",
         workingDirectory: process.cwd(),
       });
 
-      // Resolve additional directories for monorepo/multi-repo support
+      // 모노레포/멀티레포용 추가 디렉토리 처리
       if (opts.addDir) {
         const { resolve } = await import("node:path");
         for (const dir of opts.addDir) {
@@ -308,14 +362,15 @@ program
         }
       }
 
-      // Load skills from .dbcode/commands/, .dbcode/skills/, ~/.dbcode/commands/, ~/.dbcode/skills/
+      // ── 단계 8: 스킬 로드 및 슬래시 명령 등록 ──
+      // 4개 디렉토리에서 스킬을 로드
       const { SkillManager } = await import("./skills/manager.js");
       const skillManager = new SkillManager();
       await skillManager.loadAll(process.cwd());
 
       _t = _profileLog("skills loaded", _t);
 
-      // Register slash commands
+      // 내장 슬래시 명령 + 스킬 기반 커스텀 명령 등록
       const commandRegistry = new CommandRegistry();
       const commands: import("./commands/registry.js").SlashCommand[] = [
         clearCommand,
@@ -358,7 +413,7 @@ program
         editorCommand,
         dualCommand,
       ];
-      // Register skill-based custom commands (user-invocable skills become /commands)
+      // 사용자 정의 스킬을 /명령어로 변환하여 등록
       const { createSkillCommands } = await import("./skills/command-bridge.js");
       const skillCommands = createSkillCommands(skillManager);
       commands.push(...skillCommands);
@@ -366,11 +421,13 @@ program
       for (const cmd of commands) {
         commandRegistry.register(cmd);
       }
+      // /help 명령에서 전체 명령어 목록을 보여주기 위해 설정
       setHelpCommands(commands);
 
       _t = _profileLog("commands registered", _t);
 
-      // Headless mode: run prompt and exit
+      // ── 헤드리스 모드: 프롬프트 실행 후 즉시 종료 ──
+      // -p "프롬프트" 옵션으로 UI 없이 결과만 출력
       if (opts.print) {
         const { runHeadless } = await import("./cli/headless.js");
         await runHeadless({
@@ -385,17 +442,19 @@ program
         return;
       }
 
-      // Handle session resume
+      // ── 단계 9: 세션 관리 ──
       let sessionId: string | undefined;
       const sessionManager = new SessionManager();
 
+      // -c (--continue): 가장 최근 세션 이어서 사용
       if (opts.continue) {
         sessionId = (await sessionManager.getMostRecentSessionId()) ?? undefined;
+      // -r (--resume): 특정 세션 ID로 복원
       } else if (opts.resume) {
         sessionId = opts.resume;
       }
 
-      // Create new session if none specified
+      // 세션이 지정되지 않으면 새 세션 생성
       if (!sessionId) {
         sessionId = await sessionManager.createSession({
           workingDirectory: process.cwd(),
@@ -403,6 +462,7 @@ program
         });
       }
 
+      // ── 단계 10: Ink(React for CLI) 앱 렌더링 ──
       const [{ render }, React, { App }, { printStartupLogo }, { patchInkRendering }] =
         await Promise.all([
           import("ink"),
@@ -412,16 +472,18 @@ program
           import("./cli/renderer/synchronized-output.js"),
         ]);
 
-      // Pre-warm syntax highlighter (non-blocking)
+      // 구문 강조기 사전 초기화 (논블로킹 — 실패해도 앱 시작에 영향 없음)
       import("./cli/renderer/syntax.js").then(m => m.initHighlighter()).catch(() => {});
 
-      // Print logo to stdout BEFORE Ink render — prevents flickering
+      // 시작 로고를 Ink 렌더링 전에 stdout에 출력 — 깜빡임 방지
       printStartupLogo(config.llm.model);
 
-      // Clean orphaned worktrees (non-blocking)
+      // 고아 worktree 정리 (논블로킹 — 이전 세션에서 남은 임시 디렉토리 제거)
       import("./subagents/spawner.js").then(m => m.cleanOrphanedWorktrees(process.cwd())).catch(() => {});
 
-      // Initialize MCP connector (non-blocking — failures warn but don't crash)
+      // ── MCP(Model Context Protocol) 서버 연결 ──
+      // MCP는 외부 도구 서버와 연결하는 프로토콜
+      // 실패해도 경고만 출력하고 앱은 정상 시작
       let mcpConnector: import("./mcp/manager-connector.js").MCPManagerConnector | undefined;
       let mcpManager: import("./mcp/manager.js").MCPManager | undefined;
       try {
@@ -437,6 +499,7 @@ program
         if (connectResult.connected.length > 0 || connectResult.failed.length > 0) {
           mcpConnector = new MCPManagerConnector();
 
+          // 연결 실패한 MCP 서버에 대해 경고 출력
           for (const failure of connectResult.failed) {
             process.stderr.write(
               `Warning: MCP server "${failure.name}" failed to connect: ${failure.error}\n`,
@@ -449,20 +512,20 @@ program
         );
       }
 
-      // Set up session auto-save (heartbeat for metadata freshness)
+      // 세션 자동 저장 설정 — 주기적으로 세션 메타데이터 갱신
       const { setupAutoSave } = await import("./core/session-auto-save.js");
       const autoSave = setupAutoSave(sessionManager, sessionId);
 
-      // Set up graceful shutdown
+      // ── 우아한 종료(Graceful Shutdown) 설정 ──
       let shuttingDown = false;
       const shutdown = async (signal: string): Promise<void> => {
-        if (shuttingDown) return;
+        if (shuttingDown) return; // 중복 종료 방지
         shuttingDown = true;
 
-        // Stop auto-save timer
+        // 자동 저장 타이머 중지
         autoSave.stop();
 
-        // Disconnect MCP servers
+        // MCP 서버 연결 해제
         if (mcpManager) {
           await mcpManager.disconnectAll().catch(() => {});
         }
@@ -470,25 +533,28 @@ program
           await mcpConnector.disconnectAll().catch(() => {});
         }
 
-        // Run Stop hook (best-effort)
+        // Stop 훅 실행 (최선의 노력 — 실패해도 종료 진행)
         await hookRunner.run("Stop", {
           event: "Stop",
           workingDirectory: process.cwd(),
         }).catch(() => {});
 
+        // 시그널에 따른 종료 코드: SIGTERM(143), SIGINT(130)
         process.exit(signal === "SIGTERM" ? 143 : 130);
       };
 
+      // Ctrl+C (SIGINT)와 kill (SIGTERM) 시그널 처리
       process.on("SIGINT", () => void shutdown("SIGINT"));
       process.on("SIGTERM", () => void shutdown("SIGTERM"));
 
-      // Patch Ink rendering with DEC Mode 2026 synchronized output
-      // Terminals that support it (Ghostty, iTerm2, WezTerm, VSCode) will
-      // display each frame atomically, eliminating flickering entirely.
+      // DEC Mode 2026 동기화 출력 패치 — 터미널 깜빡임 방지
+      // Ghostty, iTerm2, WezTerm, VSCode 등 지원 터미널에서
+      // 각 프레임을 원자적으로 출력하여 렌더링 깜빡임을 제거
       patchInkRendering();
 
       _profileLog("ready to render", _t);
 
+      // 최종 Ink 앱 렌더링 — React 기반 CLI UI 시작
       render(
         React.createElement(App, {
           client,
@@ -511,7 +577,12 @@ program
   );
 
 /**
- * User-friendly error handler — zero stack traces, actionable guidance.
+ * 사용자 친화적 에러 핸들러 — 스택 트레이스 없이 실행 가능한 안내 제공
+ *
+ * 일반적인 에러 유형(연결 실패, 인증 실패, 모델 없음, 요청 제한)을
+ * 감지하여 해결 방법을 함께 안내합니다.
+ *
+ * @param error - 처리할 에러 객체
  */
 function handleError(error: unknown): never {
   const message = error instanceof Error ? error.message : String(error);
@@ -520,10 +591,12 @@ function handleError(error: unknown): never {
       ? (error as { context: Record<string, unknown> }).context
       : undefined;
 
+  // 에러 메시지와 context를 합쳐서 패턴 매칭
   const lowerMsg = message.toLowerCase();
   const causeStr = cause ? JSON.stringify(cause).toLowerCase() : "";
   const combined = lowerMsg + " " + causeStr;
 
+  // 연결 거부 에러 — 서버가 실행 중인지 확인 안내
   if (
     combined.includes("econnrefused") ||
     (combined.includes("connection") && !combined.includes("401"))
@@ -532,6 +605,7 @@ function handleError(error: unknown): never {
     process.stderr.write(
       `Error: Cannot connect to ${url}.\nIs the server running? Check with: dbcode --base-url <url>\n`,
     );
+  // 인증 에러 — API 키 설정 안내
   } else if (
     combined.includes("401") ||
     combined.includes("unauthorized") ||
@@ -540,14 +614,17 @@ function handleError(error: unknown): never {
     process.stderr.write(
       `Error: Invalid API key.\nSet with: dbcode --api-key <key> or OPENAI_API_KEY env var\n`,
     );
+  // 모델 없음 에러 — 모델명 변경 안내
   } else if (
     combined.includes("404") ||
     (combined.includes("not found") && combined.includes("model"))
   ) {
     const model = cause?.model ?? "unknown";
     process.stderr.write(`Error: Model '${model}' not found.\nTry: dbcode --model gpt-4o\n`);
+  // 요청 제한 에러 — 잠시 후 재시도 안내
   } else if (combined.includes("rate limit") || combined.includes("429")) {
     process.stderr.write(`Error: Rate limited. Please wait a moment and try again.\n`);
+  // 기타 에러 — 원본 메시지와 상세 정보 출력
   } else {
     process.stderr.write(`Error: ${message}\n`);
     if (cause) {
@@ -557,5 +634,5 @@ function handleError(error: unknown): never {
   process.exit(1);
 }
 
-// Global error handler
+// 전역 에러 핸들러 — 처리되지 않은 에러를 사용자 친화적으로 표시
 program.parseAsync().catch(handleError);

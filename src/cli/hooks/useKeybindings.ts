@@ -1,10 +1,33 @@
+/**
+ * useKeybindings.ts — 키보드 단축키 시스템
+ *
+ * 커스터마이징 가능한 키바인딩 시스템을 구현합니다.
+ * 기본 단축키가 정의되어 있고, 사용자가 ~/.dbcode/keybindings.json으로
+ * 키 매핑을 변경할 수 있습니다.
+ *
+ * 기본 단축키:
+ * - Escape → 현재 작업 취소
+ * - Ctrl+J → 줄바꿈 삽입
+ * - Shift+Tab → 권한 모드 순환
+ * - Ctrl+O → 상세 모드 토글
+ * - Ctrl+D → 종료
+ * - Alt+T → 확장 사고 토글
+ * - Alt+V → 음성 녹음 토글
+ *
+ * 이 파일에 포함된 기능:
+ * - parseKeyCombo/formatKeyCombo: 키 조합 문자열 파싱/포맷
+ * - loadKeybindingConfig: 사용자 설정 파일 로드
+ * - getEffectiveBindings: 기본값과 사용자 설정 병합
+ * - buildKeybindings: 키-액션 매핑을 Keybinding 배열로 변환
+ * - useKeybindings: 실제 키 입력을 감지하는 React 훅
+ */
 import { useInput } from "ink";
 import { useCallback, useMemo } from "react";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-/** Keybinding definition */
+/** 키바인딩 정의 — 키 조합, 수식키(ctrl/meta/shift), 액션명, 핸들러 함수를 포함 */
 export interface Keybinding {
   readonly key: string;
   readonly ctrl?: boolean;
@@ -14,7 +37,7 @@ export interface Keybinding {
   readonly handler: () => void;
 }
 
-/** Serializable keybinding config (from JSON file) */
+/** JSON 파일에서 읽어온 직렬화 가능한 키바인딩 설정 */
 export interface KeybindingConfig {
   readonly key: string;
   readonly ctrl?: boolean;
@@ -24,12 +47,12 @@ export interface KeybindingConfig {
   readonly action: string;
 }
 
-/** File format for ~/.dbcode/keybindings.json */
+/** ~/.dbcode/keybindings.json 파일의 형식 */
 export interface KeybindingsFile {
   readonly bindings: Record<string, string>;
 }
 
-/** Default action-to-key mapping */
+/** 기본 키→액션 매핑 — 사용자 설정이 없을 때 사용되는 기본값 */
 export const DEFAULT_BINDINGS: Readonly<Record<string, string>> = {
   escape: "cancel",
   "ctrl+j": "newline",
@@ -40,7 +63,7 @@ export const DEFAULT_BINDINGS: Readonly<Record<string, string>> = {
   "alt+v": "toggle-voice",
 } as const;
 
-/** Human-readable descriptions for each action */
+/** 각 액션에 대한 사람이 읽을 수 있는 설명 */
 export const ACTION_DESCRIPTIONS: Readonly<Record<string, string>> = {
   cancel: "Cancel current operation / dismiss completion",
   newline: "Insert newline in multi-line input",
@@ -52,8 +75,8 @@ export const ACTION_DESCRIPTIONS: Readonly<Record<string, string>> = {
 } as const;
 
 /**
- * Parse a key combo string like "ctrl+o", "alt+t", "escape", "shift+tab"
- * into a structured object.
+ * "ctrl+o", "alt+t", "escape", "shift+tab" 같은 키 조합 문자열을
+ * 구조화된 객체로 파싱합니다. "+"로 분리하여 수식키와 키를 구분합니다.
  */
 export function parseKeyCombo(combo: string): {
   readonly key: string;
@@ -90,7 +113,8 @@ export function parseKeyCombo(combo: string): {
 }
 
 /**
- * Format a key combo back to a display string.
+ * 키 조합 객체를 표시용 문자열로 다시 변환합니다.
+ * 예: { key: "o", ctrl: true } → "Ctrl+O"
  */
 export function formatKeyCombo(combo: {
   readonly key: string;
@@ -112,12 +136,15 @@ export function formatKeyCombo(combo: {
 }
 
 /**
- * Load keybinding configuration from ~/.dbcode/keybindings.json.
- * Supports both formats:
- *   - { "bindings": { "escape": "cancel", ... } }
- *   - [ { "key": "escape", "action": "cancel" }, ... ]  (legacy)
+ * ~/.dbcode/keybindings.json에서 키바인딩 설정을 로드합니다.
  *
- * Returns a record of key combo → action name.
+ * 두 가지 형식을 지원합니다:
+ * - 새 형식: { "bindings": { "escape": "cancel", ... } }
+ * - 레거시 형식: [ { "key": "escape", "action": "cancel" }, ... ]
+ *
+ * 파일이 없거나 파싱에 실패하면 빈 객체를 반환합니다.
+ *
+ * @returns 키 조합 → 액션 이름의 레코드
  */
 export function loadKeybindingConfig(): Readonly<Record<string, string>> {
   const configPath = join(homedir(), ".dbcode", "keybindings.json");
@@ -157,8 +184,8 @@ export function loadKeybindingConfig(): Readonly<Record<string, string>> {
 }
 
 /**
- * Get the effective bindings by merging defaults with user config.
- * User config overrides defaults when both map to the same action.
+ * 기본 키바인딩과 사용자 설정을 병합하여 실효 바인딩을 반환합니다.
+ * 사용자가 동일한 액션을 다른 키에 매핑하면 기본 키를 제거합니다.
  */
 export function getEffectiveBindings(
   userConfig: Readonly<Record<string, string>>,
@@ -183,7 +210,8 @@ export function getEffectiveBindings(
 }
 
 /**
- * Build Keybinding[] from a key→action map and action→handler map.
+ * 키→액션 맵과 액션→핸들러 맵으로부터 Keybinding 배열을 생성합니다.
+ * 핸들러가 없는 액션은 건너뜁니다.
  */
 export function buildKeybindings(
   bindings: Readonly<Record<string, string>>,
@@ -242,7 +270,13 @@ export function mergeKeybindings(
   return [...merged.values()];
 }
 
-/** Hook for registering custom keybindings with configurable key mappings */
+/**
+ * 설정 가능한 키 매핑으로 커스텀 키바인딩을 등록하는 React 훅
+ *
+ * Ink의 useInput을 사용하여 키 입력을 감지하고,
+ * 등록된 바인딩과 매칭하여 핸들러를 호출합니다.
+ * escape, tab 같은 특수 키와 ctrl/meta 수식키를 모두 지원합니다.
+ */
 export function useKeybindings(bindings: readonly Keybinding[], isActive = true) {
   const stableBindings = useMemo(() => [...bindings], [bindings]);
 
@@ -282,5 +316,5 @@ export function useKeybindings(bindings: readonly Keybinding[], isActive = true)
   useInput(handleInput, { isActive });
 }
 
-/** Path to the keybindings config file */
+/** 키바인딩 설정 파일 경로 — ~/.dbcode/keybindings.json */
 export const KEYBINDINGS_CONFIG_PATH = join(homedir(), ".dbcode", "keybindings.json");

@@ -1,3 +1,25 @@
+/**
+ * /doctor 명령어 핸들러 — 시스템 진단 및 환경 점검
+ *
+ * 사용자가 /doctor를 입력하면 dbcode 실행 환경의 12가지 항목을 자동 점검합니다:
+ *   1. Node.js 버전 (20+ 필요)
+ *   2. Git 설치 여부
+ *   3. Git 저장소 여부
+ *   4. 모델 설정 상태
+ *   5. API 키 설정 여부
+ *   6. 디스크 여유 공간
+ *   7. 설정 디렉토리(~/.dbcode) 접근 권한
+ *   8. 구문 하이라이터(Shiki) 가용성
+ *   9. LLM API 연결 상태
+ *  10. 메모리 사용량
+ *  11. 토큰 캐시 상태
+ *  12. 세션 잠금(lock) 상태
+ *
+ * 각 항목은 ok(정상)/warn(경고)/fail(실패)로 표시되며,
+ * 문제가 있는 항목에는 해결 방법(Fix)을 안내합니다.
+ *
+ * 사용 시점: dbcode가 제대로 동작하지 않을 때 원인을 진단하고 싶을 때
+ */
 import { execSync } from "node:child_process";
 import { existsSync, accessSync, constants, statSync } from "node:fs";
 import { homedir } from "node:os";
@@ -5,6 +27,14 @@ import { join } from "node:path";
 import { type SlashCommand } from "./registry.js";
 import { getTokenCacheStats } from "../llm/token-counter.js";
 
+/**
+ * 진단 점검 결과를 담는 인터페이스
+ *
+ * @property name - 점검 항목 이름 (예: "Node.js", "Git")
+ * @property status - 점검 결과 ("ok"=정상, "warn"=경고, "fail"=실패)
+ * @property detail - 상세 설명 (예: "v20.11.0 (>=20 required)")
+ * @property fix - 문제 해결 방법 (선택적, 문제가 있을 때만 표시)
+ */
 interface DiagnosticCheck {
   readonly name: string;
   readonly status: "ok" | "warn" | "fail";
@@ -12,7 +42,12 @@ interface DiagnosticCheck {
   readonly fix?: string;
 }
 
-/** Format bytes to human-readable string */
+/**
+ * 바이트 수를 사람이 읽기 쉬운 형식으로 변환하는 함수
+ *
+ * @param bytes - 바이트 수
+ * @returns 포맷된 문자열 (예: "512 B", "1.5 KB", "256.3 MB")
+ */
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
@@ -20,9 +55,10 @@ function formatBytes(bytes: number): string {
 }
 
 /**
- * /doctor — Diagnostic checks for installation, config, and connectivity.
- * Runs 12 checks: Node.js, Git, Git repo, Model, API key, Disk space, Config dir,
- * Syntax highlighter, LLM connectivity, Memory usage, Token cache, Session lock.
+ * /doctor 슬래시 명령어 정의 — 설치, 설정, 연결 상태 진단
+ *
+ * 12가지 점검 항목을 순차적으로 실행하고 결과를 표시합니다.
+ * 모든 점검이 "fail"이 아니면 success: true를 반환합니다.
  */
 export const doctorCommand: SlashCommand = {
   name: "doctor",

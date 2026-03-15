@@ -1,3 +1,23 @@
+/**
+ * 훅 러너(Hook Runner) — 이벤트에 매칭되는 훅 핸들러를 실행하는 엔진
+ *
+ * 이벤트 발생 시 설정된 규칙(HookRule)과 매칭하고,
+ * 각 핸들러를 타입에 따라(command/http/prompt/agent) 실행합니다.
+ *
+ * 주요 특징:
+ * - 에러 격리(error isolation): 개별 핸들러 실패가 전체 시스템을 멈추지 않음
+ * - 변수 보간(interpolation): $FILE_PATH, $TOOL_NAME 등을 실제 값으로 치환
+ * - 안전한 유효성 검사: eval() 대신 제한된 표현식 파싱 사용
+ * - 차단(blocking) 지원: exit code 2를 반환하면 작업을 차단
+ *
+ * @example
+ * const runner = new HookRunner(config);
+ * const result = await runner.run("PostToolUse", payload);
+ * if (result.blocked) {
+ *   console.log("훅에 의해 차단됨:", result.blockReason);
+ * }
+ */
+
 import { exec } from "node:child_process";
 import { BaseError } from "../utils/error.js";
 import {
@@ -14,10 +34,10 @@ import {
   type AgentHookHandler,
 } from "./types.js";
 
-/** Default timeout for hook handlers (30 seconds) */
+/** 훅 핸들러의 기본 타임아웃 (30초) */
 const DEFAULT_HOOK_TIMEOUT_MS = 30_000;
 
-/** Hook execution error */
+/** 훅 실행 에러 */
 export class HookError extends BaseError {
   constructor(message: string, context: Record<string, unknown> = {}) {
     super(message, "HOOK_ERROR", context);
@@ -25,8 +45,18 @@ export class HookError extends BaseError {
 }
 
 /**
- * Interpolate variables in a string using the event payload.
- * Supports: $FILE_PATH, $TOOL_NAME, $SESSION_ID, $WORKING_DIR, and custom $data.key
+ * 이벤트 페이로드의 값을 사용하여 템플릿 문자열의 변수를 치환합니다.
+ *
+ * 지원하는 변수:
+ * - $FILE_PATH → payload.filePath
+ * - $TOOL_NAME → payload.toolCall.name
+ * - $SESSION_ID → payload.sessionId
+ * - $WORKING_DIR → payload.workingDirectory (또는 process.cwd())
+ * - $data.key → payload.data의 커스텀 키
+ *
+ * @param template - 변수가 포함된 템플릿 문자열
+ * @param payload - 변수 값을 제공하는 이벤트 페이로드
+ * @returns 변수가 치환된 문자열
  */
 function interpolateVariables(template: string, payload: HookEventPayload): string {
   let result = template;
@@ -35,6 +65,7 @@ function interpolateVariables(template: string, payload: HookEventPayload): stri
   result = result.replace(/\$SESSION_ID/g, payload.sessionId ?? "");
   result = result.replace(/\$WORKING_DIR/g, payload.workingDirectory ?? process.cwd());
 
+  // payload.data의 커스텀 키도 변수로 치환 (예: $taskId → payload.data.taskId)
   if (payload.data) {
     for (const [key, value] of Object.entries(payload.data)) {
       result = result.replace(new RegExp(`\\$${key}`, "g"), String(value));
@@ -45,33 +76,55 @@ function interpolateVariables(template: string, payload: HookEventPayload): stri
 }
 
 /**
- * Check if a hook rule's matcher matches the current event context.
- * Matcher is a pipe-delimited list of patterns (e.g., "file_edit|file_write").
- * If no matcher is set, the rule always matches.
+ * 훅 규칙의 matcher가 현재 이벤트 컨텍스트와 일치하는지 확인합니다.
+ *
+ * - matcher가 없으면 항상 매칭됩니다.
+ * - matcher는 파이프(|)로 구분된 패턴 목록입니다 (예: "file_edit|file_write").
+ * - 각 패턴은 도구 이름과 정확히 일치하거나 *를 사용한 글로브 매칭을 지원합니다.
+ *
+ * @param rule - 확인할 훅 규칙
+ * @param payload - 현재 이벤트 페이로드
+ * @returns 매칭되면 true
  */
 function matchesRule(rule: HookRule, payload: HookEventPayload): boolean {
   if (!rule.matcher) return true;
 
+  // 파이프(|)로 분리하여 각 패턴을 검사
   const patterns = rule.matcher.split("|").map((p) => p.trim());
   const toolName = payload.toolCall?.name ?? "";
 
   return patterns.some((pattern) => {
+    // 정확히 일치하는 경우
     if (pattern === toolName) return true;
-    // Simple glob: * matches any sequence
+    // 글로브 패턴: *를 .*로 변환하여 정규식 매칭
     const regex = new RegExp(`^${pattern.replace(/\*/g, ".*")}$`);
     return regex.test(toolName);
   });
 }
 
 /**
- * Execute a command hook handler.
- * Passes event payload as JSON on stdin. Reads stdout/stderr.
- * Exit code 0 = pass, 2 = block, other = error.
+ * command 타입 훅 핸들러를 실행합니다.
+ *
+ * 실행 과정:
+ * 1. 명령어 템플릿의 변수를 치환
+ * 2. 셸 명령어를 자식 프로세스로 실행
+ * 3. 이벤트 페이로드를 JSON으로 stdin에 전달
+ * 4. 환경 변수로 DBCODE_EVENT, DBCODE_TOOL_NAME 등을 설정
+ *
+ * 종료 코드 의미:
+ * - 0: 통과
+ * - 2: 차단 (작업 중단 요청)
+ * - 기타: 에러
+ *
+ * @param handler - command 핸들러 설정
+ * @param payload - 이벤트 페이로드
+ * @returns 핸들러 실행 결과
  */
 async function executeCommandHandler(
   handler: CommandHookHandler,
   payload: HookEventPayload,
 ): Promise<HookHandlerResult> {
+  // 변수 보간: $FILE_PATH 등을 실제 값으로 치환
   const command = interpolateVariables(handler.command, payload);
   const timeoutMs = handler.timeoutMs ?? DEFAULT_HOOK_TIMEOUT_MS;
 
@@ -81,6 +134,7 @@ async function executeCommandHandler(
       {
         timeout: timeoutMs,
         cwd: payload.workingDirectory ?? process.cwd(),
+        // 환경 변수로 이벤트 정보를 전달 — 스크립트에서 활용 가능
         env: {
           ...process.env,
           DBCODE_EVENT: payload.event,
@@ -90,7 +144,7 @@ async function executeCommandHandler(
         },
       },
       (error, stdout, stderr) => {
-        // child_process exec error has 'code' as exit code number on the error object
+        // exec 에러 객체의 code 속성이 종료 코드
         const exitCode: number = error
           ? (((error as unknown as Record<string, unknown>).code as number) ?? 1)
           : 0;
@@ -99,17 +153,17 @@ async function executeCommandHandler(
           exitCode,
           stdout: stdout.trim(),
           stderr: stderr.trim(),
-          blocked: exitCode === 2,
+          blocked: exitCode === 2, // exit code 2는 차단을 의미
           handlerType: "command",
         });
       },
     );
 
-    // Send payload as JSON on stdin
-    // Handle EPIPE gracefully — child may exit before stdin write completes
+    // 이벤트 페이로드를 JSON으로 stdin에 전달
+    // EPIPE 에러를 우아하게 처리 — 자식 프로세스가 stdin 읽기 전에 종료할 수 있음
     if (child.stdin) {
       child.stdin.on("error", () => {
-        // Ignore EPIPE — the child process already exited
+        // EPIPE 무시 — 자식 프로세스가 이미 종료된 정상 상황
       });
       child.stdin.write(JSON.stringify(payload));
       child.stdin.end();
@@ -118,9 +172,14 @@ async function executeCommandHandler(
 }
 
 /**
- * Execute an HTTP hook handler.
- * POSTs the event payload as JSON to the configured URL.
- * Response JSON may contain { blocked: boolean, message: string }.
+ * http 타입 훅 핸들러를 실행합니다.
+ *
+ * 이벤트 페이로드를 JSON으로 설정된 URL에 POST 전송합니다.
+ * 응답이 JSON이면 { blocked: boolean, message: string } 형태를 파싱합니다.
+ *
+ * @param handler - http 핸들러 설정
+ * @param payload - 이벤트 페이로드
+ * @returns 핸들러 실행 결과
  */
 async function executeHttpHandler(
   handler: HttpHookHandler,
@@ -129,6 +188,7 @@ async function executeHttpHandler(
   const timeoutMs = handler.timeoutMs ?? DEFAULT_HOOK_TIMEOUT_MS;
 
   try {
+    // AbortController: 타임아웃 시 요청을 중단하기 위한 메커니즘
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -148,12 +208,13 @@ async function executeHttpHandler(
     let blocked = false;
     let stdout = text;
 
+    // 응답이 JSON 형태이면 blocked와 message 필드를 파싱
     try {
       const json = JSON.parse(text) as { blocked?: boolean; message?: string };
       blocked = json.blocked === true;
       stdout = json.message ?? text;
     } catch {
-      // Response is not JSON — use raw text
+      // JSON이 아닌 응답 — 원시 텍스트를 그대로 사용
     }
 
     return {
@@ -175,17 +236,24 @@ async function executeHttpHandler(
 }
 
 /**
- * Execute a prompt hook handler.
- * Displays a confirmation prompt to the user with the configured message.
- * In CI mode (DBCODE_HOOK_AUTO_APPROVE=true), auto-approves.
- * Otherwise, reports the prompt message and treats the hook as non-blocking
- * unless the environment indicates rejection.
+ * prompt 타입 훅 핸들러를 실행합니다.
+ *
+ * 사용자에게 확인 프롬프트를 표시합니다.
+ * - CI 모드(DBCODE_HOOK_AUTO_APPROVE=true): 자동 승인
+ * - DBCODE_HOOK_REJECT=true: 자동 거부 (차단)
+ * - 그 외: 프롬프트 메시지만 보고 통과
+ *
+ * @param handler - prompt 핸들러 설정
+ * @param payload - 이벤트 페이로드
+ * @returns 핸들러 실행 결과
  */
 async function executePromptHandler(
   handler: PromptHookHandler,
   payload: HookEventPayload,
 ): Promise<HookHandlerResult> {
+  // 변수 보간 적용
   const message = interpolateVariables(handler.promptMessage, payload);
+  // CI 환경에서 자동 승인 여부 확인
   const isAutoApprove = process.env.DBCODE_HOOK_AUTO_APPROVE === "true";
 
   if (isAutoApprove) {
@@ -198,9 +266,8 @@ async function executePromptHandler(
     };
   }
 
-  // In interactive mode, report the prompt message.
-  // The user confirmation is handled at the CLI layer — if
-  // DBCODE_HOOK_REJECT is set to "true", treat as rejection.
+  // 인터랙티브 모드: 프롬프트 메시지를 보고합니다.
+  // DBCODE_HOOK_REJECT 환경 변수가 "true"이면 거부(차단)로 처리
   const isRejected = process.env.DBCODE_HOOK_REJECT === "true";
 
   if (isRejected) {
@@ -223,8 +290,16 @@ async function executePromptHandler(
 }
 
 /**
- * Safely resolve a nested property from an object using a dot-separated path.
- * Returns undefined if the path does not resolve.
+ * 객체에서 점(.)으로 구분된 경로를 따라 중첩된 속성 값을 안전하게 조회합니다.
+ * 경로가 존재하지 않으면 undefined를 반환합니다.
+ *
+ * @param obj - 조회할 객체
+ * @param path - 점(.)으로 구분된 속성 경로 (예: "toolCall.name")
+ * @returns 조회된 값 또는 undefined
+ *
+ * @example
+ * resolveProperty({ a: { b: { c: 42 } } }, "a.b.c") // → 42
+ * resolveProperty({ a: 1 }, "a.b.c") // → undefined
  */
 function resolveProperty(obj: unknown, path: string): unknown {
   const parts = path.split(".");
@@ -239,24 +314,27 @@ function resolveProperty(obj: unknown, path: string): unknown {
 }
 
 /**
- * Safely evaluate a validator expression against a payload.
+ * 유효성 검사 표현식을 페이로드에 대해 안전하게 평가합니다.
  *
- * Instead of using eval(), this parses a restricted set of comparison expressions:
- *   - "payload.path.to.field !== 'value'"
- *   - "payload.path.to.field === 'value'"
- *   - "payload.path.to.field !== true"
- *   - "!payload.path.to.field?.includes('substring')"
- *   - Logical operators: "&&", "||" to combine comparisons
+ * eval()을 사용하지 않고, 제한된 비교 표현식만 파싱합니다:
+ * - "payload.path.to.field !== 'value'" (불일치 비교)
+ * - "payload.path.to.field === 'value'" (일치 비교)
+ * - "!payload.path?.includes('substring')" (부정 포함 검사)
+ * - "payload.path?.includes('substring')" (포함 검사)
+ * - "&&" (논리 AND), "||" (논리 OR)로 복합 조건 지원
  *
- * Returns true if the validator passes (operation allowed), false if blocked.
+ * @param validator - 유효성 검사 표현식 문자열
+ * @param payload - 검사할 이벤트 페이로드
+ * @returns 검증 통과 시 true (작업 허용), 실패 시 false (차단)
  */
 function evaluateValidator(validator: string, payload: HookEventPayload): boolean {
-  // Handle logical operators by splitting and evaluating each part
+  // 논리 OR(||): 하나라도 true면 통과
   if (validator.includes("||")) {
     const parts = validator.split("||").map((p) => p.trim());
     return parts.some((part) => evaluateValidator(part, payload));
   }
 
+  // 논리 AND(&&): 모두 true여야 통과
   if (validator.includes("&&")) {
     const parts = validator.split("&&").map((p) => p.trim());
     return parts.every((part) => evaluateValidator(part, payload));
@@ -264,7 +342,7 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
 
   const trimmed = validator.trim();
 
-  // Handle negated includes: "!payload.path?.includes('value')"
+  // 부정 includes: "!payload.path?.includes('value')"
   const negatedIncludesMatch = trimmed.match(
     /^!payload\.(.+?)\?\.includes\(\s*['"](.+?)['"]\s*\)$/,
   );
@@ -278,11 +356,11 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
     if (Array.isArray(resolved)) {
       return !resolved.includes(searchValue);
     }
-    // Property not found or not a string/array — negation is true
+    // 속성이 없거나 string/array가 아닌 경우 — 부정이므로 true
     return true;
   }
 
-  // Handle positive includes: "payload.path?.includes('value')"
+  // 긍정 includes: "payload.path?.includes('value')"
   const includesMatch = trimmed.match(/^payload\.(.+?)\?\.includes\(\s*['"](.+?)['"]\s*\)$/);
   if (includesMatch) {
     const propPath = includesMatch[1];
@@ -297,7 +375,7 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
     return false;
   }
 
-  // Handle strict inequality: "payload.path !== 'value'" or "payload.path !== true/false"
+  // 엄격한 불일치(strict inequality): "payload.path !== 'value'"
   const neqMatch = trimmed.match(/^payload\.(.+?)\s*!==\s*(.+)$/);
   if (neqMatch) {
     const propPath = neqMatch[1];
@@ -307,7 +385,7 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
     return resolved !== compareValue;
   }
 
-  // Handle strict equality: "payload.path === 'value'" or "payload.path === true/false"
+  // 엄격한 일치(strict equality): "payload.path === 'value'"
   const eqMatch = trimmed.match(/^payload\.(.+?)\s*===\s*(.+)$/);
   if (eqMatch) {
     const propPath = eqMatch[1];
@@ -317,7 +395,7 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
     return resolved === compareValue;
   }
 
-  // Handle negated truthy check: "!payload.path"
+  // 부정 truthy 검사: "!payload.path"
   const negatedTruthyMatch = trimmed.match(/^!payload\.(.+)$/);
   if (negatedTruthyMatch) {
     const propPath = negatedTruthyMatch[1];
@@ -325,7 +403,7 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
     return !resolved;
   }
 
-  // Handle truthy check: "payload.path"
+  // truthy 검사: "payload.path"
   const truthyMatch = trimmed.match(/^payload\.(.+)$/);
   if (truthyMatch) {
     const propPath = truthyMatch[1];
@@ -333,16 +411,19 @@ function evaluateValidator(validator: string, payload: HookEventPayload): boolea
     return Boolean(resolved);
   }
 
-  // Unrecognized expression — fail safe by rejecting (returning false)
+  // 인식할 수 없는 표현식 — 안전을 위해 거부(false) 반환
   return false;
 }
 
 /**
- * Parse a literal value from a validator expression string.
- * Handles: 'string', "string", true, false, null, undefined, numbers.
+ * 유효성 검사 표현식 문자열에서 리터럴 값을 파싱합니다.
+ * 문자열, 불리언, null, undefined, 숫자를 지원합니다.
+ *
+ * @param raw - 파싱할 문자열 (예: "'hello'", "true", "42")
+ * @returns 파싱된 JavaScript 값
  */
 function parseLiteralValue(raw: string): unknown {
-  // Quoted string (single or double quotes)
+  // 따옴표로 감싸진 문자열
   const stringMatch = raw.match(/^['"](.*)['"]$/);
   if (stringMatch) return stringMatch[1];
 
@@ -351,7 +432,7 @@ function parseLiteralValue(raw: string): unknown {
   if (raw === "null") return null;
   if (raw === "undefined") return undefined;
 
-  // Number
+  // 숫자
   const num = Number(raw);
   if (!Number.isNaN(num)) return num;
 
@@ -359,9 +440,14 @@ function parseLiteralValue(raw: string): unknown {
 }
 
 /**
- * Execute an agent hook handler.
- * Evaluates a declarative validator expression against the event payload.
- * Does NOT use eval() — uses safe expression parsing instead.
+ * agent 타입 훅 핸들러를 실행합니다.
+ *
+ * 선언적 유효성 검사 표현식을 이벤트 페이로드에 대해 평가합니다.
+ * eval()을 사용하지 않고 안전한 표현식 파싱을 사용합니다.
+ *
+ * @param handler - agent 핸들러 설정
+ * @param payload - 이벤트 페이로드
+ * @returns 핸들러 실행 결과
  */
 async function executeAgentHandler(
   handler: AgentHookHandler,
@@ -399,7 +485,11 @@ async function executeAgentHandler(
 }
 
 /**
- * Execute a single hook handler, dispatching by type.
+ * 단일 훅 핸들러를 타입에 따라 적절한 실행 함수로 디스패치합니다.
+ *
+ * @param handler - 실행할 핸들러
+ * @param payload - 이벤트 페이로드
+ * @returns 핸들러 실행 결과
  */
 async function executeHandler(
   handler: HookHandler,
@@ -418,17 +508,35 @@ async function executeHandler(
 }
 
 /**
- * Hook runner — matches events to configured rules and executes handlers.
- * Provides error isolation: individual handler failures don't crash the system.
+ * 훅 러너 — 이벤트에 매칭되는 규칙의 핸들러들을 실행하는 엔진.
+ *
+ * 에러 격리: 개별 핸들러의 실패가 시스템 전체를 멈추지 않습니다.
+ * 실패한 핸들러의 에러 정보는 결과(results)에 포함됩니다.
+ *
+ * @example
+ * const runner = new HookRunner(hookConfig);
+ * const result = await runner.run("PostToolUse", payload);
+ * if (result.blocked) {
+ *   // 훅에 의해 작업이 차단됨
+ * }
  */
 export class HookRunner {
   constructor(private readonly config: HookConfig) {}
 
   /**
-   * Run all hooks for a given event.
-   * Executes matched rules' handlers sequentially.
-   * If a blocking handler returns exit code 2, subsequent handlers still run
-   * but the final result is marked as blocked.
+   * 주어진 이벤트에 대해 모든 매칭되는 훅을 실행합니다.
+   *
+   * 실행 순서:
+   * 1. 이벤트에 설정된 규칙(rules)을 가져옵니다
+   * 2. 각 규칙의 matcher와 페이로드를 대조합니다
+   * 3. 매칭되는 규칙의 핸들러를 순차적으로 실행합니다
+   * 4. 차단(blocking) 핸들러가 exit code 2를 반환하면 결과를 blocked로 표시합니다
+   *
+   * 참고: 차단 핸들러가 있어도 나머지 핸들러는 계속 실행됩니다.
+   *
+   * @param event - 훅 이벤트 이름
+   * @param payload - 이벤트 페이로드
+   * @returns 전체 훅 실행 결과
    */
   async run(event: HookEvent, payload: HookEventPayload): Promise<HookRunResult> {
     const rules = this.config[event];
@@ -436,6 +544,7 @@ export class HookRunner {
       return { blocked: false, results: [], contextOutput: "" };
     }
 
+    // 이벤트 이름을 페이로드에 추가
     const fullPayload: HookEventPayload = { ...payload, event };
     const results: HookHandlerResult[] = [];
     let blocked = false;
@@ -443,6 +552,7 @@ export class HookRunner {
     const contextParts: string[] = [];
 
     for (const rule of rules) {
+      // matcher가 일치하지 않으면 건너뜀
       if (!matchesRule(rule, fullPayload)) continue;
 
       for (const handler of rule.hooks) {
@@ -450,10 +560,12 @@ export class HookRunner {
           const result = await executeHandler(handler, fullPayload);
           results.push(result);
 
+          // stdout이 있으면 컨텍스트 출력에 추가
           if (result.stdout) {
             contextParts.push(result.stdout);
           }
 
+          // 차단 결과이고 핸들러가 blocking을 명시적으로 false로 설정하지 않았으면 차단
           if (result.blocked && handler.blocking !== false) {
             blocked = true;
             if (!blockReason && result.stdout) {
@@ -461,7 +573,7 @@ export class HookRunner {
             }
           }
         } catch (error) {
-          // Error isolation: log but don't crash
+          // 에러 격리: 에러를 기록하되 전체 실행을 중단하지 않음
           results.push({
             exitCode: 1,
             stdout: "",
@@ -481,13 +593,22 @@ export class HookRunner {
     };
   }
 
-  /** Check if any hooks are configured for a given event */
+  /**
+   * 특정 이벤트에 훅이 설정되어 있는지 확인합니다.
+   *
+   * @param event - 확인할 이벤트 이름
+   * @returns 훅이 설정되어 있으면 true
+   */
   hasHooks(event: HookEvent): boolean {
     const rules = this.config[event];
     return rules !== undefined && rules.length > 0;
   }
 
-  /** Get all configured events that have hooks */
+  /**
+   * 훅이 설정된 모든 이벤트 이름을 반환합니다.
+   *
+   * @returns 훅이 있는 이벤트 이름 배열
+   */
   getConfiguredEvents(): readonly HookEvent[] {
     return (Object.keys(this.config) as HookEvent[]).filter((event) => this.hasHooks(event));
   }

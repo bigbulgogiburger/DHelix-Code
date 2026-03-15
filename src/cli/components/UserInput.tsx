@@ -1,8 +1,41 @@
+/**
+ * UserInput.tsx — 터미널 텍스트 입력 컴포넌트 (에디터 수준의 기능)
+ *
+ * Ink(터미널용 React 라이브러리)를 사용하여 커서 이동, 히스토리 탐색,
+ * 탭 파일 경로 자동완성, @ 파일 멘션, 다중 줄 입력 등
+ * 풀 기능 텍스트 에디터를 구현합니다.
+ *
+ * 지원하는 키보드 단축키:
+ * - Enter: 입력 전송 (@ 멘션 선택 중이면 멘션 확정)
+ * - Ctrl+J: 줄바꿈 삽입
+ * - Ctrl+A / Ctrl+E: 줄 처음 / 끝으로 이동
+ * - Ctrl+K: 커서부터 줄 끝까지 삭제
+ * - Ctrl+U: 전체 줄 삭제
+ * - Ctrl+W: 뒤로 한 단어 삭제
+ * - Ctrl+D: 앞으로 한 글자 삭제 (빈 줄이면 종료)
+ * - Alt+←/→: 단어 단위 이동
+ * - ↑/↓: 입력 히스토리 탐색 또는 멘션 선택
+ * - Tab: 파일 경로 자동완성
+ * - @: 파일 멘션 시작
+ * - Escape: 자동완성/멘션 취소
+ *
+ * 한국어/CJK IME 참고: macOS에서 한국어 입력 시 shift=true가 Enter에
+ * 전파되므로 Shift+Enter 구분이 불가합니다. 줄바꿈은 Ctrl+J를 사용합니다.
+ */
 import { Box, Text, useInput } from "ink";
 import { useState, useCallback, useRef, useEffect } from "react";
 import fg from "fast-glob";
 import { useInputHistory } from "../hooks/useInput.js";
 
+/**
+ * UserInput 컴포넌트의 Props
+ *
+ * @param onSubmit - 사용자가 Enter를 눌렀을 때 호출되는 콜백 (입력 텍스트 전달)
+ * @param onChange - 입력값이 변경될 때마다 호출되는 콜백 (슬래시 메뉴 표시 등에 활용)
+ * @param isDisabled - true이면 입력을 받지 않음 (에이전트 실행 중 등)
+ * @param slashMenuVisible - 슬래시 명령 메뉴가 표시 중인지 여부 (키 이벤트 위임용)
+ * @param placeholder - 빈 입력 시 표시할 안내 텍스트 (기본값: "Type a message...")
+ */
 export interface UserInputProps {
   readonly onSubmit: (text: string) => void;
   readonly onChange?: (value: string) => void;
@@ -11,14 +44,14 @@ export interface UserInputProps {
   readonly placeholder?: string;
 }
 
-/** Extract the token being typed at the cursor for path completion */
+/** 커서 위치에서 현재 입력 중인 토큰을 추출 — 탭 자동완성의 대상 문자열 */
 function extractCompletionToken(value: string, cursorOffset: number): string {
   const beforeCursor = value.slice(0, cursorOffset);
   const lastSpace = beforeCursor.lastIndexOf(" ");
   return beforeCursor.slice(lastSpace + 1);
 }
 
-/** Extract the @ mention token being typed at the cursor */
+/** 커서 위치에서 @ 멘션 토큰을 추출 — @와 커서 사이에 공백이 없으면 유효한 멘션 */
 function extractMentionToken(
   value: string,
   cursorOffset: number,
@@ -32,7 +65,15 @@ function extractMentionToken(
   return { token, start: atIndex };
 }
 
-/** User input component with cursor movement, input history, and multiline support */
+/**
+ * 사용자 입력 컴포넌트 — 커서 이동, 입력 히스토리, 다중 줄 입력 지원
+ *
+ * 내부 상태:
+ * - value: 현재 입력된 텍스트
+ * - cursorOffset: 커서의 현재 위치 (문자 인덱스)
+ * - completions/completionIndex: 탭 자동완성 후보와 현재 선택 인덱스
+ * - mentionSuggestions/mentionIndex: @ 멘션 후보와 현재 선택 인덱스
+ */
 export function UserInput({
   onSubmit,
   onChange,

@@ -1,3 +1,19 @@
+/**
+ * /keybindings 명령어 핸들러 — 키보드 단축키 목록 및 설정 경로 표시
+ *
+ * 사용자가 /keybindings를 입력하면 현재 활성화된 키보드 단축키와
+ * 커스텀 설정 파일 경로를 보여줍니다.
+ *
+ * 기본 단축키:
+ *   Esc       → 에이전트 루프 취소
+ *   Ctrl+O    → 상세 출력 토글
+ *   Shift+Tab → 권한 모드 순환
+ *   Ctrl+D    → 종료
+ *   Alt+T     → 씽킹 모드 토글
+ *   Ctrl+J    → 여러 줄 입력에서 줄 바꿈
+ *
+ * 커스텀 설정: ~/.dbcode/keybindings.json 파일에서 단축키를 변경할 수 있습니다.
+ */
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 import {
   DEFAULT_BINDINGS,
@@ -9,9 +25,6 @@ import {
   KEYBINDINGS_CONFIG_PATH,
 } from "../cli/hooks/useKeybindings.js";
 
-/**
- * /keybindings — Show current keyboard shortcuts and config file path.
- */
 export const keybindingsCommand: SlashCommand = {
   name: "keybindings",
   description: "Show keyboard shortcuts and config path",

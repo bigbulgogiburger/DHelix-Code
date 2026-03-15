@@ -1,9 +1,17 @@
+/**
+ * /batch 명령어 핸들러 — 여러 파일에 동일한 작업을 일괄 적용
+ *
+ * 사용자가 /batch를 입력하면 glob 패턴(파일 검색 패턴)에 매칭되는
+ * 모든 파일에 동일한 작업을 수행하도록 LLM에게 구조화된 프롬프트를 전달합니다.
+ *
+ * 예시: /batch src/**\/*.ts add JSDoc comments
+ *       → src 하위 모든 .ts 파일에 JSDoc 주석을 추가
+ *
+ * glob 패턴이란? 파일 경로를 와일드카드(**)로 매칭하는 패턴입니다.
+ * 예: *.ts = 모든 .ts 파일, **\/*.ts = 모든 하위 디렉토리의 .ts 파일
+ */
 import { type SlashCommand } from "./registry.js";
 
-/**
- * /batch — Apply the same operation to multiple files.
- * Provides a structured prompt for batch file operations.
- */
 export const batchCommand: SlashCommand = {
   name: "batch",
   description: "Apply same operation to multiple files",

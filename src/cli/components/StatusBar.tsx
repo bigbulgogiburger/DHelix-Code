@@ -1,8 +1,33 @@
+/**
+ * StatusBar.tsx — 화면 하단에 표시되는 상태 바 컴포넌트
+ *
+ * 현재 사용 중인 모델, 컨텍스트 사용률, 세션 비용, 권한 모드,
+ * 상세 모드, 확장 사고 상태 등을 한 줄로 보여줍니다.
+ * 컨텍스트 사용률이 80%를 넘으면 빨간색 경고가 표시됩니다.
+ *
+ * 구조: [모델명 | 버전] --- [사용량 바 | 비용 | 모드 태그들] [streaming.../ready]
+ */
 import React, { useMemo } from "react";
 import { Box, Text } from "ink";
 import { VERSION } from "../../constants.js";
 import { getModelCapabilities } from "../../llm/model-capabilities.js";
 
+/**
+ * StatusBar 컴포넌트의 Props
+ *
+ * @param model - 현재 사용 중인 모델 ID
+ * @param tokenCount - 누적 토큰 수
+ * @param maxTokens - 모델의 최대 컨텍스트 토큰 수
+ * @param isStreaming - LLM 응답 스트리밍 중 여부
+ * @param effortLevel - 노력 수준 (선택적)
+ * @param sessionName - 세션 이름 (선택적)
+ * @param modelName - 표시할 모델 이름 (model과 다를 수 있음)
+ * @param inputTokens - 입력 토큰 수 (비용 계산용)
+ * @param outputTokens - 출력 토큰 수 (비용 계산용)
+ * @param permissionMode - 현재 권한 모드 레이블
+ * @param verboseMode - 상세 모드 활성화 여부
+ * @param thinkingEnabled - 확장 사고 활성화 여부
+ */
 interface StatusBarProps {
   readonly model: string;
   readonly tokenCount: number;
@@ -18,7 +43,7 @@ interface StatusBarProps {
   readonly thinkingEnabled?: boolean;
 }
 
-/** Calculate session cost from token counts using model-capabilities SSOT */
+/** 토큰 수와 모델 가격 정보로 세션 비용을 계산 — model-capabilities가 단일 진실 공급원(SSOT) */
 function calculateCost(model: string, inputTokens: number, outputTokens: number): number {
   const caps = getModelCapabilities(model);
   const pricing = caps.pricing;
@@ -28,21 +53,24 @@ function calculateCost(model: string, inputTokens: number, outputTokens: number)
   );
 }
 
-/** Format cost as dollar string */
+/** 비용을 달러 문자열로 포맷 — $0.01 미만이면 소수점 4자리까지 표시 */
 function formatCost(cost: number): string {
   if (cost === 0) return "";
   if (cost < 0.01) return `$${cost.toFixed(4)}`;
   return `$${cost.toFixed(2)}`;
 }
 
-/** Build a visual usage bar */
+/** 시각적 사용량 바를 생성 — [#####----------] 형태, 채워진 부분과 빈 부분을 비율로 계산 */
 function usageBar(ratio: number, width = 15): string {
   const filled = Math.round(ratio * width);
   const empty = width - filled;
   return "[" + "#".repeat(filled) + "-".repeat(empty) + "]";
 }
 
-/** Status bar showing model, token usage, context %, cost, effort level, and streaming state */
+/**
+ * 상태 바 컴포넌트 — 모델, 토큰 사용량, 컨텍스트 %, 비용, 모드 태그들을 표시
+ * 컨텍스트 80% 초과 시 테두리가 빨간색으로 변하고 경고 메시지가 표시됨
+ */
 export const StatusBar = React.memo(function StatusBar({
   model,
   tokenCount,

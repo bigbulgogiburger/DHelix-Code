@@ -1,3 +1,16 @@
+/**
+ * 자동 메모리(Auto Memory) 수집 모듈
+ *
+ * 에이전트 루프의 각 턴(turn)을 분석하여 기억할 만한 정보를 자동으로 감지하고 수집합니다.
+ * 수집된 정보는 MEMORY.md 또는 주제별 파일에 저장되어 세션 간에 유지됩니다.
+ *
+ * 주니어 개발자를 위한 설명:
+ * - 이 모듈은 AI의 "자동 학습 노트" 시스템입니다
+ * - 대화 중 나온 아키텍처 결정, 디버깅 해결법, 사용자 선호 등을 자동으로 감지합니다
+ * - 키워드 패턴 매칭으로 "기억할 만한" 내용을 찾고, 신뢰도 점수를 매깁니다
+ * - 중복 체크를 하여 같은 내용이 반복 저장되는 것을 방지합니다
+ * - 세션당 최대 항목 수 제한이 있어 메모리 파일이 무한히 커지지 않습니다
+ */
 import {
   type MemoryConfig,
   readMainMemory,
@@ -10,10 +23,21 @@ import { BaseError } from "../utils/error.js";
 import { getLogger } from "../utils/logger.js";
 
 // ---------------------------------------------------------------------------
-// Types
+// 타입 정의
 // ---------------------------------------------------------------------------
 
-/** Categories of auto-detected memories */
+/**
+ * 자동 감지되는 메모리의 카테고리(분류)
+ *
+ * - "architecture": 아키텍처 결정, 설계 패턴
+ * - "patterns": 코딩 패턴, 모범 사례
+ * - "debugging": 디버깅 해결법, 버그 원인
+ * - "preferences": 사용자 선호, 컨벤션
+ * - "infrastructure": 빌드, 배포, CI/CD 관련
+ * - "conventions": 네이밍 규칙, 코드 스타일
+ * - "dependencies": 패키지 의존성, 버전 관련
+ * - "files": 자주 사용되는 파일 경로
+ */
 export type MemoryCategory =
   | "architecture"
   | "patterns"
@@ -24,7 +48,14 @@ export type MemoryCategory =
   | "dependencies"
   | "files";
 
-/** A single auto-detected memory entry */
+/**
+ * 자동 감지된 단일 메모리 항목
+ *
+ * @property category - 메모리 카테고리
+ * @property content - 기억할 내용 텍스트
+ * @property confidence - 이 정보가 기억할 만한 정도 (0.0 ~ 1.0, 높을수록 확실)
+ * @property source - 이 정보가 감지된 출처 (예: "assistant-response", "user-message")
+ */
 export interface AutoMemoryEntry {
   readonly category: MemoryCategory;
   readonly content: string;
@@ -32,7 +63,14 @@ export interface AutoMemoryEntry {
   readonly source: string;
 }
 
-/** Configuration for the auto-memory collector */
+/**
+ * 자동 메모리 수집기의 설정
+ *
+ * @property enabled - 자동 메모리 기능 활성화 여부
+ * @property minConfidence - 저장하기 위한 최소 신뢰도 (이 값 이상이어야 수집)
+ * @property maxEntriesPerSession - 세션당 최대 수집 항목 수 (무한 증가 방지)
+ * @property deduplication - 중복 체크 활성화 여부
+ */
 export interface AutoMemoryConfig {
   readonly enabled: boolean;
   readonly minConfidence: number;
@@ -40,7 +78,16 @@ export interface AutoMemoryConfig {
   readonly deduplication: boolean;
 }
 
-/** Context from a completed agent loop turn */
+/**
+ * 완료된 에이전트 루프 턴의 컨텍스트 정보
+ * 분석에 필요한 모든 정보를 담고 있습니다.
+ *
+ * @property userMessage - 사용자가 입력한 메시지
+ * @property assistantResponse - AI의 응답 텍스트
+ * @property toolCalls - 이 턴에서 실행된 도구 호출 정보 목록
+ * @property filesAccessed - 접근된 파일 경로 목록
+ * @property errorsEncountered - 발생한 에러 메시지 목록
+ */
 export interface TurnContext {
   readonly userMessage: string;
   readonly assistantResponse: string;
@@ -49,7 +96,14 @@ export interface TurnContext {
   readonly errorsEncountered: readonly string[];
 }
 
-/** Information about a single tool call within a turn */
+/**
+ * 턴 내 단일 도구 호출에 대한 정보
+ *
+ * @property name - 도구 이름
+ * @property args - 도구에 전달된 인자
+ * @property result - 도구 실행 결과
+ * @property success - 실행 성공 여부
+ */
 export interface ToolCallInfo {
   readonly name: string;
   readonly args: Record<string, unknown>;
@@ -57,7 +111,9 @@ export interface ToolCallInfo {
   readonly success: boolean;
 }
 
-/** Error for auto-memory operations */
+/**
+ * 자동 메모리 관련 에러 클래스
+ */
 export class AutoMemoryError extends BaseError {
   constructor(message: string, context: Record<string, unknown> = {}) {
     super(message, "AUTO_MEMORY_ERROR", context);
@@ -65,17 +121,21 @@ export class AutoMemoryError extends BaseError {
 }
 
 // ---------------------------------------------------------------------------
-// Constants
+// 상수
 // ---------------------------------------------------------------------------
 
+/** 기본 자동 메모리 설정 */
 const DEFAULT_CONFIG: AutoMemoryConfig = {
   enabled: true,
-  minConfidence: 0.7,
-  maxEntriesPerSession: 20,
-  deduplication: true,
+  minConfidence: 0.7,         // 70% 이상 신뢰도만 수집
+  maxEntriesPerSession: 20,   // 세션당 최대 20개
+  deduplication: true,        // 중복 체크 활성화
 };
 
-/** Category -> topic file name mapping */
+/**
+ * 카테고리 → 주제 파일 이름 매핑
+ * 각 카테고리의 메모리가 어떤 파일에 저장될지 결정합니다.
+ */
 const CATEGORY_TOPIC_MAP: Readonly<Record<MemoryCategory, string>> = {
   architecture: "architecture",
   patterns: "patterns",
@@ -87,13 +147,22 @@ const CATEGORY_TOPIC_MAP: Readonly<Record<MemoryCategory, string>> = {
   files: "files",
 };
 
-/** Maximum lines allowed in MEMORY.md before spilling to topic files */
+/** MEMORY.md에 저장할 수 있는 최대 줄 수 (초과하면 주제별 파일로 분산) */
 const MAIN_MEMORY_MAX_LINES = 200;
 
 // ---------------------------------------------------------------------------
-// Pattern detection rules
+// 패턴 감지 규칙
 // ---------------------------------------------------------------------------
 
+/**
+ * 패턴 감지 규칙 인터페이스
+ * 각 규칙은 특정 카테고리의 기억할 만한 내용을 감지합니다.
+ *
+ * @property category - 이 규칙이 감지하는 메모리 카테고리
+ * @property patterns - 매칭할 정규표현식 배열
+ * @property baseConfidence - 기본 신뢰도 점수
+ * @property extractor - 매칭된 텍스트에서 관련 내용을 추출하는 함수
+ */
 interface PatternRule {
   readonly category: MemoryCategory;
   readonly patterns: readonly RegExp[];
@@ -102,13 +171,17 @@ interface PatternRule {
 }
 
 /**
- * Build pattern rules for detecting memorable content.
- * Each rule has keyword patterns, a base confidence score,
- * and an extractor that pulls the relevant snippet from the text.
+ * 기억할 만한 내용을 감지하기 위한 패턴 규칙 목록을 생성합니다.
+ *
+ * 각 규칙은 다음을 포함합니다:
+ * - 키워드 패턴: 어떤 텍스트가 해당 카테고리에 해당하는지 판별
+ * - 기본 신뢰도: 패턴이 매칭되었을 때의 초기 신뢰도 점수
+ * - 추출기: 전체 텍스트에서 관련 문장만 잘라내는 함수
  */
 function buildPatternRules(): readonly PatternRule[] {
   return [
     {
+      // 아키텍처 관련: "architecture decision", "decided to use", "separation of concerns" 등
       category: "architecture",
       patterns: [
         /(?:architecture|architectural)\s+(?:decision|pattern|design)/i,
@@ -123,6 +196,7 @@ function buildPatternRules(): readonly PatternRule[] {
       extractor: (pattern, text) => extractSentenceAround(pattern, text),
     },
     {
+      // 디버깅 관련: "fixed by", "root cause", "workaround", "the issue was" 등
       category: "debugging",
       patterns: [
         /(?:fixed|resolved)\s+by/i,
@@ -137,6 +211,7 @@ function buildPatternRules(): readonly PatternRule[] {
       extractor: (pattern, text) => extractSentenceAround(pattern, text),
     },
     {
+      // 사용자 선호: "always use", "prefer to use", "don't use" 등
       category: "preferences",
       patterns: [
         /always\s+use/i,
@@ -149,6 +224,7 @@ function buildPatternRules(): readonly PatternRule[] {
       extractor: (pattern, text) => extractSentenceAround(pattern, text),
     },
     {
+      // 코딩 컨벤션: "naming convention", "code style", "camelCase" 등
       category: "conventions",
       patterns: [
         /naming\s+convention/i,
@@ -161,6 +237,7 @@ function buildPatternRules(): readonly PatternRule[] {
       extractor: (pattern, text) => extractSentenceAround(pattern, text),
     },
     {
+      // 인프라 관련: "build command", "CI config", "environment variable" 등
       category: "infrastructure",
       patterns: [
         /(?:build|deploy)\s+(?:command|script|step)/i,
@@ -173,6 +250,7 @@ function buildPatternRules(): readonly PatternRule[] {
       extractor: (pattern, text) => extractSentenceAround(pattern, text),
     },
     {
+      // 의존성 관련: "requires version", "upgraded from", "incompatible with" 등
       category: "dependencies",
       patterns: [
         /(?:requires?|depends?\s+on)\s+(?:version|package)/i,
@@ -184,6 +262,7 @@ function buildPatternRules(): readonly PatternRule[] {
       extractor: (pattern, text) => extractSentenceAround(pattern, text),
     },
     {
+      // 코딩 패턴: "pattern for", "best practice", "common pattern" 등
       category: "patterns",
       patterns: [
         /(?:pattern|approach)\s+(?:for|to|that)/i,
@@ -198,25 +277,39 @@ function buildPatternRules(): readonly PatternRule[] {
 }
 
 // ---------------------------------------------------------------------------
-// AutoMemoryCollector
+// AutoMemoryCollector 클래스
 // ---------------------------------------------------------------------------
 
 /**
- * Collects and manages auto-detected memories from agent loop turns.
+ * 자동 메모리 수집기
  *
- * Analyzes each completed turn for patterns worth remembering (architecture
- * decisions, debugging insights, user preferences, etc.) using keyword-based
- * detection. Collected entries are flushed to disk either in the main
- * MEMORY.md or in category-specific topic files.
+ * 에이전트 루프의 각 턴을 분석하여 기억할 만한 패턴을 감지합니다.
+ * 감지된 항목은 pending 큐에 쌓이고, flush()를 호출하면 디스크에 저장됩니다.
+ *
+ * 분석 대상:
+ * - AI 응답에서 아키텍처 결정, 디버깅 해결법 등의 키워드 패턴
+ * - 사용자 메시지에서 선호/교정 내용
+ * - 자주 접근되는 파일 (3회 이상 접근 시 "핵심 파일"로 기록)
+ * - 해결된 에러 패턴 (에러 발생 → 해결 지표가 있는 경우)
  */
 export class AutoMemoryCollector {
+  /** 메모리 파일 저장 설정 */
   private readonly storage: MemoryConfig;
+  /** 자동 메모리 동작 설정 */
   private readonly config: AutoMemoryConfig;
+  /** 아직 디스크에 저장되지 않은 대기 중인 항목들 */
   private readonly pending: AutoMemoryEntry[] = [];
+  /** 패턴 감지 규칙 목록 */
   private readonly patternRules: readonly PatternRule[];
+  /** 파일별 접근 횟수 추적 (자주 접근하는 파일 감지용) */
   private readonly fileAccessCounts: Map<string, number> = new Map();
+  /** 이 세션에서 수집된 총 항목 수 (상한선 체크용) */
   private totalEntriesThisSession = 0;
 
+  /**
+   * @param storage - 메모리 파일 저장 설정
+   * @param config - 자동 메모리 동작 설정 (부분적으로 제공 가능, 나머지는 기본값 사용)
+   */
   constructor(storage: MemoryConfig, config?: Partial<AutoMemoryConfig>) {
     this.storage = storage;
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -224,38 +317,50 @@ export class AutoMemoryCollector {
   }
 
   /**
-   * Analyze a completed turn for content worth remembering.
-   * Returns detected entries with confidence >= minConfidence.
-   * Does NOT persist anything — call flush() to write to disk.
+   * 완료된 턴을 분석하여 기억할 만한 내용을 감지합니다.
+   *
+   * 다음 4가지 분석을 수행합니다:
+   * 1. AI 응답에서 키워드 패턴 매칭 (아키텍처, 디버깅 등)
+   * 2. 사용자 메시지에서 선호/교정 내용 감지
+   * 3. 자주 접근되는 파일 추적 (3회 이상)
+   * 4. 해결된 에러 패턴 감지
+   *
+   * 주의: 이 메서드는 내용을 수집만 하고 디스크에 저장하지 않습니다.
+   * 실제 저장은 flush()를 호출해야 합니다.
+   *
+   * @param turn - 분석할 턴의 컨텍스트 정보
+   * @returns 이번 턴에서 감지된 메모리 항목 목록 (minConfidence 이상만 포함)
    */
   analyzeForMemories(turn: TurnContext): readonly AutoMemoryEntry[] {
+    // 기능이 비활성화되어 있으면 아무것도 하지 않음
     if (!this.config.enabled) {
       return [];
     }
 
+    // 세션당 최대 항목 수에 도달했으면 더 이상 수집하지 않음
     if (this.totalEntriesThisSession >= this.config.maxEntriesPerSession) {
       return [];
     }
 
     const entries: AutoMemoryEntry[] = [];
 
-    // Analyze assistant response for patterns
+    // 1. AI 응답에서 패턴 감지
     const responseEntries = this.detectPatterns(turn.assistantResponse, "assistant-response");
     entries.push(...responseEntries);
 
-    // Analyze user message for preferences/corrections
+    // 2. 사용자 메시지에서 선호/교정 감지
     const userEntries = this.detectPatterns(turn.userMessage, "user-message");
     entries.push(...userEntries);
 
-    // Track frequently accessed files
+    // 3. 자주 접근되는 파일 추적
     const fileEntries = this.detectFrequentFiles(turn.filesAccessed);
     entries.push(...fileEntries);
 
-    // Detect resolved error patterns
+    // 4. 해결된 에러 패턴 감지
     const errorEntries = this.detectResolvedErrors(turn);
     entries.push(...errorEntries);
 
-    // Enforce session limit
+    // 세션 상한선 적용: 남은 예산만큼만 수집
     const remainingBudget = this.config.maxEntriesPerSession - this.totalEntriesThisSession;
     const accepted = entries.slice(0, remainingBudget);
 
@@ -268,41 +373,50 @@ export class AutoMemoryCollector {
   }
 
   /**
-   * Check if an entry's content is already stored in existing memory files.
-   * Uses normalized substring matching (case-insensitive for headers,
-   * whitespace-normalized for content).
+   * 항목의 내용이 이미 기존 메모리 파일에 저장되어 있는지 확인합니다.
+   *
+   * 대소문자 무시, 공백 정규화를 적용한 부분 문자열 매칭으로 중복을 판별합니다.
+   * 메인 메모리, 해당 카테고리의 주제 파일, 그리고 현재 pending 큐를 모두 확인합니다.
+   *
+   * @param entry - 중복 여부를 확인할 항목
+   * @returns 이미 저장되어 있으면 true
    */
   async isDuplicate(entry: AutoMemoryEntry): Promise<boolean> {
+    // 중복 체크가 비활성화되어 있으면 항상 false
     if (!this.config.deduplication) {
       return false;
     }
 
     const normalized = normalizeForComparison(entry.content);
 
-    // Check main memory
+    // 메인 MEMORY.md에서 중복 확인
     const mainContent = await readMainMemory(this.storage);
     if (mainContent && containsNormalized(mainContent, normalized)) {
       return true;
     }
 
-    // Check the relevant topic file
+    // 해당 카테고리의 주제 파일에서 중복 확인
     const topicName = CATEGORY_TOPIC_MAP[entry.category];
     const topicContent = await readTopicMemory(this.storage, topicName);
     if (topicContent && containsNormalized(topicContent, normalized)) {
       return true;
     }
 
-    // Check against other pending entries
+    // pending 큐에서 중복 확인 (아직 저장되지 않은 항목 간 중복)
     return this.pending.some(
       (p) => p !== entry && normalizeForComparison(p.content) === normalized,
     );
   }
 
   /**
-   * Flush all pending entries to disk.
-   * Entries that fit within the main MEMORY.md line limit are appended there.
-   * Overflow entries go to category-specific topic files.
-   * Returns the number of entries successfully saved.
+   * 대기 중인 모든 항목을 디스크에 저장합니다.
+   *
+   * 저장 로직:
+   * 1. 중복 제거: 이미 저장된 내용과 같은 항목 제거
+   * 2. 메인 파일 우선: MEMORY.md에 줄 수 여유가 있으면 메인에 저장
+   * 3. 오버플로우: 메인 파일이 꽉 차면 주제별 파일에 분산 저장
+   *
+   * @returns 성공적으로 저장된 항목 수
    */
   async flush(): Promise<number> {
     if (this.pending.length === 0) {
@@ -312,7 +426,7 @@ export class AutoMemoryCollector {
     const logger = getLogger();
     let savedCount = 0;
 
-    // Deduplicate before writing
+    // 중복 제거: 이미 저장된 항목 필터링
     const toWrite: AutoMemoryEntry[] = [];
     for (const entry of this.pending) {
       try {
@@ -330,26 +444,28 @@ export class AutoMemoryCollector {
       return 0;
     }
 
-    // Read current main memory
+    // 현재 메인 메모리의 줄 수 확인
     const mainContent = await readMainMemory(this.storage);
     const mainLineCount = mainContent ? mainContent.split("\n").length : 0;
 
-    // Separate entries: those that fit in main vs overflow to topics
+    // 메인 파일에 넣을 항목과 주제 파일로 보낼 항목을 분류
     const forMain: AutoMemoryEntry[] = [];
     const forTopics: AutoMemoryEntry[] = [];
     let projectedLines = mainLineCount;
 
     for (const entry of toWrite) {
       const entryLines = formatEntryForStorage(entry).split("\n").length;
+      // 메인 파일에 여유가 있으면 메인에 저장
       if (projectedLines + entryLines + 1 <= MAIN_MEMORY_MAX_LINES) {
         forMain.push(entry);
         projectedLines += entryLines + 1;
       } else {
+        // 여유가 없으면 주제 파일로 분산
         forTopics.push(entry);
       }
     }
 
-    // Write to main MEMORY.md
+    // 메인 MEMORY.md에 저장
     if (forMain.length > 0) {
       const newSections = forMain.map(formatEntryForStorage);
       const separator = mainContent ? "\n\n" : "";
@@ -362,7 +478,7 @@ export class AutoMemoryCollector {
       }
     }
 
-    // Write overflow to topic files
+    // 주제별 파일에 오버플로우 항목 저장
     const topicGroups = groupByCategory(forTopics);
     for (const [category, entries] of topicGroups) {
       const topicName = CATEGORY_TOPIC_MAP[category];
@@ -378,37 +494,46 @@ export class AutoMemoryCollector {
       }
     }
 
+    // pending 큐 비우기
     this.pending.length = 0;
     return savedCount;
   }
 
   /**
-   * Get all entries collected this session that have not been flushed.
+   * 아직 저장되지 않은 대기 중인 항목들을 반환합니다.
+   *
+   * @returns pending 항목의 읽기 전용 복사본
    */
   getPending(): readonly AutoMemoryEntry[] {
     return [...this.pending];
   }
 
   /**
-   * Build a system prompt section containing loaded memories.
-   * Loads MEMORY.md (first 200 lines), global memory, and relevant topic files.
+   * 시스템 프롬프트에 삽입할 메모리 섹션을 구성합니다.
+   *
+   * 다음 순서로 메모리를 로드합니다:
+   * 1. 프로젝트 메인 MEMORY.md (최대 200줄)
+   * 2. 전역 메모리 (크로스 프로젝트 공유)
+   * 3. 존재하는 주제별 파일들
+   *
+   * @returns 마크다운 형식의 메모리 프롬프트 섹션 (없으면 빈 문자열)
    */
   async buildMemoryPrompt(): Promise<string> {
     const sections: string[] = [];
 
-    // Load project main memory
+    // 프로젝트 메인 메모리 로드
     const mainContent = await readMainMemory(this.storage);
     if (mainContent) {
       sections.push(`## MEMORY.md\n\n${mainContent}`);
     }
 
-    // Load global memory
+    // 전역 메모리 로드
     const globalContent = await readGlobalMemory(this.storage);
     if (globalContent) {
       sections.push(`## Global Memory\n\n${globalContent}`);
     }
 
-    // Load topic files that exist
+    // 주제별 파일 로드
     for (const topicName of Object.values(CATEGORY_TOPIC_MAP)) {
       try {
         const topicContent = await readTopicMemory(this.storage, topicName);
@@ -417,7 +542,7 @@ export class AutoMemoryCollector {
           sections.push(`## Topic: ${displayName}\n\n${topicContent}`);
         }
       } catch {
-        // Skip topics that fail to load
+        // 로드 실패한 주제 파일은 건너뜀
       }
     }
 
@@ -429,24 +554,31 @@ export class AutoMemoryCollector {
   }
 
   /**
-   * Clear all pending entries without writing them to disk.
+   * 대기 중인 모든 항목을 저장하지 않고 삭제합니다.
    */
   clearPending(): void {
     this.pending.length = 0;
   }
 
   // -----------------------------------------------------------------------
-  // Internal detection methods
+  // 내부 감지 메서드들
   // -----------------------------------------------------------------------
 
-  /** Detect memorable patterns in text using keyword rules. */
+  /**
+   * 텍스트에서 기억할 만한 패턴을 감지합니다.
+   * 키워드 규칙과 매칭하여 신뢰도가 임계값 이상인 항목만 반환합니다.
+   *
+   * @param text - 분석할 텍스트
+   * @param source - 텍스트 출처 (로깅/추적용)
+   * @returns 감지된 메모리 항목 목록
+   */
   private detectPatterns(text: string, source: string): AutoMemoryEntry[] {
     if (!text || text.trim().length === 0) {
       return [];
     }
 
     const entries: AutoMemoryEntry[] = [];
-    const seen = new Set<string>();
+    const seen = new Set<string>(); // 같은 텍스트 중복 방지
 
     for (const rule of this.patternRules) {
       for (const pattern of rule.patterns) {
@@ -454,6 +586,7 @@ export class AutoMemoryCollector {
           const extracted = rule.extractor(pattern, text);
           if (extracted && !seen.has(extracted)) {
             seen.add(extracted);
+            // 기본 신뢰도에 내용 품질 보정을 적용
             const confidence = computeConfidence(rule.baseConfidence, extracted);
             if (confidence >= this.config.minConfidence) {
               entries.push({
@@ -471,7 +604,13 @@ export class AutoMemoryCollector {
     return entries;
   }
 
-  /** Track file access frequency and generate entries for key files. */
+  /**
+   * 파일 접근 빈도를 추적하여 핵심 파일을 감지합니다.
+   * 3회 이상 접근된 파일은 "핵심 파일"로 기록됩니다.
+   *
+   * @param filesAccessed - 이번 턴에서 접근된 파일 경로 목록
+   * @returns 핵심 파일에 대한 메모리 항목 목록
+   */
   private detectFrequentFiles(filesAccessed: readonly string[]): AutoMemoryEntry[] {
     const entries: AutoMemoryEntry[] = [];
 
@@ -479,7 +618,7 @@ export class AutoMemoryCollector {
       const currentCount = (this.fileAccessCounts.get(filePath) ?? 0) + 1;
       this.fileAccessCounts.set(filePath, currentCount);
 
-      // A file accessed 3+ times is likely important
+      // 3회 접근 시점에 한 번만 기록 (4회, 5회 등에서는 중복 기록하지 않음)
       if (currentCount === 3) {
         entries.push({
           category: "files",
@@ -493,8 +632,17 @@ export class AutoMemoryCollector {
     return entries;
   }
 
-  /** Detect errors that were encountered and then resolved in the same turn. */
+  /**
+   * 에러가 발생했다가 같은 턴에서 해결된 패턴을 감지합니다.
+   *
+   * AI 응답에 해결 지표("fixed", "resolved", "solution" 등)가 포함되어 있으면
+   * 해당 에러를 "해결된 에러"로 기록합니다.
+   *
+   * @param turn - 분석할 턴 컨텍스트
+   * @returns 해결된 에러에 대한 메모리 항목 목록
+   */
   private detectResolvedErrors(turn: TurnContext): AutoMemoryEntry[] {
+    // 에러가 없었으면 감지할 것이 없음
     if (turn.errorsEncountered.length === 0) {
       return [];
     }
@@ -502,7 +650,7 @@ export class AutoMemoryCollector {
     const entries: AutoMemoryEntry[] = [];
     const responseLC = turn.assistantResponse.toLowerCase();
 
-    // Look for resolution indicators in the assistant response
+    // 해결을 나타내는 키워드들
     const resolutionIndicators = [
       "fixed",
       "resolved",
@@ -513,6 +661,7 @@ export class AutoMemoryCollector {
       "workaround",
     ];
 
+    // AI 응답에 해결 지표가 있는지 확인
     const hasResolution = resolutionIndicators.some((indicator) => responseLC.includes(indicator));
 
     if (hasResolution) {
@@ -534,21 +683,27 @@ export class AutoMemoryCollector {
 }
 
 // ---------------------------------------------------------------------------
-// Pure helpers
+// 순수 헬퍼 함수들 (부수 효과 없는 유틸리티)
 // ---------------------------------------------------------------------------
 
-/** Extract the sentence(s) surrounding a regex match in text. */
+/**
+ * 정규표현식 매치 주변의 문장을 추출합니다.
+ * 매치 위치에서 앞뒤로 문장 경계(마침표, 줄바꿈 등)까지 확장합니다.
+ *
+ * @param pattern - 매칭할 정규표현식
+ * @param text - 검색 대상 텍스트
+ * @returns 추출된 문장 (최대 500자), 매칭 실패 시 null
+ */
 function extractSentenceAround(pattern: RegExp, text: string): string | null {
   const match = pattern.exec(text);
   if (!match || match.index === undefined) {
     return null;
   }
 
-  // Find sentence boundaries around the match
+  // 매치 위치에서 뒤로 가며 문장 시작 지점 찾기
   const beforeMatch = text.slice(0, match.index);
   const afterMatch = text.slice(match.index + match[0].length);
 
-  // Walk backward to find the start of the sentence
   const sentenceStartChars = ["\n", ".", "!", "?"];
   let sentenceStart = 0;
   for (let i = beforeMatch.length - 1; i >= 0; i--) {
@@ -558,7 +713,7 @@ function extractSentenceAround(pattern: RegExp, text: string): string | null {
     }
   }
 
-  // Walk forward to find the end of the sentence
+  // 매치 위치에서 앞으로 가며 문장 끝 지점 찾기
   const sentenceEndMatch = /[.!?\n]/.exec(afterMatch);
   const sentenceEnd = sentenceEndMatch
     ? match.index + match[0].length + sentenceEndMatch.index + 1
@@ -568,51 +723,76 @@ function extractSentenceAround(pattern: RegExp, text: string): string | null {
   return sentence.length > 0 ? truncateString(sentence, 500) : null;
 }
 
-/** Compute final confidence based on base + content quality signals. */
+/**
+ * 기본 신뢰도에 콘텐츠 품질 신호를 반영하여 최종 신뢰도를 계산합니다.
+ *
+ * 보정 규칙:
+ * - 100자 이상의 긴 내용: +0.05 (더 자세한 내용은 더 유용할 가능성 높음)
+ * - 20자 미만의 짧은 내용: -0.15 (너무 짧으면 노이즈일 수 있음)
+ * - 코드 관련 토큰 포함 시: +0.05 (백틱 코드, function/class 등)
+ *
+ * @param baseConfidence - 패턴 규칙의 기본 신뢰도
+ * @param content - 추출된 내용 텍스트
+ * @returns 보정된 최종 신뢰도 (0.0 ~ 1.0, 소수점 2자리)
+ */
 function computeConfidence(baseConfidence: number, content: string): number {
   let confidence = baseConfidence;
 
-  // Boost for longer, more detailed content (likely more useful)
+  // 길고 상세한 내용은 더 유용할 가능성이 높음
   if (content.length > 100) {
     confidence = Math.min(1, confidence + 0.05);
   }
 
-  // Reduce for very short content (might be noise)
+  // 너무 짧은 내용은 노이즈(잡음)일 수 있음
   if (content.length < 20) {
     confidence = Math.max(0, confidence - 0.15);
   }
 
-  // Boost for content with code-like tokens
+  // 코드 관련 토큰이 있으면 개발 맥락에서 더 유용함
   if (/`[^`]+`/.test(content) || /\b(?:function|class|interface|const|let|var)\b/.test(content)) {
     confidence = Math.min(1, confidence + 0.05);
   }
 
+  // 소수점 2자리로 반올림하여 부동소수점 오차 방지
   return Math.round(confidence * 100) / 100;
 }
 
-/** Normalize text for deduplication comparison. */
+/**
+ * 텍스트를 중복 비교용으로 정규화합니다.
+ * 소문자 변환, 공백 통합, 마크다운 헤더 제거를 수행합니다.
+ */
 function normalizeForComparison(text: string): string {
   return text
     .toLowerCase()
-    .replace(/\s+/g, " ")
-    .replace(/^#+\s*/gm, "")
+    .replace(/\s+/g, " ")       // 연속 공백을 하나로 통합
+    .replace(/^#+\s*/gm, "")    // 마크다운 헤더(##) 제거
     .trim();
 }
 
-/** Check if haystack contains the normalized needle. */
+/**
+ * 정규화된 검색어가 대상 텍스트에 포함되어 있는지 확인합니다.
+ */
 function containsNormalized(haystack: string, normalizedNeedle: string): boolean {
   const normalizedHaystack = normalizeForComparison(haystack);
   return normalizedHaystack.includes(normalizedNeedle);
 }
 
-/** Format an AutoMemoryEntry for writing to a .md file. */
+/**
+ * AutoMemoryEntry를 .md 파일에 저장할 형식으로 포매팅합니다.
+ * "### 카테고리 (날짜)\n\n내용" 형태의 마크다운 섹션을 생성합니다.
+ */
 function formatEntryForStorage(entry: AutoMemoryEntry): string {
-  const timestamp = new Date().toISOString().split("T")[0];
+  const timestamp = new Date().toISOString().split("T")[0]; // YYYY-MM-DD
   const categoryLabel = entry.category.charAt(0).toUpperCase() + entry.category.slice(1);
   return `### ${categoryLabel} (${timestamp})\n\n${entry.content}`;
 }
 
-/** Group entries by their category. */
+/**
+ * 항목들을 카테고리별로 그룹화합니다.
+ *
+ * @param entries - 그룹화할 항목 배열
+ * @returns 카테고리 → 항목 배열의 Map
+ */
 function groupByCategory(
   entries: readonly AutoMemoryEntry[],
 ): Map<MemoryCategory, AutoMemoryEntry[]> {
@@ -628,7 +808,9 @@ function groupByCategory(
   return groups;
 }
 
-/** Truncate a string to a maximum length, adding ellipsis if truncated. */
+/**
+ * 문자열을 최대 길이로 잘라냅니다. 잘린 경우 "..."을 붙입니다.
+ */
 function truncateString(text: string, maxLength: number): string {
   if (text.length <= maxLength) {
     return text;

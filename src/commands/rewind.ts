@@ -1,13 +1,23 @@
+/**
+ * /rewind 명령어 핸들러 — 체크포인트 목록 조회 또는 복원
+ *
+ * 체크포인트(checkpoint)란? LLM이 파일을 수정하기 전에
+ * 자동으로 생성되는 파일 상태의 스냅샷입니다.
+ * 문제가 생겼을 때 이전 상태로 되돌릴 수 있습니다.
+ *
+ * 사용 예시:
+ *   /rewind              → 사용 가능한 체크포인트 목록 표시
+ *   /rewind <체크포인트ID> → 해당 체크포인트로 파일 복원
+ *
+ * 각 체크포인트에는 변경된 파일 수, 현재와의 차이(diff) 요약이 표시됩니다.
+ *
+ * 사용 시점: LLM이 수정한 파일을 원래 상태로 되돌리고 싶을 때
+ */
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 import { CheckpointManager } from "../core/checkpoint-manager.js";
 import { SESSIONS_DIR } from "../constants.js";
 import { join } from "node:path";
 
-/**
- * /rewind [checkpoint-id] — List checkpoints or restore a specific one.
- * Without arguments, lists available checkpoints with file change summaries.
- * With a checkpoint ID, shows diff and restores files.
- */
 export const rewindCommand: SlashCommand = {
   name: "rewind",
   description: "List or restore a checkpoint",
@@ -33,7 +43,16 @@ export const rewindCommand: SlashCommand = {
   },
 };
 
-/** List all checkpoints with file change summaries */
+/**
+ * 모든 체크포인트를 파일 변경 요약과 함께 나열하는 함수
+ *
+ * 각 체크포인트의 ID, 생성 시각, 설명, 추적 중인 파일 수,
+ * 현재 파일과의 차이(수정됨/삭제됨/변경 없음)를 표시합니다.
+ *
+ * @param checkpointManager - 체크포인트 관리 객체
+ * @param workingDirectory - 현재 작업 디렉토리
+ * @returns 체크포인트 목록 텍스트와 성공 여부
+ */
 async function listCheckpoints(
   checkpointManager: CheckpointManager,
   workingDirectory: string,
@@ -84,7 +103,18 @@ async function listCheckpoints(
   };
 }
 
-/** Show diff and restore a specific checkpoint */
+/**
+ * 특정 체크포인트의 diff를 보여주고 파일을 복원하는 함수
+ *
+ * 현재 파일 상태와 체크포인트 상태를 비교한 후,
+ * 변경된 파일들을 체크포인트 시점의 내용으로 복원합니다.
+ * 복원 후 checkpoint:restored 이벤트를 발생시킵니다.
+ *
+ * @param checkpointManager - 체크포인트 관리 객체
+ * @param checkpointId - 복원할 체크포인트 ID
+ * @param context - 명령어 실행 컨텍스트
+ * @returns 복원 결과 텍스트와 성공 여부
+ */
 async function restoreCheckpoint(
   checkpointManager: CheckpointManager,
   checkpointId: string,

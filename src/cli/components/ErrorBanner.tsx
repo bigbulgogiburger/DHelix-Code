@@ -1,16 +1,38 @@
+/**
+ * ErrorBanner.tsx — 에러 메시지를 분류하여 시각적으로 표시하는 배너 컴포넌트
+ *
+ * 에러 메시지를 분석하여 유형(rate_limit, network, auth 등)을 자동으로
+ * 분류하고, 각 유형에 맞는 아이콘과 한국어 가이드를 함께 표시합니다.
+ * 빨간색 둥근 테두리 안에 에러 정보를 보여줍니다.
+ */
 import { Box, Text } from "ink";
 
+/**
+ * @param message - 에러 메시지 (필수)
+ * @param details - 추가 상세 정보 (선택적, 회색으로 표시)
+ */
 interface ErrorBannerProps {
   readonly message: string;
   readonly details?: string;
 }
 
+/**
+ * 에러 분류 결과
+ * @param type - 에러 유형 (rate_limit, network, token_limit, auth, model_not_found, unknown)
+ * @param guide - 사용자를 위한 한국어 해결 가이드
+ * @param icon - 에러 유형에 맞는 이모지 아이콘
+ */
 interface ErrorClassification {
   readonly type: "rate_limit" | "network" | "token_limit" | "auth" | "model_not_found" | "unknown";
   readonly guide: string;
   readonly icon: string;
 }
 
+/**
+ * 에러 메시지를 분석하여 유형을 자동 분류합니다.
+ * 메시지에 포함된 키워드(429, timeout, 401 등)를 기반으로 판별하고,
+ * 각 유형에 맞는 아이콘과 한국어 해결 가이드를 반환합니다.
+ */
 function classifyError(message: string): ErrorClassification {
   const lower = message.toLowerCase();
 
@@ -81,7 +103,7 @@ function classifyError(message: string): ErrorClassification {
   };
 }
 
-/** Non-blocking error banner displayed in the terminal */
+/** 터미널에 표시되는 비차단(Non-blocking) 에러 배너 — 에러가 발생해도 앱은 계속 실행됨 */
 export function ErrorBanner({ message, details }: ErrorBannerProps) {
   const classification = classifyError(message + (details ?? ""));
 

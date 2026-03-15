@@ -1,3 +1,27 @@
+/**
+ * 에이전트 루프(Agent Loop) — 핵심 실행 엔진
+ *
+ * ReAct(Reasoning + Acting) 패턴을 구현하는 메인 루프입니다.
+ * LLM에게 질문을 보내고, 응답에서 도구 호출을 추출하여 실행한 뒤,
+ * 그 결과를 다시 LLM에게 전달하는 과정을 반복합니다.
+ *
+ * 주니어 개발자를 위한 설명:
+ * - 에이전트 루프는 AI 코딩 어시스턴트의 "두뇌"입니다
+ * - 사용자 질문 → LLM 응답 → 도구 실행 → 결과 피드백 → 다시 LLM 호출... 반복
+ * - 도구 호출이 없으면 LLM이 최종 답변을 완성한 것이므로 루프를 종료합니다
+ * - 에러가 나면 종류에 따라 재시도(transient), 즉시 실패(permanent) 등을 결정합니다
+ * - 서킷 브레이커가 무한 루프를 방지합니다
+ * - 컨텍스트 매니저가 토큰 사용량을 관리합니다
+ *
+ * 주요 기능:
+ * - LLM 호출 (스트리밍/비스트리밍)
+ * - 도구 호출 병렬 실행 (읽기 도구는 항상 병렬, 같은 파일 쓰기는 순차)
+ * - 권한 검사 및 보안 가드레일
+ * - 자동 체크포인트 (파일 수정 전 백업)
+ * - 에러 분류 및 복구 전략 적용
+ * - 도구 결과 크기 제한 (토큰/문자 기반 잘라내기)
+ * - 이중 모델 라우팅 (architect/editor 패턴)
+ */
 import { type LLMProvider, type ChatMessage, type ChatResponse, type ThinkingConfig } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
@@ -17,18 +41,35 @@ import { CircuitBreaker } from "./circuit-breaker.js";
 import { applyObservationMasking } from "./observation-masking.js";
 import { type DualModelRouter, detectPhase } from "../llm/dual-model-router.js";
 
-/** Configuration for the agent loop */
+/**
+ * 에이전트 루프 설정
+ *
+ * 루프의 동작을 제어하는 모든 옵션을 담고 있습니다.
+ * LLM 클라이언트, 도구 레지스트리, 이벤트 이미터 등 필수 의존성과
+ * 최대 반복 횟수, 토큰 제한 등 선택적 설정을 포함합니다.
+ */
 export interface AgentLoopConfig {
+  /** LLM API 클라이언트 (OpenAI, Anthropic 등) */
   readonly client: LLMProvider;
+  /** 사용할 LLM 모델명 (예: "gpt-4", "claude-3") */
   readonly model: string;
+  /** 등록된 도구 목록을 관리하는 레지스트리 */
   readonly toolRegistry: ToolRegistry;
+  /** 도구 호출 전략 (네이티브 함수 호출 / 텍스트 파싱) */
   readonly strategy: ToolCallStrategy;
+  /** 이벤트 이미터 — UI에 진행 상황을 알리는 데 사용 */
   readonly events: AppEventEmitter;
+  /** 최대 반복 횟수 (기본값: constants.ts의 AGENT_LOOP.maxIterations) */
   readonly maxIterations?: number;
+  /** LLM 응답의 창의성 수준 (0 = 결정적, 1 = 창의적) */
   readonly temperature?: number;
+  /** LLM 응답의 최대 토큰 수 */
   readonly maxTokens?: number;
+  /** 취소 신호 — 사용자가 Esc를 누르면 전파됨 */
   readonly signal?: AbortSignal;
+  /** 작업 디렉토리 경로 */
   readonly workingDirectory?: string;
+  /** 도구 호출 전 권한 확인 콜백 (사용자에게 승인 요청) */
   readonly checkPermission?: (call: ExtractedToolCall) => Promise<PermissionResult>;
   /** Maximum LLM call retries per iteration (default: 2) */
   readonly maxRetries?: number;
@@ -52,13 +93,27 @@ export interface AgentLoopConfig {
   readonly dualModelRouter?: DualModelRouter;
 }
 
-/** Result of a permission check */
+/**
+ * 권한 확인 결과
+ *
+ * @property allowed - 도구 실행이 허용되었는지 여부
+ * @property reason - 거부 시 거부 사유
+ */
 export interface PermissionResult {
   readonly allowed: boolean;
   readonly reason?: string;
 }
 
-/** Aggregated token usage across all iterations of an agent loop run */
+/**
+ * 에이전트 루프 전체 실행에 걸쳐 누적된 토큰 사용량 통계
+ *
+ * @property totalPromptTokens - 전체 입력(프롬프트) 토큰 수
+ * @property totalCompletionTokens - 전체 출력(응답) 토큰 수
+ * @property totalTokens - 전체 토큰 수 (입력 + 출력)
+ * @property iterationCount - 루프 반복 횟수
+ * @property toolCallCount - 실행된 도구 호출 총 수
+ * @property retriedCount - 재시도 횟수
+ */
 export interface AggregatedUsage {
   readonly totalPromptTokens: number;
   readonly totalCompletionTokens: number;
@@ -68,7 +123,14 @@ export interface AggregatedUsage {
   readonly retriedCount: number;
 }
 
-/** Result of the agent loop */
+/**
+ * 에이전트 루프 실행 결과
+ *
+ * @property messages - 전체 대화 메시지 배열 (입력 + 생성된 메시지 포함)
+ * @property iterations - 실행된 반복 횟수
+ * @property aborted - 사용자에 의해 중단되었는지 여부
+ * @property usage - 토큰 사용량 통계
+ */
 export interface AgentLoopResult {
   readonly messages: readonly ChatMessage[];
   readonly iterations: number;
@@ -76,11 +138,21 @@ export interface AgentLoopResult {
   readonly usage?: AggregatedUsage;
 }
 
-/** Error classification for retry decisions */
+/**
+ * LLM 에러 분류 — 재시도 전략을 결정하는 데 사용
+ *
+ * - "transient": 일시적 에러 (타임아웃, 네트워크 문제) → 재시도 가능
+ * - "overload": 과부하 에러 (429, 503) → 클라이언트가 이미 Retry-After로 재시도했으므로 추가 재시도 안 함
+ * - "permanent": 영구적 에러 (잘못된 요청) → 재시도해도 소용없음
+ */
 type LLMErrorClass = "transient" | "overload" | "permanent";
 
 /**
- * Classify an LLM error to determine retry behavior.
+ * LLM 에러를 분류하여 재시도 전략을 결정합니다.
+ * 에러 메시지의 키워드를 분석하여 에러 유형을 판별합니다.
+ *
+ * @param error - 발생한 에러
+ * @returns 에러 분류 ("transient" | "overload" | "permanent")
  */
 function classifyLLMError(error: unknown): LLMErrorClass {
   if (!(error instanceof Error)) return "permanent";
@@ -118,7 +190,11 @@ function classifyLLMError(error: unknown): LLMErrorClass {
 }
 
 /**
- * Wait for a delay, respecting abort signal.
+ * AbortSignal을 존중하면서 지정된 시간만큼 대기합니다.
+ * 사용자가 Esc를 누르면 즉시 중단됩니다.
+ *
+ * @param ms - 대기할 밀리초
+ * @param signal - 취소 신호 (선택사항)
  */
 function waitWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -135,8 +211,10 @@ function waitWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
 }
 
 /**
- * Tracks cumulative token usage and execution metrics across agent loop iterations.
- * Immutable snapshot via `snapshot()` — internal state is mutable for performance.
+ * 에이전트 루프 반복 간 누적 토큰 사용량과 실행 메트릭을 추적합니다.
+ *
+ * 내부 상태는 성능을 위해 가변(mutable)이지만,
+ * 외부에는 snapshot()을 통해 불변 스냅샷만 제공합니다.
  */
 class UsageAggregator {
   private _totalPromptTokens = 0;
@@ -146,7 +224,7 @@ class UsageAggregator {
   private _toolCallCount = 0;
   private _retriedCount = 0;
 
-  /** Record token usage from a single LLM call */
+  /** 단일 LLM 호출의 토큰 사용량을 기록합니다 */
   recordLLMUsage(usage: {
     readonly promptTokens: number;
     readonly completionTokens: number;
@@ -158,17 +236,17 @@ class UsageAggregator {
     this._iterationCount++;
   }
 
-  /** Record tool calls executed in this iteration */
+  /** 이번 반복에서 실행된 도구 호출 수를 기록합니다 */
   recordToolCalls(count: number): void {
     this._toolCallCount += count;
   }
 
-  /** Record a retry attempt */
+  /** 재시도 시도를 기록합니다 */
   recordRetry(): void {
     this._retriedCount++;
   }
 
-  /** Return an immutable snapshot of the current aggregated usage */
+  /** 현재 누적 사용량의 불변 스냅샷을 반환합니다 */
   snapshot(): AggregatedUsage {
     return {
       totalPromptTokens: this._totalPromptTokens,
@@ -181,15 +259,18 @@ class UsageAggregator {
   }
 }
 
-/** Tools that are always safe to run in parallel (read-only, no side effects) */
+/** 항상 병렬 실행이 안전한 도구들 (읽기 전용, 부수 효과 없음) */
 const ALWAYS_PARALLEL_TOOLS = new Set(["glob_search", "grep_search", "file_read"]);
 
-/** Tools that write to files and need path-based conflict detection */
+/** 파일에 쓰는 도구들 — 같은 파일 경로에 대한 충돌 감지가 필요함 */
 const FILE_WRITE_TOOLS = new Set(["file_write", "file_edit"]);
 
 /**
- * Extract the file path from a tool call's arguments.
- * Returns undefined if no file path is found.
+ * 도구 호출의 인자에서 파일 경로를 추출합니다.
+ * 다양한 파라미터명(file_path, path, filePath)을 시도합니다.
+ *
+ * @param call - 도구 호출 정보
+ * @returns 파일 경로 문자열, 없으면 undefined
  */
 function extractFilePath(call: ExtractedToolCall): string | undefined {
   const args = call.arguments as Record<string, unknown>;
@@ -201,13 +282,14 @@ function extractFilePath(call: ExtractedToolCall): string | undefined {
 }
 
 /**
- * Validate that a tool call has properly formed arguments.
- * During streaming, tool call arguments are assembled incrementally from deltas.
- * If the stream disconnects mid-response, arguments may be incomplete JSON.
- * This function validates that arguments are a non-empty object (not the `{}`
- * fallback produced by NativeFunctionCallingStrategy on parse failure).
+ * 도구 호출의 인자가 올바르게 구성되었는지 검증합니다.
  *
- * Returns true if the tool call should be executed.
+ * 스트리밍 모드에서는 도구 호출 인자가 JSON 청크 단위로 점진적으로 조립됩니다.
+ * 스트림이 중간에 끊기면 인자가 불완전한 JSON이 될 수 있습니다.
+ * 이 함수는 인자가 유효한 객체인지 확인하여 실행 가능 여부를 판단합니다.
+ *
+ * @param call - 검증할 도구 호출
+ * @returns true면 실행 가능, false면 무효한 호출
  */
 function isValidToolCall(call: ExtractedToolCall): boolean {
   // Tool calls with no required parameters are always valid
@@ -226,8 +308,12 @@ function isValidToolCall(call: ExtractedToolCall): boolean {
 }
 
 /**
- * Filter tool calls, removing ones with invalid/incomplete arguments.
- * Emits a warning event for each dropped tool call so the user is informed.
+ * 유효하지 않은/불완전한 인자를 가진 도구 호출을 필터링합니다.
+ * 제거된 도구 호출에 대해 경고 이벤트를 발생시켜 사용자에게 알립니다.
+ *
+ * @param calls - 필터링할 도구 호출 목록
+ * @param events - 경고 이벤트를 발생시킬 이벤트 이미터
+ * @returns 유효한 도구 호출만 포함된 배열
  */
 export function filterValidToolCalls(
   calls: readonly ExtractedToolCall[],
@@ -251,16 +337,18 @@ export function filterValidToolCalls(
 }
 
 /**
- * Group tool calls into batches for parallel execution.
+ * 도구 호출을 병렬 실행 그룹으로 분류합니다.
  *
- * Rules:
- * 1. file_read, glob_search, grep_search are always parallelizable
- * 2. file_write/file_edit targeting the same path must be sequential
- * 3. bash_exec calls are parallelizable with each other (independent commands)
- * 4. When dependency is unclear, keep sequential (safety first)
+ * 규칙:
+ * 1. file_read, glob_search, grep_search는 항상 병렬 실행 가능 (읽기 전용)
+ * 2. 같은 파일 경로를 대상으로 하는 file_write/file_edit는 순차 실행 필수
+ * 3. bash_exec 호출은 서로 독립적이므로 병렬 실행 가능
+ * 4. 의존성이 불명확하면 안전을 위해 같은 그룹에 포함
  *
- * Returns groups where calls within a group run concurrently,
- * and groups themselves run sequentially.
+ * 반환값: 그룹 내 호출은 동시(병렬) 실행, 그룹 간은 순차 실행
+ *
+ * @param toolCalls - 그룹화할 도구 호출 배열
+ * @returns 도구 호출의 2차원 배열 (각 내부 배열 = 병렬 실행 그룹)
  */
 export function groupToolCalls(toolCalls: readonly ExtractedToolCall[]): ExtractedToolCall[][] {
   if (toolCalls.length <= 1) {
@@ -311,8 +399,16 @@ export function groupToolCalls(toolCalls: readonly ExtractedToolCall[]): Extract
 }
 
 /**
- * Truncate a tool result to fit within token budget.
- * Uses token counting when maxToolResultTokens is set, otherwise falls back to character counting.
+ * 도구 결과를 토큰 예산에 맞게 잘라냅니다.
+ *
+ * maxToolResultTokens가 설정된 경우 토큰 단위로 잘라내고,
+ * 그렇지 않으면 문자 수 기반으로 잘라냅니다.
+ * 이진 탐색(binary search) 방식으로 적절한 잘라내기 지점을 찾습니다.
+ *
+ * @param result - 잘라낼 도구 결과
+ * @param maxChars - 최대 문자 수 (토큰 기반이 아닐 때 사용)
+ * @param maxTokens - 최대 토큰 수 (설정 시 토큰 기반 잘라내기 사용)
+ * @returns 잘라내진 도구 결과 (또는 원본 그대로)
  */
 function truncateToolResult(
   result: ToolCallResult,
@@ -354,13 +450,24 @@ function truncateToolResult(
 }
 
 /**
- * Run the ReAct agent loop.
- * Repeatedly: call LLM → extract tool calls → check permissions → execute → append results → loop.
- * Stops when: no tool calls, max iterations reached, or aborted.
+ * ReAct 에이전트 루프를 실행합니다.
  *
- * Error recovery: classify-retry-fallback pattern.
- * - Transient/overload errors: retry with exponential backoff
- * - Permanent errors: fail immediately
+ * 반복 흐름: LLM 호출 → 도구 호출 추출 → 권한 확인 → 도구 실행 → 결과 추가 → 반복
+ *
+ * 종료 조건:
+ * - 도구 호출이 없으면 (LLM이 최종 답변을 완성했으므로)
+ * - 최대 반복 횟수에 도달하면
+ * - 사용자가 중단(abort)하면
+ * - 서킷 브레이커가 열리면 (무한 루프 감지)
+ *
+ * 에러 복구: 분류-재시도-폴백 패턴
+ * - 일시적(transient) 에러: 지수 백오프로 재시도
+ * - 과부하(overload) 에러: 즉시 전파 (클라이언트가 이미 재시도함)
+ * - 영구적(permanent) 에러: 즉시 실패
+ *
+ * @param config - 에이전트 루프 설정
+ * @param initialMessages - 초기 메시지 배열 (시스템 프롬프트 + 사용자 메시지)
+ * @returns 루프 실행 결과 (전체 메시지, 반복 횟수, 토큰 사용량 등)
  */
 export async function runAgentLoop(
   config: AgentLoopConfig,
@@ -807,7 +914,17 @@ export async function runAgentLoop(
   return { messages, iterations, aborted: false, usage: finalUsage };
 }
 
-/** Resolve deferred tool schemas from message history for re-inclusion in next request */
+/**
+ * 메시지 히스토리에서 지연 로드(deferred) 도구 스키마를 해석합니다.
+ *
+ * MCP(Model Context Protocol) 도구는 초기에 스키마를 로드하지 않고(지연 로드),
+ * 실제 사용될 때 스키마를 해석합니다. 최근 3개의 어시스턴트 메시지에서
+ * MCP 도구 호출을 찾아 해당 스키마를 다음 요청에 포함시킵니다.
+ *
+ * @param messages - 전체 메시지 히스토리
+ * @param registry - 도구 레지스트리
+ * @returns 해석된 도구 정의 배열
+ */
 function resolveDeferredFromHistory(
   messages: readonly ChatMessage[],
   registry: ToolRegistry,
