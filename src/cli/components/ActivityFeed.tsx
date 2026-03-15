@@ -140,14 +140,16 @@ function renderEntry(
         />
       );
 
-    case "assistant-intermediate":
+    case "assistant-intermediate": {
+      const intermediateText = String(entry.data.content ?? "");
+      if (!intermediateText) return null;
       return (
-        <StreamingMessage
-          key={keyPrefix}
-          text={String(entry.data.content ?? "")}
-          isComplete={true}
-        />
+        <Box key={keyPrefix} marginY={0}>
+          <Text color="cyan">{"⏺ "}</Text>
+          <Text>{intermediateText}</Text>
+        </Box>
       );
+    }
 
     case "tool-start":
     case "tool-complete":

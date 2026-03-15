@@ -91,9 +91,6 @@ export const StreamingMessage = React.memo(function StreamingMessage({
 
   return (
     <Box flexDirection="column">
-      <Text color="green" bold>
-        assistant:{" "}
-      </Text>
       {rendered.length > 0 && <Text>{rendered}</Text>}
       {raw.length > 0 && <Text>{raw}</Text>}
       {!isComplete ? <Text color="gray">{"▌"}</Text> : null}
