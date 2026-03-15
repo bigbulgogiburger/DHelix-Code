@@ -104,6 +104,7 @@ interface AppProps {
   readonly initialLocale?: string;
   readonly initialTone?: string;
   readonly mcpConnector?: MCPManagerConnector;
+  readonly mcpManager?: import("../mcp/manager.js").MCPManager;
 }
 
 /**
@@ -131,6 +132,7 @@ export function App({
   initialLocale = "ko",
   initialTone = "normal",
   mcpConnector,
+  mcpManager,
 }: AppProps) {
   const { pendingPermission, handlePermissionResponse, checkPermission } = usePermissionPrompt(
     permissionManager,
@@ -174,6 +176,7 @@ export function App({
     initialLocale,
     initialTone,
     mcpConnector,
+    mcpManager,
     thinkingEnabled,
   });
 

@@ -65,6 +65,7 @@ export interface UseAgentLoopOptions {
   readonly initialLocale?: string;
   readonly initialTone?: string;
   readonly mcpConnector?: MCPManagerConnector;
+  readonly mcpManager?: import("../../mcp/manager.js").MCPManager;
   readonly thinkingEnabled?: boolean;
 }
 
@@ -99,6 +100,7 @@ export function useAgentLoop({
   initialLocale = "ko",
   initialTone = "normal",
   mcpConnector,
+  mcpManager,
   thinkingEnabled = false,
 }: UseAgentLoopOptions) {
   const {
@@ -661,6 +663,7 @@ export function useAgentLoop({
             role: m.role,
             content: m.content,
           })),
+          mcpManager,
         });
 
         if (result) {

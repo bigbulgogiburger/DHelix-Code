@@ -78,6 +78,8 @@ export interface CommandContext {
   readonly emit: (event: string, data?: unknown) => void;
   /** 현재 대화 메시지 배열 (/export, /copy 등에서 대화 내역 참조용) */
   readonly messages?: readonly { readonly role: string; readonly content: string }[];
+  /** MCP 매니저 인스턴스 (/mcp 명령어에서 서버 관리에 사용) */
+  readonly mcpManager?: import("../mcp/manager.js").MCPManager;
 }
 
 /**

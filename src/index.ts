@@ -571,6 +571,7 @@ program
           initialLocale: config.locale,
           initialTone: config.tone,
           mcpConnector,
+          mcpManager,
         }),
       );
     },
