@@ -13,6 +13,7 @@ import React from "react";
 import { type TurnActivity, type ActivityEntry } from "../../core/activity.js";
 import { ToolCallBlock } from "./ToolCallBlock.js";
 import { StreamingMessage } from "./StreamingMessage.js";
+import { ThinkingBlock } from "./ThinkingBlock.js";
 
 /**
  * @param turn - 표시할 대화 턴 데이터 (entries 배열 포함)
@@ -87,6 +88,16 @@ function renderEntry(
           key={`entry-${index}`}
           text={String(entry.data.content ?? "")}
           isComplete={!isLive || entry.data.isComplete === true}
+        />
+      );
+
+    case "thinking":
+      return (
+        <ThinkingBlock
+          key={`entry-${index}`}
+          content={String(entry.data.content ?? "")}
+          isStreaming={entry.data.isStreaming === true}
+          isExpanded={isExpanded}
         />
       );
 

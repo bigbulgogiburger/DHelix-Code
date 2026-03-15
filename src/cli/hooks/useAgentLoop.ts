@@ -132,6 +132,14 @@ export function useAgentLoop({
     readonly choices?: readonly string[];
   } | null>(null);
 
+  // 재시도 대기 중일 때 카운트다운 정보 — RetryCountdown 컴포넌트에 전달
+  const [retryInfo, setRetryInfo] = useState<{
+    readonly delayMs: number;
+    readonly reason: string;
+    readonly attempt: number;
+    readonly maxRetries: number;
+  } | null>(null);
+
   // Tone and locale state (wired through to buildSystemPrompt)
   const [currentTone, setCurrentTone] = useState(initialTone);
   const [currentLocale] = useState(initialLocale);
@@ -144,6 +152,9 @@ export function useAgentLoop({
 
   // Streaming output tracking for long-running tools (e.g., bash_exec)
   const streamingOutputsRef = useRef<Map<string, string>>(new Map());
+
+  // Accumulated thinking content for Extended Thinking (streamed via llm:thinking-delta)
+  const thinkingContentRef = useRef<string>("");
 
   // AbortController for cancelling the agent loop (P0-3)
   const abortControllerRef = useRef<AbortController | null>(null);
@@ -259,6 +270,15 @@ export function useAgentLoop({
       streamingOutputsRef.current.set(id, current + chunk);
       syncCurrentTurn();
     };
+    const onThinkingDelta = ({ text }: { text: string }) => {
+      thinkingContentRef.current += text;
+      activityRef.current.addEntry("thinking", {
+        content: thinkingContentRef.current,
+        isStreaming: true,
+        isComplete: false,
+      });
+      syncCurrentTurn();
+    };
     const onTextDelta = ({ text }: { text: string }) => {
       appendText(text);
     };
@@ -273,6 +293,17 @@ export function useAgentLoop({
       iteration: number;
       isFinal: boolean;
     }) => {
+      // Flush accumulated thinking content as a completed entry
+      if (thinkingContentRef.current) {
+        activityRef.current.addEntry("thinking", {
+          content: thinkingContentRef.current,
+          isStreaming: false,
+          isComplete: true,
+        });
+        thinkingContentRef.current = "";
+        syncCurrentTurn();
+      }
+
       // 최종 응답이면 스피너를 숨기고 스트리밍 텍스트를 표시한다
       // isFinal = true: 도구 호출 없이 끝나는 최종 응답
       // isFinal = false: 이후 도구 호출이 따라오는 중간 응답
@@ -300,19 +331,40 @@ export function useAgentLoop({
       setPendingAskUser(data);
     };
 
+    // 재시도 대기 시작 시 카운트다운 정보를 설정
+    const onAgentRetry = (data: {
+      delayMs: number;
+      reason: string;
+      attempt: number;
+      maxRetries: number;
+    }) => {
+      setRetryInfo(data);
+    };
+
+    // LLM 호출 시작 시 재시도 카운트다운을 해제 (다음 반복 시작)
+    const onLlmStart = () => {
+      setRetryInfo(null);
+    };
+
     events.on("tool:start", onToolStart);
     events.on("tool:complete", onToolComplete);
     events.on("tool:output-delta", onToolOutputDelta);
+    events.on("llm:thinking-delta", onThinkingDelta);
     events.on("llm:text-delta", onTextDelta);
     events.on("agent:assistant-message", onAssistantMessage);
     events.on("ask_user:prompt", onAskUserPrompt);
+    events.on("agent:retry", onAgentRetry);
+    events.on("llm:start", onLlmStart);
     return () => {
       events.off("tool:start", onToolStart);
       events.off("tool:complete", onToolComplete);
       events.off("tool:output-delta", onToolOutputDelta);
+      events.off("llm:thinking-delta", onThinkingDelta);
       events.off("llm:text-delta", onTextDelta);
       events.off("agent:assistant-message", onAssistantMessage);
       events.off("ask_user:prompt", onAskUserPrompt);
+      events.off("agent:retry", onAgentRetry);
+      events.off("llm:start", onLlmStart);
     };
   }, [events, appendText, syncCurrentTurn]);
 
@@ -371,6 +423,7 @@ export function useAgentLoop({
       resetText();
       setError(null);
       setCommandOutput(null);
+      thinkingContentRef.current = "";
 
       // P0-3: Create a new AbortController for this agent loop run
       const controller = new AbortController();
@@ -552,6 +605,7 @@ export function useAgentLoop({
 
         setIsProcessing(false);
         setIsStreamingFinal(false);
+        setRetryInfo(null);
         resetText();
 
         activityRef.current.completeTurn();
@@ -710,6 +764,7 @@ export function useAgentLoop({
     totalCost,
     interactiveSelect,
     setInteractiveSelect,
+    retryInfo,
     pendingAskUser,
     setPendingAskUser,
     streamingOutputs: streamingOutputsRef,

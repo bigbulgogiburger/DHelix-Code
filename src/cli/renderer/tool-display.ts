@@ -693,6 +693,105 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
   },
 };
 
+/**
+ * MCP 도구 이름에서 서버명과 도구명을 파싱합니다.
+ * "mcp__{server}__{tool}" 형태의 이름을 분리합니다.
+ *
+ * @returns 파싱 결과 { server, tool } 또는 파싱 실패 시 undefined
+ */
+function parseMCPToolName(
+  toolName: string,
+): { readonly server: string; readonly tool: string } | undefined {
+  if (!toolName.startsWith("mcp__")) return undefined;
+  const withoutPrefix = toolName.slice(5); // "mcp__" 제거
+  const separatorIndex = withoutPrefix.indexOf("__");
+  if (separatorIndex <= 0) return undefined;
+  const server = withoutPrefix.slice(0, separatorIndex);
+  const tool = withoutPrefix.slice(separatorIndex + 2);
+  if (!server || !tool) return undefined;
+  return { server, tool };
+}
+
+/**
+ * MCP 도구 이름의 tool 부분에서 도구 유형을 휴리스틱으로 판별하여
+ * 적절한 ToolDisplayConfig를 반환합니다.
+ *
+ * 판별 규칙:
+ * - "search" 포함 → magenta, "Searching" 동사
+ * - "read" 또는 "get" 포함 → blue, "Reading" 동사
+ * - "write", "create", "edit", "update" 포함 → cyan, "Writing" 동사
+ * - "navigate", "click", "snapshot" 포함 → green, "Browsing" 동사
+ * - "run", "execute", "eval" 포함 → yellow, "Running" 동사
+ * - 기본값 → gray, "Running" 동사
+ */
+function getMCPToolDisplay(toolName: string): ToolDisplayConfig | undefined {
+  const parsed = parseMCPToolName(toolName);
+  if (!parsed) return undefined;
+
+  const { server, tool } = parsed;
+  const toolLower = tool.toLowerCase();
+
+  // 도구 유형 휴리스틱 판별
+  let runningVerb: string;
+  let completeVerb: string;
+  let headerColor: string;
+
+  if (toolLower.includes("search")) {
+    runningVerb = "Searching";
+    completeVerb = "Searched";
+    headerColor = "magenta";
+  } else if (toolLower.includes("read") || toolLower.includes("get")) {
+    runningVerb = "Reading";
+    completeVerb = "Read";
+    headerColor = "blue";
+  } else if (
+    toolLower.includes("write") ||
+    toolLower.includes("create") ||
+    toolLower.includes("edit") ||
+    toolLower.includes("update")
+  ) {
+    runningVerb = "Writing";
+    completeVerb = "Wrote";
+    headerColor = "cyan";
+  } else if (
+    toolLower.includes("navigate") ||
+    toolLower.includes("click") ||
+    toolLower.includes("snapshot")
+  ) {
+    runningVerb = "Browsing";
+    completeVerb = "Browsed";
+    headerColor = "green";
+  } else if (
+    toolLower.includes("run") ||
+    toolLower.includes("execute") ||
+    toolLower.includes("eval")
+  ) {
+    runningVerb = "Running";
+    completeVerb = "Ran";
+    headerColor = "yellow";
+  } else {
+    runningVerb = "Running";
+    completeVerb = "Ran";
+    headerColor = "gray";
+  }
+
+  const headerLabel = `[MCP:${server}] ${tool}`;
+
+  return {
+    running: runningVerb,
+    complete: completeVerb,
+    headerVerb: headerLabel,
+    runningHeaderVerb: `${runningVerb} ${headerLabel}`,
+    headerColor,
+    extractDetail: (_args, _output, metadata) => {
+      const serverMeta =
+        typeof metadata?.serverName === "string" ? metadata.serverName : server;
+      return `[MCP:${serverMeta}] ${tool}`;
+    },
+    extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),
+  };
+}
+
 /** 밀리초 단위 소요시간을 사람이 읽기 쉬운 문자열로 변환 — "150ms", "1.5s", "2m 30s" */
 export function formatDuration(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
@@ -715,7 +814,7 @@ export function getToolHeaderInfo(
   duration?: number,
   metadata?: Readonly<Record<string, unknown>>,
 ): ToolHeaderInfo {
-  const config = toolDisplayMap[name];
+  const config = toolDisplayMap[name] ?? getMCPToolDisplay(name);
   if (!config) {
     return {
       header: status === "running" ? `Running ${name}` : `Tool ${name}`,
@@ -750,7 +849,7 @@ export function getToolDisplayText(
   duration?: number,
   metadata?: Readonly<Record<string, unknown>>,
 ): string {
-  const config = toolDisplayMap[name];
+  const config = toolDisplayMap[name] ?? getMCPToolDisplay(name);
   if (!config) {
     const base = status === "running" ? `Running ${name}` : `Completed ${name}`;
     return duration && status !== "running" ? `${base} (${formatDuration(duration)})` : base;
@@ -771,7 +870,7 @@ export function getToolPreview(
   output?: string,
   metadata?: Readonly<Record<string, unknown>>,
 ): string | undefined {
-  const config = toolDisplayMap[name];
+  const config = toolDisplayMap[name] ?? getMCPToolDisplay(name);
   return config?.extractPreview?.(args, output, status, metadata);
 }
 

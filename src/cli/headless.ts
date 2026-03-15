@@ -107,6 +107,39 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     { role: "user", content: prompt },
   ];
 
+  // 헤드리스 모드에서는 사용자 입력을 받을 수 없으므로 ask_user에 자동 응답
+  events.on("ask_user:prompt", (data) => {
+    const answer = data.choices?.length
+      ? String(data.choices[0])
+      : "[No interactive input available in headless mode]";
+
+    events.emit("ask_user:response", {
+      toolCallId: data.toolCallId,
+      answer,
+    });
+
+    // 선택한 출력 형식에 맞게 질문과 자동 응답을 표시
+    switch (outputFormat) {
+      case "text":
+        process.stdout.write(`[Question] ${data.question}\n[Auto-answer] ${answer}\n`);
+        break;
+      case "json":
+        // json 모드는 최종 결과만 출력하므로 여기서는 stderr에 로그
+        process.stderr.write(`[headless] ask_user auto-answered: ${answer}\n`);
+        break;
+      case "stream-json":
+        process.stdout.write(
+          JSON.stringify({
+            type: "ask_user",
+            question: data.question,
+            choices: data.choices,
+            autoAnswer: answer,
+          }) + "\n",
+        );
+        break;
+    }
+  });
+
   // stream-json 형식일 때: 이벤트를 NDJSON(줄 단위 JSON) 줄로 실시간 출력
   if (outputFormat === "stream-json") {
     events.on("llm:text-delta", ({ text }) => {

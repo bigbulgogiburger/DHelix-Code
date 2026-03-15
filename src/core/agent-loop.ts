@@ -561,6 +561,9 @@ export async function runAgentLoop(
             onTextDelta: (text) => {
               config.events.emit("llm:text-delta", { text });
             },
+            onThinkingDelta: (text) => {
+              config.events.emit("llm:thinking-delta", { text });
+            },
             onUsage: (usage) => {
               config.events.emit("llm:usage", { usage, model: activeModel });
             },
@@ -599,6 +602,17 @@ export async function runAgentLoop(
             config.events.emit("llm:error", {
               error: new Error(`Recovery strategy: ${recovery.description}`),
             });
+
+            // Emit retry event before recovery execution so UI can show countdown
+            if (recovery.action === "retry" && recovery.backoffMs) {
+              config.events.emit("agent:retry", {
+                delayMs: recovery.backoffMs * Math.pow(2, attempt),
+                reason: recovery.description,
+                attempt: attempt + 1,
+                maxRetries: recovery.maxRetries,
+              });
+            }
+
             try {
               const recoveryResult = await executeRecovery(
                 recovery,
@@ -631,6 +645,12 @@ export async function runAgentLoop(
           const delay = 1000 * Math.pow(2, attempt);
           config.events.emit("llm:error", {
             error: error instanceof Error ? error : new Error(String(error)),
+          });
+          config.events.emit("agent:retry", {
+            delayMs: delay,
+            reason: error instanceof Error ? error.message : String(error),
+            attempt: attempt + 1,
+            maxRetries,
           });
           await waitWithAbort(delay, config.signal);
         }

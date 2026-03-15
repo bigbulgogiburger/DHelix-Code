@@ -124,9 +124,33 @@ function DiffPreview({ preview }: { readonly preview: string }) {
 }
 
 /**
+ * MCP 에러 출력에서 "[Debug] Arguments sent:" 이후의 JSON 인수를 추출합니다.
+ * 디버그 정보가 없으면 undefined를 반환합니다.
+ *
+ * @param output - 도구의 에러 출력 문자열
+ * @returns { message, argsPreview } 또는 undefined
+ */
+function parseMCPDebugError(
+  output: string,
+): { readonly message: string; readonly argsPreview: string } | undefined {
+  const debugMarker = "[Debug] Arguments sent: ";
+  const debugIndex = output.indexOf(debugMarker);
+  if (debugIndex < 0) return undefined;
+
+  const message = output.slice(0, debugIndex).trim();
+  const argsPreview = output.slice(debugIndex + debugMarker.length).trim();
+  return { message, argsPreview };
+}
+
+/**
  * 리치 도구 호출 표시 블록 — 의미 있는 헤더와 트리 커넥터(⎿)로 계층 표현
  * tool-display.ts의 getToolHeaderInfo/getToolPreview를 사용하여
  * 각 도구 유형에 맞는 동사, 인수, 서브텍스트, 미리보기를 생성합니다.
+ *
+ * MCP 도구 지원:
+ * - metadata.serverName이 있으면 헤더에 [serverName] 접두사 표시
+ * - metadata.truncated가 true이면 출력 잘림 경고 표시
+ * - MCP 에러의 [Debug] Arguments sent: 정보를 구조화하여 표시
  */
 export const ToolCallBlock = React.memo(function ToolCallBlock({
   name,
@@ -146,15 +170,31 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
   // Determine header color override for error/denied
   const effectiveColor = status === "error" || status === "denied" ? "red" : headerInfo.color;
 
+  // MCP server name from metadata — displayed as [serverName] prefix in header
+  const mcpServerName =
+    metadata && typeof metadata.serverName === "string" ? metadata.serverName : undefined;
+
+  // MCP truncation flag — when output exceeded token limit
+  const isTruncated = metadata?.truncated === true;
+
+  // MCP error debug info — extract structured args preview from error output
+  const mcpDebugInfo =
+    status === "error" && output && mcpServerName ? parseMCPDebugError(output) : undefined;
+
+  // Build header text with optional MCP server prefix
+  const headerText = mcpServerName
+    ? `[${mcpServerName}] ${headerInfo.header}`
+    : headerInfo.header;
+
   return (
     <Box flexDirection="column" marginLeft={2}>
-      {/* Header row: [spinner/icon] Verb arg */}
+      {/* Header row: [spinner/icon] [serverName] Verb arg (duration) */}
       <Box>
         {status === "running" && <Text color="yellow">{spinnerChar} </Text>}
         {status === "error" && <Text color="red">{"\u2717"} </Text>}
         {status === "denied" && <Text color="red">! </Text>}
         <Text bold color={effectiveColor}>
-          {headerInfo.header}
+          {headerText}
         </Text>
         {duration && status !== "running" && <Text dimColor> ({formatDuration(duration)})</Text>}
       </Box>
@@ -164,6 +204,22 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         <Box marginLeft={1}>
           <Text dimColor>{"⎿  "}</Text>
           <Text>{headerInfo.subtext}</Text>
+        </Box>
+      )}
+
+      {/* MCP truncation warning — shown when output was cut off */}
+      {isTruncated && (
+        <Box marginLeft={1}>
+          <Text dimColor>{"⎿  "}</Text>
+          <Text color="yellow">{"[Output truncated — exceeded token limit]"}</Text>
+        </Box>
+      )}
+
+      {/* MCP error with debug args — show error message and dimmed args preview */}
+      {mcpDebugInfo && (
+        <Box marginLeft={4} flexDirection="column">
+          <Text color="red">{mcpDebugInfo.message}</Text>
+          <Text dimColor>{"Arguments: "}{mcpDebugInfo.argsPreview}</Text>
         </Box>
       )}
 
@@ -182,8 +238,10 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
       {preview ? <DiffPreview preview={preview} /> : null}
 
       {/* Collapsed output preview — show first 3 lines when not expanded */}
+      {/* Skip collapsed preview when MCP debug info is already shown */}
       {!isExpanded &&
         !preview &&
+        !mcpDebugInfo &&
         output &&
         status !== "running" &&
         (() => {

@@ -16,6 +16,7 @@ import { type TurnActivity, type ActivityEntry } from "../../core/activity.js";
 import { ToolCallBlock } from "./ToolCallBlock.js";
 import { ReadGroupBlock, type ReadGroupEntry } from "./ReadGroupBlock.js";
 import { StreamingMessage } from "./StreamingMessage.js";
+import { ThinkingBlock } from "./ThinkingBlock.js";
 
 /**
  * ActivityFeed 컴포넌트의 Props
@@ -137,6 +138,16 @@ function renderEntry(
           key={keyPrefix}
           text={String(entry.data.content ?? "")}
           isComplete={!isLive || entry.data.isComplete === true}
+        />
+      );
+
+    case "thinking":
+      return (
+        <ThinkingBlock
+          key={keyPrefix}
+          content={String(entry.data.content ?? "")}
+          isStreaming={entry.data.isStreaming === true}
+          isExpanded={isExpanded}
         />
       );
 
@@ -302,6 +313,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({
         entry.type === "tool-complete" ||
         entry.type === "tool-denied" ||
         (entry.type === "assistant-text" && entry.data.isComplete === true) ||
+        (entry.type === "thinking" && entry.data.isComplete === true) ||
         // tool-start whose tool has already completed
         (entry.type === "tool-start" &&
           typeof entry.data.id === "string" &&

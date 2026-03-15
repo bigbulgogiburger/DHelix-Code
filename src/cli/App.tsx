@@ -9,7 +9,7 @@
  * 훅(hook)을 조합하여 하나의 통합 인터페이스를 제공합니다.
  */
 import { Box, Text } from "ink";
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { UserInput } from "./components/UserInput.js";
 import { AgentStatus } from "./components/AgentStatus.js";
 import { SelectList } from "./components/SelectList.js";
@@ -42,6 +42,7 @@ import { type MCPManagerConnector } from "../mcp/manager-connector.js";
 import { type PermissionMode } from "../permissions/types.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 import { VoiceIndicator } from "./components/VoiceIndicator.js";
+import { RetryCountdown } from "./components/RetryCountdown.js";
 import { ErrorBoundary } from "./components/ErrorBoundary.js";
 import { useVoice } from "./hooks/useVoice.js";
 
@@ -153,6 +154,7 @@ export function App({
     messageQueueRef,
     inputTokens,
     outputTokens,
+    retryInfo,
     interactiveSelect,
     setInteractiveSelect,
     pendingAskUser,
@@ -237,10 +239,23 @@ export function App({
 
   // 단축키 피드백용 알림 배너 (2초 후 자동 사라짐)
   const [notification, setNotification] = useState<string | null>(null);
+  const notificationTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const showNotification = useCallback((message: string) => {
+    if (notificationTimeoutRef.current) {
+      clearTimeout(notificationTimeoutRef.current);
+    }
     setNotification(message);
-    setTimeout(() => setNotification(null), 2000);
+    notificationTimeoutRef.current = setTimeout(() => {
+      setNotification(null);
+      notificationTimeoutRef.current = null;
+    }, 2000);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
+    };
   }, []);
 
   // 키바인딩에 연결할 액션 핸들러 — 각 단축키가 실행할 동작을 정의
@@ -314,6 +329,15 @@ export function App({
       {isProcessing && !isStreamingFinal ? (
         <Box marginY={1}>
           <AgentStatus tokenCount={tokenCount} />
+        </Box>
+      ) : null}
+
+      {retryInfo ? (
+        <Box marginY={1}>
+          <RetryCountdown
+            seconds={Math.ceil(retryInfo.delayMs / 1000)}
+            label={`${retryInfo.reason} (${retryInfo.attempt}/${retryInfo.maxRetries})`}
+          />
         </Box>
       ) : null}
 

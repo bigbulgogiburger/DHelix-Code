@@ -53,6 +53,8 @@ export type AppEvents = {
     };
     model: string; // 사용된 모델명
   };
+  /** LLM Extended Thinking 사고 델타 — 사고 내용이 스트리밍될 때 실시간으로 발생 */
+  "llm:thinking-delta": { text: string };
   /** LLM 스트리밍 중 에러 발생 */
   "llm:error": { error: Error };
 
@@ -153,6 +155,14 @@ export type AppEvents = {
   "ask_user:response": {
     readonly toolCallId: string;
     readonly answer: string;
+  };
+
+  /** 에이전트 루프가 재시도 대기 중 — UI에서 카운트다운을 표시해야 함 */
+  "agent:retry": {
+    readonly delayMs: number;
+    readonly reason: string;
+    readonly attempt: number;
+    readonly maxRetries: number;
   };
 };
 

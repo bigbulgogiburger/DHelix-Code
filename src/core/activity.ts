@@ -27,6 +27,7 @@ export type ActivityEntryType =
   | "user-message"
   | "assistant-text"
   | "assistant-intermediate"
+  | "thinking"
   | "tool-start"
   | "tool-complete"
   | "tool-denied"
