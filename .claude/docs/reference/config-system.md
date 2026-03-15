@@ -1,6 +1,6 @@
 # Config & Instructions System
 
-> 참조 시점: DBCODE.md 처리, 설정 계층, 프로젝트 초기화 작업 시
+> 참조 시점: DBCODE.md 처리, 설정 계층, MCP 스코프 설정, 프로젝트 초기화 시
 
 ## DBCODE.md Location
 
@@ -44,8 +44,38 @@ Priority: CLI flags > env vars > project > user > defaults
 | 키바인딩         | `~/.dbcode/keybindings.json`   |
 | 입력 히스토리    | `~/.dbcode/input-history.json` |
 | 권한 감사 로그   | `.dbcode/audit.jsonl`          |
+| 프로젝트 메모리  | `~/.dbcode/projects/{hash}/memory/` |
+| 콜드 스토리지    | `~/.dbcode/projects/{hash}/cold-storage/` |
 
-## DEFAULT_MODEL Resolution (Sprint 6)
+## MCP Config Paths (3-Scope)
+
+MCP 서버 설정은 3개 스코프로 관리됩니다. 우선순위: local > project > user
+
+| 스코프  | 경로                           | 용도                        | Git |
+| ------- | ------------------------------ | --------------------------- | --- |
+| local   | `.dbcode/mcp-local.json`       | 개인 개발 서버 (API 키 등)  | .gitignore |
+| project | `.dbcode/mcp.json`             | 팀 공용 서버                | 커밋 |
+| user    | `~/.dbcode/mcp-servers.json`   | 글로벌 서버                 | N/A |
+
+모든 스코프의 설정 파일 형식:
+
+```json
+{
+  "servers": {
+    "server-name": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["@some/mcp-server"]
+    }
+  }
+}
+```
+
+- **MCPScopeManager** (`src/mcp/scope-manager.ts`): 3개 스코프 병합 담당
+- **MCPManager** (`src/mcp/manager.ts`): `loadScopedConfigs()` → `connectAll()` → 도구 등록
+- **레거시 fallback**: `~/.dbcode/mcp.json` (`{ mcpServers: {...} }` 형식) — scope-manager가 없을 때만 사용
+
+## DEFAULT_MODEL Resolution
 
 Model selection follows env-var priority chain:
 
@@ -55,26 +85,21 @@ DBCODE_MODEL > OPENAI_MODEL > "gpt-4o-mini" (hardcoded default)
 
 Set via environment variable or `defaults.ts`. CLI `--model` flag overrides all.
 
-## Permission Audit Logging (Sprint 6)
+## Permission Audit Logging
 
 - **audit-log.ts** (`src/permissions/`): Logs every permission check to JSONL format
-- Each entry: timestamp, tool name, permission level, user decision (approve/deny), file path
+- Each entry: timestamp, tool name, permission level, user decision, file path
 - Stored at `.dbcode/audit.jsonl` (project-level, gitignored)
-- Useful for compliance review and debugging permission-related issues
-
-## Gap Analysis & Roadmap
-
-`docs/dbcode-vs-claude-code-v2.md` — Claude Code와의 포괄적 비교 (7.5/10).
-주요 격차: persistent permissions, auto-memory, Windows sandbox (WSL2/Git Bash), MCP integration depth.
 
 ## Health Checks (/doctor)
 
-`/doctor` now runs 12 health checks (expanded in Sprint 6), validating config, permissions, sandbox, LLM connectivity, and more.
+`/doctor` runs 12 health checks: config, permissions, sandbox, LLM connectivity, MCP servers, etc.
 
 ## 주의사항
 
-- `getProjectConfigPaths(cwd)` 헬퍼를 항상 사용 — 경로를 하드코딩하면 Windows/macOS 호환성 깨짐
+- `getProjectConfigPaths(cwd)` 헬퍼를 항상 사용 — 경로 하드코딩 금지
 - `.dbcode/rules/*.md`는 glob 기반 path-conditional — `path-matcher.ts` 참조
-- `DBCODE.local.md`는 `.gitignore`에 포함되어야 함 (개인 오버라이드용)
-- `audit.jsonl`은 `.gitignore`에 포함되어야 함 (민감한 권한 결정 기록 포함)
-- DEFAULT_MODEL env 체인 변경 시 `defaults.ts` 및 관련 테스트 동시 수정 필요
+- `DBCODE.local.md`는 `.gitignore`에 포함되어야 함
+- `audit.jsonl`은 `.gitignore`에 포함되어야 함
+- MCP 스코프 설정 변경 시 dbcode 재시작 필요 (부트스트랩에서 연결)
+- MCP 서버 추가/제거는 `/mcp add|remove` 명령어로 — 직접 JSON 수정도 가능

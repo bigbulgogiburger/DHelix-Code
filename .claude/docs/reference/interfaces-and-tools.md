@@ -31,7 +31,7 @@ interface ToolCallStrategy {
 }
 ```
 
-## Built-in Tools (14)
+## Built-in Tools (16)
 
 | Tool          | Permission | Description                                               |
 | ------------- | ---------- | --------------------------------------------------------- |
@@ -39,6 +39,8 @@ interface ToolCallStrategy {
 | file_write    | confirm    | Create/overwrite (must read first if exists)              |
 | file_edit     | confirm    | Search/Replace with uniqueness validation, diff preview   |
 | bash_exec     | confirm    | Shell execution with timeout, background support          |
+| bash_output   | safe       | Read output from background bash process                  |
+| kill_shell    | confirm    | Kill a running background shell process                   |
 | glob_search   | safe       | File pattern matching, sorted by mtime                    |
 | grep_search   | safe       | Regex content search (ripgrep wrapper)                    |
 | list_dir      | safe       | Directory listing with metadata                           |
@@ -50,12 +52,30 @@ interface ToolCallStrategy {
 | agent         | confirm    | Spawn subagent (explore/plan/general) via factory pattern |
 | todo_write    | safe       | Task tracking with pending/in_progress/completed states   |
 
+**Hot tools** (always included in schema): file_read, file_write, file_edit, bash_exec, glob_search, grep_search
+
 ## Tool-Call Strategies
 
 - **Native function-calling** (`strategies/native-function-calling.ts`): GPT-4o, Claude 등 함수 호출 네이티브 지원 모델
 - **Text parsing** (`strategies/text-parsing.ts`): XML 태그 기반 폴백 — 함수 호출 미지원 모델용
+- **Two-stage** (`strategies/two-stage-tool-call.ts`): 복잡한 워크플로우용
 
-## Adaptive Schema & Lazy Loading (Sprint 6)
+## Tool Call Auto-Correction
+
+**tool-call-corrector.ts**: Zod 검증 전에 저가 모델의 흔한 실수를 자동 교정:
+- 상대 경로 → 절대 경로 (`./src/app.ts` → `/project/src/app.ts`)
+- `"true"` 문자열 → `true` boolean
+- `"123"` 문자열 → `123` number
+- HIGH 티어 모델에서는 건너뜀
+
+## Tool Grouping & Parallel Execution
+
+**agent-loop.ts**: 도구 호출을 충돌 분석하여 그룹으로 나눔:
+- 같은 파일에 대한 쓰기 작업 → 별도 그룹 (순차 실행)
+- 읽기 전용 도구 (file_read, grep, glob) → 같은 그룹 (병렬 실행)
+- 그룹 내: `Promise.allSettled`로 병렬 / 그룹 간: 순차
+
+## Adaptive Schema & Lazy Loading
 
 Tool schemas adapt to model capability tiers:
 
@@ -63,20 +83,20 @@ Tool schemas adapt to model capability tiers:
 | ------ | ------------- | ---------- | ------------------------------------------ |
 | HIGH   | Full          | Eager      | All params, descriptions, examples         |
 | MEDIUM | Reduced       | Lazy       | Required params only, minimal descriptions |
-| LOW    | Minimal       | On-demand  | Name + essential params only               |
+| LOW    | Minimal       | On-demand  | Name + essential params + few-shot examples|
 
-- **adaptive-schema.ts** (`src/tools/`): Selects schema detail level based on model capability tier
-- **lazy-tool-loader.ts** (`src/tools/`): Defers schema loading for MEDIUM/LOW tier tools until first use
+## Tool Retry & Self-Healing
 
-## Tool Retry & Self-Healing (Sprint 6)
-
-- **tool-retry.ts** (`src/tools/`): Auto-corrects failed tool calls:
-  - **Levenshtein path correction**: Suggests closest valid file path when tool call references a non-existent path
+- **tool-retry.ts**: Auto-corrects failed tool calls:
+  - **Levenshtein path correction**: Suggests closest valid file path
   - **JSON repair**: Fixes malformed JSON arguments (trailing commas, missing quotes)
 
-## Structured Output (Sprint 6)
+## MCP Tool Bridge
 
-- **structured-output.ts** (`src/llm/`): Enforces structured output per provider — JSON mode for OpenAI, tool_choice for Anthropic
+- **tool-bridge.ts**: MCP 서버의 도구를 dbcode ToolRegistry에 등록
+- MCP 도구는 `mcp__{server}__{tool}` 네이밍 규칙
+- **tool-filter.ts**: 서버별 include/exclude 필터링
+- **tool-search.ts**: 사용 가능한 MCP 도구 검색
 
 ## Tool Display Pipeline
 
@@ -90,7 +110,7 @@ Tool schemas adapt to model capability tiers:
 ## 주의사항
 
 - 새 도구 추가 시: `src/tools/definitions/`에 파일 생성 → `registry.ts`에 등록 → `tool-display.ts`에 표시 설정 추가
-- `ToolResult.metadata`는 executor에서 자동 전달 → activity → UI까지 파이프라인 확인은 `verify-tool-metadata-pipeline` 스킬 사용
+- `ToolResult.metadata`는 executor에서 자동 전달 → `verify-tool-metadata-pipeline` 스킬로 검증
 - permissionLevel 변경은 보안 영향 — "safe"는 자동 실행, "confirm"은 사용자 승인 필요
 - adaptive-schema 변경 시: 3개 티어 모두에서 tool 동작 검증 필요
-- tool-retry는 agent-loop 내부에서 자동 적용 — 수동 호출 불필요
+- tool-retry와 tool-call-corrector는 agent-loop 내부에서 자동 적용

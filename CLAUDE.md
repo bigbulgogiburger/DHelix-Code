@@ -9,26 +9,28 @@ Node.js 20+ / TypeScript 5.x / ESM only / Ink 5.x (React for CLI) / Vitest / tsu
 graph TD
     subgraph CLI["Layer 1: CLI (Ink/React)"]
         APP[App.tsx + ErrorBoundary]
-        COMP[Components]
-        HOOKS[React Hooks]
+        COMP[22 Components]
+        HOOKS[7 React Hooks]
     end
     subgraph CORE["Layer 2: Core (Zero UI imports)"]
         AGENT[Agent Loop — ReAct + Circuit Breaker]
-        CTX[Context Manager — Adaptive GC + Observation Masking]
-        RECOVER[Recovery Executor — compact/retry/fallback]
+        CTX[Context Manager — 3-Layer Compaction + Cold Storage]
+        RECOVER[Recovery Executor — error-type routing]
         PROMPT[System Prompt Builder + Cache]
+        SUBAG[Subagents — Team Spawner + Worktree Isolation]
     end
     subgraph INFRA["Layer 3: Infrastructure"]
         LLM[LLM Client — OpenAI SDK + Dual-Model Router]
-        TOOLS[Tool System — 18+ built-in + Adaptive Schema]
-        GUARD[Guardrails — injection, entropy, secrets]
-        PERM[Permissions + Audit Log]
-        MCP_[MCP Client]
+        TOOLS[Tool System — 16 built-in + Adaptive Schema]
+        GUARD[Guardrails — injection, entropy, secrets, path]
+        PERM[Permissions — 5 modes + Audit Log]
+        MCP_[MCP — 3-Scope Config + Tool Bridge]
     end
     subgraph LEAF["Layer 4: Leaf Modules"]
-        UTILS[Utils — logger, events, path]
-        CONFIG["Config — env-based DEFAULT_MODEL"]
-        SKILLS[Skills — 4 load dirs]
+        UTILS[Utils — logger, events, path, error]
+        CONFIG["Config — 5-layer merge"]
+        SKILLS[Skills — 4 load dirs + 41 commands]
+        MEM[Memory — project-scoped persistence]
     end
 
     APP --> AGENT
@@ -38,13 +40,18 @@ graph TD
     AGENT --> PERM
     AGENT --> CTX
     AGENT --> RECOVER
+    AGENT --> SUBAG
+    SUBAG --> LLM
     TOOLS --> GUARD
+    TOOLS --> MCP_
+    MCP_ --> UTILS
     TOOLS --> UTILS
     LLM --> UTILS
     CONFIG --> UTILS
+    MEM --> UTILS
 ```
 
-**Dependency rule**: top → bottom only. CLI → Core → Infra → Leaf. Circular deps forbidden (`madge --circular src/`).
+**Dependency rule**: top → bottom only. Circular deps forbidden (`madge --circular src/`).
 
 ## Commands
 
@@ -67,7 +74,7 @@ npm run ci           # typecheck + lint + coverage + build
 - **ESM imports** — use `.js` extension (`import { foo } from './bar.js'`)
 - **No circular deps** — CLI never imports from core/llm/tools/utils backwards
 - **No `any`** — use `unknown` + type guards; Zod for external inputs
-- **All async** — no sync fs operations; use `src/utils/path.ts` for cross-platform paths
+- **All async** — no sync fs; use `src/utils/path.ts` for cross-platform paths
 - **AbortController** — all cancellable operations use AbortSignal
 - **Commit**: `feat(module)`, `fix(module)`, `test(module)`, `refactor(module)` — all checks pass first
 
@@ -102,11 +109,13 @@ When compacting, always preserve:
 
 작업 맥락에 따라 아래 문서를 참조하세요:
 
-| 문서                  | 참조 시점                             | 경로                                             |
-| --------------------- | ------------------------------------- | ------------------------------------------------ |
-| Directory Structure   | 파일 위치 파악, 새 모듈 배치          | `.claude/docs/reference/directory-structure.md`  |
-| Architecture Deep     | Agent loop, 렌더링, 컨텍스트 관리     | `.claude/docs/reference/architecture-deep.md`    |
-| Interfaces & Tools    | Tool 추가/수정, LLM 연동              | `.claude/docs/reference/interfaces-and-tools.md` |
-| Config & Instructions | DBCODE.md, 설정 계층, 로드맵          | `.claude/docs/reference/config-system.md`        |
-| Skills & Commands     | 스킬 개발, 슬래시 명령, 입력 히스토리 | `.claude/docs/reference/skills-and-commands.md`  |
-| Coding Conventions    | TS 설정 상세, 이벤트 패턴             | `.claude/docs/reference/coding-conventions.md`   |
+| 문서                  | 참조 시점                                | 경로                                             |
+| --------------------- | ---------------------------------------- | ------------------------------------------------ |
+| Directory Structure   | 파일 위치 파악, 새 모듈 배치             | `.claude/docs/reference/directory-structure.md`  |
+| Architecture Deep     | Agent loop, 컨텍스트, 서브에이전트       | `.claude/docs/reference/architecture-deep.md`    |
+| Interfaces & Tools    | Tool 추가/수정, LLM 연동, MCP 브리지    | `.claude/docs/reference/interfaces-and-tools.md` |
+| Config & Instructions | DBCODE.md, 설정 계층, MCP 스코프 설정    | `.claude/docs/reference/config-system.md`        |
+| Skills & Commands     | 스킬 개발, 41개 슬래시 명령              | `.claude/docs/reference/skills-and-commands.md`  |
+| Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션         | `.claude/docs/reference/coding-conventions.md`   |
+| MCP System            | MCP 서버 연동, 스코프, 도구 브리지       | `.claude/docs/reference/mcp-system.md`           |
+| Subagents & Teams     | 서브에이전트 생성, 팀 오케스트레이션     | `.claude/docs/reference/subagents-and-teams.md`  |
