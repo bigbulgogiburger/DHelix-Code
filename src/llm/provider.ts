@@ -15,10 +15,10 @@
 
 /** 채팅 메시지의 역할 — 누가 이 메시지를 보냈는지 구분하는 타입 */
 export type ChatRole =
-  | "system"     // 시스템 지시사항 (LLM의 행동 규칙을 설정)
-  | "user"       // 사용자가 보낸 메시지
-  | "assistant"  // LLM이 생성한 응답 메시지
-  | "tool";      // 도구 실행 결과 메시지 (함수 호출 후 반환값)
+  | "system" // 시스템 지시사항 (LLM의 행동 규칙을 설정)
+  | "user" // 사용자가 보낸 메시지
+  | "assistant" // LLM이 생성한 응답 메시지
+  | "tool"; // 도구 실행 결과 메시지 (함수 호출 후 반환값)
 
 /** 하나의 채팅 메시지 — 대화 기록의 기본 단위 */
 export interface ChatMessage {
@@ -130,10 +130,10 @@ export interface ChatResponse {
 export interface ChatChunk {
   /** 청크 타입 — 어떤 종류의 데이터인지 구분 */
   readonly type:
-    | "text-delta"        // 텍스트 응답의 일부분
-    | "tool-call-delta"   // 도구 호출 데이터의 일부분
-    | "thinking-delta"    // Extended Thinking 내용의 일부분
-    | "done";             // 스트리밍 완료 신호
+    | "text-delta" // 텍스트 응답의 일부분
+    | "tool-call-delta" // 도구 호출 데이터의 일부분
+    | "thinking-delta" // Extended Thinking 내용의 일부분
+    | "done"; // 스트리밍 완료 신호
   /** 텍스트 조각 (type이 "text-delta"일 때) */
   readonly text?: string;
   /** 도구 호출 조각 (type이 "tool-call-delta"일 때) — 점진적으로 조립됨 */
@@ -142,6 +142,8 @@ export interface ChatChunk {
   readonly usage?: TokenUsage;
   /** Extended Thinking 텍스트 조각 (type이 "thinking-delta"일 때) */
   readonly thinking_delta?: string;
+  /** 응답 종료 사유 (type이 "done"일 때 — "stop", "length", "tool_calls" 등) */
+  readonly finishReason?: string;
 }
 
 /**

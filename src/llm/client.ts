@@ -636,7 +636,7 @@ export class OpenAICompatibleClient implements LLMProvider {
             content += part.text ?? "";
           }
         }
-      // 함수 호출 아이템
+        // 함수 호출 아이템
       } else if (item.type === "function_call") {
         toolCalls.push({
           id: item.call_id ?? item.id ?? "",
@@ -740,6 +740,8 @@ export class OpenAICompatibleClient implements LLMProvider {
     let streamUsage:
       | { promptTokens: number; completionTokens: number; totalTokens: number }
       | undefined;
+    // 응답 종료 사유 (스트리밍 청크에서 수신)
+    let streamFinishReason: string | undefined;
 
     for await (const chunk of stream) {
       // OpenAI는 stream_options.include_usage가 true일 때 마지막 청크에 usage를 포함
@@ -749,6 +751,12 @@ export class OpenAICompatibleClient implements LLMProvider {
           completionTokens: chunk.usage.completion_tokens ?? 0,
           totalTokens: chunk.usage.total_tokens ?? 0,
         };
+      }
+
+      // 응답 종료 사유 캡처 — 마지막 유효한 finish_reason을 보존
+      const choiceFinishReason = chunk.choices[0]?.finish_reason;
+      if (choiceFinishReason) {
+        streamFinishReason = choiceFinishReason;
       }
 
       const delta = chunk.choices[0]?.delta;
@@ -788,10 +796,11 @@ export class OpenAICompatibleClient implements LLMProvider {
       }
     }
 
-    // 스트리밍 완료 신호와 함께 최종 사용량 정보 전달
+    // 스트리밍 완료 신호와 함께 최종 사용량 및 종료 사유 전달
     yield {
       type: "done",
       usage: streamUsage,
+      finishReason: streamFinishReason ?? "stop",
     };
   }
 
@@ -834,6 +843,8 @@ export class OpenAICompatibleClient implements LLMProvider {
     let streamUsage:
       | { promptTokens: number; completionTokens: number; totalTokens: number }
       | undefined;
+    // Responses API의 응답 상태 ("completed" 등)
+    let responseStatus: string | undefined;
 
     // Responses API 스트리밍은 청크가 아닌 이벤트(event) 단위로 데이터를 전송
     for await (const event of stream) {
@@ -852,19 +863,23 @@ export class OpenAICompatibleClient implements LLMProvider {
           },
         };
       }
-      // 응답 완료 이벤트 — 토큰 사용량 정보 포함
-      else if (event.type === "response.completed" && event.response?.usage) {
-        streamUsage = {
-          promptTokens: event.response.usage.input_tokens ?? 0,
-          completionTokens: event.response.usage.output_tokens ?? 0,
-          totalTokens: event.response.usage.total_tokens ?? 0,
-        };
+      // 응답 완료 이벤트 — 토큰 사용량 정보 및 상태 포함
+      else if (event.type === "response.completed") {
+        responseStatus = event.response?.status as string | undefined;
+        if (event.response?.usage) {
+          streamUsage = {
+            promptTokens: event.response.usage.input_tokens ?? 0,
+            completionTokens: event.response.usage.output_tokens ?? 0,
+            totalTokens: event.response.usage.total_tokens ?? 0,
+          };
+        }
       }
     }
 
     yield {
       type: "done",
       usage: streamUsage,
+      finishReason: responseStatus === "completed" ? "stop" : (responseStatus ?? "stop"),
     };
   }
 

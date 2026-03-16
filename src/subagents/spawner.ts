@@ -48,6 +48,7 @@ import {
   type AgentMemoryScope,
 } from "./definition-types.js";
 import { resolveProvider } from "../llm/model-router.js";
+import { getModelCapabilities } from "../llm/model-capabilities.js";
 
 /** execFile의 Promise 버전 — 비동기적으로 외부 프로세스를 실행 */
 const execFileAsync = promisify(execFile);
@@ -795,6 +796,7 @@ async function executeSubagent(params: {
     });
 
     // Promise.race로 에이전트 루프와 타임아웃 중 먼저 완료되는 것을 사용
+    const subagentModelCaps = getModelCapabilities(effectiveModel);
     const result: AgentLoopResult = await Promise.race([
       runAgentLoop(
         {
@@ -807,6 +809,7 @@ async function executeSubagent(params: {
           signal,
           workingDirectory: effectiveWorkingDir,
           maxContextTokens,
+          maxTokens: subagentModelCaps.maxOutputTokens,
         },
         initialMessages,
       ),

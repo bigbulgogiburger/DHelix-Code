@@ -31,7 +31,13 @@ describe("CircuitBreaker", () => {
   });
 
   describe("no file changes threshold", () => {
-    it("should open after 3 consecutive iterations with no changes", () => {
+    it("should open after 5 consecutive iterations with no changes", () => {
+      breaker.recordIteration(makeResult());
+      expect(breaker.shouldContinue()).toBe(true);
+
+      breaker.recordIteration(makeResult());
+      expect(breaker.shouldContinue()).toBe(true);
+
       breaker.recordIteration(makeResult());
       expect(breaker.shouldContinue()).toBe(true);
 
@@ -49,14 +55,16 @@ describe("CircuitBreaker", () => {
     it("should reset no-change counter when files are modified", () => {
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
 
       // File modification resets the counter
-      breaker.recordIteration(
-        makeResult({ filesModified: new Set(["file.ts"]) }),
-      );
+      breaker.recordIteration(makeResult({ filesModified: new Set(["file.ts"]) }));
       expect(breaker.shouldContinue()).toBe(true);
 
-      // Need 3 more consecutive no-changes
+      // Need 5 more consecutive no-changes
+      breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       expect(breaker.shouldContinue()).toBe(true);
@@ -65,12 +73,16 @@ describe("CircuitBreaker", () => {
     it("should reset no-change counter when output is produced", () => {
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
 
       // Output resets the counter
       breaker.recordIteration(makeResult({ hasOutput: true }));
       expect(breaker.shouldContinue()).toBe(true);
 
-      // Need 3 more consecutive no-changes
+      // Need 5 more consecutive no-changes
+      breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       expect(breaker.shouldContinue()).toBe(true);
@@ -80,15 +92,11 @@ describe("CircuitBreaker", () => {
   describe("same error threshold", () => {
     it("should open after 5 consecutive same errors", () => {
       for (let i = 0; i < 4; i++) {
-        breaker.recordIteration(
-          makeResult({ error: "Network timeout", hasOutput: true }),
-        );
+        breaker.recordIteration(makeResult({ error: "Network timeout", hasOutput: true }));
         expect(breaker.shouldContinue()).toBe(true);
       }
 
-      breaker.recordIteration(
-        makeResult({ error: "Network timeout", hasOutput: true }),
-      );
+      breaker.recordIteration(makeResult({ error: "Network timeout", hasOutput: true }));
       expect(breaker.shouldContinue()).toBe(false);
 
       const status = breaker.getStatus();
@@ -99,16 +107,12 @@ describe("CircuitBreaker", () => {
 
     it("should reset error counter when a different error occurs", () => {
       for (let i = 0; i < 4; i++) {
-        breaker.recordIteration(
-          makeResult({ error: "Error A", hasOutput: true }),
-        );
+        breaker.recordIteration(makeResult({ error: "Error A", hasOutput: true }));
       }
       expect(breaker.shouldContinue()).toBe(true);
 
       // Different error resets the counter
-      breaker.recordIteration(
-        makeResult({ error: "Error B", hasOutput: true }),
-      );
+      breaker.recordIteration(makeResult({ error: "Error B", hasOutput: true }));
       expect(breaker.shouldContinue()).toBe(true);
 
       const status = breaker.getStatus();
@@ -117,9 +121,7 @@ describe("CircuitBreaker", () => {
 
     it("should reset error counter when no error occurs", () => {
       for (let i = 0; i < 4; i++) {
-        breaker.recordIteration(
-          makeResult({ error: "Error A", hasOutput: true }),
-        );
+        breaker.recordIteration(makeResult({ error: "Error A", hasOutput: true }));
       }
 
       // Success resets the counter
@@ -165,9 +167,7 @@ describe("CircuitBreaker", () => {
       expect(breaker.shouldContinue()).toBe(true);
 
       // 50th iteration should open
-      breaker.recordIteration(
-        makeResult({ filesModified: new Set(["file.ts"]), hasOutput: true }),
-      );
+      breaker.recordIteration(makeResult({ filesModified: new Set(["file.ts"]), hasOutput: true }));
       expect(breaker.shouldContinue()).toBe(false);
     });
   });
@@ -175,6 +175,8 @@ describe("CircuitBreaker", () => {
   describe("reset", () => {
     it("should reset all state to initial values", () => {
       // Trigger circuit open
+      breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
@@ -197,13 +199,13 @@ describe("CircuitBreaker", () => {
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
 
       breaker.reset();
 
       // Should work again
-      breaker.recordIteration(
-        makeResult({ filesModified: new Set(["file.ts"]), hasOutput: true }),
-      );
+      breaker.recordIteration(makeResult({ filesModified: new Set(["file.ts"]), hasOutput: true }));
       expect(breaker.shouldContinue()).toBe(true);
       expect(breaker.getStatus().iterationCount).toBe(1);
     });
@@ -211,6 +213,8 @@ describe("CircuitBreaker", () => {
 
   describe("does not record after open", () => {
     it("should not record iterations after circuit is open", () => {
+      breaker.recordIteration(makeResult());
+      breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
       breaker.recordIteration(makeResult());
@@ -233,6 +237,8 @@ describe("CircuitBreaker", () => {
       breaker.recordIteration(makeResult({ error: "A" }));
       breaker.recordIteration(makeResult({ error: "B" }));
       breaker.recordIteration(makeResult({ error: "C" }));
+      breaker.recordIteration(makeResult({ error: "D" }));
+      breaker.recordIteration(makeResult({ error: "E" }));
 
       expect(breaker.shouldContinue()).toBe(false);
       // No-change threshold is hit before same-error threshold
@@ -240,13 +246,9 @@ describe("CircuitBreaker", () => {
     });
 
     it("should track iteration count accurately", () => {
-      breaker.recordIteration(
-        makeResult({ filesModified: new Set(["a.ts"]), hasOutput: true }),
-      );
+      breaker.recordIteration(makeResult({ filesModified: new Set(["a.ts"]), hasOutput: true }));
       breaker.recordIteration(makeResult({ hasOutput: true }));
-      breaker.recordIteration(
-        makeResult({ filesModified: new Set(["b.ts"]), hasOutput: true }),
-      );
+      breaker.recordIteration(makeResult({ filesModified: new Set(["b.ts"]), hasOutput: true }));
 
       expect(breaker.getStatus().iterationCount).toBe(3);
     });

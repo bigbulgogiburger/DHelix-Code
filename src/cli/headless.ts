@@ -164,6 +164,7 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
       maxIterations,
       workingDirectory,
       maxContextTokens: modelCaps.maxContextTokens,
+      maxTokens: modelCaps.maxOutputTokens,
     },
     initialMessages,
   );

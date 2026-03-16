@@ -83,8 +83,10 @@ describe("StdioTransport", () => {
       const transport = new StdioTransport(createConfig());
       await transport.connect();
 
+      // On Windows, resolveCommand appends .cmd for known Node CLI tools
+      const expectedCommand = "node";
       expect(mockSpawn).toHaveBeenCalledWith(
-        "node",
+        expectedCommand,
         ["server.js"],
         expect.objectContaining({
           stdio: ["pipe", "pipe", "pipe"],
@@ -96,8 +98,9 @@ describe("StdioTransport", () => {
       const transport = new StdioTransport(createConfig({ args: undefined }));
       await transport.connect();
 
+      const expectedCommand = "node";
       expect(mockSpawn).toHaveBeenCalledWith(
-        "node",
+        expectedCommand,
         [],
         expect.objectContaining({
           stdio: ["pipe", "pipe", "pipe"],
@@ -348,6 +351,70 @@ describe("StdioTransport", () => {
     it("should register close handler", () => {
       const transport = new StdioTransport(createConfig());
       transport.onClose(vi.fn());
+    });
+  });
+
+  describe("Windows command resolution", () => {
+    it("should resolve npx to npx.cmd on Windows", async () => {
+      const transport = new StdioTransport(createConfig({ command: "npx" }));
+      await transport.connect();
+
+      const expectedCommand = process.platform === "win32" ? "npx.cmd" : "npx";
+      expect(mockSpawn).toHaveBeenCalledWith(
+        expectedCommand,
+        expect.any(Array),
+        expect.any(Object),
+      );
+    });
+
+    it("should not append .cmd if already present", async () => {
+      const transport = new StdioTransport(createConfig({ command: "npx.cmd" }));
+      await transport.connect();
+
+      expect(mockSpawn).toHaveBeenCalledWith("npx.cmd", expect.any(Array), expect.any(Object));
+    });
+
+    it("should not modify unknown commands", async () => {
+      const transport = new StdioTransport(createConfig({ command: "my-custom-server" }));
+      await transport.connect();
+
+      expect(mockSpawn).toHaveBeenCalledWith(
+        "my-custom-server",
+        expect.any(Array),
+        expect.any(Object),
+      );
+    });
+
+    it("should handle ENOENT errors with descriptive message", async () => {
+      const transport = new StdioTransport(createConfig({ command: "npx" }));
+      const errorHandler = vi.fn();
+      transport.onError(errorHandler);
+
+      await transport.connect();
+
+      const enoentError = new Error("spawn npx ENOENT") as NodeJS.ErrnoException;
+      enoentError.code = "ENOENT";
+      mockProcess.process.emit("error", enoentError);
+
+      expect(errorHandler).toHaveBeenCalledTimes(1);
+      const reportedError = errorHandler.mock.calls[0][0] as StdioTransportError;
+      expect(reportedError.message).toContain("Command not found");
+      expect(reportedError.message).toContain("Ensure it is installed and in your PATH");
+    });
+
+    it("should include command in error context for ENOENT", async () => {
+      const transport = new StdioTransport(createConfig({ command: "npx" }));
+      const errorHandler = vi.fn();
+      transport.onError(errorHandler);
+
+      await transport.connect();
+
+      const enoentError = new Error("spawn npx ENOENT") as NodeJS.ErrnoException;
+      enoentError.code = "ENOENT";
+      mockProcess.process.emit("error", enoentError);
+
+      const reportedError = errorHandler.mock.calls[0][0] as StdioTransportError;
+      expect(reportedError.context).toHaveProperty("command");
     });
   });
 

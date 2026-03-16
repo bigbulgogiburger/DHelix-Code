@@ -50,6 +50,8 @@ export interface StreamAccumulator {
   readonly bufferBytes?: number;
   /** 백프레셔로 인해 텍스트가 잘렸으면 true */
   readonly trimmed?: boolean;
+  /** API가 보고한 응답 종료 사유 ("stop", "length", "tool_calls" 등) */
+  readonly finishReason?: string;
 }
 
 /**
@@ -70,9 +72,11 @@ function estimateByteLength(str: string): number {
   let bytes = 0;
   for (let i = 0; i < str.length; i++) {
     const code = str.charCodeAt(i);
-    if (code <= 0x7f) bytes += 1;        // ASCII 문자
-    else if (code <= 0x7ff) bytes += 2;  // 라틴 확장 문자
-    else bytes += 3;                      // 한글, CJK 등 멀티바이트 문자
+    if (code <= 0x7f)
+      bytes += 1; // ASCII 문자
+    else if (code <= 0x7ff)
+      bytes += 2; // 라틴 확장 문자
+    else bytes += 3; // 한글, CJK 등 멀티바이트 문자
   }
   return bytes;
 }
@@ -159,7 +163,7 @@ export function accumulateChunk(
         ...state,
         text: bp.text,
         bufferBytes: bp.bufferBytes,
-        trimmed: bp.trimmed || state.trimmed,  // 한 번이라도 잘렸으면 true 유지
+        trimmed: bp.trimmed || state.trimmed, // 한 번이라도 잘렸으면 true 유지
       };
     }
 
@@ -192,7 +196,12 @@ export function accumulateChunk(
 
     // 스트리밍 완료 신호
     case "done":
-      return { ...state, isComplete: true, usage: chunk.usage ?? state.usage };
+      return {
+        ...state,
+        isComplete: true,
+        usage: chunk.usage ?? state.usage,
+        finishReason: chunk.finishReason ?? state.finishReason,
+      };
 
     default:
       return state;

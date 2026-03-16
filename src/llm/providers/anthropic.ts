@@ -255,7 +255,7 @@ function extractSystemAndMessages(messages: readonly ChatMessage[]): {
         content: [
           {
             type: "tool_result",
-            tool_use_id: msg.toolCallId ?? "",   // 원래 도구 호출 ID와 매칭
+            tool_use_id: msg.toolCallId ?? "", // 원래 도구 호출 ID와 매칭
             content: msg.content,
           },
         ],
@@ -276,7 +276,7 @@ function extractSystemAndMessages(messages: readonly ChatMessage[]): {
         try {
           input = JSON.parse(tc.arguments) as Record<string, unknown>;
         } catch {
-          input = {};   // 파싱 실패 시 빈 객체
+          input = {}; // 파싱 실패 시 빈 객체
         }
         content.push({
           type: "tool_use",
@@ -327,11 +327,16 @@ function toAnthropicTools(tools: readonly ToolDefinitionForLLM[]): AnthropicTool
  */
 function mapStopReason(stopReason: string | null): string {
   switch (stopReason) {
-    case "end_turn":      return "stop";        // 정상 종료
-    case "max_tokens":    return "length";       // 토큰 한도 도달
-    case "tool_use":      return "tool_calls";   // 도구 사용 요청
-    case "stop_sequence": return "stop";         // 중단 시퀀스
-    default:              return "stop";
+    case "end_turn":
+      return "stop"; // 정상 종료
+    case "max_tokens":
+      return "length"; // 토큰 한도 도달
+    case "tool_use":
+      return "tool_calls"; // 도구 사용 요청
+    case "stop_sequence":
+      return "stop"; // 중단 시퀀스
+    default:
+      return "stop";
   }
 }
 
@@ -454,7 +459,7 @@ async function* parseSSEStream(
 
       buffer += decoder.decode(value, { stream: true });
       const lines = buffer.split("\n");
-      buffer = lines.pop() ?? "";   // 마지막 불완전한 줄은 버퍼에 유지
+      buffer = lines.pop() ?? ""; // 마지막 불완전한 줄은 버퍼에 유지
 
       let currentEventType: string | null = null;
 
@@ -721,7 +726,7 @@ export class AnthropicProvider implements LLMProvider {
     const { system, messages } = extractSystemAndMessages(request.messages);
 
     const body = this._buildRequestBody(request, system, messages);
-    body.stream = true;   // 스트리밍 활성화
+    body.stream = true; // 스트리밍 활성화
 
     const controller = new AbortController();
     // 유휴 타임아웃 — 초기 설정
@@ -789,8 +794,9 @@ export class AnthropicProvider implements LLMProvider {
     // Extended Thinking 블록의 인덱스를 추적
     const thinkingBlocks = new Set<number>();
 
-    let inputTokens = 0;    // 입력 토큰 수 (message_start에서 수신)
-    let outputTokens = 0;   // 출력 토큰 수 (message_delta에서 누적)
+    let inputTokens = 0; // 입력 토큰 수 (message_start에서 수신)
+    let outputTokens = 0; // 출력 토큰 수 (message_delta에서 누적)
+    let stopReason: string | null = null; // 응답 종료 사유 (message_delta에서 수신)
 
     try {
       for await (const event of parseSSEStream(response.body, request.signal)) {
@@ -855,9 +861,12 @@ export class AnthropicProvider implements LLMProvider {
             break;
           }
 
-          // 메시지 델타 — 출력 토큰 수 누적
+          // 메시지 델타 — 출력 토큰 수 누적 + 종료 사유 캡처
           case "message_delta": {
             outputTokens += event.usage.output_tokens;
+            if (event.delta.stop_reason) {
+              stopReason = event.delta.stop_reason;
+            }
             break;
           }
 
@@ -872,7 +881,7 @@ export class AnthropicProvider implements LLMProvider {
       clearTimeout(idleTimeoutId);
     }
 
-    // 스트리밍 완료 신호와 함께 최종 토큰 사용량 전달
+    // 스트리밍 완료 신호와 함께 최종 토큰 사용량 및 종료 사유 전달
     yield {
       type: "done",
       usage: {
@@ -880,6 +889,7 @@ export class AnthropicProvider implements LLMProvider {
         completionTokens: outputTokens,
         totalTokens: inputTokens + outputTokens,
       },
+      finishReason: mapStopReason(stopReason),
     };
   }
 
@@ -953,8 +963,7 @@ export class AnthropicProvider implements LLMProvider {
     // (매 요청마다 내용이 변하므로 캐시 효과 없음)
     const dynamicPrefixes = ["# Environment"];
 
-    const blocks: Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }> =
-      [];
+    const blocks: Array<{ type: "text"; text: string; cache_control?: { type: "ephemeral" } }> = [];
     // 연속된 정적 섹션을 합쳐서 하나의 블록으로 만들기 위한 버퍼
     let staticBuffer = "";
 
@@ -967,7 +976,7 @@ export class AnthropicProvider implements LLMProvider {
           blocks.push({
             type: "text",
             text: staticBuffer.trim(),
-            cache_control: { type: "ephemeral" },   // 캐시 활성화
+            cache_control: { type: "ephemeral" }, // 캐시 활성화
           });
           staticBuffer = "";
         }

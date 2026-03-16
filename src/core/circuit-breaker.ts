@@ -53,7 +53,7 @@ export interface CircuitBreakerStatus {
 // --- 차단 임계값(threshold) 상수들 ---
 
 /** 연속으로 변경이 없는 반복이 이 횟수에 도달하면 차단합니다 */
-const NO_CHANGE_THRESHOLD = 3;
+const NO_CHANGE_THRESHOLD = 5;
 
 /** 연속으로 같은 에러가 이 횟수에 도달하면 차단합니다 */
 const SAME_ERROR_THRESHOLD = 5;

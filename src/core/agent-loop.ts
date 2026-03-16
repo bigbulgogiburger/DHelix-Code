@@ -22,10 +22,19 @@
  * - 도구 결과 크기 제한 (토큰/문자 기반 잘라내기)
  * - 이중 모델 라우팅 (architect/editor 패턴)
  */
-import { type LLMProvider, type ChatMessage, type ChatResponse, type ThinkingConfig } from "../llm/provider.js";
+import {
+  type LLMProvider,
+  type ChatMessage,
+  type ChatResponse,
+  type ThinkingConfig,
+} from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
-import { type ExtractedToolCall, type ToolCallResult, type ToolDefinitionForLLM } from "../tools/types.js";
+import {
+  type ExtractedToolCall,
+  type ToolCallResult,
+  type ToolDefinitionForLLM,
+} from "../tools/types.js";
 import { executeToolCall } from "../tools/executor.js";
 import { consumeStream } from "../llm/streaming.js";
 import { type AppEventEmitter } from "../utils/events.js";
@@ -585,7 +594,7 @@ export async function runAgentLoop(
             content: accumulated.text,
             toolCalls: accumulated.toolCalls,
             usage: accumulated.usage ?? { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
-            finishReason: accumulated.partial ? "length" : "stop",
+            finishReason: accumulated.finishReason ?? (accumulated.partial ? "length" : "stop"),
           };
         } else {
           response = await activeClient.chat(chatRequest);
@@ -614,12 +623,10 @@ export async function runAgentLoop(
             }
 
             try {
-              const recoveryResult = await executeRecovery(
-                recovery,
-                error,
-                messages,
-                { maxContextTokens: config.maxContextTokens, signal: config.signal },
-              );
+              const recoveryResult = await executeRecovery(recovery, error, messages, {
+                maxContextTokens: config.maxContextTokens,
+                signal: config.signal,
+              });
               if (recoveryResult.action === "retry") {
                 // Apply compacted messages if recovery provided them
                 if (recoveryResult.messages) {
@@ -689,8 +696,24 @@ export async function runAgentLoop(
     messages.push(assistantMessage);
 
     // Extract tool calls and filter out incomplete ones with invalid JSON arguments
-    const rawExtractedCalls = config.strategy.extractToolCalls(response.content, response.toolCalls);
+    const rawExtractedCalls = config.strategy.extractToolCalls(
+      response.content,
+      response.toolCalls,
+    );
     const extractedCalls = filterValidToolCalls(rawExtractedCalls, config.events);
+
+    // If the LLM attempted tool calls but all were invalid, inject feedback and retry
+    if (rawExtractedCalls.length > 0 && extractedCalls.length === 0) {
+      const droppedNames = rawExtractedCalls.map((tc) => tc.name).join(", ");
+      const errorFeedback: ChatMessage = {
+        role: "user",
+        content:
+          `[System] Your tool calls (${droppedNames}) had invalid or incomplete JSON arguments ` +
+          `and were dropped. Please retry with valid, complete JSON arguments.`,
+      };
+      messages.push(errorFeedback);
+      continue; // Re-enter the loop for LLM to retry
+    }
 
     // Emit assistant message event (intermediate if tool calls follow, final otherwise)
     config.events.emit("agent:assistant-message", {
@@ -701,6 +724,21 @@ export async function runAgentLoop(
     });
 
     if (extractedCalls.length === 0) {
+      // Auto-retry when response was truncated due to token limit
+      if (response.finishReason === "length") {
+        config.events.emit("llm:error", {
+          error: new Error("Response truncated due to token limit, retrying with continuation..."),
+        });
+        const continuationMessage: ChatMessage = {
+          role: "user",
+          content:
+            "[System] Your previous response was cut off due to token limit. " +
+            "Please continue exactly from where you left off.",
+        };
+        messages.push(continuationMessage);
+        continue; // Re-enter the agent loop for continuation
+      }
+
       // No tool calls — conversation turn complete
       const doneUsage = usageAggregator.snapshot();
       config.events.emit("agent:complete", {

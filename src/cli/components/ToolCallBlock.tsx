@@ -182,9 +182,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
     status === "error" && output && mcpServerName ? parseMCPDebugError(output) : undefined;
 
   // Build header text with optional MCP server prefix
-  const headerText = mcpServerName
-    ? `[${mcpServerName}] ${headerInfo.header}`
-    : headerInfo.header;
+  const headerText = mcpServerName ? `[${mcpServerName}] ${headerInfo.header}` : headerInfo.header;
 
   return (
     <Box flexDirection="column" marginLeft={2}>
@@ -219,18 +217,24 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
       {mcpDebugInfo && (
         <Box marginLeft={4} flexDirection="column">
           <Text color="red">{mcpDebugInfo.message}</Text>
-          <Text dimColor>{"Arguments: "}{mcpDebugInfo.argsPreview}</Text>
+          <Text dimColor>
+            {"Arguments: "}
+            {mcpDebugInfo.argsPreview}
+          </Text>
         </Box>
       )}
 
       {/* Live streaming output during execution */}
       {status === "running" && streamingOutput && (
         <Box marginLeft={4} flexDirection="column">
-          {streamingOutput.split("\n").slice(-8).map((line, i) => (
-            <Text key={i} color="gray" wrap="truncate-end">
-              {line}
-            </Text>
-          ))}
+          {streamingOutput
+            .split("\n")
+            .slice(-8)
+            .map((line, i) => (
+              <Text key={i} color="gray" wrap="truncate-end">
+                {line}
+              </Text>
+            ))}
         </Box>
       )}
 
@@ -260,7 +264,7 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
                 <Text dimColor>
                   {"  … +"}
                   {hidden}
-                  {" lines (ctrl+o to expand)"}
+                  {" lines (ctrl+o to show all)"}
                 </Text>
               )}
             </Box>

@@ -502,9 +502,13 @@ export function useAgentLoop({
         const contextUsagePercent = contextManager
           ? contextManager.getUsage(messages).usageRatio * 100
           : 0;
-        const thinkingConfig = thinkingEnabled && modelCaps.supportsThinking
-          ? { type: "enabled" as const, budget_tokens: calculateThinkingBudget(modelCaps, contextUsagePercent) }
-          : undefined;
+        const thinkingConfig =
+          thinkingEnabled && modelCaps.supportsThinking
+            ? {
+                type: "enabled" as const,
+                budget_tokens: calculateThinkingBudget(modelCaps, contextUsagePercent),
+              }
+            : undefined;
 
         const result = await runAgentLoop(
           {
@@ -515,6 +519,7 @@ export function useAgentLoop({
             events,
             useStreaming: true,
             maxContextTokens: modelCaps.maxContextTokens,
+            maxTokens: modelCaps.maxOutputTokens,
             checkPermission,
             checkpointManager,
             sessionId,

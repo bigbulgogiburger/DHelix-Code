@@ -324,11 +324,11 @@ function isTransientNetworkError(error: unknown): boolean {
   const msg = error.message.toLowerCase();
   return (
     error.name === "AbortError" ||
-    msg.includes("econnreset") ||       // 연결 리셋
-    msg.includes("econnrefused") ||     // 연결 거부
-    msg.includes("etimedout") ||        // 연결 타임아웃
-    msg.includes("fetch failed") ||     // fetch 실패
-    msg.includes("network")             // 네트워크 에러
+    msg.includes("econnreset") || // 연결 리셋
+    msg.includes("econnrefused") || // 연결 거부
+    msg.includes("etimedout") || // 연결 타임아웃
+    msg.includes("fetch failed") || // fetch 실패
+    msg.includes("network") // 네트워크 에러
   );
 }
 
@@ -544,7 +544,7 @@ export class ResponsesAPIClient implements LLMProvider {
           const retryAfter = error.context.retryAfterHeader as string | undefined;
           const delay = getRetryDelay(status, attempt, retryAfter);
           await sleep(delay);
-        // 네트워크 에러 (상태 코드 없음) — DNS, 연결 등의 문제
+          // 네트워크 에러 (상태 코드 없음) — DNS, 연결 등의 문제
         } else if (isTransientNetworkError(error)) {
           if (attempt >= MAX_RETRIES_TRANSIENT) {
             throw new LLMError("Failed to connect to Responses API after retries.", {
@@ -743,6 +743,8 @@ export class ResponsesAPIClient implements LLMProvider {
     let finalUsage:
       | { promptTokens: number; completionTokens: number; totalTokens: number }
       | undefined;
+    // Responses API의 응답 상태 ("completed" 등)
+    let responseStatus: string | undefined;
 
     try {
       while (true) {
@@ -754,19 +756,23 @@ export class ResponsesAPIClient implements LLMProvider {
 
         // 완성된 줄들을 처리 (마지막 불완전한 줄은 버퍼에 유지)
         const lines = buffer.split("\n");
-        buffer = lines.pop() ?? "";   // 마지막 줄은 불완전할 수 있으므로 버퍼에 보관
+        buffer = lines.pop() ?? ""; // 마지막 줄은 불완전할 수 있으므로 버퍼에 보관
 
         let eventType = "";
         for (const line of lines) {
           // "event: " 접두사 → 이벤트 타입 설정
           if (line.startsWith("event: ")) {
             eventType = line.slice(7).trim();
-          // "data: " 접두사 → 이벤트 데이터 처리
+            // "data: " 접두사 → 이벤트 데이터 처리
           } else if (line.startsWith("data: ")) {
             const data = line.slice(6);
             // "[DONE]" → 스트림 종료
             if (data === "[DONE]") {
-              yield { type: "done", usage: finalUsage };
+              yield {
+                type: "done",
+                usage: finalUsage,
+                finishReason: responseStatus === "completed" ? "stop" : (responseStatus ?? "stop"),
+              };
               return;
             }
 
@@ -774,7 +780,7 @@ export class ResponsesAPIClient implements LLMProvider {
             try {
               parsed = JSON.parse(data) as Record<string, unknown>;
             } catch {
-              continue;   // 파싱 실패한 데이터는 건너뜀
+              continue; // 파싱 실패한 데이터는 건너뜀
             }
 
             const evtType = eventType || (parsed.type as string) || "";
@@ -828,9 +834,12 @@ export class ResponsesAPIClient implements LLMProvider {
               };
             }
 
-            // 응답 완료 이벤트 — 토큰 사용량 추출
+            // 응답 완료 이벤트 — 토큰 사용량 및 상태 추출
             if (evtType === "response.completed") {
               const resp = parsed.response as Record<string, unknown> | undefined;
+              if (resp?.status) {
+                responseStatus = resp.status as string;
+              }
               const usage = resp?.usage as Record<string, number> | undefined;
               if (usage) {
                 finalUsage = {
@@ -841,7 +850,7 @@ export class ResponsesAPIClient implements LLMProvider {
               }
             }
 
-            eventType = "";   // 데이터 처리 후 이벤트 타입 초기화
+            eventType = ""; // 데이터 처리 후 이벤트 타입 초기화
           } else if (line.trim() === "") {
             // 빈 줄은 SSE 스펙에 따라 이벤트 타입을 리셋
             eventType = "";
@@ -854,7 +863,11 @@ export class ResponsesAPIClient implements LLMProvider {
     }
 
     // while 루프가 정상 종료된 경우 (done=true) 완료 신호 전송
-    yield { type: "done", usage: finalUsage };
+    yield {
+      type: "done",
+      usage: finalUsage,
+      finishReason: responseStatus === "completed" ? "stop" : (responseStatus ?? "stop"),
+    };
   }
 
   /**

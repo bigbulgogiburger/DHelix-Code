@@ -26,6 +26,22 @@ import { type MCPServerConfig, type JsonRpcMessage } from "../types.js";
 import { type MCPTransportLayer } from "./base.js";
 
 /**
+ * Windows에서 npx/npm 명령어를 안정적으로 실행하기 위한 커맨드 해석
+ * shell: true일 때도 간헐적으로 PATH 해석이 실패하는 문제를 해결합니다.
+ */
+function resolveCommand(command: string): string {
+  if (process.platform !== "win32") return command;
+  // On Windows, append .cmd extension for known Node.js CLI tools
+  // This helps cmd.exe find the correct executable
+  const nodeCliTools = ["npx", "npm", "yarn", "pnpm", "tsx", "ts-node"];
+  const basename = command.split(/[\\/]/).pop() ?? command;
+  if (nodeCliTools.includes(basename) && !basename.endsWith(".cmd")) {
+    return `${command}.cmd`;
+  }
+  return command;
+}
+
+/**
  * Stdio 트랜스포트 에러 클래스
  */
 export class StdioTransportError extends BaseError {
@@ -79,11 +95,16 @@ export class StdioTransport implements MCPTransportLayer {
     // 환경 변수 처리: ${VAR} 패턴을 실제 값으로 치환
     const env = this.config.env ? this.resolveEnvVars(this.config.env) : undefined;
 
+    // Windows에서 npx 등 Node CLI 도구의 ENOENT 방지를 위해 .cmd 확장자 해석
+    const resolvedCommand = resolveCommand(this.config.command);
+
     // 자식 프로세스 시작
-    this.process = spawn(this.config.command, [...(this.config.args ?? [])], {
+    this.process = spawn(resolvedCommand, [...(this.config.args ?? [])], {
       stdio: ["pipe", "pipe", "pipe"],
       // 부모 프로세스의 환경 변수에 서버 설정 환경 변수를 병합
       env: { ...process.env, ...env },
+      // Windows에서 .cmd/.bat 확장자 없이 npx 등을 spawn하려면 shell이 필요
+      shell: process.platform === "win32",
     });
 
     // stdin/stdout이 제대로 연결되었는지 확인
@@ -104,7 +125,11 @@ export class StdioTransport implements MCPTransportLayer {
 
     // 자식 프로세스 에러 이벤트 처리 (프로세스 시작 실패 등)
     this.process.on("error", (error) => {
-      this.errorHandler?.(new StdioTransportError(`Server process error: ${error.message}`));
+      const isEnoent = (error as NodeJS.ErrnoException).code === "ENOENT";
+      const message = isEnoent
+        ? `Command not found: "${resolvedCommand}". Ensure it is installed and in your PATH.`
+        : `Server process error: ${error.message}`;
+      this.errorHandler?.(new StdioTransportError(message, { command: resolvedCommand }));
     });
   }
 
