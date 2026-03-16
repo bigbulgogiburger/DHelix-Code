@@ -449,7 +449,7 @@ program
       // -c (--continue): 가장 최근 세션 이어서 사용
       if (opts.continue) {
         sessionId = (await sessionManager.getMostRecentSessionId()) ?? undefined;
-      // -r (--resume): 특정 세션 ID로 복원
+        // -r (--resume): 특정 세션 ID로 복원
       } else if (opts.resume) {
         sessionId = opts.resume;
       }
@@ -473,17 +473,19 @@ program
         ]);
 
       // 구문 강조기 사전 초기화 (논블로킹 — 실패해도 앱 시작에 영향 없음)
-      import("./cli/renderer/syntax.js").then(m => m.initHighlighter()).catch(() => {});
+      import("./cli/renderer/syntax.js").then((m) => m.initHighlighter()).catch(() => {});
 
       // 시작 로고를 Ink 렌더링 전에 stdout에 출력 — 깜빡임 방지
       printStartupLogo(config.llm.model);
 
       // 고아 worktree 정리 (논블로킹 — 이전 세션에서 남은 임시 디렉토리 제거)
-      import("./subagents/spawner.js").then(m => m.cleanOrphanedWorktrees(process.cwd())).catch(() => {});
+      import("./subagents/spawner.js")
+        .then((m) => m.cleanOrphanedWorktrees(process.cwd()))
+        .catch(() => {});
 
-      // ── MCP(Model Context Protocol) 서버 연결 ──
+      // ── MCP(Model Context Protocol) 서버 연결 (비동기/논블로킹) ──
       // MCP는 외부 도구 서버와 연결하는 프로토콜
-      // 실패해도 경고만 출력하고 앱은 정상 시작
+      // UI를 블록하지 않도록 백그라운드에서 연결하고, 완료되면 도구가 자동 등록됨
       let mcpConnector: import("./mcp/manager-connector.js").MCPManagerConnector | undefined;
       let mcpManager: import("./mcp/manager.js").MCPManager | undefined;
       try {
@@ -495,17 +497,24 @@ program
           toolRegistry,
         });
 
-        const connectResult = await mcpManager.connectAll();
-        if (connectResult.connected.length > 0 || connectResult.failed.length > 0) {
-          mcpConnector = new MCPManagerConnector();
+        // MCPManagerConnector를 먼저 생성하여 App에 전달 — 도구는 연결 완료 후 등록됨
+        mcpConnector = new MCPManagerConnector();
 
-          // 연결 실패한 MCP 서버에 대해 경고 출력
-          for (const failure of connectResult.failed) {
+        // 백그라운드에서 MCP 서버 연결 — UI를 블록하지 않음
+        mcpManager
+          .connectAll()
+          .then((connectResult) => {
+            for (const failure of connectResult.failed) {
+              process.stderr.write(
+                `Warning: MCP server "${failure.name}" failed to connect: ${failure.error}\n`,
+              );
+            }
+          })
+          .catch((err) => {
             process.stderr.write(
-              `Warning: MCP server "${failure.name}" failed to connect: ${failure.error}\n`,
+              `Warning: MCP connection failed: ${err instanceof Error ? err.message : String(err)}\n`,
             );
-          }
-        }
+          });
       } catch (err) {
         process.stderr.write(
           `Warning: MCP initialization failed: ${err instanceof Error ? err.message : String(err)}\n`,
@@ -534,10 +543,12 @@ program
         }
 
         // Stop 훅 실행 (최선의 노력 — 실패해도 종료 진행)
-        await hookRunner.run("Stop", {
-          event: "Stop",
-          workingDirectory: process.cwd(),
-        }).catch(() => {});
+        await hookRunner
+          .run("Stop", {
+            event: "Stop",
+            workingDirectory: process.cwd(),
+          })
+          .catch(() => {});
 
         // 시그널에 따른 종료 코드: SIGTERM(143), SIGINT(130)
         process.exit(signal === "SIGTERM" ? 143 : 130);
@@ -606,7 +617,7 @@ function handleError(error: unknown): never {
     process.stderr.write(
       `Error: Cannot connect to ${url}.\nIs the server running? Check with: dbcode --base-url <url>\n`,
     );
-  // 인증 에러 — API 키 설정 안내
+    // 인증 에러 — API 키 설정 안내
   } else if (
     combined.includes("401") ||
     combined.includes("unauthorized") ||
@@ -615,17 +626,17 @@ function handleError(error: unknown): never {
     process.stderr.write(
       `Error: Invalid API key.\nSet with: dbcode --api-key <key> or OPENAI_API_KEY env var\n`,
     );
-  // 모델 없음 에러 — 모델명 변경 안내
+    // 모델 없음 에러 — 모델명 변경 안내
   } else if (
     combined.includes("404") ||
     (combined.includes("not found") && combined.includes("model"))
   ) {
     const model = cause?.model ?? "unknown";
     process.stderr.write(`Error: Model '${model}' not found.\nTry: dbcode --model gpt-4o\n`);
-  // 요청 제한 에러 — 잠시 후 재시도 안내
+    // 요청 제한 에러 — 잠시 후 재시도 안내
   } else if (combined.includes("rate limit") || combined.includes("429")) {
     process.stderr.write(`Error: Rate limited. Please wait a moment and try again.\n`);
-  // 기타 에러 — 원본 메시지와 상세 정보 출력
+    // 기타 에러 — 원본 메시지와 상세 정보 출력
   } else {
     process.stderr.write(`Error: ${message}\n`);
     if (cause) {
