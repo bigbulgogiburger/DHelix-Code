@@ -41,6 +41,8 @@ interface StatusBarProps {
   readonly permissionMode?: string;
   readonly verboseMode?: boolean;
   readonly thinkingEnabled?: boolean;
+  /** MCP 연결 상태 메시지 (일시적으로 표시됨) */
+  readonly mcpStatus?: string;
 }
 
 /** 토큰 수와 모델 가격 정보로 세션 비용을 계산 — model-capabilities가 단일 진실 공급원(SSOT) */
@@ -84,6 +86,7 @@ export const StatusBar = React.memo(function StatusBar({
   permissionMode,
   verboseMode,
   thinkingEnabled,
+  mcpStatus,
 }: StatusBarProps) {
   const usage = maxTokens > 0 ? Math.round((tokenCount / maxTokens) * 100) : 0;
   const ratio = maxTokens > 0 ? tokenCount / maxTokens : 0;
@@ -127,7 +130,10 @@ export const StatusBar = React.memo(function StatusBar({
         {verboseMode ? <Text color="yellow">[Verbose]</Text> : null}
         {thinkingEnabled ? <Text color="cyan">[Thinking]</Text> : null}
       </Box>
-      {isStreaming ? <Text color="yellow">streaming...</Text> : <Text color="gray">ready</Text>}
+      <Box gap={1}>
+        {mcpStatus ? <Text color="cyan">{mcpStatus}</Text> : null}
+        {isStreaming ? <Text color="yellow">streaming...</Text> : <Text color="gray">ready</Text>}
+      </Box>
     </Box>
   );
 });

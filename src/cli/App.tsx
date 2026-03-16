@@ -142,6 +142,29 @@ export function App({
   // 확장 사고(Extended Thinking) 토글 상태 — useAgentLoop에 전달하기 위해 여기서 선언
   const [thinkingEnabled, setThinkingEnabled] = useState(false);
 
+  // MCP 연결 상태 — StatusBar에 일시적으로 표시 (3초 후 자동 제거)
+  const [mcpStatus, setMcpStatus] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (!mcpManager) return;
+    setMcpStatus("MCP 연결 중...");
+    mcpManager
+      .connectAll()
+      .then((result) => {
+        if (result.connected.length > 0) {
+          setMcpStatus(`MCP: ${result.connected.join(", ")} ✓`);
+        }
+        for (const f of result.failed) {
+          setMcpStatus(`MCP: ${f.name} ✗`);
+        }
+        // 3초 후 상태 메시지 제거
+        setTimeout(() => setMcpStatus(undefined), 3000);
+      })
+      .catch(() => {
+        setMcpStatus("MCP 연결 실패");
+        setTimeout(() => setMcpStatus(undefined), 3000);
+      });
+  }, [mcpManager]);
+
   const {
     isProcessing,
     isStreamingFinal,
@@ -181,7 +204,14 @@ export function App({
   });
 
   // 음성 입력 — 마이크 녹음 → Whisper API로 텍스트 변환 → 에이전트에게 전달
-  const { isRecording, isTranscribing, lastTranscription, voiceEnabled, setVoiceEnabled, toggleRecording } = useVoice({
+  const {
+    isRecording,
+    isTranscribing,
+    lastTranscription,
+    voiceEnabled,
+    setVoiceEnabled,
+    toggleRecording,
+  } = useVoice({
     onTranscription: (text) => {
       void handleSubmit(text);
     },
@@ -308,7 +338,16 @@ export function App({
         }
       },
     }),
-    [isProcessing, events, permissionMode, permissionManager, showNotification, voiceEnabled, toggleRecording, activeModel],
+    [
+      isProcessing,
+      events,
+      permissionMode,
+      permissionManager,
+      showNotification,
+      voiceEnabled,
+      toggleRecording,
+      activeModel,
+    ],
   );
 
   // 사용자 설정 파일(~/.dbcode/keybindings.json)과 기본값을 병합하여 키바인딩 구성
@@ -322,142 +361,143 @@ export function App({
 
   return (
     <ErrorBoundary>
-    <Box flexDirection="column" padding={1}>
-      <ActivityFeed
-        completedTurns={completedTurns}
-        currentTurn={liveTurn}
-        isExpanded={verboseMode}
-      />
-
-      {isProcessing && !isStreamingFinal ? (
-        <Box marginY={1}>
-          <AgentStatus tokenCount={tokenCount} />
-        </Box>
-      ) : null}
-
-      {retryInfo ? (
-        <Box marginY={1}>
-          <RetryCountdown
-            seconds={Math.ceil(retryInfo.delayMs / 1000)}
-            label={`${retryInfo.reason} (${retryInfo.attempt}/${retryInfo.maxRetries})`}
-          />
-        </Box>
-      ) : null}
-
-      {pendingPermission ? (
-        <PermissionPrompt
-          toolName={pendingPermission.call.name}
-          description={`Arguments: ${JSON.stringify(pendingPermission.call.arguments)}`}
-          onResponse={handlePermissionResponse}
+      <Box flexDirection="column" padding={1}>
+        <ActivityFeed
+          completedTurns={completedTurns}
+          currentTurn={liveTurn}
+          isExpanded={verboseMode}
         />
-      ) : null}
 
-      {interactiveSelect ? (
-        <SelectList
-          prompt={interactiveSelect.prompt}
-          options={interactiveSelect.options}
-          onSelect={(value) => {
-            setInteractiveSelect(null);
-            void handleSubmit(`${interactiveSelect.onSelect} ${value}`);
-          }}
-          onCancel={() => setInteractiveSelect(null)}
-        />
-      ) : null}
-
-      {pendingAskUser ? (
-        pendingAskUser.choices && pendingAskUser.choices.length > 0 ? (
-          <SelectList
-            prompt={pendingAskUser.question}
-            options={pendingAskUser.choices.map((c) => ({ label: String(c), value: String(c) }))}
-            onSelect={(value) => {
-              events.emit("ask_user:response", {
-                toolCallId: pendingAskUser.toolCallId,
-                answer: value,
-              });
-              setPendingAskUser(null);
-            }}
-            onCancel={() => {
-              events.emit("ask_user:response", {
-                toolCallId: pendingAskUser.toolCallId,
-                answer: "[User cancelled]",
-              });
-              setPendingAskUser(null);
-            }}
-          />
-        ) : (
+        {isProcessing && !isStreamingFinal ? (
           <Box marginY={1}>
-            <Text color="cyan">{"? "}</Text>
-            <Text bold>{pendingAskUser.question}</Text>
+            <AgentStatus tokenCount={tokenCount} />
           </Box>
-        )
-      ) : null}
+        ) : null}
 
-      {commandOutput ? (
-        <Box marginY={1}>
-          <Text>{commandOutput}</Text>
+        {retryInfo ? (
+          <Box marginY={1}>
+            <RetryCountdown
+              seconds={Math.ceil(retryInfo.delayMs / 1000)}
+              label={`${retryInfo.reason} (${retryInfo.attempt}/${retryInfo.maxRetries})`}
+            />
+          </Box>
+        ) : null}
+
+        {pendingPermission ? (
+          <PermissionPrompt
+            toolName={pendingPermission.call.name}
+            description={`Arguments: ${JSON.stringify(pendingPermission.call.arguments)}`}
+            onResponse={handlePermissionResponse}
+          />
+        ) : null}
+
+        {interactiveSelect ? (
+          <SelectList
+            prompt={interactiveSelect.prompt}
+            options={interactiveSelect.options}
+            onSelect={(value) => {
+              setInteractiveSelect(null);
+              void handleSubmit(`${interactiveSelect.onSelect} ${value}`);
+            }}
+            onCancel={() => setInteractiveSelect(null)}
+          />
+        ) : null}
+
+        {pendingAskUser ? (
+          pendingAskUser.choices && pendingAskUser.choices.length > 0 ? (
+            <SelectList
+              prompt={pendingAskUser.question}
+              options={pendingAskUser.choices.map((c) => ({ label: String(c), value: String(c) }))}
+              onSelect={(value) => {
+                events.emit("ask_user:response", {
+                  toolCallId: pendingAskUser.toolCallId,
+                  answer: value,
+                });
+                setPendingAskUser(null);
+              }}
+              onCancel={() => {
+                events.emit("ask_user:response", {
+                  toolCallId: pendingAskUser.toolCallId,
+                  answer: "[User cancelled]",
+                });
+                setPendingAskUser(null);
+              }}
+            />
+          ) : (
+            <Box marginY={1}>
+              <Text color="cyan">{"? "}</Text>
+              <Text bold>{pendingAskUser.question}</Text>
+            </Box>
+          )
+        ) : null}
+
+        {commandOutput ? (
+          <Box marginY={1}>
+            <Text>{commandOutput}</Text>
+          </Box>
+        ) : null}
+
+        {voiceEnabled ? (
+          <VoiceIndicator
+            isRecording={isRecording}
+            isTranscribing={isTranscribing}
+            lastTranscription={lastTranscription}
+          />
+        ) : null}
+
+        {error ? <ErrorBanner message={error} /> : null}
+
+        {notification ? (
+          <Box marginY={0}>
+            <Text color="yellow">{notification}</Text>
+          </Box>
+        ) : null}
+
+        {tasks && tasks.length > 0 ? <TaskListView tasks={tasks} title="Tasks" /> : null}
+
+        <Box marginTop={1}>
+          <UserInput
+            onSubmit={onUserSubmit}
+            onChange={setInputValue}
+            slashMenuVisible={slashMenuVisible}
+          />
         </Box>
-      ) : null}
 
-      {voiceEnabled ? (
-        <VoiceIndicator
-          isRecording={isRecording}
-          isTranscribing={isTranscribing}
-          lastTranscription={lastTranscription}
-        />
-      ) : null}
+        {slashMenuVisible && commandRegistry ? (
+          <SlashCommandMenu
+            commands={commandRegistry.getAll()}
+            prefix={inputValue}
+            visible={slashMenuVisible}
+            onSelect={(name) => {
+              setInputValue("");
+              void handleSubmit("/" + name);
+            }}
+            onClose={() => setInputValue("")}
+          />
+        ) : null}
 
-      {error ? <ErrorBanner message={error} /> : null}
+        {messageQueueRef.current.length > 0 ? (
+          <Box>
+            <Text color="gray">({messageQueueRef.current.length} message(s) queued)</Text>
+          </Box>
+        ) : null}
 
-      {notification ? (
-        <Box marginY={0}>
-          <Text color="yellow">{notification}</Text>
-        </Box>
-      ) : null}
-
-      {tasks && tasks.length > 0 ? <TaskListView tasks={tasks} title="Tasks" /> : null}
-
-      <Box marginTop={1}>
-        <UserInput
-          onSubmit={onUserSubmit}
-          onChange={setInputValue}
-          slashMenuVisible={slashMenuVisible}
-        />
+        {showStatusBar ? (
+          <StatusBar
+            model={activeModel}
+            modelName={activeModel}
+            tokenCount={tokenCount}
+            maxTokens={getModelCapabilities(activeModel).maxContextTokens}
+            isStreaming={isProcessing}
+            inputTokens={inputTokens}
+            outputTokens={outputTokens}
+            permissionMode={MODE_LABELS[permissionMode]}
+            verboseMode={verboseMode}
+            thinkingEnabled={thinkingEnabled}
+            mcpStatus={mcpStatus}
+          />
+        ) : null}
       </Box>
-
-      {slashMenuVisible && commandRegistry ? (
-        <SlashCommandMenu
-          commands={commandRegistry.getAll()}
-          prefix={inputValue}
-          visible={slashMenuVisible}
-          onSelect={(name) => {
-            setInputValue("");
-            void handleSubmit("/" + name);
-          }}
-          onClose={() => setInputValue("")}
-        />
-      ) : null}
-
-      {messageQueueRef.current.length > 0 ? (
-        <Box>
-          <Text color="gray">({messageQueueRef.current.length} message(s) queued)</Text>
-        </Box>
-      ) : null}
-
-      {showStatusBar ? (
-        <StatusBar
-          model={activeModel}
-          modelName={activeModel}
-          tokenCount={tokenCount}
-          maxTokens={getModelCapabilities(activeModel).maxContextTokens}
-          isStreaming={isProcessing}
-          inputTokens={inputTokens}
-          outputTokens={outputTokens}
-          permissionMode={MODE_LABELS[permissionMode]}
-          verboseMode={verboseMode}
-          thinkingEnabled={thinkingEnabled}
-        />
-      ) : null}
-    </Box>
     </ErrorBoundary>
   );
 }
