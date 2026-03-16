@@ -500,19 +500,28 @@ program
         // MCPManagerConnector를 먼저 생성하여 App에 전달 — 도구는 연결 완료 후 등록됨
         mcpConnector = new MCPManagerConnector();
 
+        // 서버 목록을 미리 로드하여 사용자에게 연결 시작을 알림
+        const serverConfigs = await mcpManager.loadScopedConfigs();
+        const serverNames = Object.keys(serverConfigs);
+
+        if (serverNames.length > 0) {
+          process.stderr.write(`⏳ MCP: ${serverNames.join(", ")} 연결 중...\n`);
+        }
+
         // 백그라운드에서 MCP 서버 연결 — UI를 블록하지 않음
         mcpManager
           .connectAll()
           .then((connectResult) => {
+            for (const server of connectResult.connected) {
+              process.stderr.write(`✓ MCP: ${server} 연결 완료\n`);
+            }
             for (const failure of connectResult.failed) {
-              process.stderr.write(
-                `Warning: MCP server "${failure.name}" failed to connect: ${failure.error}\n`,
-              );
+              process.stderr.write(`✗ MCP: ${failure.name} 연결 실패 — ${failure.error}\n`);
             }
           })
           .catch((err) => {
             process.stderr.write(
-              `Warning: MCP connection failed: ${err instanceof Error ? err.message : String(err)}\n`,
+              `✗ MCP 연결 실패: ${err instanceof Error ? err.message : String(err)}\n`,
             );
           });
       } catch (err) {
