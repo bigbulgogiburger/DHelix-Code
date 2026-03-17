@@ -12,6 +12,9 @@
  * 3. 실행 프록시: dbcode가 도구를 호출하면 실제로는 MCP 클라이언트를 통해 서버에서 실행
  */
 import { z } from "zod";
+import { writeFile, mkdir } from "node:fs/promises";
+import { join } from "node:path";
+import { tmpdir } from "node:os";
 import { type ToolDefinition, type ToolResult } from "../tools/types.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { BaseError } from "../utils/error.js";
@@ -30,8 +33,85 @@ export class MCPBridgeError extends BaseError {
   }
 }
 
-/** MCP 도구 출력 최대 토큰 수 (경고 기준) — 이를 초과하면 출력이 잘림 */
-const MAX_MCP_OUTPUT_TOKENS = 10_000;
+/**
+ * MCP 도구 출력 최대 토큰 수 — 환경변수 MAX_MCP_OUTPUT_TOKENS로 조절 가능
+ * Claude Code와 동일한 패턴: 기본 25,000 토큰 (Claude Code 기본값과 일치)
+ */
+const MAX_MCP_OUTPUT_TOKENS = (() => {
+  const envValue = process.env.MAX_MCP_OUTPUT_TOKENS;
+  if (envValue) {
+    const parsed = parseInt(envValue, 10);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 25_000;
+})();
+
+/**
+ * MCP 도구 실행 타임아웃 — 환경변수 MCP_TOOL_TIMEOUT으로 조절 가능
+ * Claude Code는 기본 ~27.8시간이지만, dbcode는 실용적인 120초(2분)를 기본값으로 사용
+ */
+const MCP_TOOL_TIMEOUT_MS = (() => {
+  const envValue = process.env.MCP_TOOL_TIMEOUT;
+  if (envValue) {
+    const parsed = parseInt(envValue, 10);
+    if (!isNaN(parsed) && parsed > 0) return parsed;
+  }
+  return 120_000;
+})();
+
+/**
+ * 대용량 MCP 출력을 파일로 저장하는 임계값 (문자 수)
+ * Claude Code: 400,000자 초과 시 파일 저장 + preview(2,000자)만 LLM에 전달
+ */
+const LARGE_OUTPUT_THRESHOLD = 400_000;
+const PREVIEW_SIZE = 2_000;
+
+/**
+ * 대용량 MCP 출력을 임시 파일로 저장하고 preview를 반환합니다.
+ * Claude Code의 Tier 3 패턴: 전체 출력은 파일로, LLM에는 preview만 전달
+ */
+async function persistLargeOutput(
+  output: string,
+  toolName: string,
+  serverName: string,
+): Promise<string> {
+  const logger = getLogger();
+  try {
+    const dir = join(tmpdir(), "dbcode-mcp-outputs");
+    await mkdir(dir, { recursive: true });
+    const timestamp = Date.now();
+    const safeName = toolName.replace(/[^a-zA-Z0-9_-]/g, "_");
+    const filepath = join(dir, `${safeName}_${timestamp}.txt`);
+    await writeFile(filepath, output, "utf-8");
+
+    const preview = output.slice(0, PREVIEW_SIZE);
+    const isJson = output.trimStart().startsWith("{") || output.trimStart().startsWith("[");
+
+    logger.info(
+      { filepath, originalSize: output.length, serverName },
+      `[MCP Bridge] Large output persisted to file`,
+    );
+
+    return (
+      `<persisted-output>\n` +
+      `Output too large (${output.length} characters). Full output saved to: ${filepath}\n\n` +
+      `Preview (first ${PREVIEW_SIZE} chars):\n` +
+      `${preview}\n...\n` +
+      `</persisted-output>\n\n` +
+      (isJson
+        ? `[Hint] The full output is JSON. Use file_read to inspect the saved file if needed.`
+        : `[Hint] Use file_read to inspect the saved file if you need more data.`)
+    );
+  } catch (err) {
+    logger.warn(
+      { error: err instanceof Error ? err.message : String(err) },
+      `[MCP Bridge] Failed to persist large output`,
+    );
+    // 파일 저장 실패 시 기존 truncation으로 fallback
+    const truncated = output.slice(0, MAX_MCP_OUTPUT_TOKENS * 4);
+    return `${truncated}\n\n[Output truncated: exceeded ${MAX_MCP_OUTPUT_TOKENS} token limit. File persistence failed.]`;
+  }
+}
 
 /**
  * MCP JSON Schema를 Zod 스키마로 변환합니다.
@@ -108,7 +188,7 @@ function bridgeMCPTool(
     parameterSchema,
     // "confirm" 권한: 사용자에게 실행 확인을 요청
     permissionLevel: "confirm",
-    timeoutMs: 30_000,
+    timeoutMs: MCP_TOOL_TIMEOUT_MS,
     /**
      * 도구 실행 함수 — MCP 클라이언트를 통해 원격 서버에서 도구를 실행합니다.
      *
@@ -135,20 +215,35 @@ function bridgeMCPTool(
           .filter(Boolean)
           .join("\n");
 
-        // 출력이 너무 큰 경우 잘라내어 토큰 소비를 방지
+        // 3-tier 출력 제한 (Claude Code 패턴)
+        // Tier 3: 400,000자 초과 → 파일 저장 + preview
+        if (output.length > LARGE_OUTPUT_THRESHOLD) {
+          const persisted = await persistLargeOutput(output, mcpTool.name, serverName);
+          return {
+            output: persisted,
+            isError: false,
+            metadata: { truncated: true, persisted: true, serverName },
+          };
+        }
+        // Tier 2: 토큰 한도 초과 → in-memory truncation
         if (output.length > MAX_MCP_OUTPUT_TOKENS * 4) {
           const truncated = output.slice(0, MAX_MCP_OUTPUT_TOKENS * 4);
           return {
-            output: `${truncated}\n\n[Output truncated: exceeded ${MAX_MCP_OUTPUT_TOKENS} token limit]`,
+            output: `${truncated}\n\n[OUTPUT TRUNCATED - exceeded ${MAX_MCP_OUTPUT_TOKENS} token limit]`,
             isError: false,
             metadata: { truncated: true, serverName },
           };
         }
+        // Tier 1: 정상 범위 → 그대로 전달
 
         // MCP 서버가 에러를 반환한 경우 디버그 로깅
         if (result.isError) {
           logger.warn(
-            { tool: namespacedName, output: output.slice(0, 300), args: JSON.stringify(args).slice(0, 300) },
+            {
+              tool: namespacedName,
+              output: output.slice(0, 300),
+              args: JSON.stringify(args).slice(0, 300),
+            },
             `[MCP Bridge] Tool returned error: ${mcpTool.name}`,
           );
         }
@@ -171,16 +266,84 @@ function bridgeMCPTool(
           `[MCP Bridge] Tool call failed: ${mcpTool.name}`,
         );
         const errorMsg = error instanceof Error ? error.message : String(error);
-        // 에러 메시지에 전달된 인수를 포함하여 LLM이 디버깅할 수 있도록 함
         const argsPreview = JSON.stringify(args).slice(0, 500);
+
+        // MCP 에러 유형별 recovery hint 생성
+        const recoveryHint = getMCPRecoveryHint(errorMsg, mcpTool.name);
+
         return {
-          output: `MCP tool error: ${errorMsg}\n\n[Debug] Arguments sent: ${argsPreview}`,
+          output: `MCP tool error: ${errorMsg}\n\n${recoveryHint}\n\n[Debug] Arguments sent: ${argsPreview}`,
           isError: true,
-          metadata: { serverName },
+          metadata: { serverName, mcpErrorType: classifyMCPError(errorMsg) },
         };
       }
     },
   };
+}
+
+/**
+ * MCP 에러 유형을 분류합니다.
+ * agent-loop에서 MCP 특화 recovery를 적용하기 위한 메타데이터로 사용됩니다.
+ */
+type MCPErrorType = "timeout" | "connection" | "permission" | "server_error" | "unknown";
+
+function classifyMCPError(errorMsg: string): MCPErrorType {
+  const lower = errorMsg.toLowerCase();
+  if (lower.includes("timed out") || lower.includes("timeout") || lower.includes("etimedout")) {
+    return "timeout";
+  }
+  if (
+    lower.includes("econnrefused") ||
+    lower.includes("econnreset") ||
+    lower.includes("disconnected")
+  ) {
+    return "connection";
+  }
+  if (lower.includes("permission") || lower.includes("denied") || lower.includes("forbidden")) {
+    return "permission";
+  }
+  if (lower.includes("500") || lower.includes("internal") || lower.includes("-32")) {
+    return "server_error";
+  }
+  return "unknown";
+}
+
+/**
+ * MCP 에러 유형별 LLM recovery 힌트를 생성합니다.
+ * LLM이 에러를 보고 적절한 다음 행동을 취하도록 유도합니다.
+ */
+function getMCPRecoveryHint(errorMsg: string, toolName: string): string {
+  const errorType = classifyMCPError(errorMsg);
+  switch (errorType) {
+    case "timeout":
+      return (
+        `[Recovery hint] The MCP tool "${toolName}" timed out. ` +
+        `Do NOT retry the same call. Instead: ` +
+        `(1) Inform the user that this tool timed out, ` +
+        `(2) Suggest an alternative approach or ask if they want to try again with different parameters.`
+      );
+    case "connection":
+      return (
+        `[Recovery hint] Cannot connect to the MCP server for "${toolName}". ` +
+        `The server may be down or not started. ` +
+        `Inform the user and suggest checking the MCP server status with /mcp command.`
+      );
+    case "permission":
+      return (
+        `[Recovery hint] Permission denied for "${toolName}". ` +
+        `Do NOT retry. Inform the user and suggest an alternative approach.`
+      );
+    case "server_error":
+      return (
+        `[Recovery hint] The MCP server returned an internal error for "${toolName}". ` +
+        `This may be a temporary issue. Inform the user of the error and ask if they want to retry.`
+      );
+    default:
+      return (
+        `[Recovery hint] The MCP tool "${toolName}" failed unexpectedly. ` +
+        `Inform the user of the error and suggest an alternative approach.`
+      );
+  }
 }
 
 /**

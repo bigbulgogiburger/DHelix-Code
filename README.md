@@ -1,6 +1,6 @@
 # dbcode
 
-로컬/외부 LLM을 활용하는 CLI AI 코딩 어시스턴트. OpenAI 호환 API라면 어디서든 Claude Code급 코딩 지원을 받을 수 있습니다.
+**터미널에서 동작하는 AI 코딩 어시스턴트** — 자연어로 대화하면서 코드를 읽고, 수정하고, 실행할 수 있습니다.
 
 ```
 $ dbcode
@@ -11,314 +11,683 @@ $ dbcode
   |____/|____/ \____\___/|____/|_____|
 
   AI coding assistant for local/external LLMs
+
+> 이 프로젝트의 구조를 설명해줘
+
+AI가 파일을 탐색하고 코드를 분석하여 답변합니다...
 ```
 
-## 주요 기능
+OpenAI, Anthropic Claude, Ollama 등 **OpenAI 호환 API라면 어디든** 연결할 수 있습니다.
 
-- **멀티 프로바이더 LLM** — OpenAI, Anthropic, Azure OpenAI, 또는 어떤 OpenAI 호환 API든 사용 가능 (Ollama, LM Studio, vLLM 등)
-- **16개 내장 도구** — 파일 읽기/쓰기/편집, bash 실행, glob/grep 검색, 웹 검색, Jupyter 노트북 편집, 서브에이전트 스폰
-- **ReAct 에이전트 루프** — 병렬 도구 실행 + 자동 체크포인팅
-- **3단계 컨텍스트 압축** — 마이크로(콜드 스토리지) → 구조화 요약 → 재수화. 83.5% 사용 시 자동 트리거
-- **인터랙티브 터미널 UI** — Ink/React 기반 CLI, 마크다운 렌더링, 구문 강조, diff 미리보기
-- **안티 플리커 렌더링** — Progressive Static Flushing + DEC Mode 2026 원자적 프레임
-- **확장 가능한 스킬 시스템** — 마크다운 파일로 커스텀 워크플로우 정의, 자동으로 슬래시 명령어로 등록
-- **권한 시스템** — 5단계 모드 (엄격한 확인 → 전체 우회)
-- **MCP 연동** — Model Context Protocol로 외부 도구 서버 연결
-- **세션 관리** — 대화 저장, 이어하기, 포크
-- **헤드리스 모드** — `--print` 플래그로 비대화형 실행 (CI/스크립팅용)
-- **크로스 플랫폼** — Windows + macOS 지원
+---
 
-## 빠른 시작
+## 목차
 
-### 사전 요구사항
+- [이런 걸 할 수 있어요](#이런-걸-할-수-있어요)
+- [시작하기 전에 필요한 것](#시작하기-전에-필요한-것)
+- [설치하기](#설치하기)
+- [API 키 준비하기](#api-키-준비하기)
+- [처음 실행하기](#처음-실행하기)
+- [이렇게 사용하세요](#이렇게-사용하세요)
+- [슬래시 명령어 모음](#슬래시-명령어-모음)
+- [키보드 단축키](#키보드-단축키)
+- [CLI 옵션 전체 목록](#cli-옵션-전체-목록)
+- [무료로 사용하기 — Ollama 로컬 모델](#무료로-사용하기--ollama-로컬-모델)
+- [내 프로젝트에 맞게 설정하기](#내-프로젝트에-맞게-설정하기)
+- [자주 묻는 질문 (FAQ)](#자주-묻는-질문-faq)
+- [문제 해결 가이드](#문제-해결-가이드)
+- [지원하는 AI 모델](#지원하는-ai-모델)
+- [개발에 참여하기](#개발에-참여하기)
+- [라이선스](#라이선스)
 
-- **Node.js 20 이상**
-- **LLM API 키** (OpenAI, Azure, Anthropic, 또는 호환 프로바이더)
+---
 
-### 설치
+## 이런 걸 할 수 있어요
+
+| 요청 예시                                 | AI가 하는 일                         |
+| ----------------------------------------- | ------------------------------------ |
+| "이 프로젝트가 뭘 하는 건지 설명해줘"     | 파일을 탐색하고 구조를 분석해서 설명 |
+| "src/index.ts에서 포트를 8080으로 바꿔줘" | 파일을 찾아서 직접 수정              |
+| "테스트를 실행해줘"                       | 터미널 명령을 실행하고 결과를 분석   |
+| "이 에러를 고쳐줘: TypeError..."          | 원인을 찾고 코드를 수정              |
+| "User 모델에 email 필드를 추가해줘"       | 관련 파일을 모두 찾아서 일괄 수정    |
+| "TODO 주석을 전부 찾아줘"                 | 프로젝트 전체를 검색해서 목록 작성   |
+
+파일을 수정하거나 명령을 실행하기 전에는 **반드시 허용 여부를 물어봅니다** (안전합니다).
+
+### 주요 기능
+
+- **16개 내장 도구** — 파일 읽기/쓰기/편집, 셸 실행, 검색, 웹 검색 등
+- **보안 가드레일** — 위험한 명령 차단, 비밀키 유출 방지, 프롬프트 인젝션 감지
+- **세션 관리** — 대화를 저장하고 나중에 이어서 진행
+- **MCP 연동** — Model Context Protocol로 외부 도구 확장 가능
+- **헤드리스 모드** — UI 없이 스크립트에서 사용 가능
+
+---
+
+## 시작하기 전에 필요한 것
+
+### 1. Node.js (필수)
+
+dbcode는 Node.js 위에서 동작합니다. **버전 20 이상**이 필요합니다.
+
+**이미 설치되어 있는지 확인:**
 
 ```bash
-# 소스에서 빌드
-git clone https://github.com/bigbulgogiburger/dbcode.git
-cd dbcode
-npm install
-npm run build
-npm link    # 'dbcode' 명령어를 전역으로 등록
-
-# 또는 직접 실행
-node bin/dbcode.mjs
+node --version
 ```
 
-### 첫 실행
+`v20.x.x` 이상이 출력되면 OK입니다.
+
+**설치가 안 되어 있다면:**
+
+1. [https://nodejs.org](https://nodejs.org) 접속
+2. **LTS** (장기 지원 버전) 다운로드
+3. 설치 파일 실행 → 안내에 따라 "다음" 클릭
+4. **터미널을 새로 열고** `node --version`으로 확인
+
+> npm은 Node.js에 포함되어 있으므로 따로 설치할 필요 없습니다.
+
+### 2. Git (권장)
+
+코드 관리를 위해 Git이 설치되어 있으면 좋습니다.
+
+```bash
+git --version
+```
+
+없다면 [https://git-scm.com](https://git-scm.com) 에서 설치하세요.
+
+### 3. AI 모델 API 키 (또는 Ollama)
+
+dbcode는 AI 모델과 통신해야 합니다. 두 가지 방법이 있습니다:
+
+| 방법                                 | 비용               | 필요한 것 |
+| ------------------------------------ | ------------------ | --------- |
+| **클라우드 API** (OpenAI, Claude 등) | 유료 (사용량 기반) | API 키    |
+| **Ollama** (내 컴퓨터에서 실행)      | 무료               | 8GB+ RAM  |
+
+API 키 발급 방법은 [아래](#api-키-준비하기)에서 설명합니다.
+
+---
+
+## 설치하기
+
+### 방법 A: 소스에서 빌드 (현재 권장)
+
+```bash
+# 1. 저장소 복제
+git clone https://github.com/bigbulgogiburger/dbcode.git
+
+# 2. 폴더로 이동
+cd dbcode
+
+# 3. 의존성 설치 (처음 한 번만)
+npm install
+
+# 4. 빌드
+npm run build
+
+# 5. 전역 명령어로 등록 (어디서든 'dbcode' 입력 가능)
+npm link
+```
+
+설치가 끝나면 어디서든 `dbcode`를 실행할 수 있습니다.
+
+> `npm link`를 하지 않으면 `node bin/dbcode.mjs`로 직접 실행할 수도 있습니다.
+
+### 설치 확인
+
+```bash
+dbcode --version
+```
+
+`0.1.0`이 출력되면 설치 완료입니다.
+
+---
+
+## API 키 준비하기
+
+AI를 사용하려면 API 키가 필요합니다. **처음 사용하는 분은 OpenAI를 추천합니다.**
+
+### OpenAI API 키 발급 (5분)
+
+1. [platform.openai.com](https://platform.openai.com) 접속 → 회원가입/로그인
+2. 좌측 메뉴에서 **API keys** 클릭
+3. **"Create new secret key"** 클릭
+4. 이름 입력 (예: "dbcode") → **Create** 클릭
+5. 생성된 키를 **복사** (⚠️ 이 화면을 닫으면 다시 볼 수 없습니다!)
+
+> 키는 `sk-proj-...` 형태입니다. 안전한 곳에 보관하세요.
+
+### Anthropic Claude API 키 발급
+
+1. [console.anthropic.com](https://console.anthropic.com) 접속 → 회원가입/로그인
+2. **Settings** → **API Keys** → **Create Key**
+3. 생성된 키 복사 (`sk-ant-...` 형태)
+
+### Ollama (무료, API 키 불필요)
+
+로컬에서 AI를 실행하려면 [아래 섹션](#무료로-사용하기--ollama-로컬-모델)을 참고하세요.
+
+---
+
+## 처음 실행하기
+
+### 방법 1: 설정 마법사로 시작 (가장 쉬움)
+
+API 키 없이 그냥 실행하면 **설정 마법사**가 나타납니다:
 
 ```bash
 dbcode
 ```
 
-처음 실행하면 **설정 마법사**가 안내합니다:
+```
+🔧 dbcode 초기 설정
 
-1. LLM 프로바이더 선택 (OpenAI / Azure / 커스텀)
-2. API base URL 및 API 키 입력
-3. 기본 모델 선택
+모델을 선택하세요:
+  1. Default (env: gpt-4o-mini)
+  2. GPT-4o-mini (저렴)
+  3. GPT-4o
+  4. Claude Sonnet 4.5
+  5. Claude Haiku 3.5
+  6. Ollama (로컬 모델)
 
-설정은 `~/.dbcode/config.json`에 저장됩니다.
+번호를 입력하세요 > 2
 
-### 환경 변수 설정
+API 키를 입력하세요:
+> sk-proj-여기에-키를-붙여넣으세요
 
-환경 변수로도 설정할 수 있습니다:
-
-```bash
-# OpenAI
-export OPENAI_API_KEY="sk-..."
-export OPENAI_BASE_URL="https://api.openai.com/v1"   # 선택
-export OPENAI_MODEL="gpt-4o"                          # 선택
-
-# dbcode 전용 오버라이드
-export DBCODE_API_KEY="sk-..."
-export DBCODE_BASE_URL="https://your-endpoint.com/v1"
-export DBCODE_MODEL="your-model"
+✅ 설정이 저장되었습니다!
 ```
 
-## 사용법
+설정은 `~/.dbcode/config.json`에 저장되므로, **다음 실행부터는 바로 시작**됩니다.
 
-### 인터랙티브 모드
+### 방법 2: .env 파일로 설정
 
-```bash
-dbcode                          # 대화형 세션 시작
-dbcode -m gpt-4o                # 특정 모델 사용
-dbcode -u http://localhost:11434/v1  # 로컬 Ollama 사용
-dbcode -c                       # 마지막 세션 이어하기
-dbcode -r <session-id>          # 특정 세션 재개
-dbcode --add-dir ../other-repo  # 추가 디렉토리 포함 (모노레포)
-```
-
-### 헤드리스 모드
+프로젝트 폴더에 `.env` 파일을 만들고 API 키를 넣습니다:
 
 ```bash
-dbcode -p "이 코드베이스를 설명해줘"                        # 결과 출력 후 종료
-dbcode -p "TODO 주석 전부 찾아줘" --output-format json      # JSON 출력
+# .env 파일 (프로젝트 폴더에 생성)
+OPENAI_API_KEY=sk-proj-여기에-키를-붙여넣으세요
 ```
 
-### CLI 옵션
+그 다음 실행:
 
-| 플래그                  | 설명                                              |
-| ----------------------- | ------------------------------------------------- |
-| `-m, --model <model>`   | LLM 모델 이름                                     |
-| `-u, --base-url <url>`  | OpenAI 호환 API base URL                          |
-| `-k, --api-key <key>`   | API 키                                            |
-| `-v, --verbose`         | 상세 로깅 활성화                                  |
-| `-c, --continue`        | 가장 최근 세션 이어하기                           |
-| `-r, --resume <id>`     | 특정 세션 ID로 재개                               |
-| `-p, --print <prompt>`  | 헤드리스 모드: 프롬프트 실행 후 결과 출력         |
-| `--output-format <fmt>` | 헤드리스 출력 형식: `text`, `json`, `stream-json` |
-| `--add-dir <dirs...>`   | 모노레포용 추가 디렉토리                          |
+```bash
+dbcode
+```
 
-### 키보드 단축키
+> ⚠️ `.env` 파일은 반드시 `.gitignore`에 추가하세요! API 키가 Git에 올라가면 위험합니다.
 
-| 단축키      | 동작                                 |
-| ----------- | ------------------------------------ |
-| `Esc`       | 현재 에이전트 루프 취소              |
-| `Shift+Tab` | 권한 모드 순환                       |
-| `Ctrl+O`    | 상세 모드 토글 (전체 도구 출력 표시) |
-| `Ctrl+D`    | 종료                                 |
-| `Alt+T`     | 확장 사고(Extended Thinking) 토글    |
+### 방법 3: CLI 옵션으로 직접 전달
 
-`~/.dbcode/keybindings.json`에서 커스터마이즈 가능합니다.
+```bash
+dbcode --api-key sk-proj-여기에키 --model gpt-4o
+```
 
-## 슬래시 명령어
+### 실행 성공!
+
+아래와 같은 화면이 나타나면 성공입니다:
+
+```
+   ____  ____   ____ ___  ____  _____
+  |  _ \| __ ) / ___/ _ \|  _ \| ____|
+  | | | |  _ \| |  | | | | | | |  _|
+  | |_| | |_) | |__| |_| | |_| | |___
+  |____/|____/ \____\___/|____/|_____|
+
+  gpt-4o-mini
+
+>
+```
+
+`>` 프롬프트가 나타나면 자연어로 질문하면 됩니다.
+
+### 종료하기
+
+- `Ctrl+D` 누르기
+- 또는 `exit` 입력
+
+---
+
+## 이렇게 사용하세요
+
+### 코드에 대해 질문하기
+
+```
+> 이 프로젝트가 뭘 하는 건지 설명해줘
+> src/utils/path.ts 파일을 읽고 설명해줘
+> package.json에 있는 의존성을 정리해줘
+```
+
+### 코드 수정 요청하기
+
+```
+> 포트 번호를 3000에서 8080으로 변경해줘
+> User 타입에 email 필드를 추가해줘
+> 이 함수를 async/await로 변환해줘
+```
+
+수정이 필요하면 AI가 변경 내용을 보여주고 **허용 여부를 물어봅니다**:
+
+```
+🔧 file_edit: src/config.ts
+ - const PORT = 3000;
+ + const PORT = 8080;
+
+Allow? [y/n]
+```
+
+`y`를 누르면 적용, `n`을 누르면 취소됩니다.
+
+### 명령 실행 요청하기
+
+```
+> npm test를 실행해줘
+> git status를 보여줘
+> 이 프로젝트를 빌드해줘
+```
+
+셸 명령도 실행 전에 허용을 물어봅니다.
+
+### 디버깅 도움받기
+
+```
+> 이 에러를 분석해줘: TypeError: Cannot read property 'map' of undefined
+> 왜 테스트가 실패하는지 알려줘
+> 빌드 에러를 고쳐줘
+```
+
+### 헤드리스 모드 (스크립트/CI용)
+
+UI 없이 결과만 받고 싶을 때:
+
+```bash
+# 텍스트 출력
+dbcode -p "package.json의 의존성 목록을 알려줘"
+
+# JSON 출력
+dbcode -p "src/ 폴더의 TypeScript 파일 개수" --output-format json
+
+# 스트리밍 JSON
+dbcode -p "이 코드를 리뷰해줘" --output-format stream-json
+```
+
+---
+
+## 슬래시 명령어 모음
 
 대화 중 `/`를 입력하면 사용 가능한 명령어 목록이 표시됩니다.
 
-| 명령어         | 설명                                         |
-| -------------- | -------------------------------------------- |
-| `/help`        | 전체 명령어 보기                             |
-| `/model`       | LLM 모델 전환                                |
-| `/commit`      | AI 기반 git 커밋 (컨벤셔널 메시지 자동 생성) |
-| `/review`      | 현재 diff에 대한 코드 리뷰                   |
-| `/compact`     | 컨텍스트 강제 압축                           |
-| `/clear`       | 대화 초기화                                  |
-| `/undo`        | 마지막 파일 변경 되돌리기                    |
-| `/rewind`      | 이전 체크포인트로 되감기                     |
-| `/diff`        | 보류 중인 변경사항 표시                      |
-| `/cost`        | 토큰 사용량 및 비용 표시                     |
-| `/stats`       | 세션 통계                                    |
-| `/config`      | 설정 조회/수정                               |
-| `/permissions` | 권한 규칙 관리                               |
-| `/memory`      | 영구 메모리 관리                             |
-| `/init`        | 프로젝트에 DBCODE.md 초기화                  |
-| `/export`      | 대화 내보내기                                |
-| `/resume`      | 이전 세션 재개                               |
-| `/plan`        | 계획 모드 진입                               |
-| `/mcp`         | MCP 서버 관리                                |
-| `/doctor`      | 설정 문제 진단                               |
+### 가장 자주 쓰는 명령어
 
-## 내장 도구
+| 명령어     | 하는 일                    | 사용 예시       |
+| ---------- | -------------------------- | --------------- |
+| `/help`    | 전체 도움말 보기           | `/help`         |
+| `/model`   | AI 모델 바꾸기             | `/model gpt-4o` |
+| `/cost`    | 지금까지 쓴 API 비용 확인  | `/cost`         |
+| `/clear`   | 대화 처음부터 다시 시작    | `/clear`        |
+| `/compact` | 대화 내용 압축 (토큰 절약) | `/compact`      |
+| `/commit`  | Git 커밋 메시지 자동 생성  | `/commit`       |
+| `/diff`    | 변경된 파일 보기           | `/diff`         |
+| `/undo`    | 마지막 수정 되돌리기       | `/undo`         |
 
-AI 에이전트가 대화 중 사용할 수 있는 도구입니다:
+### 세션 (대화 저장/복원)
 
-| 도구            | 권한    | 설명                                         |
-| --------------- | ------- | -------------------------------------------- |
-| `file_read`     | safe    | 파일 읽기 (이미지, PDF, Jupyter 노트북 지원) |
-| `file_write`    | confirm | 파일 생성/덮어쓰기                           |
-| `file_edit`     | confirm | 검색/치환 (diff 미리보기 포함)               |
-| `bash_exec`     | confirm | 셸 명령어 실행 (120초 타임아웃)              |
-| `glob_search`   | safe    | 파일 패턴 매칭                               |
-| `grep_search`   | safe    | 정규식 콘텐츠 검색 (ripgrep 기반, JS 폴백)   |
-| `list_dir`      | safe    | 디렉토리 목록 + 메타데이터                   |
-| `web_fetch`     | confirm | HTTP 요청 (15분 캐시)                        |
-| `web_search`    | confirm | 웹 검색 (Brave + DuckDuckGo)                 |
-| `notebook_edit` | confirm | Jupyter 노트북 셀 편집                       |
-| `agent`         | confirm | 서브에이전트 스폰 (explore/plan/general)     |
-| `todo_write`    | safe    | 작업 추적                                    |
+| 명령어    | 하는 일                   |
+| --------- | ------------------------- |
+| `/resume` | 이전 대화 이어하기        |
+| `/fork`   | 현재 대화를 복사해서 분기 |
+| `/rename` | 대화에 이름 붙이기        |
+| `/export` | 대화를 파일로 저장        |
+| `/copy`   | 대화를 클립보드에 복사    |
 
-**권한 레벨:**
+### 분석/진단
 
-- `safe` — 확인 없이 실행 (읽기 전용 작업)
-- `confirm` — 사용자 승인 필요 (권한 모드에 따라 자동 승인 가능)
+| 명령어       | 하는 일                        |
+| ------------ | ------------------------------ |
+| `/debug`     | 디버깅 모드                    |
+| `/doctor`    | 설정이 올바른지 진단           |
+| `/stats`     | 세션 통계 (메시지 수, 토큰 등) |
+| `/context`   | 컨텍스트 사용량 확인           |
+| `/analytics` | 상세 분석 대시보드             |
 
-## 프로젝트 설정
+### 설정/모드 변경
 
-### DBCODE.md
+| 명령어    | 하는 일                            |
+| --------- | ---------------------------------- |
+| `/config` | 현재 설정 보기                     |
+| `/effort` | AI 사고 깊이 조절 (빠름/보통/깊음) |
+| `/fast`   | 빠른 응답 모드 토글                |
+| `/plan`   | 실행 전 계획만 보기 (dry-run)      |
+| `/init`   | 프로젝트에 DBCODE.md 생성          |
+| `/mcp`    | MCP 서버 관리                      |
+| `/review` | 현재 변경사항 코드 리뷰            |
+| `/memory` | 영구 메모리 관리                   |
 
-프로젝트 루트에 `DBCODE.md` 파일을 생성하면 AI에게 코드베이스 정보를 제공할 수 있습니다:
+---
+
+## 키보드 단축키
+
+| 단축키      | 동작                                       |
+| ----------- | ------------------------------------------ |
+| `Esc`       | AI 실행 중단 (진행 중인 작업 취소)         |
+| `Ctrl+D`    | dbcode 종료                                |
+| `Shift+Tab` | 권한 모드 전환 (매번 묻기 ↔ 자동 허용 등) |
+| `Ctrl+O`    | 상세 출력 보기/숨기기                      |
+| `Alt+T`     | AI 사고 과정 보기/숨기기                   |
+
+> `~/.dbcode/keybindings.json`에서 단축키를 변경할 수 있습니다.
+
+---
+
+## CLI 옵션 전체 목록
 
 ```bash
-dbcode init    # DBCODE.md + .dbcode/ 디렉토리 생성
+dbcode [옵션]
 ```
 
-수동으로 만들 수도 있습니다:
+| 옵션                     | 설명                             | 예시                                   |
+| ------------------------ | -------------------------------- | -------------------------------------- |
+| `-m, --model <모델>`     | 사용할 AI 모델 지정              | `dbcode -m gpt-4o`                     |
+| `-u, --base-url <URL>`   | API 서버 주소                    | `dbcode -u http://localhost:11434/v1`  |
+| `-k, --api-key <키>`     | API 키 직접 전달                 | `dbcode -k sk-proj-...`                |
+| `-v, --verbose`          | 상세 로그 출력                   | `dbcode -v`                            |
+| `-c, --continue`         | 마지막 대화 이어하기             | `dbcode -c`                            |
+| `-r, --resume <ID>`      | 특정 세션 복원                   | `dbcode -r abc123`                     |
+| `-p, --print <프롬프트>` | 헤드리스 모드 (UI 없이)          | `dbcode -p "설명해줘"`                 |
+| `--output-format <형식>` | 출력 형식: text/json/stream-json | `dbcode -p "..." --output-format json` |
+| `--add-dir <경로>`       | 추가 디렉토리 포함 (모노레포용)  | `dbcode --add-dir ../shared`           |
+| `--version`              | 버전 출력                        | `dbcode --version`                     |
+| `--help`                 | 도움말 출력                      | `dbcode --help`                        |
+
+---
+
+## 무료로 사용하기 — Ollama 로컬 모델
+
+API 비용을 내고 싶지 않다면, 내 컴퓨터에서 AI를 돌릴 수 있습니다.
+
+### 1단계: Ollama 설치
+
+[https://ollama.com](https://ollama.com) 에서 OS에 맞는 버전을 다운로드 후 설치합니다.
+
+설치 확인:
+
+```bash
+ollama --version
+```
+
+### 2단계: 모델 다운로드
+
+```bash
+# 가벼운 모델 (8B 파라미터, ~5GB, 8GB RAM이면 충분)
+ollama pull qwen3:8b
+
+# 더 똑똑한 모델 (32B 파라미터, ~20GB, 16GB+ RAM 권장)
+ollama pull qwen3:32b
+```
+
+> 첫 다운로드는 시간이 걸립니다. 모델 크기에 따라 5~20분 소요됩니다.
+
+### 3단계: dbcode와 연결
+
+```bash
+dbcode --base-url http://localhost:11434/v1 --model qwen3:8b
+```
+
+> Ollama는 API 키가 필요 없습니다! `--api-key` 옵션을 생략하면 됩니다.
+
+### 매번 옵션을 안 치고 싶다면
+
+프로젝트 폴더에 `.env` 파일을 만드세요:
+
+```bash
+# .env
+DBCODE_BASE_URL=http://localhost:11434/v1
+DBCODE_MODEL=qwen3:8b
+```
+
+이후 그냥 `dbcode`만 실행하면 됩니다.
+
+---
+
+## 내 프로젝트에 맞게 설정하기
+
+### DBCODE.md — AI에게 프로젝트 규칙 알려주기
+
+프로젝트 루트에 `DBCODE.md`를 만들면 AI가 프로젝트를 더 잘 이해합니다:
+
+```bash
+# 자동 생성
+dbcode init
+```
+
+또는 직접 작성:
 
 ```markdown
 # DBCODE.md
 
-## 프로젝트 개요
+이 프로젝트는 React + TypeScript 웹 앱입니다.
 
-- 런타임: Node.js 20 / TypeScript
-- 테스트: Jest
-- 빌드: webpack
+## 빌드/실행
 
-## 코딩 규칙
+- npm run dev → 개발 서버
+- npm run build → 프로덕션 빌드
+- npm test → 테스트
 
-- named export만 사용
-- 함수형 컴포넌트 우선
+## 규칙
+
+- 컴포넌트는 함수형으로 작성
+- CSS는 Tailwind CSS 사용
+- API는 src/api/ 아래에 위치
 ```
 
-### 지시 우선순위 (낮은 순 → 높은 순)
+### 설정 파일 우선순위
 
-1. `~/.dbcode/DBCODE.md` — 전역 사용자 지시
-2. `~/.dbcode/rules/*.md` — 전역 규칙
-3. 상위 디렉토리 `DBCODE.md` 파일들 (cwd에서 위로 탐색)
-4. 프로젝트 루트 `DBCODE.md`
-5. `.dbcode/rules/*.md` — 프로젝트 규칙
-6. `DBCODE.local.md` — 로컬 오버라이드 (`.gitignore`에 추가 권장)
+dbcode는 여러 곳에서 설정을 읽고, 아래로 갈수록 우선합니다:
+
+```
+1. 내장 기본값
+2. ~/.dbcode/config.json       ← 사용자 전역 설정
+3. .dbcode/settings.json       ← 프로젝트 설정
+4. .env 환경변수                ← DBCODE_*, OPENAI_*
+5. CLI 옵션                     ← --model, --api-key 등 (최우선)
+```
+
+### 환경변수 목록
+
+| 변수명            | 설명                                     | 예시                        |
+| ----------------- | ---------------------------------------- | --------------------------- |
+| `OPENAI_API_KEY`  | OpenAI API 키                            | `sk-proj-...`               |
+| `DBCODE_API_KEY`  | dbcode 전용 키 (OPENAI_API_KEY보다 우선) | `sk-proj-...`               |
+| `DBCODE_MODEL`    | 기본 모델                                | `gpt-4o`                    |
+| `DBCODE_BASE_URL` | API 서버 주소                            | `http://localhost:11434/v1` |
+| `DBCODE_VERBOSE`  | `true`로 설정 시 상세 로그               | `true`                      |
 
 ### 권한 모드
 
-세션 중 `Shift+Tab`으로 순환:
+AI가 파일을 수정하거나 명령을 실행할 때의 동작을 제어합니다.
+대화 중 `Shift+Tab`으로 전환 가능:
 
-| 모드                | 동작                                           |
-| ------------------- | ---------------------------------------------- |
-| `default`           | 위험한 작업만 확인                             |
-| `acceptEdits`       | 파일 편집 자동 승인, bash는 확인               |
-| `plan`              | 읽기 전용 — AI가 변경을 제안하면 사용자가 승인 |
-| `dontAsk`           | 위험한 작업 외 전부 자동 승인                  |
-| `bypassPermissions` | 모든 작업 자동 승인                            |
+| 모드                | 동작                                              |
+| ------------------- | ------------------------------------------------- |
+| `default`           | 위험한 작업은 매번 확인 (기본값, **초보자 추천**) |
+| `acceptEdits`       | 파일 편집은 자동 허용, 셸 명령은 확인             |
+| `plan`              | 실행 안 함 — 계획만 보여줌                        |
+| `dontAsk`           | 대부분 자동 허용                                  |
+| `bypassPermissions` | 모든 작업 자동 허용 (주의!)                       |
 
-## 스킬 시스템
+### 스킬 (커스텀 명령어) 만들기
 
-스킬은 마크다운 파일로 작성되며, dbcode에 커스텀 워크플로우를 추가합니다. 다음 경로에서 자동 로드됩니다:
+마크다운 파일로 나만의 워크플로우를 만들 수 있습니다:
 
-```
-.dbcode/commands/    # 프로젝트 명령어 (git으로 팀 공유)
-.dbcode/skills/      # 프로젝트 스킬 (git으로 팀 공유)
-~/.dbcode/commands/  # 전역 사용자 명령어
-~/.dbcode/skills/    # 전역 사용자 스킬
-```
-
-### 스킬 만들기
-
-`.dbcode/skills/my-skill/SKILL.md` 파일을 생성합니다:
+`.dbcode/skills/my-skill/SKILL.md`:
 
 ```markdown
 ---
 name: my-skill
-description: X를 요청할 때 유용한 작업을 수행합니다
-argument-hint: "[파일 경로]"
+description: 프로젝트의 TODO를 분석합니다
 ---
 
-## 지시사항
-
-이 스킬이 호출되면 다음을 수행합니다:
-
-1. $ARGUMENTS 경로의 파일을 읽습니다
-2. 패턴을 분석합니다
-3. 결과를 보고합니다
+프로젝트에서 TODO 주석을 모두 찾고, 우선순위별로 정리해주세요.
 ```
 
-스킬은 `/my-skill` 슬래시 명령어로 자동 등록됩니다.
+저장하면 `/my-skill` 명령어로 바로 사용할 수 있습니다.
 
-### 프론트매터 옵션
+---
 
-| 필드                       | 타입                           | 기본값   | 설명                                      |
-| -------------------------- | ------------------------------ | -------- | ----------------------------------------- |
-| `name`                     | string                         | 필수     | 스킬 식별자                               |
-| `description`              | string                         | 필수     | 트리거 조건 + 기능 설명                   |
-| `argument-hint`            | string                         | —        | 도움말에 표시되는 사용법 힌트             |
-| `user-invocable`           | boolean                        | `true`   | `/name` 명령어로 사용 가능 여부           |
-| `disable-model-invocation` | boolean                        | `false`  | AI 자동 호출 방지                         |
-| `context`                  | `inline` / `fork`              | `inline` | 실행 컨텍스트                             |
-| `agent`                    | `explore` / `plan` / `general` | —        | 서브에이전트 타입 (`context: fork` 시)    |
-| `allowed-tools`            | array                          | —        | 이 스킬에서 사용 가능한 도구 화이트리스트 |
+## 자주 묻는 질문 (FAQ)
 
-### 내장 스킬
+### Q: API 요금이 얼마나 나오나요?
 
-| 스킬                            | 설명                                                          |
-| ------------------------------- | ------------------------------------------------------------- |
-| `sprint-execution`              | 개선 계획으로부터 Agent Teams를 활용한 병렬 팀 오케스트레이션 |
-| `dbcode-e2e-test`               | E2E 테스트 프레임워크                                         |
-| `verify-implementation`         | 전체 검증 스킬 일괄 실행                                      |
-| `verify-model-capabilities`     | 모델 캐퍼빌리티 동기화 검증                                   |
-| `verify-tool-metadata-pipeline` | 도구 메타데이터 파이프라인 검증                               |
+모델마다 다릅니다:
 
-## 아키텍처
+- **GPT-4o-mini**: 매우 저렴 (하루 종일 써도 $1 이하)
+- **GPT-4o**: 보통 (일반적인 사용 시 하루 $2~5)
+- **Ollama**: **무료** (내 컴퓨터에서 실행)
+
+`/cost` 명령어로 현재 세션의 비용을 확인할 수 있습니다.
+
+### Q: 내 코드가 외부로 전송되나요?
+
+클라우드 API(OpenAI, Claude 등)를 사용하면 **대화 내용이 API 서버로 전송됩니다**. 민감한 코드를 다룬다면 Ollama 같은 **로컬 모델**을 사용하세요.
+
+### Q: 기존 프로젝트에서 바로 쓸 수 있나요?
+
+네! 아무 프로젝트 폴더에서 `dbcode`를 실행하면 됩니다. 프로젝트를 수정하지 않아도 동작합니다. `DBCODE.md`를 추가하면 더 좋은 결과를 얻을 수 있습니다.
+
+### Q: AI가 실수로 중요한 파일을 삭제할 수 있나요?
+
+기본 설정(`default` 모드)에서는 **모든 수정/삭제/명령 실행 전에 사용자 확인을 요청**합니다. 또한 위험한 명령(`rm -rf /` 등)은 자동으로 차단됩니다.
+
+### Q: Windows에서도 되나요?
+
+네, Windows와 macOS 모두 지원합니다.
+
+---
+
+## 문제 해결 가이드
+
+### "Cannot connect to ..." — 서버에 연결할 수 없음
 
 ```
-CLI (Ink/React)  →  Core  →  LLM / Tools / Permissions / Hooks  →  Utils
+Error: Cannot connect to https://api.openai.com/v1.
+Is the server running?
 ```
 
-엄격한 단방향 의존성 — 순환 임포트는 금지입니다.
+**확인할 것:**
+
+1. 인터넷이 연결되어 있나요?
+2. VPN이나 프록시가 API를 차단하고 있지 않나요?
+3. Ollama를 쓴다면: `ollama serve`가 실행 중인지 확인
+   ```bash
+   # Ollama 서버 상태 확인
+   curl http://localhost:11434/v1/models
+   ```
+
+### "Invalid API key" — API 키가 잘못됨
 
 ```
-src/
-├── index.ts              # CLI 진입점 (Commander + Ink)
-├── cli/                  # 터미널 UI (Ink 컴포넌트 + React 훅)
-├── core/                 # 에이전트 루프, 컨텍스트/세션/체크포인트 매니저
-├── llm/                  # LLM 클라이언트 (OpenAI 호환 + Anthropic)
-├── tools/                # 16개 내장 도구 + 권한 시스템
-├── commands/             # 34개 슬래시 명령어
-├── skills/               # 스킬 로더, 실행기, 명령어 브릿지
-├── config/               # 5단계 계층적 설정 (Zod 스키마)
-├── permissions/          # 권한 매니저 (5가지 모드)
-├── instructions/         # DBCODE.md 로더 (6단계 병합)
-├── guardrails/           # 보안 (시크릿 스캐닝, I/O 필터링)
-├── hooks/                # 도구 실행 전/후 훅
-├── subagents/            # 에이전트 스폰 (worktree 격리)
-├── mcp/                  # Model Context Protocol 연동
-├── auth/                 # 토큰 기반 인증
-└── utils/                # 로거(pino), 이벤트(mitt), 에러, 경로
+Error: Invalid API key.
 ```
 
-### 핵심 설계 원칙
+**확인할 것:**
 
-- **ESM 전용** — CommonJS 없음, 모든 임포트에 `.js` 확장자
-- **불변 상태** — `readonly` 프로퍼티, 변경 시 스프레드 복사
-- **Zod 스키마** — 모든 외부 입력 검증 (설정, 도구 파라미터, API 응답)
-- **AbortController** — 취소 가능한 모든 작업에 AbortSignal 사용
-- **`any` 금지** — 대신 `unknown` + 타입 가드 사용
+1. API 키를 정확히 복사했나요? (앞뒤 공백 주의)
+2. 키가 만료되지 않았나요? (API 대시보드에서 확인)
+3. `.env` 파일의 형식이 맞나요?
 
-## 개발 가이드
+   ```bash
+   # 올바른 형식 (등호 앞뒤 공백 없음!)
+   OPENAI_API_KEY=sk-proj-abc123
 
-### 개발 환경 셋업
+   # 잘못된 형식
+   OPENAI_API_KEY = sk-proj-abc123    # 공백 있음
+   OPENAI_API_KEY="sk-proj-abc123"    # 따옴표 있음
+   ```
+
+4. `/doctor` 명령어로 설정 진단:
+   ```bash
+   dbcode
+   > /doctor
+   ```
+
+### "Model not found" — 모델을 찾을 수 없음
+
+```
+Error: Model 'my-model' not found.
+```
+
+**확인할 것:**
+
+1. 모델 이름이 정확한가요?
+   ```bash
+   # 자주 쓰이는 모델 이름
+   dbcode -m gpt-4o-mini     # OpenAI (저렴)
+   dbcode -m gpt-4o          # OpenAI (고성능)
+   ```
+2. Ollama 사용 시 모델을 다운로드했나요?
+   ```bash
+   ollama list               # 설치된 모델 확인
+   ollama pull qwen3:8b      # 없으면 다운로드
+   ```
+
+### "Rate limited" — 요청 제한 초과
+
+```
+Error: Rate limited. Please wait a moment and try again.
+```
+
+API 호출 한도를 초과했습니다. 1~2분 기다린 후 다시 시도하세요.
+무료 플랜은 한도가 낮으므로, 유료 플랜 전환을 고려해보세요.
+
+### Node.js 버전 에러
+
+```
+SyntaxError: Unexpected token 'import'
+```
+
+Node.js 20 이상이 필요합니다:
+
+```bash
+node --version   # v20.x.x 이상인지 확인
+```
+
+버전이 낮다면 [https://nodejs.org](https://nodejs.org) 에서 최신 LTS를 설치하세요.
+
+### 빌드 에러 (소스에서 설치한 경우)
+
+```bash
+# 의존성 재설치
+rm -rf node_modules
+npm install
+
+# 다시 빌드
+npm run build
+```
+
+---
+
+## 지원하는 AI 모델
+
+| 제공업체         | API 서버 주소                             | 추천 모델                           | 비고                     |
+| ---------------- | ----------------------------------------- | ----------------------------------- | ------------------------ |
+| **OpenAI**       | `https://api.openai.com/v1`               | gpt-4o-mini, gpt-4o                 | 기본 설정                |
+| **Anthropic**    | 프록시 경유                               | Claude Sonnet 4.5, Claude Haiku 3.5 | Extended Thinking 지원   |
+| **Azure OpenAI** | `https://{resource}.openai.azure.com/...` | gpt-4o                              | 기업용                   |
+| **Ollama**       | `http://localhost:11434/v1`               | qwen3:8b, llama3                    | 무료, 로컬               |
+| **LM Studio**    | `http://localhost:1234/v1`                | 다양                                | 무료, 로컬               |
+| **vLLM**         | `http://localhost:8000/v1`                | 다양                                | 셀프 호스팅              |
+| **기타**         | 커스텀 URL                                | —                                   | OpenAI 호환 API면 어디든 |
+
+---
+
+## 개발에 참여하기
+
+dbcode 개발에 기여하고 싶다면:
+
+### 개발 환경 세팅
 
 ```bash
 git clone https://github.com/bigbulgogiburger/dbcode.git
@@ -326,107 +695,43 @@ cd dbcode
 npm install
 ```
 
-### 주요 명령어
+### 개발 명령어
 
 ```bash
-npm run dev            # 워치 모드 (변경 시 자동 리빌드)
-npm run build          # 프로덕션 빌드 (tsup)
-npm run typecheck      # TypeScript 타입 검사 (strict)
-npm run lint           # ESLint 검사
-npm run format         # Prettier 포맷팅
-npm test               # 전체 테스트 실행 (Vitest)
-npm run test:watch     # 테스트 워치 모드
-npm run test:coverage  # 커버리지 리포트
-npm run ci             # 전체 파이프라인: typecheck → lint → test:coverage → build
+npm run dev            # 파일 변경 감지 모드로 자동 빌드
+npm run build          # 프로덕션 빌드
+npm test               # 전체 테스트 실행
+npm run test:watch     # 테스트 감시 모드
+npm run typecheck      # TypeScript 타입 검사
+npm run lint           # 코드 스타일 검사
+npm run format         # 코드 자동 포매팅
+npm run check          # 전체 검증 (타입 + 린트 + 테스트 + 빌드)
 ```
 
-### 로컬 실행
+### 기술 스택
 
-```bash
-npm run build
-node bin/dbcode.mjs                    # 소스에서 실행
-node bin/dbcode.mjs -p "Hello"         # 헤드리스 테스트
-```
+| 기술            | 용도          |
+| --------------- | ------------- |
+| TypeScript 5.x  | 메인 언어     |
+| Ink 5.x (React) | 터미널 UI     |
+| Commander.js    | CLI 인자 파싱 |
+| OpenAI SDK      | LLM API 통신  |
+| Zod             | 입력 검증     |
+| Vitest          | 테스트        |
+| tsup            | 빌드          |
 
-### 테스트
-
-**Vitest**를 사용하며, 테스트 중 실제 LLM API 호출은 하지 않습니다 (모킹 사용).
-
-```bash
-npm test                                    # 전체 테스트
-npx vitest run test/unit/llm/              # 특정 디렉토리
-npx vitest run test/unit/tools/            # 도구 테스트만
-npx vitest run --coverage                  # 커버리지 포함
-```
-
-**테스트 구조:**
+### 커밋 메시지 규칙
 
 ```
-test/
-├── unit/          # 단위 테스트 (빠름, 격리됨)
-│   ├── cli/       # 컴포넌트 + 렌더러 테스트
-│   ├── core/      # 에이전트 루프, 컨텍스트 매니저
-│   ├── llm/       # LLM 클라이언트 테스트
-│   ├── tools/     # 도구 정의 테스트
-│   ├── commands/  # 슬래시 명령어 테스트
-│   ├── config/    # 설정 로더/스키마 테스트
-│   └── utils/     # 유틸리티 테스트
-├── integration/   # 통합 테스트
-└── e2e/           # E2E CLI 테스트
+feat(tools): 새로운 도구 추가
+fix(llm): API 타임아웃 버그 수정
+docs(readme): 설치 가이드 개선
+test(core): agent loop 테스트 추가
 ```
 
-### 커밋 규칙
+코드베이스에 대한 자세한 설명은 [ONBOARDING.md](ONBOARDING.md)를 참고하세요.
 
-```
-<type>(<scope>): <description>
-```
-
-타입: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`
-
-### 아키텍처 검증
-
-```bash
-npx madge --circular src/    # 순환 의존성 검사 (반드시 클린해야 함)
-```
-
-## 파일 위치
-
-### 전역 (사용자별)
-
-| 경로                           | 용도                                     |
-| ------------------------------ | ---------------------------------------- |
-| `~/.dbcode/config.json`        | 사용자 설정                              |
-| `~/.dbcode/debug.log`          | 디버그 로그                              |
-| `~/.dbcode/sessions/`          | 저장된 세션                              |
-| `~/.dbcode/input-history.json` | 입력 히스토리 (최대 500개, 세션 간 유지) |
-| `~/.dbcode/keybindings.json`   | 커스텀 키보드 단축키                     |
-| `~/.dbcode/memory/`            | 영구 메모리                              |
-| `~/.dbcode/DBCODE.md`          | 전역 지시                                |
-| `~/.dbcode/rules/*.md`         | 전역 규칙                                |
-| `~/.dbcode/skills/`            | 전역 스킬                                |
-
-### 프로젝트 (레포별)
-
-| 경로                 | 용도                        |
-| -------------------- | --------------------------- |
-| `DBCODE.md`          | 프로젝트 지시               |
-| `DBCODE.local.md`    | 로컬 오버라이드 (gitignore) |
-| `.dbcode/`           | 프로젝트 설정 디렉토리      |
-| `.dbcode/rules/*.md` | 프로젝트 규칙               |
-| `.dbcode/skills/`    | 프로젝트 스킬               |
-| `.dbcode/memory/`    | 프로젝트 메모리             |
-
-## 지원 LLM 프로바이더
-
-| 프로바이더           | Base URL                                                     | 비고                               |
-| -------------------- | ------------------------------------------------------------ | ---------------------------------- |
-| **OpenAI**           | `https://api.openai.com/v1`                                  | 기본 프로바이더                    |
-| **Azure OpenAI**     | `https://{resource}.openai.azure.com/openai?api-version=...` | Codex 모델용 Responses API 지원    |
-| **Anthropic**        | 프록시 경유                                                  | Claude 모델 Extended Thinking 지원 |
-| **Ollama**           | `http://localhost:11434/v1`                                  | 로컬 모델                          |
-| **LM Studio**        | `http://localhost:1234/v1`                                   | 로컬 모델                          |
-| **vLLM**             | `http://localhost:8000/v1`                                   | 셀프 호스팅 추론                   |
-| **기타 OpenAI 호환** | 커스텀 URL                                                   | 호환 엔드포인트면 어디든 가능      |
+---
 
 ## 라이선스
 

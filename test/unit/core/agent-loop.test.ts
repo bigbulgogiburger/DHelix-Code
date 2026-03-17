@@ -692,3 +692,153 @@ describe("groupToolCalls", () => {
     expect(groups).toHaveLength(2);
   });
 });
+
+describe("MCP tool failure recovery", () => {
+  let strategy: ToolCallStrategy;
+  let registry: ToolRegistry;
+  let events: AppEventEmitter;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    strategy = createMockStrategy();
+    registry = createMockRegistry();
+    events = createMockEmitter();
+  });
+
+  it("should inject recovery guidance when MCP tool fails with timeout", async () => {
+    // First response: LLM calls an MCP tool
+    const toolCallResponse: ChatResponse = {
+      content: "Let me browse the page.",
+      toolCalls: [
+        {
+          id: "tc-mcp-1",
+          name: "mcp__playwright__browser_navigate",
+          arguments: { url: "https://example.com" },
+        },
+      ],
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+      finishReason: "stop",
+    };
+    // Second response: LLM responds after seeing the error
+    const recoveryResponse: ChatResponse = {
+      content: "The MCP tool timed out. Let me try a different approach.",
+      toolCalls: [],
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+      finishReason: "stop",
+    };
+
+    const client = createMockClient([toolCallResponse, recoveryResponse]);
+
+    // Mock tool execution to return MCP timeout error
+    mockExecuteToolCall.mockResolvedValueOnce({
+      id: "tc-mcp-1",
+      name: "mcp__playwright__browser_navigate",
+      output: "MCP tool error: Request timed out: tools/call",
+      isError: true,
+      metadata: { serverName: "playwright", mcpErrorType: "timeout" },
+    });
+
+    // Strategy extracts tool calls from first response
+    (strategy.extractToolCalls as ReturnType<typeof vi.fn>)
+      .mockReturnValueOnce([
+        {
+          id: "tc-mcp-1",
+          name: "mcp__playwright__browser_navigate",
+          arguments: { url: "https://example.com" },
+        },
+      ])
+      .mockReturnValueOnce([]);
+
+    // Strategy formats tool results as messages
+    (strategy.formatToolResults as ReturnType<typeof vi.fn>).mockReturnValueOnce([
+      {
+        role: "tool",
+        content: "MCP tool error: Request timed out: tools/call",
+        tool_call_id: "tc-mcp-1",
+      },
+    ]);
+
+    const config: AgentLoopConfig = {
+      client,
+      model: "gpt-4o",
+      toolRegistry: registry,
+      strategy,
+      events,
+    };
+
+    const result = await runAgentLoop(config, [{ role: "user", content: "Browse example.com" }]);
+
+    // Should complete in 2 iterations (tool call + recovery)
+    expect(result.iterations).toBe(2);
+
+    // Should have injected a system recovery guidance message
+    const guidanceMessages = result.messages.filter(
+      (m) =>
+        m.role === "user" &&
+        typeof m.content === "string" &&
+        m.content.includes("[System]") &&
+        m.content.includes("MCP tool(s) failed"),
+    );
+    expect(guidanceMessages).toHaveLength(1);
+    expect(guidanceMessages[0].content).toContain("timed out");
+    expect(guidanceMessages[0].content).toContain("Do NOT retry");
+  });
+
+  it("should escalate permission denial after MAX_DENIALS_BEFORE_STOP", async () => {
+    // LLM keeps trying the same denied tool
+    const toolCallResponse: ChatResponse = {
+      content: "Let me try this tool.",
+      toolCalls: [{ id: "tc-1", name: "mcp__server__dangerous_tool", arguments: {} }],
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+      finishReason: "stop",
+    };
+    const finalResponse: ChatResponse = {
+      content: "I understand, let me try something else.",
+      toolCalls: [],
+      usage: { promptTokens: 10, completionTokens: 5, totalTokens: 15 },
+      finishReason: "stop",
+    };
+
+    // 3 attempts: 2 denied + 1 final response
+    const client = createMockClient([toolCallResponse, toolCallResponse, finalResponse]);
+
+    (strategy.extractToolCalls as ReturnType<typeof vi.fn>)
+      .mockReturnValueOnce([{ id: "tc-1", name: "mcp__server__dangerous_tool", arguments: {} }])
+      .mockReturnValueOnce([{ id: "tc-2", name: "mcp__server__dangerous_tool", arguments: {} }])
+      .mockReturnValueOnce([]);
+
+    (strategy.formatToolResults as ReturnType<typeof vi.fn>)
+      .mockReturnValueOnce([
+        { role: "tool", content: "Permission denied: User rejected", tool_call_id: "tc-1" },
+      ])
+      .mockReturnValueOnce([
+        {
+          role: "tool",
+          content: "Permission denied: User rejected. This tool has been denied 2 times.",
+          tool_call_id: "tc-2",
+        },
+      ]);
+
+    const config: AgentLoopConfig = {
+      client,
+      model: "gpt-4o",
+      toolRegistry: registry,
+      strategy,
+      events,
+      checkPermission: vi.fn(async () => ({ allowed: false, reason: "User rejected" })),
+    };
+
+    const result = await runAgentLoop(config, [{ role: "user", content: "Do something" }]);
+
+    expect(result.iterations).toBe(3);
+
+    // Second denial should include "STOP trying" message
+    const emitCalls = (events.emit as ReturnType<typeof vi.fn>).mock.calls;
+    const toolCompleteEvents = emitCalls.filter(([event]: [string]) => event === "tool:complete");
+    // At least one should have the escalated denial message
+    const escalated = toolCompleteEvents.find(([, data]: [string, { output: string }]) =>
+      data.output.includes("STOP trying"),
+    );
+    expect(escalated).toBeDefined();
+  });
+});

@@ -491,6 +491,11 @@ export async function runAgentLoop(
   const circuitBreaker = new CircuitBreaker(maxIterations);
   resetRetryState();
 
+  // Permission denial tracker: tool 이름별 거절 횟수 추적
+  // 같은 도구가 반복 거절되면 LLM에 "이 도구 사용을 중단하라"는 가이드를 주입
+  const permissionDenialCounts = new Map<string, number>();
+  const MAX_DENIALS_BEFORE_STOP = 2;
+
   // Context manager for auto-compaction when token budget is exceeded
   const contextManager = new ContextManager({
     maxContextTokens: config.maxContextTokens,
@@ -767,10 +772,22 @@ export async function runAgentLoop(
         if (config.checkPermission) {
           const permission = await config.checkPermission(call);
           if (!permission.allowed) {
+            // Permission denial 횟수 추적
+            const denialCount = (permissionDenialCounts.get(call.name) ?? 0) + 1;
+            permissionDenialCounts.set(call.name, denialCount);
+
+            const denialMessage =
+              denialCount >= MAX_DENIALS_BEFORE_STOP
+                ? `Permission denied: ${permission.reason ?? "User rejected"}. ` +
+                  `This tool has been denied ${denialCount} times. ` +
+                  `STOP trying to use "${call.name}". ` +
+                  `Inform the user what you were trying to do and ask for guidance.`
+                : `Permission denied: ${permission.reason ?? "User rejected"}`;
+
             const denied: ToolCallResult = {
               id: call.id,
               name: call.name,
-              output: `Permission denied: ${permission.reason ?? "User rejected"}`,
+              output: denialMessage,
               isError: true,
             };
             preflightResults.set(call.id, denied);
@@ -778,7 +795,7 @@ export async function runAgentLoop(
               name: call.name,
               id: call.id,
               isError: true,
-              output: `Permission denied: ${permission.reason ?? "User rejected"}`,
+              output: denialMessage,
             });
             continue;
           }
@@ -937,6 +954,37 @@ export async function runAgentLoop(
     // Append tool results as messages
     const toolMessages = config.strategy.formatToolResults(truncatedResults);
     messages.push(...toolMessages);
+
+    // MCP 도구 실패 감지 → LLM에 recovery 가이드 메시지 주입
+    const mcpFailures = results.filter((r) => r.isError && r.name.startsWith("mcp__"));
+    if (mcpFailures.length > 0) {
+      const failedToolNames = mcpFailures.map((r) => r.name).join(", ");
+      const hasTimeout = mcpFailures.some(
+        (r) =>
+          r.metadata?.mcpErrorType === "timeout" || r.output.toLowerCase().includes("timed out"),
+      );
+      const hasDenial = mcpFailures.some((r) =>
+        r.output.toLowerCase().includes("permission denied"),
+      );
+
+      let guidance = `[System] ${mcpFailures.length} MCP tool(s) failed: ${failedToolNames}. `;
+      if (hasTimeout) {
+        guidance += "At least one tool timed out. Do NOT retry the same call. ";
+      }
+      if (hasDenial) {
+        guidance += "At least one tool was denied by the user. Do NOT retry denied tools. ";
+      }
+      guidance +=
+        "You MUST: (1) Acknowledge the failure to the user, " +
+        "(2) Explain what you were trying to do, " +
+        "(3) Suggest an alternative approach or ask the user how to proceed.";
+
+      const recoveryGuidance: ChatMessage = {
+        role: "user",
+        content: guidance,
+      };
+      messages.push(recoveryGuidance);
+    }
 
     // Track iteration for circuit breaker (detect no-progress loops)
     const filesModified = new Set<string>();

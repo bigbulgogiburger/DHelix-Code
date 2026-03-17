@@ -4,7 +4,11 @@ import {
   resetRetryState,
   type RecoveryResult,
 } from "../../../src/core/recovery-executor.js";
-import { type RecoveryStrategy } from "../../../src/core/recovery-strategy.js";
+import {
+  type RecoveryStrategy,
+  findRecoveryStrategy,
+  RECOVERY_STRATEGIES,
+} from "../../../src/core/recovery-strategy.js";
 import { type ChatMessage } from "../../../src/llm/provider.js";
 
 const sampleMessages: readonly ChatMessage[] = [
@@ -186,4 +190,67 @@ describe("executeRecovery", () => {
       expect(afterReset.action).toBe("retry");
     });
   });
+});
+
+describe("findRecoveryStrategy — MCP-specific patterns", () => {
+  it("should match MCP tool timeout error", () => {
+    const error = new Error("MCP tool error: Request timed out: tools/call");
+    const strategy = findRecoveryStrategy(error);
+    expect(strategy).toBeDefined();
+    expect(strategy!.description).toContain("MCP tool timeout");
+    expect(strategy!.maxRetries).toBe(1);
+  });
+
+  it("should match MCP connection refused error", () => {
+    const error = new Error("MCP server ECONNREFUSED: connection refused");
+    const strategy = findRecoveryStrategy(error);
+    expect(strategy).toBeDefined();
+    expect(strategy!.description).toContain("MCP connection lost");
+    expect(strategy!.action).toBe("compact");
+  });
+
+  it("should match MCP disconnected error", () => {
+    const error = new Error("MCP client disconnected unexpectedly");
+    const strategy = findRecoveryStrategy(error);
+    expect(strategy).toBeDefined();
+    expect(strategy!.description).toContain("MCP connection lost");
+  });
+
+  it("should prefer MCP timeout over generic timeout", () => {
+    // MCP-specific pattern should match before the generic timeout
+    const mcpError = new Error("MCP tool error: Request timed out: tools/call");
+    const strategy = findRecoveryStrategy(mcpError);
+    expect(strategy).toBeDefined();
+    expect(strategy!.description).toContain("MCP tool timeout");
+    // Should get only 1 retry (not 2 like generic timeout)
+    expect(strategy!.maxRetries).toBe(1);
+  });
+
+  it("should match generic timeout for non-MCP errors", () => {
+    const error = new Error("Connection timeout to API server");
+    const strategy = findRecoveryStrategy(error);
+    expect(strategy).toBeDefined();
+    expect(strategy!.description).toBe("Timeout — retry with backoff");
+    expect(strategy!.maxRetries).toBe(2);
+  });
+
+  it("MCP timeout strategy should execute with single retry + 3s backoff", async () => {
+    resetRetryState();
+    const mcpTimeoutStrategy = RECOVERY_STRATEGIES.find((s) =>
+      s.description.includes("MCP tool timeout"),
+    );
+    expect(mcpTimeoutStrategy).toBeDefined();
+
+    const error = new Error("MCP tool error: Request timed out");
+
+    // First attempt should succeed
+    const first = await executeRecovery(mcpTimeoutStrategy!, error, sampleMessages, {
+      signal: undefined,
+    });
+    expect(first.action).toBe("retry");
+
+    // Second attempt should abort (maxRetries = 1)
+    const second = await executeRecovery(mcpTimeoutStrategy!, error, sampleMessages);
+    expect(second.action).toBe("abort");
+  }, 10000);
 });

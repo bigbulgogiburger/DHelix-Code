@@ -46,7 +46,26 @@ export const RECOVERY_STRATEGIES: readonly RecoveryStrategy[] = [
     description: "Context overflow — auto-compact and retry",
   },
   {
-    // 네트워크 타임아웃 에러
+    // MCP 도구 타임아웃 에러 (MCP JSON-RPC 고유 패턴)
+    // -> MCP 서버 응답이 늦을 때 1회만 재시도 (무한 재시도 방지)
+    // Claude Code에서도 MCP 타임아웃은 알려진 문제 (issue #16837, #18684)
+    errorPattern: /MCP tool error.*timed out|Request timed out.*tools\/call/i,
+    action: "retry",
+    maxRetries: 1,
+    backoffMs: 3000,
+    description: "MCP tool timeout — single retry with backoff",
+  },
+  {
+    // MCP 서버 연결 에러
+    // -> MCP 서버가 죽었거나 연결 불가 시 재시도하지 않고 즉시 실패
+    // 재시도해도 소용없으므로 compact(메시지 정리) 후 LLM이 대안을 찾도록 유도
+    errorPattern: /MCP.*ECONNREFUSED|MCP.*disconnected|MCP.*ECONNRESET/i,
+    action: "compact",
+    maxRetries: 1,
+    description: "MCP connection lost — compact and continue without MCP",
+  },
+  {
+    // 네트워크 타임아웃 에러 (LLM 호출)
     // -> 2초 간격으로 지수 백오프(exponential backoff) 재시도
     // 지수 백오프란? 재시도할 때마다 대기 시간을 2배로 늘리는 방식입니다 (2초 -> 4초 -> 8초)
     errorPattern: /ETIMEDOUT|timeout|timed out/i,

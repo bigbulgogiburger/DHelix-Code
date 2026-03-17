@@ -94,6 +94,15 @@ Customizable: `~/.dbcode/keybindings.json`
 | ------------------------------- | ----------------------------------------------- |
 | `verify-tool-metadata-pipeline` | After tool definition/executor/display changes  |
 | `verify-model-capabilities`     | After LLM model config or default model changes |
+| `verify-architecture`           | After new module/import changes/refactoring     |
+
+## Development Skills
+
+| Skill                | When to Use                                   |
+| -------------------- | --------------------------------------------- |
+| `add-slash-command`  | When adding a new slash command               |
+| `add-tool`           | When adding a new built-in tool               |
+| `debug-test-failure` | When tests fail and need systematic diagnosis |
 
 ## Compact Instructions
 
@@ -109,13 +118,13 @@ When compacting, always preserve:
 
 작업 맥락에 따라 아래 문서를 참조하세요:
 
-| 문서                  | 참조 시점                                | 경로                                             |
-| --------------------- | ---------------------------------------- | ------------------------------------------------ |
-| Directory Structure   | 파일 위치 파악, 새 모듈 배치             | `.claude/docs/reference/directory-structure.md`  |
-| Architecture Deep     | Agent loop, 컨텍스트, 서브에이전트       | `.claude/docs/reference/architecture-deep.md`    |
-| Interfaces & Tools    | Tool 추가/수정, LLM 연동, MCP 브리지    | `.claude/docs/reference/interfaces-and-tools.md` |
-| Config & Instructions | DBCODE.md, 설정 계층, MCP 스코프 설정    | `.claude/docs/reference/config-system.md`        |
-| Skills & Commands     | 스킬 개발, 41개 슬래시 명령              | `.claude/docs/reference/skills-and-commands.md`  |
-| Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션         | `.claude/docs/reference/coding-conventions.md`   |
-| MCP System            | MCP 서버 연동, 스코프, 도구 브리지       | `.claude/docs/reference/mcp-system.md`           |
-| Subagents & Teams     | 서브에이전트 생성, 팀 오케스트레이션     | `.claude/docs/reference/subagents-and-teams.md`  |
+| 문서                  | 참조 시점                             | 경로                                             |
+| --------------------- | ------------------------------------- | ------------------------------------------------ |
+| Directory Structure   | 파일 위치 파악, 새 모듈 배치          | `.claude/docs/reference/directory-structure.md`  |
+| Architecture Deep     | Agent loop, 컨텍스트, 서브에이전트    | `.claude/docs/reference/architecture-deep.md`    |
+| Interfaces & Tools    | Tool 추가/수정, LLM 연동, MCP 브리지  | `.claude/docs/reference/interfaces-and-tools.md` |
+| Config & Instructions | DBCODE.md, 설정 계층, MCP 스코프 설정 | `.claude/docs/reference/config-system.md`        |
+| Skills & Commands     | 스킬 개발, 41개 슬래시 명령           | `.claude/docs/reference/skills-and-commands.md`  |
+| Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션       | `.claude/docs/reference/coding-conventions.md`   |
+| MCP System            | MCP 서버 연동, 스코프, 도구 브리지    | `.claude/docs/reference/mcp-system.md`           |
+| Subagents & Teams     | 서브에이전트 생성, 팀 오케스트레이션  | `.claude/docs/reference/subagents-and-teams.md`  |

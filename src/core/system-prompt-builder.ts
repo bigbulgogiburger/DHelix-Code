@@ -35,16 +35,39 @@ import { getToneProfile } from "./tone-profiles.js";
  * - repoMapBudget: 저장소 맵(프로젝트 구조) 섹션의 토큰 상한
  * - skillsBudget: 스킬(슬래시 명령) 섹션의 토큰 상한
  */
-const TIER_BUDGETS: Readonly<Record<CapabilityTier, {
-  readonly totalBudget: number;
-  readonly toolDescriptionBudget: number;
-  readonly instructionsBudget: number;
-  readonly repoMapBudget: number;
-  readonly skillsBudget: number;
-}>> = {
-  high: { totalBudget: 12_000, toolDescriptionBudget: 4_000, instructionsBudget: 3_000, repoMapBudget: 5_000, skillsBudget: 2_000 },
-  medium: { totalBudget: 8_000, toolDescriptionBudget: 2_500, instructionsBudget: 2_000, repoMapBudget: 2_000, skillsBudget: 1_000 },
-  low: { totalBudget: 4_000, toolDescriptionBudget: 1_500, instructionsBudget: 1_000, repoMapBudget: 500, skillsBudget: 500 },
+const TIER_BUDGETS: Readonly<
+  Record<
+    CapabilityTier,
+    {
+      readonly totalBudget: number;
+      readonly toolDescriptionBudget: number;
+      readonly instructionsBudget: number;
+      readonly repoMapBudget: number;
+      readonly skillsBudget: number;
+    }
+  >
+> = {
+  high: {
+    totalBudget: 12_000,
+    toolDescriptionBudget: 4_000,
+    instructionsBudget: 3_000,
+    repoMapBudget: 5_000,
+    skillsBudget: 2_000,
+  },
+  medium: {
+    totalBudget: 8_000,
+    toolDescriptionBudget: 2_500,
+    instructionsBudget: 2_000,
+    repoMapBudget: 2_000,
+    skillsBudget: 1_000,
+  },
+  low: {
+    totalBudget: 4_000,
+    toolDescriptionBudget: 1_500,
+    instructionsBudget: 1_000,
+    repoMapBudget: 500,
+    skillsBudget: 500,
+  },
 };
 
 /**
@@ -586,7 +609,19 @@ Examples:
 - Permission denied: "이 작업은 권한이 필요합니다. 다른 접근 방식을 시도하겠습니다."
 - Edit string not found: "교체할 문자열을 찾지 못했습니다. 파일을 다시 읽어 정확한 내용을 확인하겠습니다." → then re-read the file
 
-Do NOT silently retry the same failed operation. Always explain what happened before trying again.`;
+Do NOT silently retry the same failed operation. Always explain what happened before trying again.
+
+### MCP tool failure recovery
+MCP (Model Context Protocol) tools connect to external servers. They have unique failure modes:
+- **Timeout**: MCP servers may take longer than expected. Do NOT retry the same call — inform the user and suggest alternatives.
+- **Connection refused**: The MCP server is not running. Suggest the user check with /mcp command.
+- **Output truncated**: Large MCP responses may be truncated. Work with the available data, or ask the user to try a more targeted query.
+- **Permission denied**: The user explicitly rejected this tool call. Do NOT retry — ask the user how to proceed.
+
+When an MCP tool fails, ALWAYS:
+1. Tell the user which MCP tool failed and why (in plain language).
+2. Do NOT silently retry the same MCP tool call.
+3. Suggest a concrete alternative (e.g., use a built-in tool, try different parameters, or ask the user).`;
 }
 
 function buildDoingTasksSection(): string {
@@ -724,7 +759,9 @@ ${serverLines.join("\n\n")}`;
 function buildToolsSection(registry: ToolRegistry, tier?: CapabilityTier): string {
   const defs = registry.getDefinitionsForLLM();
   const lines = defs.map((d) => {
-    const desc = tier ? compressToolDescription(d.function.description, tier) : d.function.description;
+    const desc = tier
+      ? compressToolDescription(d.function.description, tier)
+      : d.function.description;
     return `- **${d.function.name}**: ${desc}`;
   });
 
