@@ -784,8 +784,7 @@ function getMCPToolDisplay(toolName: string): ToolDisplayConfig | undefined {
     runningHeaderVerb: `${runningVerb} ${headerLabel}`,
     headerColor,
     extractDetail: (_args, _output, metadata) => {
-      const serverMeta =
-        typeof metadata?.serverName === "string" ? metadata.serverName : server;
+      const serverMeta = typeof metadata?.serverName === "string" ? metadata.serverName : server;
       return `[MCP:${serverMeta}] ${tool}`;
     },
     extractSubtext: (_args, _output, duration) => formatDurationSubtext(duration),

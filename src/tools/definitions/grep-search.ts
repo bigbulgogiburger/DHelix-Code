@@ -143,12 +143,12 @@ async function searchWithRipgrep(
 ): Promise<RipgrepResult> {
   // ripgrep 명령행 인수 구성
   const args: string[] = [
-    "--line-number",   // 줄 번호 표시
-    "--no-heading",    // 파일별 그룹핑 비활성화 (각 줄에 파일명 포함)
+    "--line-number", // 줄 번호 표시
+    "--no-heading", // 파일별 그룹핑 비활성화 (각 줄에 파일명 포함)
     "--color",
-    "never",           // 색상 코드 비활성화 (텍스트 파싱을 위해)
+    "never", // 색상 코드 비활성화 (텍스트 파싱을 위해)
     "--max-count",
-    "200",             // 파일당 최대 매칭 수 (과도한 출력 방지)
+    "200", // 파일당 최대 매칭 수 (과도한 출력 방지)
   ];
 
   // 대소문자 무시 옵션 (기본값: 대소문자 구분)
@@ -181,7 +181,7 @@ async function searchWithRipgrep(
 
   const { stdout } = await execFileAsync("rg", args, {
     maxBuffer: 10 * 1024 * 1024, // 10MB 버퍼 — 대규모 검색 결과 처리
-    timeout: 25_000,             // 25초 타임아웃
+    timeout: 25_000, // 25초 타임아웃
   });
 
   if (!stdout.trim()) {

@@ -576,8 +576,8 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       isError: false,
       metadata: {
         path: normalizePath(filePath),
-        totalLines: lines.length,   // 전체 줄 수
-        readFrom: offset,           // 읽기 시작 줄 (0-based)
+        totalLines: lines.length, // 전체 줄 수
+        readFrom: offset, // 읽기 시작 줄 (0-based)
         readTo: Math.min(offset + limit, lines.length), // 읽기 끝 줄
       },
     };

@@ -38,7 +38,8 @@ describe("/doctor enhanced diagnostics", () => {
       const cmdStr = String(cmd);
       if (cmdStr === "git --version") return "git version 2.43.0\n";
       if (cmdStr.includes("rev-parse")) return "true\n";
-      if (cmdStr === "df -h .") return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
+      if (cmdStr === "df -h .")
+        return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
       return "";
     });
     mockedExistsSync.mockReturnValue(true);
@@ -97,7 +98,8 @@ describe("/doctor enhanced diagnostics", () => {
       mockedExecSync.mockImplementation((cmd: string) => {
         const cmdStr = String(cmd);
         if (cmdStr === "git --version") throw new Error("not found");
-        if (cmdStr === "df -h .") return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
+        if (cmdStr === "df -h .")
+          return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
         return "";
       });
 
@@ -121,7 +123,8 @@ describe("/doctor enhanced diagnostics", () => {
         const cmdStr = String(cmd);
         if (cmdStr === "git --version") return "git version 2.43.0\n";
         if (cmdStr.includes("rev-parse")) throw new Error("not a repo");
-        if (cmdStr === "df -h .") return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
+        if (cmdStr === "df -h .")
+          return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
         return "";
       });
 
@@ -311,7 +314,8 @@ describe("/doctor enhanced diagnostics", () => {
       mockedExecSync.mockImplementation((cmd: string) => {
         const cmdStr = String(cmd);
         if (cmdStr === "git --version") throw new Error("not found");
-        if (cmdStr === "df -h .") return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
+        if (cmdStr === "df -h .")
+          return "Filesystem      Size  Used Avail Use% Mounted on\n/dev/sda1       100G   55G   45G  55% /\n";
         return "";
       });
 

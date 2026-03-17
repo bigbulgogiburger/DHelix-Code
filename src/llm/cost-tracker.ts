@@ -183,7 +183,7 @@ export class CostTracker {
       totalTokens,
       totalPromptTokens,
       totalCompletionTokens,
-      entries: [...this._entries],       // 원본 배열의 복사본을 반환하여 불변성 보장
+      entries: [...this._entries], // 원본 배열의 복사본을 반환하여 불변성 보장
       modelBreakdown: breakdown,
     };
   }
@@ -192,7 +192,7 @@ export class CostTracker {
    * 모든 기록을 초기화 — 새 세션 시작 시 사용
    */
   reset(): void {
-    this._entries.length = 0;   // 배열을 비움 (새 배열 할당 대신 길이를 0으로)
+    this._entries.length = 0; // 배열을 비움 (새 배열 할당 대신 길이를 0으로)
   }
 
   /** 기록된 항목 수 */

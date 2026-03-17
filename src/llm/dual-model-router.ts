@@ -130,19 +130,19 @@ export class DualModelRouter {
  * 한국어와 영어 키워드를 모두 포함합니다.
  */
 const PLAN_KEYWORDS = [
-  "plan",           // 계획
-  "설계",           // 설계 (한국어)
-  "분석",           // 분석 (한국어)
-  "리뷰",           // 리뷰 (한국어)
-  "review",         // 코드 리뷰
-  "architecture",   // 아키텍처 설계
-  "design",         // 설계
-  "analyze",        // 분석
-  "analyse",        // 분석 (영국식)
-  "strategy",       // 전략
-  "approach",       // 접근 방식
-  "proposal",       // 제안
-  "RFC",            // Request for Comments — 기술 제안서
+  "plan", // 계획
+  "설계", // 설계 (한국어)
+  "분석", // 분석 (한국어)
+  "리뷰", // 리뷰 (한국어)
+  "review", // 코드 리뷰
+  "architecture", // 아키텍처 설계
+  "design", // 설계
+  "analyze", // 분석
+  "analyse", // 분석 (영국식)
+  "strategy", // 전략
+  "approach", // 접근 방식
+  "proposal", // 제안
+  "RFC", // Request for Comments — 기술 제안서
 ] as const;
 
 /**
@@ -161,7 +161,7 @@ export function detectPhase(
 ): TaskPhase {
   // 마지막 사용자 메시지를 찾음 (배열을 뒤에서부터 검색)
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
-  if (!lastUser) return "execute";  // 사용자 메시지가 없으면 기본값 execute
+  if (!lastUser) return "execute"; // 사용자 메시지가 없으면 기본값 execute
 
   const content = typeof lastUser.content === "string" ? lastUser.content.toLowerCase() : "";
   // 키워드가 하나라도 포함되면 plan, 아니면 execute

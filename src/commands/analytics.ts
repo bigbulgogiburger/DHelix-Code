@@ -84,7 +84,7 @@ export function getModelDistribution(): ReadonlyArray<{
       inputTokens: counts.input,
       outputTokens: counts.output,
     }))
-    .sort((a, b) => (b.inputTokens + b.outputTokens) - (a.inputTokens + a.outputTokens));
+    .sort((a, b) => b.inputTokens + b.outputTokens - (a.inputTokens + a.outputTokens));
 }
 
 /**
@@ -233,23 +233,16 @@ export const analyticsCommand: SlashCommand = {
     if (modelDist.length > 0) {
       lines.push("  Model Distribution");
       lines.push("  ------------------");
-      const totalAllTokens = modelDist.reduce(
-        (sum, m) => sum + m.inputTokens + m.outputTokens,
-        0,
-      );
+      const totalAllTokens = modelDist.reduce((sum, m) => sum + m.inputTokens + m.outputTokens, 0);
       const maxModelNameLen = Math.max(...modelDist.map((m) => m.model.length), 5);
 
       for (const entry of modelDist) {
         const entryTotal = entry.inputTokens + entry.outputTokens;
         const pct = totalAllTokens > 0 ? (entryTotal / totalAllTokens) * 100 : 0;
         const barLen =
-          totalAllTokens > 0
-            ? Math.max(1, Math.round((entryTotal / totalAllTokens) * 15))
-            : 0;
+          totalAllTokens > 0 ? Math.max(1, Math.round((entryTotal / totalAllTokens) * 15)) : 0;
         const paddedName = entry.model.padEnd(maxModelNameLen);
-        lines.push(
-          `    ${paddedName}  ${formatPercent(pct).padStart(6)}  ${makeBar(barLen, 15)}`,
-        );
+        lines.push(`    ${paddedName}  ${formatPercent(pct).padStart(6)}  ${makeBar(barLen, 15)}`);
       }
       lines.push("");
     }
@@ -271,13 +264,9 @@ export const analyticsCommand: SlashCommand = {
 
       for (const tool of toolBreakdown) {
         const barLen =
-          maxToolCount > 0
-            ? Math.max(1, Math.round((tool.count / maxToolCount) * 12))
-            : 0;
+          maxToolCount > 0 ? Math.max(1, Math.round((tool.count / maxToolCount) * 12)) : 0;
         const paddedName = tool.name.padEnd(maxNameLen);
-        lines.push(
-          `    ${paddedName}  ${String(tool.count).padStart(4)}  ${makeBar(barLen, 12)}`,
-        );
+        lines.push(`    ${paddedName}  ${String(tool.count).padStart(4)}  ${makeBar(barLen, 12)}`);
       }
       lines.push("");
     }
@@ -297,9 +286,7 @@ export const analyticsCommand: SlashCommand = {
     lines.push(`    Size:       ${cacheStats.size} entries`);
     lines.push(`    Hits:       ${cacheStats.hits}`);
     lines.push(`    Misses:     ${cacheStats.misses}`);
-    lines.push(
-      `    Hit Rate:   ${formatPercent(cacheStats.hitRate * 100)}`,
-    );
+    lines.push(`    Hit Rate:   ${formatPercent(cacheStats.hitRate * 100)}`);
     lines.push("");
 
     // Activity timeline

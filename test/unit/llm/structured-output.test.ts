@@ -85,7 +85,11 @@ describe("buildStructuredOutputConfig", () => {
 
   describe("unknown provider", () => {
     it("should return generic config with schema guidance", () => {
-      const result = buildStructuredOutputConfig("some-unknown-provider", sampleToolSchema, "medium");
+      const result = buildStructuredOutputConfig(
+        "some-unknown-provider",
+        sampleToolSchema,
+        "medium",
+      );
       expect(result).not.toBeNull();
       expect(result!.schema_guidance).toBeDefined();
       expect(typeof result!.schema_guidance).toBe("string");
@@ -105,7 +109,7 @@ describe("buildStructuredOutputConfig", () => {
     it("should include tool_call wrapper schema", () => {
       const result = buildStructuredOutputConfig("openai", sampleToolSchema, "medium");
       expect(result).not.toBeNull();
-      const schema = (result!.response_format as Record<string, unknown>);
+      const schema = result!.response_format as Record<string, unknown>;
       const jsonSchema = (schema as Record<string, Record<string, unknown>>).json_schema;
       const inner = jsonSchema.schema as Record<string, unknown>;
       expect(inner.type).toBe("object");

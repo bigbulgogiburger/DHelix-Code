@@ -110,9 +110,7 @@ export class AuditLogger {
       const content = await readFile(this.logPath, { encoding: "utf-8" });
 
       // 줄바꿈으로 분리하고 빈 줄 제거
-      const lines = content
-        .split("\n")
-        .filter((line) => line.trim().length > 0);
+      const lines = content.split("\n").filter((line) => line.trim().length > 0);
 
       const entries: AuditEntry[] = [];
       for (const line of lines) {

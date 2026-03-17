@@ -31,92 +31,92 @@ user_invocable: true
 Skill prompt content with $ARGUMENTS substitution...
 ```
 
-## Slash Commands (41 total)
+## Slash Commands (42 total — 39 registered + 3 unregistered)
 
 ### Core
 
-| 명령 | 설명 |
-|------|------|
-| `/help` | 도움말 |
-| `/clear` | 대화 초기화 |
-| `/compact` | 컨텍스트 수동 압축 |
-| `/status` | 세션 상태 조회 |
-| `/doctor` | 설정 진단 (12 health checks) |
+| 명령       | 설명                         |
+| ---------- | ---------------------------- |
+| `/help`    | 도움말                       |
+| `/clear`   | 대화 초기화                  |
+| `/compact` | 컨텍스트 수동 압축           |
+| `/status`  | 세션 상태 조회               |
+| `/doctor`  | 설정 진단 (12 health checks) |
 
 ### Model & Configuration
 
-| 명령 | 설명 |
-|------|------|
-| `/model` | LLM 모델 변경 |
-| `/config` | 설정 조회/변경 |
-| `/effort` | 응답 품질 수준 조정 |
-| `/fast` | 빠른 모드 토글 |
-| `/tone` | 대화 어조 변경 |
-| `/output-style` | 출력 스타일 변경 |
-| `/keybindings` | 키보드 단축키 관리 |
-| `/dual-model` | Architect/Editor 듀얼 모델 패턴 |
+| 명령            | 설명                            |
+| --------------- | ------------------------------- |
+| `/model`        | LLM 모델 변경                   |
+| `/config`       | 설정 조회/변경                  |
+| `/effort`       | 응답 품질 수준 조정             |
+| `/fast`         | 빠른 모드 토글                  |
+| `/tone`         | 대화 어조 변경                  |
+| `/output-style` | 출력 스타일 변경                |
+| `/keybindings`  | 키보드 단축키 관리              |
+| `/dual-model`   | Architect/Editor 듀얼 모델 패턴 |
 
 ### Session Management
 
-| 명령 | 설명 |
-|------|------|
-| `/resume` | 이전 세션 복원 |
+| 명령      | 설명                  |
+| --------- | --------------------- |
+| `/resume` | 이전 세션 복원        |
 | `/rewind` | 체크포인트로 되돌리기 |
-| `/fork` | 현재 세션 분기 |
-| `/undo` | 파일 변경 되돌리기 |
-| `/rename` | 세션 이름 변경 |
+| `/fork`   | 현재 세션 분기        |
+| `/undo`   | 파일 변경 되돌리기    |
+| `/rename` | 세션 이름 변경        |
 
 ### Analysis & Monitoring
 
-| 명령 | 설명 |
-|------|------|
-| `/cost` | API 비용 확인 |
-| `/context` | 컨텍스트 사용량 조회 |
-| `/stats` | 세션 통계 |
+| 명령         | 설명                                       |
+| ------------ | ------------------------------------------ |
+| `/cost`      | API 비용 확인                              |
+| `/context`   | 컨텍스트 사용량 조회                       |
+| `/stats`     | 세션 통계                                  |
 | `/analytics` | 상세 분석 대시보드 (토큰, 도구 빈도, 비용) |
 
 ### Development Tools
 
-| 명령 | 설명 |
-|------|------|
-| `/commit` | Git 커밋 생성 |
-| `/review` | 코드 리뷰 실행 |
-| `/debug` | 디버깅 모드 |
-| `/diff` | 변경사항 비교 |
-| `/batch` | 배치 작업 실행 |
-| `/simplify` | 코드 단순화 리뷰 |
-| `/plan` | Plan 모드 (실행 전 확인) |
-| `/init` | 프로젝트에 DBCODE.md 생성 |
+| 명령        | 설명                      |
+| ----------- | ------------------------- |
+| `/commit`   | Git 커밋 생성             |
+| `/review`   | 코드 리뷰 실행            |
+| `/debug`    | 디버깅 모드               |
+| `/diff`     | 변경사항 비교             |
+| `/batch`    | 배치 작업 실행            |
+| `/simplify` | 코드 단순화 리뷰          |
+| `/plan`     | Plan 모드 (실행 전 확인)  |
+| `/init`     | 프로젝트에 DBCODE.md 생성 |
 
 ### Export & Copy
 
-| 명령 | 설명 |
-|------|------|
-| `/export` | 대화 내보내기 |
-| `/copy` | 대화 클립보드에 복사 |
+| 명령      | 설명                 |
+| --------- | -------------------- |
+| `/export` | 대화 내보내기        |
+| `/copy`   | 대화 클립보드에 복사 |
 
 ### External Integration
 
-| 명령 | 설명 |
-|------|------|
-| `/mcp` | MCP 서버 관리 (list/add/remove, 3-scope) |
-| `/voice` | 음성 입력 토글 |
-| `/update` | 업데이트 확인 |
-| `/bug` | 버그 리포트 |
+| 명령      | 설명                                     |
+| --------- | ---------------------------------------- |
+| `/mcp`    | MCP 서버 관리 (list/add/remove, 3-scope) |
+| `/voice`  | 음성 입력 토글                           |
+| `/update` | 업데이트 확인                            |
+| `/bug`    | 버그 리포트                              |
 
 ### Agent & Team
 
-| 명령 | 설명 |
-|------|------|
-| `/agents` | 서브에이전트 관리 |
-| `/team` | 팀 오케스트레이션 |
+| 명령      | 설명              | 상태                    |
+| --------- | ----------------- | ----------------------- |
+| `/agents` | 서브에이전트 관리 | ⚠️ 코드 존재하나 미등록 |
+| `/team`   | 팀 오케스트레이션 | ⚠️ 코드 존재하나 미등록 |
 
 ### Permission & Memory
 
-| 명령 | 설명 |
-|------|------|
-| `/permissions` | 권한 규칙 관리 |
-| `/memory` | 프로젝트 메모리 관리 |
+| 명령           | 설명                 | 상태                    |
+| -------------- | -------------------- | ----------------------- |
+| `/permissions` | 권한 규칙 관리       | ⚠️ 코드 존재하나 미등록 |
+| `/memory`      | 프로젝트 메모리 관리 | ✅ 등록됨               |
 
 ### /mcp 상세 (신규)
 
@@ -133,6 +133,7 @@ Skill prompt content with $ARGUMENTS substitution...
 ### /analytics
 
 Session analytics dashboard — displays:
+
 - Token usage breakdown (input/output/cache hits)
 - Tool call frequency and success rates
 - Context compaction history

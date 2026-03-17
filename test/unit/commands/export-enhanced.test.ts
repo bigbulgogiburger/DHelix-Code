@@ -1,7 +1,12 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { readFile, rm } from "node:fs/promises";
 import { join } from "node:path";
-import { exportCommand, sanitizeContent, detectToolCalls, estimateTokens } from "../../../src/commands/export.js";
+import {
+  exportCommand,
+  sanitizeContent,
+  detectToolCalls,
+  estimateTokens,
+} from "../../../src/commands/export.js";
 
 const TMP_DIR = join(process.cwd(), "test", "tmp");
 
@@ -166,7 +171,10 @@ describe("/export enhanced", () => {
         ...baseContext,
         messages: [
           { role: "user" as const, content: "List files" },
-          { role: "assistant" as const, content: "Let me check. > Tool: `glob_search`\nFound 10 files." },
+          {
+            role: "assistant" as const,
+            content: "Let me check. > Tool: `glob_search`\nFound 10 files.",
+          },
         ],
       };
       await exportCommand.execute("test-export.md", ctx);

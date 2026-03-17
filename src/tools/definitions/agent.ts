@@ -138,10 +138,10 @@ export function createAgentTool(deps: AgentToolDeps): ToolDefinition<Params> {
         output: result.response,
         isError: false,
         metadata: {
-          agentId: result.agentId,        // 서브에이전트 고유 ID (재개 시 사용)
-          type: result.type,              // 서브에이전트 유형
-          iterations: result.iterations,   // 에이전트 루프 반복 횟수
-          aborted: result.aborted,        // 사용자에 의해 중단되었는지 여부
+          agentId: result.agentId, // 서브에이전트 고유 ID (재개 시 사용)
+          type: result.type, // 서브에이전트 유형
+          iterations: result.iterations, // 에이전트 루프 반복 횟수
+          aborted: result.aborted, // 사용자에 의해 중단되었는지 여부
           workingDirectory: result.workingDirectory,
           description: params.description,
         },

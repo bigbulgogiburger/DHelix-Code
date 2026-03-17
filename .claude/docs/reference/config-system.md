@@ -35,27 +35,27 @@ Priority: CLI flags > env vars > project > user > defaults
 
 ## Key Config Paths
 
-| 용도             | 경로                           |
-| ---------------- | ------------------------------ |
-| 프로젝트 설정    | `.dbcode/settings.json`        |
-| 사용자 전역 설정 | `~/.dbcode/settings.json`      |
-| 프로젝트 규칙    | `.dbcode/rules/*.md`           |
-| 전역 규칙        | `~/.dbcode/rules/*.md`         |
-| 키바인딩         | `~/.dbcode/keybindings.json`   |
-| 입력 히스토리    | `~/.dbcode/input-history.json` |
-| 권한 감사 로그   | `.dbcode/audit.jsonl`          |
-| 프로젝트 메모리  | `~/.dbcode/projects/{hash}/memory/` |
+| 용도             | 경로                                      |
+| ---------------- | ----------------------------------------- |
+| 프로젝트 설정    | `.dbcode/settings.json`                   |
+| 사용자 전역 설정 | `~/.dbcode/settings.json`                 |
+| 프로젝트 규칙    | `.dbcode/rules/*.md`                      |
+| 전역 규칙        | `~/.dbcode/rules/*.md`                    |
+| 키바인딩         | `~/.dbcode/keybindings.json`              |
+| 입력 히스토리    | `~/.dbcode/input-history.json`            |
+| 권한 감사 로그   | `.dbcode/audit.jsonl`                     |
+| 프로젝트 메모리  | `~/.dbcode/projects/{hash}/memory/`       |
 | 콜드 스토리지    | `~/.dbcode/projects/{hash}/cold-storage/` |
 
 ## MCP Config Paths (3-Scope)
 
 MCP 서버 설정은 3개 스코프로 관리됩니다. 우선순위: local > project > user
 
-| 스코프  | 경로                           | 용도                        | Git |
-| ------- | ------------------------------ | --------------------------- | --- |
-| local   | `.dbcode/mcp-local.json`       | 개인 개발 서버 (API 키 등)  | .gitignore |
-| project | `.dbcode/mcp.json`             | 팀 공용 서버                | 커밋 |
-| user    | `~/.dbcode/mcp-servers.json`   | 글로벌 서버                 | N/A |
+| 스코프  | 경로                         | 용도                       | Git        |
+| ------- | ---------------------------- | -------------------------- | ---------- |
+| local   | `.dbcode/mcp-local.json`     | 개인 개발 서버 (API 키 등) | .gitignore |
+| project | `.dbcode/mcp.json`           | 팀 공용 서버               | 커밋       |
+| user    | `~/.dbcode/mcp-servers.json` | 글로벌 서버                | N/A        |
 
 모든 스코프의 설정 파일 형식:
 
@@ -80,10 +80,17 @@ MCP 서버 설정은 3개 스코프로 관리됩니다. 우선순위: local > pr
 Model selection follows env-var priority chain:
 
 ```
-DBCODE_MODEL > OPENAI_MODEL > "gpt-4o-mini" (hardcoded default)
+DBCODE_MODEL > OPENAI_MODEL > "gpt-5.1-codex-mini" (schema.ts hardcoded default)
 ```
 
-Set via environment variable or `defaults.ts`. CLI `--model` flag overrides all.
+**dotenv 타이밍 주의사항:**
+
+- `src/index.ts`에서 dotenv는 **패키지 루트의 `.env`만** 로드 (cwd의 `.env`는 읽지 않음)
+- `config/schema.ts`의 Zod 기본값은 **import 시점**(dotenv 로드 전)에 평가되므로 `"gpt-5.1-codex-mini"` 하드코딩 필수
+- 런타임 env 오버라이드는 `config/loader.ts`의 `loadEnvConfig()`에서 처리
+- `/model` 명령의 Default 항목은 실행 시점에 `process.env`를 직접 읽어 정확한 env 모델 표시
+
+CLI `--model` flag overrides all.
 
 ## Permission Audit Logging
 

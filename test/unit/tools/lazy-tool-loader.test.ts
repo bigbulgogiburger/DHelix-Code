@@ -1,8 +1,14 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { LazyToolLoader, type ToolSummary, type ToolSchema } from "../../../src/tools/lazy-tool-loader.js";
+import {
+  LazyToolLoader,
+  type ToolSummary,
+  type ToolSchema,
+} from "../../../src/tools/lazy-tool-loader.js";
 
 /** Helper to create a batch of test tools */
-function createTestTools(count: number): readonly { name: string; description: string; parameters: Record<string, unknown> }[] {
+function createTestTools(
+  count: number,
+): readonly { name: string; description: string; parameters: Record<string, unknown> }[] {
   return Array.from({ length: count }, (_, i) => ({
     name: `tool_${i}`,
     description: `Tool ${i} does things. It has many features and options.`,
@@ -51,7 +57,9 @@ describe("LazyToolLoader", () => {
     });
 
     it("should include short descriptions", () => {
-      loader.registerTool("file_read", "Read a file from disk. Supports offsets.", { type: "object" });
+      loader.registerTool("file_read", "Read a file from disk. Supports offsets.", {
+        type: "object",
+      });
       const summaries = loader.getToolSummaries("high");
 
       expect(summaries[0].shortDescription).toBe("Read a file from disk.");

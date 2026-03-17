@@ -27,48 +27,43 @@
 import { type ChatMessage } from "../llm/provider.js";
 
 /** 읽기 전용이어서 환경에서 다시 얻을 수 있는 도구 이름 목록 */
-const READ_ONLY_TOOL_NAMES = new Set([
-  "file_read",
-  "grep_search",
-  "glob_search",
-  "bash_exec",
-]);
+const READ_ONLY_TOOL_NAMES = new Set(["file_read", "grep_search", "glob_search", "bash_exec"]);
 
 /**
  * 읽기 전용 bash 명령어의 출력 패턴들
  * 이 패턴에 매칭되는 bash 출력은 안전하게 마스킹할 수 있습니다
  */
 const READ_ONLY_BASH_PATTERNS = [
-  /^STDOUT:/,    // 표준 출력으로 시작
-  /^cat\s/,      // 파일 내용 출력
-  /^ls\s/,       // 디렉토리 목록
-  /^find\s/,     // 파일 검색
-  /^head\s/,     // 파일 앞부분 출력
-  /^tail\s/,     // 파일 뒷부분 출력
-  /^wc\s/,       // 단어/줄 수 세기
-  /^du\s/,       // 디스크 사용량
-  /^df\s/,       // 파일 시스템 정보
-  /^file\s/,     // 파일 유형 확인
-  /^stat\s/,     // 파일 상태 정보
-  /^which\s/,    // 명령어 경로 찾기
-  /^echo\s/,     // 텍스트 출력
-  /^pwd$/,       // 현재 디렉토리 출력
-  /^env$/,       // 환경 변수 출력
-  /^printenv/,   // 환경 변수 출력
+  /^STDOUT:/, // 표준 출력으로 시작
+  /^cat\s/, // 파일 내용 출력
+  /^ls\s/, // 디렉토리 목록
+  /^find\s/, // 파일 검색
+  /^head\s/, // 파일 앞부분 출력
+  /^tail\s/, // 파일 뒷부분 출력
+  /^wc\s/, // 단어/줄 수 세기
+  /^du\s/, // 디스크 사용량
+  /^df\s/, // 파일 시스템 정보
+  /^file\s/, // 파일 유형 확인
+  /^stat\s/, // 파일 상태 정보
+  /^which\s/, // 명령어 경로 찾기
+  /^echo\s/, // 텍스트 출력
+  /^pwd$/, // 현재 디렉토리 출력
+  /^env$/, // 환경 변수 출력
+  /^printenv/, // 환경 변수 출력
 ];
 
 /** file_read 결과를 나타내는 콘텐츠 패턴 (줄 번호가 있는 출력) */
 const FILE_READ_PATTERNS = [
-  /^\s*\d+[│|]/,  // "  1│내용" 형태
-  /^\s+\d+\t/,    // "  1\t내용" 형태
+  /^\s*\d+[│|]/, // "  1│내용" 형태
+  /^\s+\d+\t/, // "  1\t내용" 형태
 ];
 
 /** grep/glob 검색 결과를 나타내는 콘텐츠 패턴 */
 const SEARCH_RESULT_PATTERNS = [
-  /matches found/,  // "N matches found"
-  /No matches/,     // "No matches"
-  /files found/,    // "N files found"
-  /No files/,       // "No files"
+  /matches found/, // "N matches found"
+  /No matches/, // "No matches"
+  /files found/, // "N files found"
+  /No files/, // "No files"
 ];
 
 /**
@@ -77,17 +72,17 @@ const SEARCH_RESULT_PATTERNS = [
  * (파일 삭제, 이동 등의 기록은 보존해야 합니다)
  */
 const MUTATION_BASH_PATTERNS = [
-  /^STDERR:/,                                          // 에러 출력
-  /^Error:/,                                           // 에러 메시지
-  /\brm\s/,                                            // 파일 삭제
-  /\bmv\s/,                                            // 파일 이동
-  /\bcp\s/,                                            // 파일 복사
-  /\bmkdir\s/,                                         // 디렉토리 생성
-  /\bchmod\s/,                                         // 권한 변경
-  /\bchown\s/,                                         // 소유자 변경
-  /\bnpm\s+(install|run|exec)/,                        // npm 패키지 설치/실행
+  /^STDERR:/, // 에러 출력
+  /^Error:/, // 에러 메시지
+  /\brm\s/, // 파일 삭제
+  /\bmv\s/, // 파일 이동
+  /\bcp\s/, // 파일 복사
+  /\bmkdir\s/, // 디렉토리 생성
+  /\bchmod\s/, // 권한 변경
+  /\bchown\s/, // 소유자 변경
+  /\bnpm\s+(install|run|exec)/, // npm 패키지 설치/실행
   /\bgit\s+(commit|push|merge|rebase|reset|checkout)/, // git 변이 명령
-  /\bpip\s+install/,                                   // Python 패키지 설치
+  /\bpip\s+install/, // Python 패키지 설치
 ];
 
 /**
@@ -242,10 +237,7 @@ export function applyObservationMasking(
   for (let i = 0; i < messages.length; i++) {
     const msg = messages[i];
 
-    if (
-      readOnlyIndices.includes(i) &&
-      !protectedIndices.has(i)
-    ) {
+    if (readOnlyIndices.includes(i) && !protectedIndices.has(i)) {
       // 마스킹 대상: 짧은 플레이스홀더로 교체
       const toolName = detectToolName(msg);
       const size = getOutputSize(msg);

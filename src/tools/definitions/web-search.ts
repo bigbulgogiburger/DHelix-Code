@@ -85,16 +85,18 @@ function formatResults(query: string, results: readonly SearchResult[]): string 
  * @returns 디코딩된 텍스트
  */
 function decodeHtmlEntities(text: string): string {
-  return text
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/&#x27;/g, "'")
-    // 숫자 HTML 엔티티 (예: &#8212; → —)
-    .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(Number(num)));
+  return (
+    text
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, '"')
+      .replace(/&#39;/g, "'")
+      .replace(/&#x27;/g, "'")
+      // 숫자 HTML 엔티티 (예: &#8212; → —)
+      .replace(/&#(\d+);/g, (_, num) => String.fromCharCode(Number(num)))
+  );
 }
 
 /**
@@ -269,7 +271,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       isError: false,
       metadata: {
         query: params.query,
-        engine,                    // 사용된 검색 엔진
+        engine, // 사용된 검색 엔진
         resultCount: results.length,
       },
     };

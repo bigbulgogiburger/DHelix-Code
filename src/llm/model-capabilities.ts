@@ -99,9 +99,9 @@ const DEFAULTS: ModelCapabilities = {
   supportsSystemMessage: true,
   supportsTemperature: true,
   supportsStreaming: true,
-  maxContextTokens: 128_000,        // 128K 컨텍스트 (현대 모델의 일반적인 크기)
-  maxOutputTokens: 4096,            // 4K 출력 토큰
-  tokenizer: "o200k",               // 최신 OpenAI 토크나이저
+  maxContextTokens: 128_000, // 128K 컨텍스트 (현대 모델의 일반적인 크기)
+  maxOutputTokens: 4096, // 4K 출력 토큰
+  tokenizer: "o200k", // 최신 OpenAI 토크나이저
   useDeveloperRole: false,
   pricing: DEFAULT_PRICING,
   useMaxCompletionTokens: true,
@@ -204,7 +204,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
     {
       maxContextTokens: 16385,
       tokenizer: "cl100k",
-      useMaxCompletionTokens: false,   // 레거시 모델이므로 max_tokens 사용
+      useMaxCompletionTokens: false, // 레거시 모델이므로 max_tokens 사용
       pricing: { inputPerMillion: 0.5, outputPerMillion: 1.5 },
       capabilityTier: "medium",
     },
@@ -241,9 +241,9 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
   [
     /^o1-mini/i,
     {
-      supportsSystemMessage: false,    // system 역할 미지원
-      supportsTemperature: false,      // temperature 파라미터 미지원
-      useDeveloperRole: true,          // developer 역할로 시스템 메시지 전달
+      supportsSystemMessage: false, // system 역할 미지원
+      supportsTemperature: false, // temperature 파라미터 미지원
+      useDeveloperRole: true, // developer 역할로 시스템 메시지 전달
       maxContextTokens: 200_000,
       maxOutputTokens: 100_000,
       tokenizer: "o200k",
@@ -307,9 +307,9 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 15, outputPerMillion: 75 },
       capabilityTier: "high",
-      supportsCaching: true,          // Anthropic 프롬프트 캐싱 지원
-      supportsThinking: true,         // Extended Thinking 지원
-      defaultThinkingBudget: 16384,   // 사고 예산 16K 토큰
+      supportsCaching: true, // Anthropic 프롬프트 캐싱 지원
+      supportsThinking: true, // Extended Thinking 지원
+      defaultThinkingBudget: 16384, // 사고 예산 16K 토큰
     },
   ],
   // Claude Sonnet 4: 균형 잡힌 모델 — 성능과 비용의 최적 균형
@@ -404,11 +404,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
   [
     /^llama3(?!\.)/i,
     {
-      supportsTools: false,            // 기본 llama3는 function calling 미지원
+      supportsTools: false, // 기본 llama3는 function calling 미지원
       maxContextTokens: 8192,
       maxOutputTokens: 4096,
       tokenizer: "llama",
-      pricing: { inputPerMillion: 0, outputPerMillion: 0 },  // 로컬 실행이므로 무료
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 }, // 로컬 실행이므로 무료
       capabilityTier: "low",
     },
   ],

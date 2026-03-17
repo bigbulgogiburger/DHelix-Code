@@ -274,7 +274,7 @@ export class CheckpointManager {
       }
 
       const safeFileName = snapshot.relativePath.replace(/[\\/]/g, "__");
-      const srcPath = join(cpDir, safeFileName);           // 체크포인트에 저장된 파일
+      const srcPath = join(cpDir, safeFileName); // 체크포인트에 저장된 파일
       const destPath = resolve(workingDirectory, snapshot.relativePath); // 복원 대상 경로
 
       try {

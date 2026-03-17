@@ -60,7 +60,9 @@ describe("ToolRegistry", () => {
 });
 
 /** Create a mock MCPToolSearch with configurable tools */
-function createMockToolSearch(tools: { name: string; description: string; serverName: string }[]): MCPToolSearch {
+function createMockToolSearch(
+  tools: { name: string; description: string; serverName: string }[],
+): MCPToolSearch {
   const mockSearch = {
     size: tools.length,
     generateDeferredToolsSummary: vi.fn(() => {
@@ -87,9 +89,7 @@ function createMockToolSearch(tools: { name: string; description: string; server
       };
     }),
     search: vi.fn((query: string, maxResults?: number) => {
-      const matching = tools.filter(
-        (t) => t.name.includes(query) || t.description.includes(query),
-      );
+      const matching = tools.filter((t) => t.name.includes(query) || t.description.includes(query));
       return matching.slice(0, maxResults ?? 5).map((t) => ({
         tool: {
           name: t.name,

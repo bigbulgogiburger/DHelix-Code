@@ -37,10 +37,7 @@ interface ScopeServerEntry {
 /**
  * 스코프별 설정 파일 경로를 반환합니다.
  */
-function getConfigPath(
-  scope: "local" | "project" | "user",
-  workingDirectory: string,
-): string {
+function getConfigPath(scope: "local" | "project" | "user", workingDirectory: string): string {
   switch (scope) {
     case "local":
       return join(workingDirectory, ".dbcode", "mcp-local.json");
@@ -87,10 +84,7 @@ async function addServerToConfig(
 /**
  * 스코프 설정 파일에서 서버를 제거하고 저장합니다.
  */
-async function removeServerFromConfig(
-  filePath: string,
-  name: string,
-): Promise<boolean> {
+async function removeServerFromConfig(filePath: string, name: string): Promise<boolean> {
   const config = await readScopeConfig(filePath);
   if (!config.servers?.[name]) {
     return false;
@@ -182,12 +176,12 @@ async function handleList(
   mcpManager?: import("../mcp/manager.js").MCPManager,
 ): Promise<{ output: string; success: boolean }> {
   // MCPManager에서 현재 연결된 서버 이름 조회
-  const connectedServers = new Set<string>(
-    mcpManager ? mcpManager.getConnectedServers() : [],
-  );
+  const connectedServers = new Set<string>(mcpManager ? mcpManager.getConnectedServers() : []);
 
   // MCPManager에서 서버별 등록된 도구 수 조회
-  const registeredTools = mcpManager ? mcpManager.getRegisteredTools() : new Map<string, readonly string[]>();
+  const registeredTools = mcpManager
+    ? mcpManager.getRegisteredTools()
+    : new Map<string, readonly string[]>();
 
   const lines: string[] = [];
   let totalServers = 0;
@@ -208,9 +202,10 @@ async function handleList(
       if (displayed.has(name)) {
         // 낮은 우선순위 스코프에서 같은 이름 → (overridden) 표시
         const transport = entry.transport ?? "stdio";
-        const target = transport === "stdio"
-          ? [entry.command, ...(entry.args ?? [])].join(" ")
-          : entry.url ?? "";
+        const target =
+          transport === "stdio"
+            ? [entry.command, ...(entry.args ?? [])].join(" ")
+            : (entry.url ?? "");
         lines.push(`    ${name}: ${target}`);
         lines.push(`      (overridden by higher-priority scope)`);
         totalServers++;
@@ -225,9 +220,10 @@ async function handleList(
       const statusIcon = isConnected ? "*" : "-";
 
       const transport = entry.transport ?? "stdio";
-      const target = transport === "stdio"
-        ? [entry.command, ...(entry.args ?? [])].join(" ")
-        : entry.url ?? "";
+      const target =
+        transport === "stdio"
+          ? [entry.command, ...(entry.args ?? [])].join(" ")
+          : (entry.url ?? "");
 
       lines.push(`    ${statusIcon} ${name}: ${target}`);
 

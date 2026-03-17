@@ -98,8 +98,7 @@ export const TOOL_TIMEOUTS = {
  * 중요: 다른 파일에서 모델명을 하드코딩하지 마세요.
  * 항상 이 상수를 import하여 사용해야 합니다.
  */
-export const DEFAULT_MODEL =
-  process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
+export const DEFAULT_MODEL = process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 /**
  * 토큰 카운터 기본값
@@ -118,7 +117,8 @@ export const TOKEN_DEFAULTS = {
  */
 export const LLM_DEFAULTS = {
   /** 기본 API Base URL — DBCODE_BASE_URL > OPENAI_BASE_URL > OpenAI 공식 */
-  baseUrl: process.env.DBCODE_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+  baseUrl:
+    process.env.DBCODE_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
   /** 기본 모델명 — 환경변수에서 결정 */
   model: DEFAULT_MODEL,
   /** 기본 온도 — 0.0 (결정적, 동일 입력에 동일 출력) */

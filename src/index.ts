@@ -99,10 +99,14 @@ program
       addDir?: string[];
     }) => {
       // ── 단계 1: dotenv 로드 ──
-      // .env 파일에서 환경변수를 읽어 process.env에 주입
-      // --help, --version에서는 이 action이 실행되지 않으므로 불필요한 로드 방지
+      // 패키지 루트의 .env만 로드 (cwd의 .env는 읽지 않음)
+      // dbcode 자체의 기본 설정(API 키, 모델, base URL)을 제공
       let _t = _profileLog("CLI parse", _startupT0);
-      await import("dotenv/config");
+      const { config: dotenvConfig } = await import("dotenv");
+      const { fileURLToPath } = await import("node:url");
+      const { dirname, join } = await import("node:path");
+      const __pkgDir = dirname(dirname(fileURLToPath(import.meta.url)));
+      dotenvConfig({ path: join(__pkgDir, ".env") });
       _t = _profileLog("dotenv", _t);
 
       // ── 단계 2: 초기 설정 마법사 ──
@@ -123,7 +127,6 @@ program
       // 필요한 모든 모듈을 Promise.all로 병렬 로드
       // --help / --version일 때는 이 코드에 도달하지 않으므로 빠른 시작 보장
       _t = _profileLog("setup wizard check", _t);
-      const { join } = await import("node:path");
       const [
         { loadConfig },
         { OpenAICompatibleClient },

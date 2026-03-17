@@ -22,10 +22,7 @@ describe("logger redaction", () => {
 
     // Log an object with sensitive fields
     logger.info({ apiKey: "sk-secret-key-12345" }, "test with apiKey");
-    logger.info(
-      { headers: { authorization: "Bearer my-token-123" } },
-      "test with auth header",
-    );
+    logger.info({ headers: { authorization: "Bearer my-token-123" } }, "test with auth header");
     logger.info({ token: "some-token-value" }, "test with token");
     logger.info({ secret: "my-secret-value" }, "test with secret");
     logger.info({ password: "hunter2" }, "test with password");

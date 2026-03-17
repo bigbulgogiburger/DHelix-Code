@@ -221,7 +221,7 @@ export function parseAgentFile(
   // 3단계: 검증된 데이터로 AgentDefinition 객체 구성
   return {
     frontmatter: parseResult.data,
-    systemPrompt: body,   // 프론트매터 아래 본문이 시스템 프롬프트가 됨
+    systemPrompt: body, // 프론트매터 아래 본문이 시스템 프롬프트가 됨
     source,
     filePath,
   };

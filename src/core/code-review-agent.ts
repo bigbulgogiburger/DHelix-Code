@@ -83,9 +83,10 @@ const VALID_CATEGORIES = new Set<string>(["security", "correctness", "style", "p
  */
 export function buildReviewPrompt(diff: string, focusAreas?: readonly string[]): string {
   // 집중 영역이 있으면 프롬프트에 추가
-  const focusSection = focusAreas && focusAreas.length > 0
-    ? `\n\nFocus especially on these areas: ${focusAreas.join(", ")}.`
-    : "";
+  const focusSection =
+    focusAreas && focusAreas.length > 0
+      ? `\n\nFocus especially on these areas: ${focusAreas.join(", ")}.`
+      : "";
 
   const prompt = [
     "You are a senior code reviewer performing a thorough review of the following diff.",

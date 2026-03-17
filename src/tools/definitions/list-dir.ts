@@ -23,21 +23,21 @@ import { resolvePath, joinPath } from "../../utils/path.js";
  * 코드 구조를 파악하는 데 방해가 되므로 기본적으로 제외합니다.
  */
 const IGNORED_DIRS = new Set([
-  ".git",           // Git 저장소 내부 데이터
-  "node_modules",   // npm/yarn 패키지 (수만 개의 파일)
-  ".next",          // Next.js 빌드 결과물
-  ".nuxt",          // Nuxt.js 빌드 결과물
-  "__pycache__",    // Python 바이트코드 캐시
-  ".pytest_cache",  // pytest 테스트 캐시
-  ".venv",          // Python 가상 환경
-  "venv",           // Python 가상 환경 (대체 이름)
-  ".tox",           // tox 테스트 자동화 도구 캐시
-  "dist",           // 빌드 배포 디렉토리
-  "build",          // 빌드 결과물 디렉토리
-  ".gradle",        // Gradle 빌드 캐시
-  ".idea",          // JetBrains IDE 설정
-  ".vscode",        // VS Code 설정
-  ".DS_Store",      // macOS 파인더 메타데이터 (파일이지만 이름으로 필터링)
+  ".git", // Git 저장소 내부 데이터
+  "node_modules", // npm/yarn 패키지 (수만 개의 파일)
+  ".next", // Next.js 빌드 결과물
+  ".nuxt", // Nuxt.js 빌드 결과물
+  "__pycache__", // Python 바이트코드 캐시
+  ".pytest_cache", // pytest 테스트 캐시
+  ".venv", // Python 가상 환경
+  "venv", // Python 가상 환경 (대체 이름)
+  ".tox", // tox 테스트 자동화 도구 캐시
+  "dist", // 빌드 배포 디렉토리
+  "build", // 빌드 결과물 디렉토리
+  ".gradle", // Gradle 빌드 캐시
+  ".idea", // JetBrains IDE 설정
+  ".vscode", // VS Code 설정
+  ".DS_Store", // macOS 파인더 메타데이터 (파일이지만 이름으로 필터링)
 ]);
 
 /**

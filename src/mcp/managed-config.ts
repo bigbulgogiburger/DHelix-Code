@@ -135,9 +135,7 @@ export interface RawServerConfigInput {
  * @param config - 원시 서버 설정
  * @returns 감지된 트랜스포트 타입
  */
-export function detectTransportType(
-  config: RawServerConfigInput,
-): "stdio" | "http" | "sse" {
+export function detectTransportType(config: RawServerConfigInput): "stdio" | "http" | "sse" {
   // 명시적 지정이 있으면 우선
   if (config.transport) return config.transport;
 

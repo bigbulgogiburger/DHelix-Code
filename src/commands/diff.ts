@@ -80,10 +80,7 @@ function formatEntry(entry: DiffEntry, prefix: string): string {
  * @param cwd - 작업 디렉토리
  * @returns 명령어 출력 (실패 시 null)
  */
-function runGit(
-  command: string,
-  cwd: string,
-): string | null {
+function runGit(command: string, cwd: string): string | null {
   try {
     return execSync(command, {
       encoding: "utf-8",
@@ -130,9 +127,7 @@ export const diffCommand: SlashCommand = {
 
     // No changes detected
     if (unstagedEntries.length === 0 && stagedEntries.length === 0) {
-      const msg = target
-        ? `No changes detected for: ${target}`
-        : "No changes detected.";
+      const msg = target ? `No changes detected for: ${target}` : "No changes detected.";
       return { output: msg, success: true };
     }
 
@@ -156,7 +151,9 @@ export const diffCommand: SlashCommand = {
     lines.push("Changes in working directory");
     lines.push("=============================");
     lines.push("");
-    lines.push(`  Modified: ${totalFiles} file${totalFiles !== 1 ? "s" : ""} (+${totalAdditions}, -${totalDeletions})`);
+    lines.push(
+      `  Modified: ${totalFiles} file${totalFiles !== 1 ? "s" : ""} (+${totalAdditions}, -${totalDeletions})`,
+    );
     lines.push("");
 
     if (unstagedEntries.length > 0) {
@@ -175,7 +172,9 @@ export const diffCommand: SlashCommand = {
       lines.push("");
     }
 
-    lines.push(`  Total: ${totalFiles} file${totalFiles !== 1 ? "s" : ""}, +${totalAdditions} / -${totalDeletions}`);
+    lines.push(
+      `  Total: ${totalFiles} file${totalFiles !== 1 ? "s" : ""}, +${totalAdditions} / -${totalDeletions}`,
+    );
 
     return {
       output: lines.join("\n"),

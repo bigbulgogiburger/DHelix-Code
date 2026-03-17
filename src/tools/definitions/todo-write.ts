@@ -76,7 +76,7 @@ export function resetTodos(): void {
  * - pending(대기): (빈 공간)
  */
 const STATUS_INDICATORS: Readonly<Record<TodoItem["status"], string>> = {
-  completed: "\u2713",   // ✓
+  completed: "\u2713", // ✓
   in_progress: "\u2192", // →
   pending: " ",
 };

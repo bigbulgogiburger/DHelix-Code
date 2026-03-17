@@ -132,7 +132,7 @@ export function parseNaturalLanguageIntent(
         toolName: p.tool,
         extractedArgs: args,
         requiredParams: Object.keys(args),
-        confidence: 0.9,  // 정규식 매칭은 비교적 신뢰도가 높음
+        confidence: 0.9, // 정규식 매칭은 비교적 신뢰도가 높음
       };
     }
   }

@@ -36,26 +36,26 @@ import { spawn } from "node:child_process";
  * 실행을 시도하면 에러 메시지와 함께 비대화형 대안을 안내합니다.
  */
 const INTERACTIVE_COMMANDS = [
-  "git rebase -i",           // 대화형 rebase → git rebase --onto 사용
-  "git add -i",              // 대화형 add
-  "git add -p",              // 패치 모드 add
+  "git rebase -i", // 대화형 rebase → git rebase --onto 사용
+  "git add -i", // 대화형 add
+  "git add -p", // 패치 모드 add
   "git add --interactive",
   "git add --patch",
-  "git commit --amend",      // 편집기 실행 → git commit --amend -m "msg" 사용
-  "vim",                     // 편집기
+  "git commit --amend", // 편집기 실행 → git commit --amend -m "msg" 사용
+  "vim", // 편집기
   "nvim",
   "nano",
   "emacs",
   "vi ",
-  "less ",                   // 페이저
+  "less ", // 페이저
   "more ",
-  "top",                     // 시스템 모니터
+  "top", // 시스템 모니터
   "htop",
-  "ssh ",                    // 원격 셸
-  "python -i",               // 대화형 인터프리터
+  "ssh ", // 원격 셸
+  "python -i", // 대화형 인터프리터
   "python3 -i",
-  "node --inspect",          // Node.js 디버거
-  "irb",                     // Ruby 대화형 셸
+  "node --inspect", // Node.js 디버거
+  "irb", // Ruby 대화형 셸
   "pry",
 ];
 
@@ -172,16 +172,16 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     ...process.env,
     ...(isWindows() && hasGitBash()
       ? {
-          MSYS: "winsymlinks:nativestrict",  // 심볼릭 링크 호환
-          CHERE_INVOKING: "1",               // 셸 시작 디렉토리 유지
+          MSYS: "winsymlinks:nativestrict", // 심볼릭 링크 호환
+          CHERE_INVOKING: "1", // 셸 시작 디렉토리 유지
         }
       : {}),
   };
 
   // Promise로 비동기 프로세스 실행을 래핑
   return new Promise<ToolResult>((resolve) => {
-    const chunks: Buffer[] = [];     // stdout 데이터 청크 배열
-    const errChunks: Buffer[] = [];  // stderr 데이터 청크 배열
+    const chunks: Buffer[] = []; // stdout 데이터 청크 배열
+    const errChunks: Buffer[] = []; // stderr 데이터 청크 배열
 
     // 자식 프로세스 생성
     // stdio: ["ignore", "pipe", "pipe"] — stdin 무시, stdout/stderr는 파이프로 캡처

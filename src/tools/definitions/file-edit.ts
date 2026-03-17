@@ -103,7 +103,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     // 변경 위치 주변 +-3줄의 컨텍스트 추출 — diff 미리보기용
     const updatedLines = updated.split("\n");
     const contextBefore = 3; // 변경 위치 앞 3줄
-    const contextAfter = 3;  // 변경 위치 뒤 3줄
+    const contextAfter = 3; // 변경 위치 뒤 3줄
     const startLine = Math.max(0, lineNumber - 1 - contextBefore); // 0-based 인덱스
     const endLine = Math.min(updatedLines.length, lineNumber - 1 + linesAdded + contextAfter);
     const contextLines = updatedLines.slice(startLine, endLine);
@@ -113,10 +113,10 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       isError: false,
       metadata: {
         path: normalizePath(filePath),
-        lineNumber,           // 변경이 시작된 줄 번호 (1-based)
-        linesAdded,           // 추가된 줄 수
-        linesRemoved,         // 삭제된 줄 수
-        contextLines,         // 변경 위치 주변 코드
+        lineNumber, // 변경이 시작된 줄 번호 (1-based)
+        linesAdded, // 추가된 줄 수
+        linesRemoved, // 삭제된 줄 수
+        contextLines, // 변경 위치 주변 코드
         contextStartLine: startLine + 1, // 컨텍스트 시작 줄 번호 (1-based)
       },
     };

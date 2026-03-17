@@ -67,9 +67,7 @@ describe("checkListenerLeaks", () => {
     const max = checkListenerLeaks(emitter);
 
     expect(max).toBe(LISTENER_WARN_THRESHOLD + 1);
-    expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Possible memory leak"),
-    );
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("Possible memory leak"));
     stderrSpy.mockRestore();
   });
 

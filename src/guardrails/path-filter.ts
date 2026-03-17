@@ -40,18 +40,18 @@ export interface PathFilterResult {
  * normalizePath()에 의해 슬래시(/)로 통일되어 크로스 플랫폼 매칭에 사용됩니다.
  */
 const SENSITIVE_HOME_PATHS: readonly string[] = [
-  "/.ssh",                // SSH 키 쌍 (공개키/비밀키), 접근 설정
-  "/.gnupg",              // GPG 암호화 키 (이메일 서명, 파일 암호화에 사용)
-  "/.gpg",                // GPG 키 저장소 (대안 경로)
-  "/.aws/credentials",    // AWS 클라우드 인증 정보 (Access Key, Secret Key)
-  "/.azure/credentials",  // Azure 클라우드 인증 정보
-  "/.config/gcloud",      // Google Cloud 인증 정보 및 설정
+  "/.ssh", // SSH 키 쌍 (공개키/비밀키), 접근 설정
+  "/.gnupg", // GPG 암호화 키 (이메일 서명, 파일 암호화에 사용)
+  "/.gpg", // GPG 키 저장소 (대안 경로)
+  "/.aws/credentials", // AWS 클라우드 인증 정보 (Access Key, Secret Key)
+  "/.azure/credentials", // Azure 클라우드 인증 정보
+  "/.config/gcloud", // Google Cloud 인증 정보 및 설정
   "/.docker/config.json", // Docker 레지스트리 인증 정보
-  "/.npmrc",              // npm 레지스트리 인증 토큰
-  "/.pypirc",             // PyPI(Python 패키지) 배포 인증 정보
-  "/.netrc",              // FTP/HTTP 인증 자격 증명 (평문 저장)
-  "/.kube/config",        // Kubernetes 클러스터 접근 인증 정보
-  "/.env",                // 환경 변수 파일 (API 키, DB 비밀번호 등이 흔히 포함됨)
+  "/.npmrc", // npm 레지스트리 인증 토큰
+  "/.pypirc", // PyPI(Python 패키지) 배포 인증 정보
+  "/.netrc", // FTP/HTTP 인증 자격 증명 (평문 저장)
+  "/.kube/config", // Kubernetes 클러스터 접근 인증 정보
+  "/.env", // 환경 변수 파일 (API 키, DB 비밀번호 등이 흔히 포함됨)
 ];
 
 /**
@@ -61,12 +61,12 @@ const SENSITIVE_HOME_PATHS: readonly string[] = [
  * Linux와 macOS의 경로를 모두 포함합니다.
  */
 const SENSITIVE_SYSTEM_PATHS: readonly string[] = [
-  "/etc/shadow",                 // Linux: 해시된 사용자 비밀번호 저장 (root만 접근 가능)
-  "/etc/passwd",                 // Linux: 사용자 계정 정보 (이름, UID, 홈 디렉토리 등)
-  "/etc/sudoers",                // Linux: sudo 권한 설정 (누가 관리자 권한을 가지는지)
-  "/etc/master.passwd",          // BSD/macOS: 해시된 비밀번호 (shadow와 동등)
-  "/private/etc/shadow",         // macOS: shadow 파일의 macOS 경로
-  "/private/etc/master.passwd",  // macOS: master.passwd의 macOS 경로
+  "/etc/shadow", // Linux: 해시된 사용자 비밀번호 저장 (root만 접근 가능)
+  "/etc/passwd", // Linux: 사용자 계정 정보 (이름, UID, 홈 디렉토리 등)
+  "/etc/sudoers", // Linux: sudo 권한 설정 (누가 관리자 권한을 가지는지)
+  "/etc/master.passwd", // BSD/macOS: 해시된 비밀번호 (shadow와 동등)
+  "/private/etc/shadow", // macOS: shadow 파일의 macOS 경로
+  "/private/etc/master.passwd", // macOS: master.passwd의 macOS 경로
 ];
 
 /**

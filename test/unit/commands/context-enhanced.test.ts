@@ -22,10 +22,21 @@ describe("/context enhanced", () => {
     const contextWithMessages = {
       ...baseContext,
       messages: [
-        { role: "user", content: "Hello, how are you doing today? I have a question about programming." },
-        { role: "assistant", content: "I am doing great! I would be happy to help you with your programming question. Please go ahead and ask." },
+        {
+          role: "user",
+          content: "Hello, how are you doing today? I have a question about programming.",
+        },
+        {
+          role: "assistant",
+          content:
+            "I am doing great! I would be happy to help you with your programming question. Please go ahead and ask.",
+        },
         { role: "user", content: "Can you explain how closures work in JavaScript?" },
-        { role: "assistant", content: "A closure is the combination of a function bundled together with references to its surrounding state. In other words, a closure gives you access to an outer function's scope from an inner function." },
+        {
+          role: "assistant",
+          content:
+            "A closure is the combination of a function bundled together with references to its surrounding state. In other words, a closure gives you access to an outer function's scope from an inner function.",
+        },
       ],
     };
     const result = await contextCommand.execute("", contextWithMessages);

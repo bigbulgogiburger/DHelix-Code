@@ -210,7 +210,7 @@ export async function generateBubblewrapArgs(config: BubblewrapConfig): Promise<
 
   // 특수 파일 시스템 마운트
   bwrapArgs.push("--proc", "/proc"); // 프로세스 정보
-  bwrapArgs.push("--dev", "/dev");   // 장치 파일
+  bwrapArgs.push("--dev", "/dev"); // 장치 파일
 
   // /tmp는 tmpfs로 마운트 (격리된 임시 공간)
   bwrapArgs.push("--tmpfs", "/tmp");
@@ -272,9 +272,9 @@ export async function generateBubblewrapArgs(config: BubblewrapConfig): Promise<
   }
 
   // 네임스페이스 격리 플래그
-  bwrapArgs.push("--unshare-pid");     // PID 네임스페이스 격리
+  bwrapArgs.push("--unshare-pid"); // PID 네임스페이스 격리
   bwrapArgs.push("--die-with-parent"); // 부모 프로세스 종료 시 자동 종료
-  bwrapArgs.push("--new-session");     // 새 세션 생성 (터미널 탈취 방지)
+  bwrapArgs.push("--new-session"); // 새 세션 생성 (터미널 탈취 방지)
 
   // 네트워크 접근 제어
   if (networkAccess) {

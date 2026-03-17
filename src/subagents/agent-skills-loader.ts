@@ -41,10 +41,10 @@ export interface LoadedSkill {
  */
 function getSkillDirectories(workingDirectory: string): readonly string[] {
   return [
-    join(workingDirectory, `.${APP_NAME}`, "commands"),  // 프로젝트 명령 (최우선)
-    join(workingDirectory, `.${APP_NAME}`, "skills"),    // 프로젝트 스킬
-    join(homedir(), `.${APP_NAME}`, "commands"),          // 사용자 전역 명령
-    join(homedir(), `.${APP_NAME}`, "skills"),            // 사용자 전역 스킬
+    join(workingDirectory, `.${APP_NAME}`, "commands"), // 프로젝트 명령 (최우선)
+    join(workingDirectory, `.${APP_NAME}`, "skills"), // 프로젝트 스킬
+    join(homedir(), `.${APP_NAME}`, "commands"), // 사용자 전역 명령
+    join(homedir(), `.${APP_NAME}`, "skills"), // 사용자 전역 스킬
   ];
 }
 

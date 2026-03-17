@@ -129,13 +129,13 @@ export function formatRuleString(tool: string, pattern?: string): string {
  * 이 매핑에 없는 도구는 모든 문자열 인수에 대해 매칭을 시도합니다.
  */
 const TOOL_ARG_KEYS: Readonly<Record<string, string>> = Object.freeze({
-  Bash: "command",         // Bash 도구 → 실행할 명령어
-  bash_exec: "command",   // bash_exec 도구 → 실행할 명령어
-  Edit: "file_path",      // Edit 도구 → 편집할 파일 경로
+  Bash: "command", // Bash 도구 → 실행할 명령어
+  bash_exec: "command", // bash_exec 도구 → 실행할 명령어
+  Edit: "file_path", // Edit 도구 → 편집할 파일 경로
   file_edit: "file_path", // file_edit 도구 → 편집할 파일 경로
-  Write: "file_path",     // Write 도구 → 쓸 파일 경로
-  file_write: "file_path",// file_write 도구 → 쓸 파일 경로
-  Read: "file_path",      // Read 도구 → 읽을 파일 경로
+  Write: "file_path", // Write 도구 → 쓸 파일 경로
+  file_write: "file_path", // file_write 도구 → 쓸 파일 경로
+  Read: "file_path", // Read 도구 → 읽을 파일 경로
   file_read: "file_path", // file_read 도구 → 읽을 파일 경로
   glob_search: "pattern", // glob_search 도구 → 검색 패턴
   grep_search: "pattern", // grep_search 도구 → 검색 패턴

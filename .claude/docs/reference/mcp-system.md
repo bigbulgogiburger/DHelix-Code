@@ -44,11 +44,11 @@ graph TD
 
 우선순위: **local > project > user** (같은 이름의 서버는 높은 우선순위가 덮어씀)
 
-| 스코프 | 파일 | 용도 | Git |
-|--------|------|------|-----|
-| local | `.dbcode/mcp-local.json` | API 키가 필요한 개인 서버 | .gitignore |
-| project | `.dbcode/mcp.json` | 팀이 공유하는 서버 | 커밋 |
-| user | `~/.dbcode/mcp-servers.json` | 모든 프로젝트에서 쓰는 서버 | N/A |
+| 스코프  | 파일                         | 용도                        | Git        |
+| ------- | ---------------------------- | --------------------------- | ---------- |
+| local   | `.dbcode/mcp-local.json`     | API 키가 필요한 개인 서버   | .gitignore |
+| project | `.dbcode/mcp.json`           | 팀이 공유하는 서버          | 커밋       |
+| user    | `~/.dbcode/mcp-servers.json` | 모든 프로젝트에서 쓰는 서버 | N/A        |
 
 파일 형식 (모든 스코프 동일):
 
@@ -92,11 +92,11 @@ graph TD
 
 ## Transport Types
 
-| Transport | 용도 | 연결 방식 |
-|-----------|------|----------|
-| stdio | 로컬 CLI 도구 (가장 일반적) | 자식 프로세스 stdin/stdout |
-| http | 원격 API 서버 | HTTP POST 요청/응답 |
-| sse | 실시간 스트리밍 서버 | Server-Sent Events |
+| Transport | 용도                        | 연결 방식                  |
+| --------- | --------------------------- | -------------------------- |
+| stdio     | 로컬 CLI 도구 (가장 일반적) | 자식 프로세스 stdin/stdout |
+| http      | 원격 API 서버               | HTTP POST 요청/응답        |
+| sse       | 실시간 스트리밍 서버        | Server-Sent Events         |
 
 ## MCP Tool Bridge
 
@@ -122,18 +122,18 @@ MCP 서버의 도구가 dbcode에 등록되는 과정:
 
 ## 주요 파일
 
-| 파일 | 역할 |
-|------|------|
-| `scope-manager.ts` | 3-scope 설정 로딩 + 우선순위 병합 |
-| `manager.ts` | 서버 수명주기 관리 (connect/disconnect) |
-| `manager-connector.ts` | 6개 서브모듈 초기화 |
-| `client.ts` | JSON-RPC 2.0 통신 |
-| `tool-bridge.ts` | MCP 도구 → ToolRegistry 변환 |
-| `tool-filter.ts` | 도구 include/exclude |
-| `tool-search.ts` | deferred tool 검색 |
-| `output-limiter.ts` | 도구 출력 토큰 제한 |
-| `oauth.ts` | OAuth 인증 |
-| `types.ts` | 전체 MCP 타입 정의 |
+| 파일                   | 역할                                    |
+| ---------------------- | --------------------------------------- |
+| `scope-manager.ts`     | 3-scope 설정 로딩 + 우선순위 병합       |
+| `manager.ts`           | 서버 수명주기 관리 (connect/disconnect) |
+| `manager-connector.ts` | 6개 서브모듈 초기화                     |
+| `client.ts`            | JSON-RPC 2.0 통신                       |
+| `tool-bridge.ts`       | MCP 도구 → ToolRegistry 변환            |
+| `tool-filter.ts`       | 도구 include/exclude                    |
+| `tool-search.ts`       | deferred tool 검색                      |
+| `output-limiter.ts`    | 도구 출력 토큰 제한                     |
+| `oauth.ts`             | OAuth 인증                              |
+| `types.ts`             | 전체 MCP 타입 정의                      |
 
 ## 주의사항
 

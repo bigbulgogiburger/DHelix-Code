@@ -112,7 +112,11 @@ export async function executeTool(
   try {
     // 저성능 모델(low/medium tier)의 흔한 인수 오류를 자동 교정
     // 예: 상대 경로 → 절대 경로, 문자열 "true" → boolean true
-    const correctedArgs = correctToolCall(args, workingDirectory, options?.capabilityTier ?? "high");
+    const correctedArgs = correctToolCall(
+      args,
+      workingDirectory,
+      options?.capabilityTier ?? "high",
+    );
     // Zod 스키마로 인수 검증 — 잘못된 인수면 에러를 던짐
     const validatedArgs = parseToolArguments(tool.parameterSchema, correctedArgs);
 

@@ -254,7 +254,11 @@ export class PermissionManager {
     // 4단계: 명시적 규칙 — 코드에서 등록된 규칙
     const matchedRule = findMatchingRule(this.rules, toolName, args);
     if (matchedRule) {
-      this.logAudit(toolName, matchedRule.allowed ? "auto-approved" : "denied", matchedRule.allowed ? "Rule: allowed" : "Rule: denied");
+      this.logAudit(
+        toolName,
+        matchedRule.allowed ? "auto-approved" : "denied",
+        matchedRule.allowed ? "Rule: allowed" : "Rule: denied",
+      );
       return {
         allowed: matchedRule.allowed,
         requiresPrompt: false,
@@ -344,13 +348,17 @@ export class PermissionManager {
     decision: "approved" | "denied" | "auto-approved",
     reason?: string,
   ): void {
-    this.auditLogger?.log({
-      timestamp: new Date().toISOString(),
-      sessionId: this.sessionId,
-      toolName,
-      decision,
-      reason,
-    }).catch(() => { /* 감사 로그 에러를 조용히 삼킴 */ });
+    this.auditLogger
+      ?.log({
+        timestamp: new Date().toISOString(),
+        sessionId: this.sessionId,
+        toolName,
+        decision,
+        reason,
+      })
+      .catch(() => {
+        /* 감사 로그 에러를 조용히 삼킴 */
+      });
   }
 
   /**

@@ -36,8 +36,8 @@ function matchPattern(value: string, pattern: string): boolean {
   // [.+^${}()|[\]\\] : 정규식에서 특별한 의미를 가지는 문자들
   const regex = pattern
     .replace(/[.+^${}()|[\]\\]/g, "\\$&")
-    .replace(/\*/g, ".*")   // * → .* (임의의 문자열)
-    .replace(/\?/g, ".");   // ? → . (임의의 한 문자)
+    .replace(/\*/g, ".*") // * → .* (임의의 문자열)
+    .replace(/\?/g, "."); // ? → . (임의의 한 문자)
   // ^...$: 전체 문자열이 패턴과 완전히 일치해야 함 (부분 매칭 방지)
   return new RegExp(`^${regex}$`).test(value);
 }

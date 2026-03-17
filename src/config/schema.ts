@@ -16,13 +16,17 @@ import { z } from "zod";
  *
  * OpenAI 호환 API에 접속하기 위한 설정입니다.
  * 로컬 LLM(예: Ollama, LM Studio)이나 외부 API(OpenAI, Anthropic) 모두 지원합니다.
+ *
+ * 주의: Zod 기본값은 import 시점에 평가되므로, dotenv 로드 전에 실행됩니다.
+ * 따라서 process.env가 아닌 하드코딩된 제품 기본값을 사용합니다.
+ * 환경변수 기반 오버라이드는 config/loader.ts의 loadEnvConfig()에서 처리합니다.
  */
 export const llmConfigSchema = z.object({
   /** API 엔드포인트 URL — 반드시 유효한 URL 형식이어야 함 */
   baseUrl: z.string().url().default("https://api.openai.com/v1"),
   /** API 인증 키 — 없으면 인증 없이 요청 (로컬 LLM용) */
   apiKey: z.string().optional(),
-  /** 사용할 모델명 (예: "gpt-4o", "claude-3-opus") */
+  /** 사용할 모델명 — 제품 기본값 (env 오버라이드는 config/loader.ts에서 처리) */
   model: z.string().default("gpt-5.1-codex-mini"),
   /** 응답 온도 — 0에 가까울수록 결정적, 2에 가까울수록 창의적 */
   temperature: z.number().min(0).max(2).default(0.0),

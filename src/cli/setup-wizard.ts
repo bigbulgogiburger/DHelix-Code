@@ -23,8 +23,16 @@ const MODEL_PRESETS = [
   { name: "GPT-4o-mini (저렴)", model: "gpt-4o-mini", baseUrl: "https://api.openai.com/v1" },
   { name: "GPT-4o", model: "gpt-4o", baseUrl: "https://api.openai.com/v1" },
   // Anthropic
-  { name: "Claude Sonnet 4.5", model: "claude-sonnet-4-5-20250514", baseUrl: "https://api.anthropic.com/v1" },
-  { name: "Claude Haiku 3.5", model: "claude-3-5-haiku-20241022", baseUrl: "https://api.anthropic.com/v1" },
+  {
+    name: "Claude Sonnet 4.5",
+    model: "claude-sonnet-4-5-20250514",
+    baseUrl: "https://api.anthropic.com/v1",
+  },
+  {
+    name: "Claude Haiku 3.5",
+    model: "claude-3-5-haiku-20241022",
+    baseUrl: "https://api.anthropic.com/v1",
+  },
   // Local (Ollama)
   { name: "Ollama (로컬 모델)", model: "qwen3:8b", baseUrl: "http://localhost:11434/v1" },
 ] as const;
@@ -104,7 +112,9 @@ export async function runSetupWizard(): Promise<SetupConfig> {
       stdout.write(`  Selected: ${preset.name}\n\n`);
     } else {
       model = (await rl.question(`  Model name [${DEFAULT_MODEL}]: `)).trim() || DEFAULT_MODEL;
-      baseUrl = (await rl.question("  API base URL [https://api.openai.com/v1]: ")).trim() || "https://api.openai.com/v1";
+      baseUrl =
+        (await rl.question("  API base URL [https://api.openai.com/v1]: ")).trim() ||
+        "https://api.openai.com/v1";
       stdout.write("\n");
     }
 

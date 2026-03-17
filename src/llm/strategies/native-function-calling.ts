@@ -98,7 +98,7 @@ export class NativeFunctionCallingStrategy implements ToolCallStrategy {
     return results.map((result) => ({
       role: "tool" as const,
       content: result.isError ? `Error: ${result.output}` : result.output,
-      toolCallId: result.id,  // 원래 도구 호출 ID와 매칭
+      toolCallId: result.id, // 원래 도구 호출 ID와 매칭
     }));
   }
 }

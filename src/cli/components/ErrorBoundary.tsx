@@ -47,13 +47,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    process.stderr.write(
-      `[ErrorBoundary] Uncaught render error: ${error.message}\n`,
-    );
+    process.stderr.write(`[ErrorBoundary] Uncaught render error: ${error.message}\n`);
     if (errorInfo.componentStack) {
-      process.stderr.write(
-        `[ErrorBoundary] Component stack:${errorInfo.componentStack}\n`,
-      );
+      process.stderr.write(`[ErrorBoundary] Component stack:${errorInfo.componentStack}\n`);
     }
   }
 

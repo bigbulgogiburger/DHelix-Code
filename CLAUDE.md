@@ -29,7 +29,7 @@ graph TD
     subgraph LEAF["Layer 4: Leaf Modules"]
         UTILS[Utils — logger, events, path, error]
         CONFIG["Config — 5-layer merge"]
-        SKILLS[Skills — 4 load dirs + 41 commands]
+        SKILLS[Skills — 4 load dirs + 42 commands]
         MEM[Memory — project-scoped persistence]
     end
 
@@ -124,7 +124,7 @@ When compacting, always preserve:
 | Architecture Deep     | Agent loop, 컨텍스트, 서브에이전트    | `.claude/docs/reference/architecture-deep.md`    |
 | Interfaces & Tools    | Tool 추가/수정, LLM 연동, MCP 브리지  | `.claude/docs/reference/interfaces-and-tools.md` |
 | Config & Instructions | DBCODE.md, 설정 계층, MCP 스코프 설정 | `.claude/docs/reference/config-system.md`        |
-| Skills & Commands     | 스킬 개발, 41개 슬래시 명령           | `.claude/docs/reference/skills-and-commands.md`  |
+| Skills & Commands     | 스킬 개발, 42개 슬래시 명령           | `.claude/docs/reference/skills-and-commands.md`  |
 | Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션       | `.claude/docs/reference/coding-conventions.md`   |
 | MCP System            | MCP 서버 연동, 스코프, 도구 브리지    | `.claude/docs/reference/mcp-system.md`           |
 | Subagents & Teams     | 서브에이전트 생성, 팀 오케스트레이션  | `.claude/docs/reference/subagents-and-teams.md`  |

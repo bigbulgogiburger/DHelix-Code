@@ -78,16 +78,12 @@ describe("SystemPromptCache", () => {
     });
 
     it("should handle missing files gracefully", async () => {
-      const key = await SystemPromptCache.buildKey([
-        "/nonexistent/file/that/does/not/exist.md",
-      ]);
+      const key = await SystemPromptCache.buildKey(["/nonexistent/file/that/does/not/exist.md"]);
       expect(key).toMatch(/^[0-9a-f]{16}$/);
     });
 
     it("should produce different key when file is missing vs present", async () => {
-      const keyMissing = await SystemPromptCache.buildKey([
-        "/nonexistent/file/abc.md",
-      ]);
+      const keyMissing = await SystemPromptCache.buildKey(["/nonexistent/file/abc.md"]);
       const keyPresent = await SystemPromptCache.buildKey(["/dev/null"]);
       expect(keyMissing).not.toBe(keyPresent);
     });

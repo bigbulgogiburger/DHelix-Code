@@ -40,19 +40,31 @@ describe("calculateThinkingBudget", () => {
   });
 
   it("should auto-calculate when no default is set", () => {
-    const caps = makeCaps({ supportsThinking: true, defaultThinkingBudget: 0, maxContextTokens: 200000 });
+    const caps = makeCaps({
+      supportsThinking: true,
+      defaultThinkingBudget: 0,
+      maxContextTokens: 200000,
+    });
     const budget = calculateThinkingBudget(caps);
     expect(budget).toBe(10000); // 200000 * 0.05 = 10000
   });
 
   it("should cap auto-calculate at 16384", () => {
-    const caps = makeCaps({ supportsThinking: true, defaultThinkingBudget: 0, maxContextTokens: 1000000 });
+    const caps = makeCaps({
+      supportsThinking: true,
+      defaultThinkingBudget: 0,
+      maxContextTokens: 1000000,
+    });
     const budget = calculateThinkingBudget(caps);
     expect(budget).toBe(16384); // 1000000 * 0.05 = 50000, capped at 16384
   });
 
   it("should enforce minimum of 1024", () => {
-    const caps = makeCaps({ supportsThinking: true, defaultThinkingBudget: 2000, maxContextTokens: 4096 });
+    const caps = makeCaps({
+      supportsThinking: true,
+      defaultThinkingBudget: 2000,
+      maxContextTokens: 4096,
+    });
     const budget = calculateThinkingBudget(caps, 90);
     expect(budget).toBe(1024); // 2000 * 0.5 = 1000, min 1024
   });

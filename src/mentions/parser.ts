@@ -130,8 +130,8 @@ export function parseMentions(text: string): readonly ParsedMention[] {
     mentions.push({
       type: "mcp",
       raw,
-      value: match[2],   // 캡처 그룹 2: protocol://resource
-      server: match[1],  // 캡처 그룹 1: 서버 이름
+      value: match[2], // 캡처 그룹 2: protocol://resource
+      server: match[1], // 캡처 그룹 1: 서버 이름
       start,
       end,
     });

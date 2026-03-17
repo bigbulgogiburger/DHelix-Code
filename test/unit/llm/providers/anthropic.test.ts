@@ -611,7 +611,8 @@ describe("AnthropicProvider", () => {
         }),
       );
 
-      const systemPrompt = "# System\n\nIdentity section\n\n---\n\n# Environment\n\nDynamic stuff\n\n---\n\n# Code quality\n\nStatic section";
+      const systemPrompt =
+        "# System\n\nIdentity section\n\n---\n\n# Environment\n\nDynamic stuff\n\n---\n\n# Code quality\n\nStatic section";
       await provider.chat({
         model: "claude-sonnet-4-20250514",
         messages: [

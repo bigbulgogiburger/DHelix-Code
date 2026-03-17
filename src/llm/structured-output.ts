@@ -141,7 +141,7 @@ function buildOllamaStructuredOutput(
   _tier: CapabilityTier,
 ): Record<string, unknown> {
   return {
-    format: "json",  // Ollama의 JSON 출력 모드
+    format: "json", // Ollama의 JSON 출력 모드
     schema_guidance: buildSchemaGuidanceText(toolSchema),
     template_wrapper: buildToolCallWrapper(toolSchema),
   };
@@ -191,7 +191,7 @@ function buildToolCallWrapper(toolSchema: Record<string, unknown>): Record<strin
       tool_input: toolSchema,
     },
     required: ["tool_name", "tool_input"],
-    additionalProperties: false,  // 정의되지 않은 추가 필드 금지
+    additionalProperties: false, // 정의되지 않은 추가 필드 금지
   };
 }
 

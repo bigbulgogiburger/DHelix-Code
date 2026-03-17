@@ -15,11 +15,7 @@ function createConfig(overrides: Partial<MCPServerConfig> = {}): MCPServerConfig
   };
 }
 
-function jsonResponse(
-  body: unknown,
-  status = 200,
-  headers: Record<string, string> = {},
-): Response {
+function jsonResponse(body: unknown, status = 200, headers: Record<string, string> = {}): Response {
   const defaultHeaders = { "content-type": "application/json" };
   const mergedHeaders = { ...defaultHeaders, ...headers };
   return new Response(JSON.stringify(body), {
@@ -130,9 +126,7 @@ describe("HTTP transport session management", () => {
     await vi.advanceTimersByTimeAsync(0);
 
     // Third request should use the updated session ID
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({ jsonrpc: "2.0", id: 2, result: {} }),
-    );
+    mockFetch.mockResolvedValueOnce(jsonResponse({ jsonrpc: "2.0", id: 2, result: {} }));
 
     transport.sendRequest(2, "resources/list", {});
     await vi.advanceTimersByTimeAsync(0);
@@ -162,9 +156,7 @@ describe("HTTP transport session management", () => {
     expect(connectHeaders["Authorization"]).toBe("Bearer my-bearer-token");
 
     // Verify subsequent requests also include the auth header
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({ jsonrpc: "2.0", id: 1, result: {} }),
-    );
+    mockFetch.mockResolvedValueOnce(jsonResponse({ jsonrpc: "2.0", id: 1, result: {} }));
 
     transport.sendRequest(1, "tools/list", {});
     await vi.advanceTimersByTimeAsync(0);
@@ -209,9 +201,7 @@ describe("HTTP transport session management", () => {
     await transport.connect();
 
     // Subsequent request should have both headers
-    mockFetch.mockResolvedValueOnce(
-      jsonResponse({ jsonrpc: "2.0", id: 1, result: {} }),
-    );
+    mockFetch.mockResolvedValueOnce(jsonResponse({ jsonrpc: "2.0", id: 1, result: {} }));
 
     transport.sendRequest(1, "tools/list", {});
     await vi.advanceTimersByTimeAsync(0);

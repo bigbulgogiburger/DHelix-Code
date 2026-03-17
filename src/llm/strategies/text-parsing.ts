@@ -93,11 +93,11 @@ export function parseToolArguments(raw: string): Record<string, unknown> {
 
   // 2단계: 흔한 LLM JSON 실수를 수정
   const fixed = raw
-    .replace(/,\s*}/g, "}")        // 객체의 후행 쉼표 제거: { "a": 1, } → { "a": 1 }
-    .replace(/,\s*]/g, "]")        // 배열의 후행 쉼표 제거: [1, 2, ] → [1, 2]
-    .replace(/'/g, '"')            // 작은따옴표를 큰따옴표로 변환
-    .replace(/(\w+)\s*:/g, '"$1":')  // 인용 없는 키에 따옴표 추가
-    .replace(/\n/g, "\\n");        // 리터럴 줄바꿈을 이스케이프 시퀀스로 변환
+    .replace(/,\s*}/g, "}") // 객체의 후행 쉼표 제거: { "a": 1, } → { "a": 1 }
+    .replace(/,\s*]/g, "]") // 배열의 후행 쉼표 제거: [1, 2, ] → [1, 2]
+    .replace(/'/g, '"') // 작은따옴표를 큰따옴표로 변환
+    .replace(/(\w+)\s*:/g, '"$1":') // 인용 없는 키에 따옴표 추가
+    .replace(/\n/g, "\\n"); // 리터럴 줄바꿈을 이스케이프 시퀀스로 변환
 
   try {
     return JSON.parse(fixed) as Record<string, unknown>;
@@ -216,9 +216,9 @@ export class TextParsingStrategy implements ToolCallStrategy {
     const insertIdx = firstNonSystemIdx === -1 ? messages.length : firstNonSystemIdx;
 
     const preparedMessages: ChatMessage[] = [
-      ...messages.slice(0, insertIdx),       // 기존 시스템 메시지들
-      toolSystemMessage,                      // 도구 지시사항 시스템 메시지
-      ...messages.slice(insertIdx),           // 나머지 메시지들
+      ...messages.slice(0, insertIdx), // 기존 시스템 메시지들
+      toolSystemMessage, // 도구 지시사항 시스템 메시지
+      ...messages.slice(insertIdx), // 나머지 메시지들
     ];
 
     // tools 파라미터를 포함하지 않음 — 프롬프트에 이미 포함됨
@@ -247,14 +247,14 @@ export class TextParsingStrategy implements ToolCallStrategy {
     let match: RegExpExecArray | null;
 
     while ((match = regex.exec(content)) !== null) {
-      const name = match[1].trim();     // 도구 이름
-      const argsStr = match[2].trim();  // 도구 인자 (JSON 문자열)
+      const name = match[1].trim(); // 도구 이름
+      const argsStr = match[2].trim(); // 도구 인자 (JSON 문자열)
 
       // 3단계 복구를 통한 안전한 JSON 파싱
       const args = parseToolArguments(argsStr);
 
       calls.push({
-        id: generateCallId(),   // 고유 ID 생성 (API가 제공하지 않으므로)
+        id: generateCallId(), // 고유 ID 생성 (API가 제공하지 않으므로)
         name,
         arguments: args,
       });

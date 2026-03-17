@@ -184,8 +184,7 @@ describe("/analytics command", () => {
       // Since the test runs in < 1 second, duration may be 0s,
       // so either the turns/min info or the no-activity message is shown
       const hasActivity =
-        result.output.includes("Turns/min:") ||
-        result.output.includes("No activity recorded yet.");
+        result.output.includes("Turns/min:") || result.output.includes("No activity recorded yet.");
       expect(hasActivity).toBe(true);
     });
 

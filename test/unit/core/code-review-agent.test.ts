@@ -1,8 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  buildReviewPrompt,
-  parseReviewResult,
-} from "../../../src/core/code-review-agent.js";
+import { buildReviewPrompt, parseReviewResult } from "../../../src/core/code-review-agent.js";
 
 // =============================================================================
 // buildReviewPrompt
@@ -108,10 +105,7 @@ describe("parseReviewResult", () => {
   });
 
   it("should handle output with no issues", () => {
-    const llmOutput = [
-      "SUMMARY: Code looks clean, no issues found.",
-      "SCORE: 95",
-    ].join("\n");
+    const llmOutput = ["SUMMARY: Code looks clean, no issues found.", "SCORE: 95"].join("\n");
 
     const result = parseReviewResult(llmOutput);
 
@@ -157,8 +151,7 @@ describe("parseReviewResult", () => {
   });
 
   it("should skip issues with invalid severity", () => {
-    const llmOutput =
-      '{"severity": "extreme", "category": "security", "message": "Bad severity"}';
+    const llmOutput = '{"severity": "extreme", "category": "security", "message": "Bad severity"}';
 
     const result = parseReviewResult(llmOutput);
 
@@ -166,8 +159,7 @@ describe("parseReviewResult", () => {
   });
 
   it("should skip issues with invalid category", () => {
-    const llmOutput =
-      '{"severity": "high", "category": "readability", "message": "Bad category"}';
+    const llmOutput = '{"severity": "high", "category": "readability", "message": "Bad category"}';
 
     const result = parseReviewResult(llmOutput);
 
@@ -175,8 +167,7 @@ describe("parseReviewResult", () => {
   });
 
   it("should skip issues with empty message", () => {
-    const llmOutput =
-      '{"severity": "high", "category": "correctness", "message": ""}';
+    const llmOutput = '{"severity": "high", "category": "correctness", "message": ""}';
 
     const result = parseReviewResult(llmOutput);
 
@@ -240,10 +231,7 @@ describe("parseReviewResult", () => {
   });
 
   it("should handle SCORE: 0 correctly", () => {
-    const llmOutput = [
-      "SUMMARY: Terrible code.",
-      "SCORE: 0",
-    ].join("\n");
+    const llmOutput = ["SUMMARY: Terrible code.", "SCORE: 0"].join("\n");
 
     const result = parseReviewResult(llmOutput);
 
@@ -251,10 +239,7 @@ describe("parseReviewResult", () => {
   });
 
   it("should handle SCORE: 100 correctly", () => {
-    const llmOutput = [
-      "SUMMARY: Perfect code.",
-      "SCORE: 100",
-    ].join("\n");
+    const llmOutput = ["SUMMARY: Perfect code.", "SCORE: 100"].join("\n");
 
     const result = parseReviewResult(llmOutput);
 

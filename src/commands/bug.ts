@@ -39,7 +39,10 @@ function buildGitHubIssueUrl(title: string, body: string): string {
  * @param context - 현재 세션 컨텍스트 (모델명, 세션 ID)
  * @returns 마크다운 형식의 버그 리포트 문자열
  */
-function formatBugReport(description: string, context: { readonly model: string; readonly sessionId?: string }): string {
+function formatBugReport(
+  description: string,
+  context: { readonly model: string; readonly sessionId?: string },
+): string {
   return [
     "## Bug Report",
     "",

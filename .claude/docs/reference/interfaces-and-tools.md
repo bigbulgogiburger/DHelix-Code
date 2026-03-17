@@ -63,6 +63,7 @@ interface ToolCallStrategy {
 ## Tool Call Auto-Correction
 
 **tool-call-corrector.ts**: Zod 검증 전에 저가 모델의 흔한 실수를 자동 교정:
+
 - 상대 경로 → 절대 경로 (`./src/app.ts` → `/project/src/app.ts`)
 - `"true"` 문자열 → `true` boolean
 - `"123"` 문자열 → `123` number
@@ -71,6 +72,7 @@ interface ToolCallStrategy {
 ## Tool Grouping & Parallel Execution
 
 **agent-loop.ts**: 도구 호출을 충돌 분석하여 그룹으로 나눔:
+
 - 같은 파일에 대한 쓰기 작업 → 별도 그룹 (순차 실행)
 - 읽기 전용 도구 (file_read, grep, glob) → 같은 그룹 (병렬 실행)
 - 그룹 내: `Promise.allSettled`로 병렬 / 그룹 간: 순차
@@ -79,11 +81,11 @@ interface ToolCallStrategy {
 
 Tool schemas adapt to model capability tiers:
 
-| Tier   | Schema Detail | Loading    | Description                                |
-| ------ | ------------- | ---------- | ------------------------------------------ |
-| HIGH   | Full          | Eager      | All params, descriptions, examples         |
-| MEDIUM | Reduced       | Lazy       | Required params only, minimal descriptions |
-| LOW    | Minimal       | On-demand  | Name + essential params + few-shot examples|
+| Tier   | Schema Detail | Loading   | Description                                 |
+| ------ | ------------- | --------- | ------------------------------------------- |
+| HIGH   | Full          | Eager     | All params, descriptions, examples          |
+| MEDIUM | Reduced       | Lazy      | Required params only, minimal descriptions  |
+| LOW    | Minimal       | On-demand | Name + essential params + few-shot examples |
 
 ## Tool Retry & Self-Healing
 

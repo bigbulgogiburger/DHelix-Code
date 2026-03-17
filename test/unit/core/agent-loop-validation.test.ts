@@ -50,9 +50,7 @@ describe("filterValidToolCalls", () => {
   });
 
   it("should pass through tool calls with empty arguments (no-param tools)", () => {
-    const calls: readonly ExtractedToolCall[] = [
-      { id: "tc-1", name: "some_tool", arguments: {} },
-    ];
+    const calls: readonly ExtractedToolCall[] = [{ id: "tc-1", name: "some_tool", arguments: {} }];
 
     const result = filterValidToolCalls(calls, events);
 
@@ -76,7 +74,11 @@ describe("filterValidToolCalls", () => {
 
   it("should filter out tool calls with undefined arguments", () => {
     const calls: readonly ExtractedToolCall[] = [
-      { id: "tc-1", name: "broken_tool", arguments: undefined as unknown as Record<string, unknown> },
+      {
+        id: "tc-1",
+        name: "broken_tool",
+        arguments: undefined as unknown as Record<string, unknown>,
+      },
     ];
 
     const result = filterValidToolCalls(calls, events);
@@ -86,7 +88,11 @@ describe("filterValidToolCalls", () => {
 
   it("should filter out tool calls with non-object arguments", () => {
     const calls: readonly ExtractedToolCall[] = [
-      { id: "tc-1", name: "broken_tool", arguments: "not an object" as unknown as Record<string, unknown> },
+      {
+        id: "tc-1",
+        name: "broken_tool",
+        arguments: "not an object" as unknown as Record<string, unknown>,
+      },
     ];
 
     const result = filterValidToolCalls(calls, events);

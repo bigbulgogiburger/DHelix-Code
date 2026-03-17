@@ -64,10 +64,14 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
 
     // AbortSignal 처리 — 사용자가 Esc로 취소할 경우
     if (abortSignal) {
-      abortSignal.addEventListener("abort", () => {
-        events.off("ask_user:response", onResponse);
-        resolve("[User cancelled]");
-      }, { once: true });
+      abortSignal.addEventListener(
+        "abort",
+        () => {
+          events.off("ask_user:response", onResponse);
+          resolve("[User cancelled]");
+        },
+        { once: true },
+      );
     }
 
     // UI에 질문 표시 요청 이벤트 발행

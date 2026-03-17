@@ -17,9 +17,7 @@ describe("sandbox warning", () => {
         expect(status.type).toBe("none");
         expect(status.warnings.length).toBeGreaterThan(0);
 
-        const hasSecurityWarning = status.warnings.some(
-          (w) => w.includes("SECURITY WARNING"),
-        );
+        const hasSecurityWarning = status.warnings.some((w) => w.includes("SECURITY WARNING"));
         expect(hasSecurityWarning).toBe(true);
       }
     });

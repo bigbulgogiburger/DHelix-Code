@@ -127,9 +127,9 @@ export class AutoMemoryError extends BaseError {
 /** 기본 자동 메모리 설정 */
 const DEFAULT_CONFIG: AutoMemoryConfig = {
   enabled: true,
-  minConfidence: 0.7,         // 70% 이상 신뢰도만 수집
-  maxEntriesPerSession: 20,   // 세션당 최대 20개
-  deduplication: true,        // 중복 체크 활성화
+  minConfidence: 0.7, // 70% 이상 신뢰도만 수집
+  maxEntriesPerSession: 20, // 세션당 최대 20개
+  deduplication: true, // 중복 체크 활성화
 };
 
 /**
@@ -764,8 +764,8 @@ function computeConfidence(baseConfidence: number, content: string): number {
 function normalizeForComparison(text: string): string {
   return text
     .toLowerCase()
-    .replace(/\s+/g, " ")       // 연속 공백을 하나로 통합
-    .replace(/^#+\s*/gm, "")    // 마크다운 헤더(##) 제거
+    .replace(/\s+/g, " ") // 연속 공백을 하나로 통합
+    .replace(/^#+\s*/gm, "") // 마크다운 헤더(##) 제거
     .trim();
 }
 

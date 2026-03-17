@@ -43,20 +43,20 @@ const READ_ONLY_TOOLS = ["file_read", "glob_search", "grep_search", "list_dir"] 
  * 파일 읽기/쓰기, 코드 실행, 웹 검색 등 모든 기능 포함
  */
 const ALL_TOOLS = [
-  "file_read",      // 파일 내용 읽기
-  "file_write",     // 파일 생성/덮어쓰기
-  "file_edit",      // 파일 부분 수정
-  "bash_exec",      // 셸 명령 실행
-  "glob_search",    // 파일명 패턴 검색
-  "grep_search",    // 파일 내용 텍스트 검색
-  "list_dir",       // 디렉토리 목록 조회
-  "web_fetch",      // URL에서 웹 페이지 가져오기
-  "web_search",     // 웹 검색
-  "notebook_edit",  // Jupyter 노트북 편집
-  "mkdir",          // 디렉토리 생성
-  "ask_user",       // 사용자에게 질문하기
-  "agent",          // 하위 서브에이전트 생성 (중첩 위임)
-  "todo_write",     // TODO 목록 관리
+  "file_read", // 파일 내용 읽기
+  "file_write", // 파일 생성/덮어쓰기
+  "file_edit", // 파일 부분 수정
+  "bash_exec", // 셸 명령 실행
+  "glob_search", // 파일명 패턴 검색
+  "grep_search", // 파일 내용 텍스트 검색
+  "list_dir", // 디렉토리 목록 조회
+  "web_fetch", // URL에서 웹 페이지 가져오기
+  "web_search", // 웹 검색
+  "notebook_edit", // Jupyter 노트북 편집
+  "mkdir", // 디렉토리 생성
+  "ask_user", // 사용자에게 질문하기
+  "agent", // 하위 서브에이전트 생성 (중첩 위임)
+  "todo_write", // TODO 목록 관리
 ] as const;
 
 /**

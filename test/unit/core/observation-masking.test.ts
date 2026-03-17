@@ -6,7 +6,11 @@ import {
 } from "../../../src/core/observation-masking.js";
 import type { ChatMessage } from "../../../src/llm/provider.js";
 
-function msg(role: ChatMessage["role"], content: string, extra?: Partial<ChatMessage>): ChatMessage {
+function msg(
+  role: ChatMessage["role"],
+  content: string,
+  extra?: Partial<ChatMessage>,
+): ChatMessage {
   return { role, content, ...extra };
 }
 
@@ -165,10 +169,7 @@ describe("applyObservationMasking", () => {
   });
 
   it("should not mask user or assistant messages", () => {
-    const messages: readonly ChatMessage[] = [
-      msg("user", "Hello"),
-      msg("assistant", "Hi there!"),
-    ];
+    const messages: readonly ChatMessage[] = [msg("user", "Hello"), msg("assistant", "Hi there!")];
 
     const result = applyObservationMasking(messages);
 
@@ -251,10 +252,7 @@ describe("applyObservationMasking", () => {
   });
 
   it("should handle messages with no tool outputs", () => {
-    const messages: readonly ChatMessage[] = [
-      msg("user", "Hello"),
-      msg("assistant", "Hi"),
-    ];
+    const messages: readonly ChatMessage[] = [msg("user", "Hello"), msg("assistant", "Hi")];
 
     const result = applyObservationMasking(messages);
     expect(result).toHaveLength(2);

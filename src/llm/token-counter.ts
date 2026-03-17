@@ -49,12 +49,12 @@ function getEncoder(): ReturnType<typeof getEncoding> {
  * @returns 36진수 해시 문자열
  */
 function hashString(str: string): string {
-  let hash = 0x811c9dc5;  // FNV-1a 초기값 (offset basis)
+  let hash = 0x811c9dc5; // FNV-1a 초기값 (offset basis)
   for (let i = 0; i < str.length; i++) {
-    hash ^= str.charCodeAt(i);    // XOR로 문자 코드를 섞음
-    hash = (hash * 0x01000193) >>> 0;  // FNV prime으로 곱셈 (32비트 unsigned 유지)
+    hash ^= str.charCodeAt(i); // XOR로 문자 코드를 섞음
+    hash = (hash * 0x01000193) >>> 0; // FNV prime으로 곱셈 (32비트 unsigned 유지)
   }
-  return hash.toString(36);  // 36진수로 변환하여 짧은 문자열 생성
+  return hash.toString(36); // 36진수로 변환하여 짧은 문자열 생성
 }
 
 /** LRU 캐시 통계 — 캐시 효율을 모니터링하기 위한 정보 */
@@ -187,13 +187,13 @@ export function countTokens(text: string): number {
   const key = hashString(text);
   const cached = tokenCache.get(key);
   if (cached !== undefined) {
-    return cached;  // 캐시 적중 — 즉시 반환
+    return cached; // 캐시 적중 — 즉시 반환
   }
 
   // 캐시 미적중 — tiktoken으로 실제 계산
   const enc = getEncoder();
-  const count = enc.encode(text).length;  // 텍스트를 토큰 배열로 인코딩 후 길이 반환
-  tokenCache.set(key, count);             // 결과를 캐시에 저장
+  const count = enc.encode(text).length; // 텍스트를 토큰 배열로 인코딩 후 길이 반환
+  tokenCache.set(key, count); // 결과를 캐시에 저장
   return count;
 }
 
@@ -228,8 +228,8 @@ export function resetTokenCache(): void {
  * @returns 추정 토큰 수
  */
 export function estimateTokens(text: string): number {
-  let asciiChars = 0;    // ASCII 문자 수 (영어, 숫자, 기호 등)
-  let wideChars = 0;     // 넓은 문자 수 (한글, 한자, 일본어 등)
+  let asciiChars = 0; // ASCII 문자 수 (영어, 숫자, 기호 등)
+  let wideChars = 0; // 넓은 문자 수 (한글, 한자, 일본어 등)
 
   for (const ch of text) {
     const code = ch.codePointAt(0) ?? 0;

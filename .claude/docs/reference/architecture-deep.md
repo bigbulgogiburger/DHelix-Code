@@ -57,12 +57,12 @@ Never store tool messages without a preceding assistant message containing match
 
 에러 유형별 복구 전략 (`recovery-strategy.ts`):
 
-| 에러 패턴 | 전략 | 최대 재시도 |
-|-----------|------|------------|
-| request too large / context exceed | compact (대화 압축) | 1 |
-| ETIMEDOUT / timeout | retry (지수 백오프) | 2 |
-| parse error / invalid JSON | fallback-strategy (텍스트 파싱 전환) | 1 |
-| ELOCK / locked | retry (1s 백오프) | 3 |
+| 에러 패턴                          | 전략                                 | 최대 재시도 |
+| ---------------------------------- | ------------------------------------ | ----------- |
+| request too large / context exceed | compact (대화 압축)                  | 1           |
+| ETIMEDOUT / timeout                | retry (지수 백오프)                  | 2           |
+| parse error / invalid JSON         | fallback-strategy (텍스트 파싱 전환) | 1           |
+| ELOCK / locked                     | retry (1s 백오프)                    | 3           |
 
 ## Subagent System
 

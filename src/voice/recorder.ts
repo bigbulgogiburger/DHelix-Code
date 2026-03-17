@@ -88,18 +88,18 @@ export function createRecorder(options: RecorderOptions = {}): RecorderHandle {
   const proc: ChildProcess = spawn(
     soxPath,
     [
-      "-d",       // 기본 입력 장치
-      "-t",       // 출력 형식 지정
+      "-d", // 기본 입력 장치
+      "-t", // 출력 형식 지정
       "wav",
-      "-r",       // 샘플 레이트
+      "-r", // 샘플 레이트
       String(sampleRate),
-      "-c",       // 채널 수
+      "-c", // 채널 수
       String(channels),
-      "-b",       // 비트 깊이
+      "-b", // 비트 깊이
       "16",
-      "-e",       // 인코딩 방식
+      "-e", // 인코딩 방식
       "signed-integer",
-      "-",        // stdout으로 출력
+      "-", // stdout으로 출력
     ],
     { stdio: ["pipe", "pipe", "pipe"] },
   );

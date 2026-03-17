@@ -202,7 +202,8 @@ describe("/cost enhanced", () => {
       const lines = result.output.split("\n");
       // Section headers use 2-space indent
       const sectionLines = lines.filter(
-        (l) => l.includes("Token Breakdown:") || l.includes("Pricing:") || l.includes("Efficiency:"),
+        (l) =>
+          l.includes("Token Breakdown:") || l.includes("Pricing:") || l.includes("Efficiency:"),
       );
       for (const line of sectionLines) {
         expect(line).toMatch(/^ {2}\S/);

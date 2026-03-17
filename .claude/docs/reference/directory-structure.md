@@ -92,7 +92,7 @@ src/
 │       ├── web-fetch, web-search
 │       ├── notebook-edit, mkdir, ask-user
 │       ├── agent, todo-write
-├── commands/             # 41 slash commands
+├── commands/             # 42 slash commands (39 registered + 3 unregistered)
 │   ├── registry.ts       # CommandRegistry + SlashCommand interface + CommandContext
 │   └── *.ts              # agents, analytics, batch, bug, clear, commit, compact, config,
 │                         # context, copy, cost, debug, diff, doctor, dual-model, effort,

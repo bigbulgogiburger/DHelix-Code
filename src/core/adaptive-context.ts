@@ -75,10 +75,11 @@ const SIMPLE_INDICATORS: readonly RegExp[] = [
 
 /** 단어 수 기반 복잡도 판단 임계값 */
 const MODERATE_WORD_THRESHOLD = 30; // 30단어 이상이면 "보통" 수준으로 점수 증가
-const COMPLEX_WORD_THRESHOLD = 80;  // 80단어 이상이면 "복잡" 수준으로 점수 증가
+const COMPLEX_WORD_THRESHOLD = 80; // 80단어 이상이면 "복잡" 수준으로 점수 증가
 
 /** 파일 참조 패턴 — 입력에서 파일명(.ts, .py 등)을 감지 */
-const FILE_REFERENCE_PATTERN = /(?:[\w.-]+\.(?:ts|js|tsx|jsx|py|go|rs|java|rb|css|html|json|yaml|yml|toml|md))/g;
+const FILE_REFERENCE_PATTERN =
+  /(?:[\w.-]+\.(?:ts|js|tsx|jsx|py|go|rs|java|rb|css|html|json|yaml|yml|toml|md))/g;
 
 /** 파일 참조가 이 개수 이상이면 복잡도 점수 증가 */
 const MULTI_FILE_THRESHOLD = 3;

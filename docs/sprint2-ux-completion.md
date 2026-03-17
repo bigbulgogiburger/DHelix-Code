@@ -25,15 +25,15 @@
 
 dbcode_develop_v2.md 로드맵에서 남은 격차:
 
-| # | 기능 | 현재 구현률 | 복잡도 | Sprint 2 포함? |
-|---|------|-----------|--------|---------------|
-| **I3** | Syntax Highlighting | 90% (Shiki 통합됨, 미연결) | **낮음** | ✅ |
-| **I2** | Rich Markdown Rendering | 70% (marked/marked-terminal 설치됨) | **낮-중** | ✅ |
-| **C3** | Tool Result Streaming | 10% (BackgroundProcessManager 존재) | **중-높** | ✅ |
-| **I4** | Thinking Auto-Budget | 30% (토글 존재, 미사용 dead code) | **중** | ✅ |
-| I5 | Plan Mode Auto-Execution | 10% (토글만 존재) | 높 | ❌ Sprint 3으로 연기 |
-| C4 | SSE Transport for MCP | 0% | 중 | ❌ Sprint 3으로 연기 |
-| I1 | Worktree Isolation | 0% | 높 | ❌ Sprint 3으로 연기 |
+| #      | 기능                     | 현재 구현률                         | 복잡도    | Sprint 2 포함?       |
+| ------ | ------------------------ | ----------------------------------- | --------- | -------------------- |
+| **I3** | Syntax Highlighting      | 90% (Shiki 통합됨, 미연결)          | **낮음**  | ✅                   |
+| **I2** | Rich Markdown Rendering  | 70% (marked/marked-terminal 설치됨) | **낮-중** | ✅                   |
+| **C3** | Tool Result Streaming    | 10% (BackgroundProcessManager 존재) | **중-높** | ✅                   |
+| **I4** | Thinking Auto-Budget     | 30% (토글 존재, 미사용 dead code)   | **중**    | ✅                   |
+| I5     | Plan Mode Auto-Execution | 10% (토글만 존재)                   | 높        | ❌ Sprint 3으로 연기 |
+| C4     | SSE Transport for MCP    | 0%                                  | 중        | ❌ Sprint 3으로 연기 |
+| I1     | Worktree Isolation       | 0%                                  | 높        | ❌ Sprint 3으로 연기 |
 
 **I5 연기 사유**: Agent loop 아키텍처 변경이 필요 (plan → 실행 2단계 분리). 현재 구조에서는 "도구 실행을 차단하고 계획만 수집 → 사용자 승인 → 재실행" 흐름을 지원하지 않음.
 
@@ -45,30 +45,30 @@ Sprint 1과 마찬가지로, **이미 구현되어 있으나 미연결된 인프
 
 ### I3 — Shiki 하이라이터 (90% 구현됨)
 
-| 파일 | 상태 | 내용 |
-|------|------|------|
+| 파일                         | 상태                 | 내용                                                             |
+| ---------------------------- | -------------------- | ---------------------------------------------------------------- |
 | `src/cli/renderer/syntax.ts` | ✅ 구현됨, ❌ 미사용 | `highlightCode(code, lang, theme)`, 20+ 언어 지원, ANSI RGB 출력 |
-| `src/config/schema.ts` | ✅ 설정 존재 | `syntaxHighlighting: z.boolean().default(true)` |
+| `src/config/schema.ts`       | ✅ 설정 존재         | `syntaxHighlighting: z.boolean().default(true)`                  |
 
 **미연결 지점**: `StreamingMessage.tsx`와 `ToolCallBlock.tsx`에서 코드 블록을 추출할 때 `highlightCode()`를 호출하지 않음.
 
 ### I4 — Thinking 토글 (Dead Code)
 
-| 파일 | 상태 | 내용 |
-|------|------|------|
-| `src/cli/App.tsx` | ✅ `thinkingEnabled` state | Alt+T로 토글, 알림 표시 |
-| `src/cli/components/ThinkingBlock.tsx` | ✅ 구현됨 | 접이식 thinking 내용 + 토큰 카운트 |
-| `src/llm/provider.ts` | ✅ `ThinkingConfig` 인터페이스 | `{ type: "enabled", budget_tokens: number }` |
-| `src/llm/providers/anthropic.ts` | ✅ thinking 스트리밍 | `thinking-delta` 청크 처리 |
+| 파일                                   | 상태                           | 내용                                         |
+| -------------------------------------- | ------------------------------ | -------------------------------------------- |
+| `src/cli/App.tsx`                      | ✅ `thinkingEnabled` state     | Alt+T로 토글, 알림 표시                      |
+| `src/cli/components/ThinkingBlock.tsx` | ✅ 구현됨                      | 접이식 thinking 내용 + 토큰 카운트           |
+| `src/llm/provider.ts`                  | ✅ `ThinkingConfig` 인터페이스 | `{ type: "enabled", budget_tokens: number }` |
+| `src/llm/providers/anthropic.ts`       | ✅ thinking 스트리밍           | `thinking-delta` 청크 처리                   |
 
 **문제**: `thinkingEnabled`가 `true`여도 **LLM 요청에 thinking config가 전달되지 않음**. 완전한 dead code.
 
 ### C3 — BackgroundProcessManager (부분 존재)
 
-| 파일 | 상태 | 내용 |
-|------|------|------|
-| `src/tools/executor.ts` | ✅ `BackgroundProcessManager` | `getIncrementalOutput()` — 증분 출력 읽기 |
-| `src/tools/definitions/bash-output.ts` | ✅ `bash_output` 도구 | 백그라운드 프로세스 출력 조회 |
+| 파일                                   | 상태                          | 내용                                      |
+| -------------------------------------- | ----------------------------- | ----------------------------------------- |
+| `src/tools/executor.ts`                | ✅ `BackgroundProcessManager` | `getIncrementalOutput()` — 증분 출력 읽기 |
+| `src/tools/definitions/bash-output.ts` | ✅ `bash_output` 도구         | 백그라운드 프로세스 출력 조회             |
 
 **문제**: 포그라운드 bash 실행은 모든 출력을 메모리에 모은 후 한 번에 반환. 실행 중 진행 표시 없음.
 
@@ -134,6 +134,7 @@ const renderer = new TerminalRenderer({
 ```
 
 **문제**: `highlightCode()`가 async (Shiki 초기화). 해결:
+
 - 첫 렌더링 시 Shiki를 warm-up (`initHighlighter()` 호출)
 - 이후 동기 버전 `highlightCodeSync()` 추가 (캐시된 highlighter 사용)
 
@@ -178,13 +179,13 @@ void initHighlighter();
 
 ### 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
-| `src/cli/renderer/markdown.ts` | code 렌더러 추가 | ~15줄 |
-| `src/cli/renderer/syntax.ts` | `highlightCodeSync()`, `initHighlighter()` 추가 | ~20줄 |
-| `src/cli/components/ToolCallBlock.tsx` | JSON 감지 + 하이라이팅 | ~15줄 |
-| `src/index.ts` | warm-up 호출 | +1줄 |
-| 테스트 | 신규 | ~50줄 |
+| 파일                                   | 변경                                            | 규모  |
+| -------------------------------------- | ----------------------------------------------- | ----- |
+| `src/cli/renderer/markdown.ts`         | code 렌더러 추가                                | ~15줄 |
+| `src/cli/renderer/syntax.ts`           | `highlightCodeSync()`, `initHighlighter()` 추가 | ~20줄 |
+| `src/cli/components/ToolCallBlock.tsx` | JSON 감지 + 하이라이팅                          | ~15줄 |
+| `src/index.ts`                         | warm-up 호출                                    | +1줄  |
+| 테스트                                 | 신규                                            | ~50줄 |
 
 ---
 
@@ -206,13 +207,27 @@ const renderer = new TerminalRenderer({
   width: process.stdout.columns || 80,
   showSectionPrefix: false,
   // 신규 옵션:
-  tab: 2,                    // 들여쓰기 폭
-  unescape: true,            // HTML entities 해석
-  tableOptions: {             // 테이블 스타일
-    chars: { top: "─", "top-mid": "┬", "top-left": "┌", "top-right": "┐",
-             bottom: "─", "bottom-mid": "┴", "bottom-left": "└", "bottom-right": "┘",
-             left: "│", "left-mid": "├", mid: "─", "mid-mid": "┼",
-             right: "│", "right-mid": "┤", middle: "│" },
+  tab: 2, // 들여쓰기 폭
+  unescape: true, // HTML entities 해석
+  tableOptions: {
+    // 테이블 스타일
+    chars: {
+      top: "─",
+      "top-mid": "┬",
+      "top-left": "┌",
+      "top-right": "┐",
+      bottom: "─",
+      "bottom-mid": "┴",
+      "bottom-left": "└",
+      "bottom-right": "┘",
+      left: "│",
+      "left-mid": "├",
+      mid: "─",
+      "mid-mid": "┼",
+      right: "│",
+      "right-mid": "┤",
+      middle: "│",
+    },
     style: { head: ["cyan", "bold"] },
   },
 });
@@ -249,10 +264,10 @@ const FILE_PATH_PATTERN = /(\S+\.\w+):(\d+)/g;
 
 ### 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
+| 파일                           | 변경                          | 규모  |
+| ------------------------------ | ----------------------------- | ----- |
 | `src/cli/renderer/markdown.ts` | 옵션 강화 + OSC 8 + 파일 링크 | ~40줄 |
-| 테스트 | 신규 | ~30줄 |
+| 테스트                         | 신규                          | ~30줄 |
 
 ---
 
@@ -320,7 +335,7 @@ execute 함수 내에서 `outputStream`을 반환:
 return {
   output: finalOutput,
   isError: exitCode !== 0,
-  outputStream: streamChunks(proc),  // AsyncIterable<string>
+  outputStream: streamChunks(proc), // AsyncIterable<string>
 };
 ```
 
@@ -357,7 +372,7 @@ if (result.outputStream) {
 // 이벤트 리슨:
 events.on("tool:output-delta", ({ id, chunk }) => {
   if (id === toolCallId) {
-    setStreamingOutput(prev => prev + chunk);
+    setStreamingOutput((prev) => prev + chunk);
   }
 });
 ```
@@ -370,15 +385,15 @@ const lastLines = streamingOutput.split("\n").slice(-10).join("\n");
 
 ### 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
-| `src/tools/types.ts` | `outputStream` 필드 추가 | +3줄 |
-| `src/tools/definitions/bash-exec.ts` | 스트리밍 모드 | ~40줄 |
-| `src/core/agent-loop.ts` | 스트리밍 이벤트 전파 | ~15줄 |
-| `src/utils/events.ts` | `tool:output-delta` 이벤트 | +1줄 |
-| `src/cli/components/ToolCallBlock.tsx` | 스트리밍 출력 렌더링 | ~30줄 |
-| `src/cli/hooks/useAgentLoop.ts` | 이벤트 리스너 | ~10줄 |
-| 테스트 | 신규 + 수정 | ~100줄 |
+| 파일                                   | 변경                       | 규모   |
+| -------------------------------------- | -------------------------- | ------ |
+| `src/tools/types.ts`                   | `outputStream` 필드 추가   | +3줄   |
+| `src/tools/definitions/bash-exec.ts`   | 스트리밍 모드              | ~40줄  |
+| `src/core/agent-loop.ts`               | 스트리밍 이벤트 전파       | ~15줄  |
+| `src/utils/events.ts`                  | `tool:output-delta` 이벤트 | +1줄   |
+| `src/cli/components/ToolCallBlock.tsx` | 스트리밍 출력 렌더링       | ~30줄  |
+| `src/cli/hooks/useAgentLoop.ts`        | 이벤트 리스너              | ~10줄  |
+| 테스트                                 | 신규 + 수정                | ~100줄 |
 
 ### 제약사항
 
@@ -435,12 +450,14 @@ export interface ModelCapabilities {
 ```
 
 DEFAULTS:
+
 ```typescript
 supportsThinking: false,
 defaultThinkingBudget: 0,
 ```
 
 Claude 모델 오버라이드:
+
 ```typescript
 // claude-opus-4: supportsThinking: true, defaultThinkingBudget: 16384
 // claude-sonnet-4: supportsThinking: true, defaultThinkingBudget: 10000
@@ -498,7 +515,7 @@ const chatRequest = {
   temperature: config.temperature ?? 0,
   maxTokens: config.maxTokens ?? 4096,
   signal: config.signal,
-  thinking: config.thinking,  // 신규
+  thinking: config.thinking, // 신규
 };
 ```
 
@@ -514,14 +531,14 @@ const chatRequest = {
 
 ### 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
+| 파일                            | 변경                                        | 규모  |
+| ------------------------------- | ------------------------------------------- | ----- |
 | `src/llm/model-capabilities.ts` | `supportsThinking`, `defaultThinkingBudget` | +15줄 |
-| `src/llm/thinking-budget.ts` | **신규** — 예산 자동 계산 | ~30줄 |
-| `src/core/agent-loop.ts` | `thinking` config 전달 | +5줄 |
-| `src/cli/hooks/useAgentLoop.ts` | thinking 배선 | +10줄 |
-| `src/cli/App.tsx` | thinkingEnabled 전달 | +1줄 |
-| 테스트 | 신규 | ~60줄 |
+| `src/llm/thinking-budget.ts`    | **신규** — 예산 자동 계산                   | ~30줄 |
+| `src/core/agent-loop.ts`        | `thinking` config 전달                      | +5줄  |
+| `src/cli/hooks/useAgentLoop.ts` | thinking 배선                               | +10줄 |
+| `src/cli/App.tsx`               | thinkingEnabled 전달                        | +1줄  |
+| 테스트                          | 신규                                        | ~60줄 |
 
 ---
 
@@ -559,6 +576,7 @@ Agent 3 (thinking-wiring):
 ```
 
 **충돌 해결 전략:**
+
 - `ToolCallBlock.tsx`: Agent 1이 하이라이팅, Agent 2가 스트리밍 — 다른 함수이므로 순차 적용 가능
 - `agent-loop.ts`: Agent 2가 스트리밍 이벤트, Agent 3가 thinking config — 다른 위치이므로 순차 적용 가능
 - **순서**: Agent 1 + Agent 3 병렬 → Agent 2 순차 (공유 파일 정리 후)
@@ -581,23 +599,27 @@ Day 4    │  벤치마크 + 커밋
 ### 기능 검증
 
 **I3 Syntax Highlighting:**
+
 - [ ] TypeScript 코드 블록이 구문 강조되어 표시됨
 - [ ] 미지원 언어는 일반 텍스트로 fallback
 - [ ] JSON 도구 출력이 자동 감지 + 하이라이팅됨
 - [ ] `syntaxHighlighting: false` 설정 시 비활성화
 
 **I2 Rich Markdown:**
+
 - [ ] 마크다운 테이블이 박스 문자로 정렬 표시됨
 - [ ] URL이 OSC 8 하이퍼링크로 클릭 가능
 - [ ] 코드 블록, 헤더, 볼드, 이탤릭 정상 렌더링
 
 **C3 Tool Result Streaming:**
+
 - [ ] `npm test` 같은 긴 명령 실행 시 출력이 줄 단위로 표시됨
 - [ ] 마지막 10줄만 화면에 유지 (화면 과부하 방지)
 - [ ] 완료 후 전체 결과가 기존과 동일하게 ToolCallBlock에 표시
 - [ ] 스트리밍은 UI 표시용이며 LLM 응답 흐름에 영향 없음
 
 **I4 Thinking Auto-Budget:**
+
 - [ ] Alt+T 토글 시 Claude 모델에 thinking 파라미터가 LLM 요청에 포함됨
 - [ ] 비-Claude 모델에서 Alt+T 시 "이 모델은 thinking을 지원하지 않습니다" 알림
 - [ ] 컨텍스트 70% 이상 사용 시 thinking 예산 자동 축소
@@ -613,13 +635,13 @@ Day 4    │  벤치마크 + 커밋
 
 ## 리스크
 
-| 리스크 | 확률 | 영향 | 완화 |
-|--------|------|------|------|
-| Shiki 초기화 지연 (첫 하이라이팅 ~200ms) | 중 | 낮 | startup warm-up + 동기 fallback |
-| 터미널 OSC 8 미지원 (일부 터미널) | 중 | 낮 | 미지원 시 URL 텍스트만 표시 (graceful degradation) |
-| bash 스트리밍이 기존 도구 결과 타입과 호환 안 됨 | 낮 | 중 | `outputStream` 옵셔널 필드로 하위 호환 |
-| Thinking budget이 모델별로 최적값 다름 | 중 | 낮 | defaultThinkingBudget으로 모델별 기본값 설정 |
-| agent-loop.ts 공유 파일 충돌 | 중 | 중 | Agent 2/3 순차 적용 + 통합 에이전트 정리 |
+| 리스크                                           | 확률 | 영향 | 완화                                               |
+| ------------------------------------------------ | ---- | ---- | -------------------------------------------------- |
+| Shiki 초기화 지연 (첫 하이라이팅 ~200ms)         | 중   | 낮   | startup warm-up + 동기 fallback                    |
+| 터미널 OSC 8 미지원 (일부 터미널)                | 중   | 낮   | 미지원 시 URL 텍스트만 표시 (graceful degradation) |
+| bash 스트리밍이 기존 도구 결과 타입과 호환 안 됨 | 낮   | 중   | `outputStream` 옵셔널 필드로 하위 호환             |
+| Thinking budget이 모델별로 최적값 다름           | 중   | 낮   | defaultThinkingBudget으로 모델별 기본값 설정       |
+| agent-loop.ts 공유 파일 충돌                     | 중   | 중   | Agent 2/3 순차 적용 + 통합 에이전트 정리           |
 
 ---
 
@@ -627,15 +649,15 @@ Day 4    │  벤치마크 + 커밋
 
 Sprint 2 완료 시 dbcode vs Claude Code 격차:
 
-| 격차 | Sprint 2 후 상태 |
-|------|-----------------|
-| I3 Syntax Highlighting | ✅ 해소 |
-| I2 Rich Markdown | ✅ 해소 |
-| C3 Tool Result Streaming | ✅ 해소 |
-| I4 Thinking Auto-Budget | ✅ 해소 |
-| I5 Plan Mode Auto-Execution | 🟡 Sprint 3 |
-| C4 SSE Transport for MCP | 🟡 Sprint 3 |
-| I1 Worktree Isolation | 🟡 Sprint 3 |
-| I6 OAuth/SSO 인증 | 🟡 Sprint 4 |
+| 격차                        | Sprint 2 후 상태 |
+| --------------------------- | ---------------- |
+| I3 Syntax Highlighting      | ✅ 해소          |
+| I2 Rich Markdown            | ✅ 해소          |
+| C3 Tool Result Streaming    | ✅ 해소          |
+| I4 Thinking Auto-Budget     | ✅ 해소          |
+| I5 Plan Mode Auto-Execution | 🟡 Sprint 3      |
+| C4 SSE Transport for MCP    | 🟡 Sprint 3      |
+| I1 Worktree Isolation       | 🟡 Sprint 3      |
+| I6 OAuth/SSO 인증           | 🟡 Sprint 4      |
 
 **Sprint 2 완료 시 dbcode의 UX 격차가 사실상 해소**됩니다. 남은 항목은 고급 기능(Plan 자동 실행, SSE MCP, Worktree)으로, 핵심 사용성에는 큰 영향이 없습니다.

@@ -85,13 +85,10 @@ function levenshtein(a: string, b: string): number {
  * @param workingDirectory - 상대 경로 해석 기준 디렉토리
  * @returns 교정된 절대 경로, 또는 null (교정 불가능한 경우)
  */
-async function findClosestFile(
-  filePath: string,
-  workingDirectory: string,
-): Promise<string | null> {
+async function findClosestFile(filePath: string, workingDirectory: string): Promise<string | null> {
   // 상대 경로를 절대 경로로 변환
   const absolutePath = isAbsolute(filePath) ? filePath : resolve(workingDirectory, filePath);
-  const dir = dirname(absolutePath);     // 부모 디렉토리 경로
+  const dir = dirname(absolutePath); // 부모 디렉토리 경로
   const target = basename(absolutePath); // 파일명 부분
 
   try {

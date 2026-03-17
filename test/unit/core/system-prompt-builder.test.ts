@@ -529,9 +529,7 @@ describe("tier-based system prompt budget", () => {
     // Low tier budget is 4000 tokens — this should trim some sections
     const prompt = buildSystemPrompt({
       capabilityTier: "low",
-      customSections: [
-        { id: "big", content: "X".repeat(20000), priority: 5 },
-      ],
+      customSections: [{ id: "big", content: "X".repeat(20000), priority: 5 }],
     });
     // Big low-priority section should be trimmed due to low budget
     expect(prompt).not.toContain("X".repeat(20000));
@@ -544,9 +542,7 @@ describe("tier-based system prompt budget", () => {
     const prompt = buildSystemPrompt({
       capabilityTier: "low",
       totalTokenBudget: 50_000,
-      customSections: [
-        { id: "big", content: "MARKER_" + "Y".repeat(200), priority: 50 },
-      ],
+      customSections: [{ id: "big", content: "MARKER_" + "Y".repeat(200), priority: 50 }],
     });
     // With large explicit budget, the section should be included
     expect(prompt).toContain("MARKER_");

@@ -85,10 +85,10 @@ export async function executeSandboxedWithNetwork(
     // 프록시 환경 변수 병합 (대/소문자 모두 설정하여 호환성 확보)
     const proxyEnv: Record<string, string> = {
       ...sandboxConfig.env,
-      HTTP_PROXY: proxyUrl,     // 대문자 (표준)
-      HTTPS_PROXY: proxyUrl,    // 대문자 (표준)
-      http_proxy: proxyUrl,     // 소문자 (일부 도구 호환)
-      https_proxy: proxyUrl,    // 소문자 (일부 도구 호환)
+      HTTP_PROXY: proxyUrl, // 대문자 (표준)
+      HTTPS_PROXY: proxyUrl, // 대문자 (표준)
+      http_proxy: proxyUrl, // 소문자 (일부 도구 호환)
+      https_proxy: proxyUrl, // 소문자 (일부 도구 호환)
     };
 
     // 프록시 환경 변수가 적용된 상태로 샌드박스 실행

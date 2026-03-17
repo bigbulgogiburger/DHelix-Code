@@ -28,11 +28,11 @@ graph TD
 
 ## Built-in Agent Types
 
-| 타입 | 파일 | 용도 | 도구 제한 |
-|------|------|------|----------|
+| 타입    | 파일         | 용도                 | 도구 제한        |
+| ------- | ------------ | -------------------- | ---------------- |
 | explore | `explore.ts` | 코드베이스 빠른 탐색 | 읽기 전용 도구만 |
-| plan | `plan.ts` | 구현 계획 수립 | 읽기 전용 도구만 |
-| general | `general.ts` | 범용 작업 처리 | 전체 도구 |
+| plan    | `plan.ts`    | 구현 계획 수립       | 읽기 전용 도구만 |
+| general | `general.ts` | 범용 작업 처리       | 전체 도구        |
 
 ## 서브에이전트 생성 (agent tool)
 
@@ -102,25 +102,25 @@ You are a security expert. Analyze the codebase for vulnerabilities...
 
 ## 슬래시 명령어
 
-| 명령 | 설명 |
-|------|------|
+| 명령      | 설명                           |
+| --------- | ------------------------------ |
 | `/agents` | 서브에이전트 상태 조회 및 관리 |
-| `/team` | 팀 구성 및 오케스트레이션 |
+| `/team`   | 팀 구성 및 오케스트레이션      |
 
 ## 주요 파일
 
-| 파일 | 역할 |
-|------|------|
-| `spawner.ts` | 서브에이전트 생성, 병렬 실행, worktree 관리 |
-| `agent-types.ts` | 빌트인 에이전트 타입 정의 |
-| `definition-types.ts` | AgentDefinition 인터페이스 |
-| `definition-loader.ts` | .dbcode/agents/*.md 로딩 |
-| `team-manager.ts` | 팀 조율, 태스크 분배 |
-| `task-list.ts` | 공유 태스크 리스트 |
-| `shared-state.ts` | 에이전트 간 공유 변수 |
-| `agent-hooks.ts` | 에이전트 레벨 훅 |
-| `agent-skills-loader.ts` | 에이전트용 스킬 로딩 |
-| `agent-memory.ts` | 에이전트 메모리 영속화 |
+| 파일                     | 역할                                        |
+| ------------------------ | ------------------------------------------- |
+| `spawner.ts`             | 서브에이전트 생성, 병렬 실행, worktree 관리 |
+| `agent-types.ts`         | 빌트인 에이전트 타입 정의                   |
+| `definition-types.ts`    | AgentDefinition 인터페이스                  |
+| `definition-loader.ts`   | .dbcode/agents/\*.md 로딩                   |
+| `team-manager.ts`        | 팀 조율, 태스크 분배                        |
+| `task-list.ts`           | 공유 태스크 리스트                          |
+| `shared-state.ts`        | 에이전트 간 공유 변수                       |
+| `agent-hooks.ts`         | 에이전트 레벨 훅                            |
+| `agent-skills-loader.ts` | 에이전트용 스킬 로딩                        |
+| `agent-memory.ts`        | 에이전트 메모리 영속화                      |
 
 ## 주의사항
 

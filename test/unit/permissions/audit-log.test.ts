@@ -84,11 +84,7 @@ describe("AuditLogger", () => {
 
       const entries = await logger.getRecentEntries();
       expect(entries).toHaveLength(3);
-      expect(entries.map((e) => e.decision)).toEqual([
-        "approved",
-        "denied",
-        "auto-approved",
-      ]);
+      expect(entries.map((e) => e.decision)).toEqual(["approved", "denied", "auto-approved"]);
     });
   });
 

@@ -101,9 +101,7 @@ export const costCommand: SlashCommand = {
     const totalTokens = inputTokens + outputTokens;
 
     // Count user turns from messages
-    const turns = context.messages
-      ? context.messages.filter((m) => m.role === "user").length
-      : 0;
+    const turns = context.messages ? context.messages.filter((m) => m.role === "user").length : 0;
 
     const efficiency = calculateEfficiency(inputTokens, outputTokens, totalCost, turns);
 
@@ -141,10 +139,7 @@ export const costCommand: SlashCommand = {
       lines.push("    No turns recorded yet.");
     }
 
-    lines.push(
-      "",
-      "  Tip: Use /model to switch to a cheaper model for simple tasks.",
-    );
+    lines.push("", "  Tip: Use /model to switch to a cheaper model for simple tasks.");
 
     return {
       output: lines.join("\n"),

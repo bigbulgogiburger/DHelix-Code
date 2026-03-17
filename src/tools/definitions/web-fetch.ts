@@ -122,11 +122,11 @@ function stripHtmlTags(html: string): string {
   return (
     html
       // 불필요한 태그와 내용을 통째로 제거
-      .replace(/<script[\s\S]*?<\/script>/gi, "")  // JavaScript 코드
-      .replace(/<style[\s\S]*?<\/style>/gi, "")     // CSS 스타일
-      .replace(/<nav[\s\S]*?<\/nav>/gi, "")         // 내비게이션 바
-      .replace(/<footer[\s\S]*?<\/footer>/gi, "")   // 하단 푸터
-      .replace(/<header[\s\S]*?<\/header>/gi, "")   // 상단 헤더
+      .replace(/<script[\s\S]*?<\/script>/gi, "") // JavaScript 코드
+      .replace(/<style[\s\S]*?<\/style>/gi, "") // CSS 스타일
+      .replace(/<nav[\s\S]*?<\/nav>/gi, "") // 내비게이션 바
+      .replace(/<footer[\s\S]*?<\/footer>/gi, "") // 하단 푸터
+      .replace(/<header[\s\S]*?<\/header>/gi, "") // 상단 헤더
       // 블록 요소를 줄바꿈으로 변환 — 단락 구분을 유지
       .replace(/<\/?(p|div|br|hr|h[1-6]|li|tr|blockquote)\b[^>]*>/gi, "\n")
       .replace(/<br\s*\/?>/gi, "\n")
@@ -139,12 +139,12 @@ function stripHtmlTags(html: string): string {
       .replace(/&gt;/g, ">")
       .replace(/&quot;/g, '"')
       .replace(/&#39;/g, "'")
-      .replace(/&mdash;/g, "\u2014")  // — (em dash)
-      .replace(/&ndash;/g, "\u2013")  // – (en dash)
+      .replace(/&mdash;/g, "\u2014") // — (em dash)
+      .replace(/&ndash;/g, "\u2013") // – (en dash)
       .replace(/&hellip;/g, "\u2026") // … (말줄임표)
       // 과도한 공백 정리
-      .replace(/[ \t]+/g, " ")        // 연속 공백/탭 → 단일 공백
-      .replace(/\n{3,}/g, "\n\n")     // 3줄 이상의 빈 줄 → 2줄로
+      .replace(/[ \t]+/g, " ") // 연속 공백/탭 → 단일 공백
+      .replace(/\n{3,}/g, "\n\n") // 3줄 이상의 빈 줄 → 2줄로
       .trim()
   );
 }

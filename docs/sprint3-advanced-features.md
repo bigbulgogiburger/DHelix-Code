@@ -25,23 +25,23 @@
 
 ### 주요 기능 (로드맵 항목)
 
-| # | 기능 | 실제 구현률 | 복잡도 | 비고 |
-|---|------|-----------|--------|------|
-| **I5** | Plan Mode Auto-Execution | **45%** (권한 시스템에 plan 모드 존재, agent-loop 미연결) | 중 | Claude Code 방식: 프롬프트 + 도구 필터링 |
-| **C4** | MCP Streamable HTTP Transport | **95%** (SSE + HTTP transport 완성, 테스트/세션 관리 부족) | 낮 | MCP spec 2025-06-18 기반 |
-| **I1** | Worktree Isolation | **85%** (createWorktree 완성, agent tool 연결 + Windows 경로 미흡) | 중 | `.dbcode/worktrees/<name>` 패턴 |
+| #      | 기능                          | 실제 구현률                                                        | 복잡도 | 비고                                     |
+| ------ | ----------------------------- | ------------------------------------------------------------------ | ------ | ---------------------------------------- |
+| **I5** | Plan Mode Auto-Execution      | **45%** (권한 시스템에 plan 모드 존재, agent-loop 미연결)          | 중     | Claude Code 방식: 프롬프트 + 도구 필터링 |
+| **C4** | MCP Streamable HTTP Transport | **95%** (SSE + HTTP transport 완성, 테스트/세션 관리 부족)         | 낮     | MCP spec 2025-06-18 기반                 |
+| **I1** | Worktree Isolation            | **85%** (createWorktree 완성, agent tool 연결 + Windows 경로 미흡) | 중     | `.dbcode/worktrees/<name>` 패턴          |
 
 ### 코어 보강 (신규 발견)
 
 프로젝트 분석에서 발견된 **핵심 취약점 5개**를 함께 수정합니다:
 
-| # | 취약점 | 심각도 | 영향 |
-|---|--------|--------|------|
-| **H1** | Sub-agent에서 MCP 도구 필터링 미적용 | 높음 | MCP 도구가 권한 제한을 우회 |
-| **H2** | Tool 실행 재시도 로직 없음 | 높음 | 네트워크 일시 장애 시 즉시 실패 |
-| **H3** | Sub-agent 시간제한 없음 (wall-clock) | 중 | 무한 실행 에이전트가 부모 차단 |
-| **H4** | 세션 승인 비영속 | 중 | 매 세션마다 동일 도구 재승인 필요 |
-| **H5** | Worktree 고아 정리 미흡 | 중 | 실패한 worktree가 누적 |
+| #      | 취약점                               | 심각도 | 영향                              |
+| ------ | ------------------------------------ | ------ | --------------------------------- |
+| **H1** | Sub-agent에서 MCP 도구 필터링 미적용 | 높음   | MCP 도구가 권한 제한을 우회       |
+| **H2** | Tool 실행 재시도 로직 없음           | 높음   | 네트워크 일시 장애 시 즉시 실패   |
+| **H3** | Sub-agent 시간제한 없음 (wall-clock) | 중     | 무한 실행 에이전트가 부모 차단    |
+| **H4** | 세션 승인 비영속                     | 중     | 매 세션마다 동일 도구 재승인 필요 |
+| **H5** | Worktree 고아 정리 미흡              | 중     | 실패한 worktree가 누적            |
 
 ---
 
@@ -59,6 +59,7 @@
 - ExitPlanMode 도구가 자동 제공 → 사용자가 계획 승인 시 호출
 
 **dbcode 현재 상태:**
+
 - `/plan on|off` 커맨드 존재 (`src/commands/plan.ts`, 47줄) — 토글만
 - 권한 시스템에 `plan` 모드 존재 (`src/permissions/modes.ts`) — `safe` 도구만 허용
 - 시스템 프롬프트에 `buildPlanModeSection()` 존재 (`src/core/system-prompt-builder.ts`)
@@ -76,6 +77,7 @@
 - 인증: OAuth 2.1 + Bearer 토큰 (출처: [modelcontextprotocol.io/authorization](https://modelcontextprotocol.io/docs/tutorials/security/authorization))
 
 **dbcode 현재 상태:**
+
 - `src/mcp/transports/http.ts` (260줄) — HTTP + SSE 기반 transport **이미 구현됨**
 - `src/mcp/transports/stdio.ts` — stdio transport
 - `src/mcp/transports/sse.ts` — SSE transport
@@ -93,6 +95,7 @@
 - 정리: 변경 없으면 자동 삭제, 변경 있으면 브랜치 + 경로 반환
 
 **dbcode 현재 상태:**
+
 - `src/subagents/spawner.ts` (635줄) — `createWorktree()`, `worktreeCleanup()` **이미 구현됨**
 - `spawnParallelSubagents()` 존재
 - **Gap**: agent tool에서 `isolation: "worktree"` 옵션이 연결되지 않음
@@ -114,6 +117,7 @@
 **파일: `src/commands/plan.ts`**
 
 현재 `/plan on|off`가 단순 플래그만 토글. 변경:
+
 - `/plan on` → `permissionMode = "plan"` 전환 + 시스템 프롬프트에 plan mode 섹션 주입
 - `/plan off` → 이전 권한 모드로 복원
 
@@ -122,8 +126,8 @@
 return {
   output: "Plan mode enabled. Only read-only tools available.",
   success: true,
-  newPermissionMode: "plan",  // 권한 모드 직접 전환
-  refreshInstructions: true,   // 시스템 프롬프트 재빌드
+  newPermissionMode: "plan", // 권한 모드 직접 전환
+  refreshInstructions: true, // 시스템 프롬프트 재빌드
 };
 ```
 
@@ -132,6 +136,7 @@ return {
 **파일: `src/core/system-prompt-builder.ts`**
 
 기존 `buildPlanModeSection()` 강화:
+
 ```
 Plan mode is active.
 You MUST NOT make any edits, run any non-readonly tools, or make changes to the system.
@@ -154,14 +159,14 @@ When the user approves the plan, they will exit plan mode and you can execute.
 
 ### 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
-| `src/commands/plan.ts` | 권한 모드 연동 | ~30줄 변경 |
-| `src/commands/registry.ts` | `newPermissionMode` 필드 | +2줄 |
-| `src/core/system-prompt-builder.ts` | plan mode 프롬프트 강화 | ~20줄 변경 |
-| `src/cli/hooks/useAgentLoop.ts` | newPermissionMode 처리 | +10줄 |
-| `src/cli/App.tsx` | permissionMode 상태 업데이트 | +5줄 |
-| 테스트 | 신규 | ~60줄 |
+| 파일                                | 변경                         | 규모       |
+| ----------------------------------- | ---------------------------- | ---------- |
+| `src/commands/plan.ts`              | 권한 모드 연동               | ~30줄 변경 |
+| `src/commands/registry.ts`          | `newPermissionMode` 필드     | +2줄       |
+| `src/core/system-prompt-builder.ts` | plan mode 프롬프트 강화      | ~20줄 변경 |
+| `src/cli/hooks/useAgentLoop.ts`     | newPermissionMode 처리       | +10줄      |
+| `src/cli/App.tsx`                   | permissionMode 상태 업데이트 | +5줄       |
+| 테스트                              | 신규                         | ~60줄      |
 
 ---
 
@@ -180,8 +185,8 @@ When the user approves the plan, they will exit plan mode and you can execute.
 ```typescript
 /** Auto-detect transport type from server config */
 async function detectTransport(config: MCPServerConfig): Promise<"stdio" | "http"> {
-  if (config.command) return "stdio";         // 로컬 프로세스
-  if (config.url) return "http";              // HTTP endpoint
+  if (config.command) return "stdio"; // 로컬 프로세스
+  if (config.url) return "http"; // HTTP endpoint
   if (config.transport) return config.transport; // 명시적 지정
   return "stdio"; // fallback
 }
@@ -210,6 +215,7 @@ interface MCPServerConfig {
 **파일: `src/mcp/transports/http.ts`**
 
 기존 구현에 세션 ID 관리 추가:
+
 ```typescript
 // 초기화 응답에서 Mcp-Session-Id 추출
 const sessionId = response.headers.get("Mcp-Session-Id");
@@ -230,12 +236,12 @@ if (config.oauth) {
 
 ### 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
-| `src/mcp/client.ts` | transport 자동 감지 | ~20줄 |
-| `src/mcp/managed-config.ts` | HTTP config 필드 | ~10줄 |
+| 파일                         | 변경                 | 규모  |
+| ---------------------------- | -------------------- | ----- |
+| `src/mcp/client.ts`          | transport 자동 감지  | ~20줄 |
+| `src/mcp/managed-config.ts`  | HTTP config 필드     | ~10줄 |
 | `src/mcp/transports/http.ts` | 세션 ID + OAuth 연결 | ~30줄 |
-| 테스트 | 신규 | ~80줄 |
+| 테스트                       | 신규                 | ~80줄 |
 
 ---
 
@@ -252,6 +258,7 @@ if (config.oauth) {
 **파일: `src/tools/definitions/agent.ts`**
 
 파라미터 스키마에 `isolation` 추가:
+
 ```typescript
 isolation: z.enum(["none", "worktree"]).default("none").optional(),
 ```
@@ -308,12 +315,12 @@ void cleanOrphanedWorktrees(process.cwd()).catch(() => {});
 
 ### 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
-| `src/tools/definitions/agent.ts` | isolation 파라미터 | ~20줄 |
-| `src/subagents/spawner.ts` | cleanup 강화 + merge 유틸 | ~50줄 |
-| `src/index.ts` | startup cleanup | +2줄 |
-| 테스트 | 신규 | ~60줄 |
+| 파일                             | 변경                      | 규모  |
+| -------------------------------- | ------------------------- | ----- |
+| `src/tools/definitions/agent.ts` | isolation 파라미터        | ~20줄 |
+| `src/subagents/spawner.ts`       | cleanup 강화 + merge 유틸 | ~50줄 |
+| `src/index.ts`                   | startup cleanup           | +2줄  |
+| 테스트                           | 신규                      | ~60줄 |
 
 ---
 
@@ -326,6 +333,7 @@ void cleanOrphanedWorktrees(process.cwd()).catch(() => {});
 **수정: `src/subagents/spawner.ts`**
 
 sub-agent의 ToolRegistry에서 `mcp__` prefix 도구에도 권한 체크 적용:
+
 ```typescript
 // Sub-agent 생성 시 부모의 permission level 상속
 if (parentPermissionMode === "plan") {
@@ -400,12 +408,12 @@ I1의 `cleanOrphanedWorktrees()`로 해결 (위 참조).
 
 ### Core Hardening 영향 범위
 
-| 파일 | 변경 | 규모 |
-|------|------|------|
-| `src/subagents/spawner.ts` | MCP 필터 + timeout | ~30줄 |
-| `src/tools/executor.ts` | 재시도 로직 | ~25줄 |
-| `src/permissions/session-store.ts` | 승인 영속화 | ~40줄 |
-| 테스트 | 신규 | ~100줄 |
+| 파일                               | 변경               | 규모   |
+| ---------------------------------- | ------------------ | ------ |
+| `src/subagents/spawner.ts`         | MCP 필터 + timeout | ~30줄  |
+| `src/tools/executor.ts`            | 재시도 로직        | ~25줄  |
+| `src/permissions/session-store.ts` | 승인 영속화        | ~40줄  |
+| 테스트                             | 신규               | ~100줄 |
 
 ---
 
@@ -430,9 +438,10 @@ Agent 4: tools/executor.ts, permissions/session-store.ts, spawner.ts       ← A
 ```
 
 **충돌 해결**: Agent 3/4의 spawner.ts 수정 위치가 다름:
+
 - Agent 3: `createWorktree()`, `cleanOrphanedWorktrees()` (worktree 관련)
 - Agent 4: MCP 필터링, timeout (sub-agent 실행 관련)
-→ **순차 적용 가능** (Agent 3 먼저, Agent 4 이후)
+  → **순차 적용 가능** (Agent 3 먼저, Agent 4 이후)
 
 ### 일정
 
@@ -453,6 +462,7 @@ Day 5    │  벤치마크 + 커밋
 ### 기능 검증
 
 **I5 Plan Mode:**
+
 - [ ] `/plan on` → 권한 모드가 "plan"으로 전환됨
 - [ ] Plan mode에서 `file_write`, `bash_exec` 차단 확인
 - [ ] Plan mode에서 `file_read`, `grep_search` 정상 동작
@@ -460,18 +470,21 @@ Day 5    │  벤치마크 + 커밋
 - [ ] 시스템 프롬프트에 plan mode 섹션 포함 확인
 
 **C4 MCP Streamable HTTP:**
+
 - [ ] HTTP URL로 MCP 서버 연결 가능
 - [ ] `Mcp-Session-Id` 헤더 자동 관리
 - [ ] SSE 스트리밍 응답 정상 처리
 - [ ] transport 자동 감지 (command → stdio, url → http)
 
 **I1 Worktree Isolation:**
+
 - [ ] agent tool에서 `isolation: "worktree"` 설정 시 worktree 생성
 - [ ] 변경 없는 worktree 자동 정리
 - [ ] 변경 있는 worktree 브랜치 보존 + 경로 반환
 - [ ] startup 시 고아 worktree 자동 정리
 
 **Core Hardening:**
+
 - [ ] Sub-agent에서 plan mode 시 MCP 도구 차단
 - [ ] bash_exec 네트워크 에러 시 1회 재시도
 - [ ] Sub-agent 5분 timeout 후 자동 중단
@@ -554,6 +567,7 @@ Sprint 3 완료 시 dbcode vs Claude Code 격차:
 ## 웹 리서치 참조
 
 ### Claude Code Plan Mode
+
 - [What Actually Is Claude Code's Plan Mode? — Armin Ronacher](https://lucumr.pocoo.org/2025/12/17/what-is-plan-mode/)
 - [Claude Code system prompts — Piebald-AI](https://github.com/Piebald-AI/claude-code-system-prompts)
 - [Claude Code's Plan Mode Isn't Read-Only — Sondera](https://blog.sondera.ai/p/claude-codes-plan-mode-isnt-read)
@@ -561,12 +575,14 @@ Sprint 3 완료 시 dbcode vs Claude Code 격차:
 - [Common Workflows — Claude Code Docs](https://code.claude.com/docs/en/common-workflows)
 
 ### MCP Streamable HTTP
+
 - [MCP Spec 2025-06-18 Transports](https://modelcontextprotocol.io/specification/2025-06-18/basic/transports)
 - [Why MCP Deprecated SSE — fka.dev](https://blog.fka.dev/blog/2025-06-06-why-mcp-deprecated-sse-and-go-with-streamable-http/)
 - [MCP 2025-06-18 Spec Update — Forge Code](https://forgecode.dev/blog/mcp-spec-updates/)
 - [MCP Authorization Tutorial](https://modelcontextprotocol.io/docs/tutorials/security/authorization)
 
 ### Git Worktree Isolation
+
 - [Claude Code Worktree Guide — claudefast.com](https://claudefa.st/blog/guide/development/worktree-guide)
 - [Built-in worktree support — Boris Cherny (Anthropic)](https://www.threads.com/@boris_cherny/post/DVAAnexgRUj/)
 - [Subagent isolation: worktree — GitHub Issue #27023](https://github.com/anthropics/claude-code/issues/27023)

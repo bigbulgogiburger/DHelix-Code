@@ -78,7 +78,10 @@ const KNOWN_TOOLS: readonly string[] = [
  *
  * @returns 도구명과 호출 횟수의 배열
  */
-export function getToolBreakdown(): ReadonlyArray<{ readonly name: string; readonly count: number }> {
+export function getToolBreakdown(): ReadonlyArray<{
+  readonly name: string;
+  readonly count: number;
+}> {
   const toolCounts: Array<{ readonly name: string; readonly count: number }> = [];
 
   // Check known tools first
@@ -165,10 +168,8 @@ export const statsCommand: SlashCommand = {
 
     // Build visual bars for tokens
     const maxBar = 30;
-    const inputBar =
-      totalTokens > 0 ? Math.round((tokensInput / totalTokens) * maxBar) : 0;
-    const outputBar =
-      totalTokens > 0 ? Math.round((tokensOutput / totalTokens) * maxBar) : 0;
+    const inputBar = totalTokens > 0 ? Math.round((tokensInput / totalTokens) * maxBar) : 0;
+    const outputBar = totalTokens > 0 ? Math.round((tokensOutput / totalTokens) * maxBar) : 0;
 
     const lines: string[] = [
       "Session Statistics",
@@ -196,13 +197,9 @@ export const statsCommand: SlashCommand = {
 
       for (const tool of toolBreakdown) {
         const barLen =
-          maxToolCount > 0
-            ? Math.max(1, Math.round((tool.count / maxToolCount) * maxToolBar))
-            : 0;
+          maxToolCount > 0 ? Math.max(1, Math.round((tool.count / maxToolCount) * maxToolBar)) : 0;
         const paddedName = tool.name.padEnd(maxNameLen);
-        lines.push(
-          `    ${paddedName}  ${String(tool.count).padStart(4)}  ${makeBar(barLen)}`,
-        );
+        lines.push(`    ${paddedName}  ${String(tool.count).padStart(4)}  ${makeBar(barLen)}`);
       }
     }
 

@@ -102,10 +102,9 @@ async function fetchLatestVersion(): Promise<string | null> {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5_000);
 
-    const response = await fetch(
-      `https://registry.npmjs.org/${APP_NAME}/latest`,
-      { signal: controller.signal },
-    );
+    const response = await fetch(`https://registry.npmjs.org/${APP_NAME}/latest`, {
+      signal: controller.signal,
+    });
     clearTimeout(timeout);
 
     if (!response.ok) return null;
@@ -154,7 +153,7 @@ export function isNewerVersion(current: string, latest: string): boolean {
   for (let i = 0; i < 3; i++) {
     const c = currentParts[i] ?? 0;
     const l = latestParts[i] ?? 0;
-    if (l > c) return true;  // latest가 더 크면 새 버전
+    if (l > c) return true; // latest가 더 크면 새 버전
     if (l < c) return false; // current가 더 크면 아님
   }
   // 모든 부분이 같으면 같은 버전이므로 false
@@ -177,19 +176,14 @@ export function isNewerVersion(current: string, latest: string): boolean {
  * @param currentVersion - 현재 설치된 버전 (예: "0.1.0")
  * @returns 업데이트가 가능하면 UpdateInfo, 아니면 null
  */
-export async function checkForUpdates(
-  currentVersion: string,
-): Promise<UpdateInfo | null> {
+export async function checkForUpdates(currentVersion: string): Promise<UpdateInfo | null> {
   // 이전 확인 상태 로드
   const state = await readState();
   const now = Date.now();
 
   // 7일 이내에 확인했으면 캐시된 결과 사용
   if (state && now - state.lastCheckTimestamp < CHECK_INTERVAL_MS) {
-    if (
-      state.latestVersion &&
-      isNewerVersion(currentVersion, state.latestVersion)
-    ) {
+    if (state.latestVersion && isNewerVersion(currentVersion, state.latestVersion)) {
       return {
         current: currentVersion,
         latest: state.latestVersion,

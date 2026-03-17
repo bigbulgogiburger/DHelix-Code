@@ -79,9 +79,7 @@ function buildMeta(elapsed: number, tokenCount: number): string {
 export const AgentStatus = React.memo(function AgentStatus({ tokenCount = 0 }: AgentStatusProps) {
   const [starIndex, setStarIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
-  const [messageIndex] = useState(() =>
-    Math.floor(Math.random() * STATUS_MESSAGES.length),
-  );
+  const [messageIndex] = useState(() => Math.floor(Math.random() * STATUS_MESSAGES.length));
   // Star toggle animation
   useEffect(() => {
     const timer = setInterval(() => {

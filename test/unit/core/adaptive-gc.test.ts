@@ -30,9 +30,11 @@ describe("Adaptive GC interval", () => {
     });
 
     // Access private method via type assertion for testing
-    const getAdaptiveGcInterval = (manager as unknown as {
-      getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
-    }).getAdaptiveGcInterval.bind(manager);
+    const getAdaptiveGcInterval = (
+      manager as unknown as {
+        getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
+      }
+    ).getAdaptiveGcInterval.bind(manager);
 
     // Messages totaling >80% of budget (~80 tokens budget, need >64 tokens → >256 chars)
     const messages = [msg("user", "x".repeat(300))];
@@ -48,9 +50,11 @@ describe("Adaptive GC interval", () => {
       sessionId: "adaptive-gc-medium",
     });
 
-    const getAdaptiveGcInterval = (manager as unknown as {
-      getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
-    }).getAdaptiveGcInterval.bind(manager);
+    const getAdaptiveGcInterval = (
+      manager as unknown as {
+        getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
+      }
+    ).getAdaptiveGcInterval.bind(manager);
 
     // Need 50-80% of 80 tokens → 40-64 tokens → 160-256 chars
     const messages = [msg("user", "x".repeat(200))];
@@ -66,9 +70,11 @@ describe("Adaptive GC interval", () => {
       sessionId: "adaptive-gc-low",
     });
 
-    const getAdaptiveGcInterval = (manager as unknown as {
-      getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
-    }).getAdaptiveGcInterval.bind(manager);
+    const getAdaptiveGcInterval = (
+      manager as unknown as {
+        getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
+      }
+    ).getAdaptiveGcInterval.bind(manager);
 
     // Very small messages relative to large budget
     const messages = [msg("user", "Hello")];
@@ -85,9 +91,11 @@ describe("Adaptive GC interval", () => {
       sessionId: "adaptive-gc-boundary-50",
     });
 
-    const getAdaptiveGcInterval = (manager as unknown as {
-      getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
-    }).getAdaptiveGcInterval.bind(manager);
+    const getAdaptiveGcInterval = (
+      manager as unknown as {
+        getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
+      }
+    ).getAdaptiveGcInterval.bind(manager);
 
     // Exactly 50%: 40 tokens = 160 chars
     const messages = [msg("user", "x".repeat(160))];
@@ -104,9 +112,11 @@ describe("Adaptive GC interval", () => {
       sessionId: "adaptive-gc-boundary-80",
     });
 
-    const getAdaptiveGcInterval = (manager as unknown as {
-      getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
-    }).getAdaptiveGcInterval.bind(manager);
+    const getAdaptiveGcInterval = (
+      manager as unknown as {
+        getAdaptiveGcInterval(messages: readonly ChatMessage[]): number;
+      }
+    ).getAdaptiveGcInterval.bind(manager);
 
     const messages = [msg("user", "x".repeat(260))];
     const interval = getAdaptiveGcInterval(messages);

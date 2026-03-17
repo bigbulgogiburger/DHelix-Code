@@ -19,7 +19,7 @@ import { getModelCapabilities } from "../llm/model-capabilities.js";
  *
  * 각 모델에 대해 라벨, 값(실제 모델 ID), 간단한 설명을 정의합니다.
  */
-const KNOWN_MODELS = [
+const STATIC_MODELS = [
   { label: "gpt-4o", value: "gpt-4o", description: "128k context" },
   { label: "gpt-4o-mini", value: "gpt-4o-mini", description: "Cost-effective" },
   { label: "claude-sonnet-4-6", value: "claude-sonnet-4-6", description: "Best coding" },
@@ -32,6 +32,25 @@ const KNOWN_MODELS = [
   { label: "o3-mini", value: "o3-mini", description: "Reasoning" },
   { label: "deepseek-chat", value: "deepseek-chat", description: "Open-source" },
 ] as const;
+
+/**
+ * 런타임에 .env 기반 기본 모델을 읽어 Default 항목 + 정적 모델 목록을 반환
+ *
+ * 주의: constants.ts의 DEFAULT_MODEL은 import 시점(dotenv 로드 전)에 평가되므로
+ * .env 값이 반영되지 않습니다. 여기서는 /model 호출 시점(dotenv 로드 후)에
+ * process.env를 직접 읽어 정확한 값을 표시합니다.
+ */
+function getKnownModels(): ReadonlyArray<{ label: string; value: string; description: string }> {
+  const envModel = process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-5.1-codex-mini";
+  const defaultEntry = {
+    label: `Default (${envModel})`,
+    value: envModel,
+    description: "env 기반 기본 모델",
+  };
+  // Default 모델이 이미 정적 리스트에 있으면 중복 제거
+  const filtered = STATIC_MODELS.filter((m) => m.value !== envModel);
+  return [defaultEntry, ...filtered];
+}
 
 /**
  * /model 슬래시 명령어 정의 — 세션 중 활성 모델 전환
@@ -59,7 +78,7 @@ export const modelCommand: SlashCommand = {
         output: currentInfo,
         success: true,
         interactiveSelect: {
-          options: KNOWN_MODELS,
+          options: getKnownModels(),
           prompt: `Select a model (current: ${context.model}):`,
           onSelect: "/model",
         },

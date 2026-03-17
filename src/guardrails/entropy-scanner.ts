@@ -47,7 +47,8 @@ const ASSIGNMENT_PATTERNS: readonly { readonly name: string; readonly regex: Reg
   // ["']([^"']{8,})["'] : 따옴표로 감싼 8자 이상의 값
   {
     name: "quoted_assignment",
-    regex: /\b([A-Z_][A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|API_KEY))\s*[:=]\s*["']([^"']{8,})["']/gi,
+    regex:
+      /\b([A-Z_][A-Z0-9_]*(?:KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL|AUTH|API_KEY))\s*[:=]\s*["']([^"']{8,})["']/gi,
   },
 
   // export KEY="value" 형태 (쉘 스크립트의 환경변수 내보내기)
@@ -62,7 +63,8 @@ const ASSIGNMENT_PATTERNS: readonly { readonly name: string; readonly regex: Reg
   // \w* : 접두사/접미사에 임의의 단어 문자 허용
   {
     name: "js_const_assignment",
-    regex: /\b(?:const|let|var)\s+(\w*(?:key|token|secret|password|credential|auth)\w*)\s*=\s*["']([^"']{8,})["']/gi,
+    regex:
+      /\b(?:const|let|var)\s+(\w*(?:key|token|secret|password|credential|auth)\w*)\s*=\s*["']([^"']{8,})["']/gi,
   },
 
   // YAML 형식: key: value (따옴표 없는 값)
@@ -71,7 +73,8 @@ const ASSIGNMENT_PATTERNS: readonly { readonly name: string; readonly regex: Reg
   // /m : 여러 줄 모드 (^가 각 줄의 시작을 의미)
   {
     name: "yaml_assignment",
-    regex: /^[ \t]*(\w*(?:key|token|secret|password|credential|auth)\w*)\s*:\s*([^\s#"']{12,})\s*$/gim,
+    regex:
+      /^[ \t]*(\w*(?:key|token|secret|password|credential|auth)\w*)\s*:\s*([^\s#"']{12,})\s*$/gim,
   },
 
   // 일반적인 비밀 변수 이름 패턴: api_key, access_key, secret_key, private_key, auth_token
@@ -79,7 +82,8 @@ const ASSIGNMENT_PATTERNS: readonly { readonly name: string; readonly regex: Reg
   // ["']? : 따옴표 유무 모두 매칭
   {
     name: "generic_assignment",
-    regex: /\b(\w*(?:api[_-]?key|access[_-]?key|secret[_-]?key|private[_-]?key|auth[_-]?token)\w*)\s*[:=]\s*["']?([^\s"']{12,})["']?/gi,
+    regex:
+      /\b(\w*(?:api[_-]?key|access[_-]?key|secret[_-]?key|private[_-]?key|auth[_-]?token)\w*)\s*[:=]\s*["']?([^\s"']{12,})["']?/gi,
   },
 ];
 
@@ -186,7 +190,7 @@ export function detectHighEntropySecrets(content: string): readonly SecretCandid
     // exec()을 반복 호출하여 모든 매칭을 순회
     while ((match = pattern.exec(content)) !== null) {
       const variableName = match[1]; // 캡처 그룹 1: 변수 이름
-      const value = match[2];        // 캡처 그룹 2: 할당된 값
+      const value = match[2]; // 캡처 그룹 2: 할당된 값
 
       // 최소 길이 미만의 값은 건너뜀
       if (!value || value.length < MIN_VALUE_LENGTH) {

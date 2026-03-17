@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeAll } from "vitest";
-import { isLanguageSupported, highlightCodeSync, initHighlighter } from "../../../../src/cli/renderer/syntax.js";
+import {
+  isLanguageSupported,
+  highlightCodeSync,
+  initHighlighter,
+} from "../../../../src/cli/renderer/syntax.js";
 
 describe("syntax highlighting", () => {
   it("should recognize supported languages", () => {

@@ -46,9 +46,7 @@ export const contextCommand: SlashCommand = {
 
     // Count tokens from actual conversation messages
     const messages = context.messages ?? [];
-    const estimatedTokens = messages.length > 0
-      ? countMessageTokens(messages)
-      : 0;
+    const estimatedTokens = messages.length > 0 ? countMessageTokens(messages) : 0;
 
     const usedRatio = maxTokens > 0 ? Math.min(estimatedTokens / maxTokens, 1) : 0;
 

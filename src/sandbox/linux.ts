@@ -259,9 +259,9 @@ export function generateBwrapArgs(config: LinuxSandboxConfig): readonly string[]
   }
 
   // 격리 플래그
-  bwrapArgs.push("--unshare-pid");     // PID 격리
+  bwrapArgs.push("--unshare-pid"); // PID 격리
   bwrapArgs.push("--die-with-parent"); // 부모 종료 시 자동 종료
-  bwrapArgs.push("--new-session");     // 세션 격리
+  bwrapArgs.push("--new-session"); // 세션 격리
 
   // 네트워크 격리 (명시적으로 비활성화된 경우에만)
   if (!allowNetwork) {

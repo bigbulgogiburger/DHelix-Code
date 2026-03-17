@@ -254,10 +254,7 @@ export class ToolRegistry {
    * @param maxResults - 최대 반환 개수 (선택사항)
    * @returns 검색 결과에 해당하는 LLM용 도구 정의 배열
    */
-  searchDeferredTools(
-    query: string,
-    maxResults?: number,
-  ): readonly ToolDefinitionForLLM[] {
+  searchDeferredTools(query: string, maxResults?: number): readonly ToolDefinitionForLLM[] {
     if (!this.toolSearch) {
       return [];
     }

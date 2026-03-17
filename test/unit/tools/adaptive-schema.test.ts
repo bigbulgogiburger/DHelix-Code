@@ -17,7 +17,13 @@ const FULL_PARAMETERS: Record<string, unknown> = {
 describe("adaptToolSchema", () => {
   describe("HIGH tier", () => {
     it("should return full schema unchanged", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "high", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "high",
+        "/project",
+      );
 
       expect(result.name).toBe("file_read");
       expect(result.description).toBe(FULL_DESCRIPTION);
@@ -26,7 +32,13 @@ describe("adaptToolSchema", () => {
     });
 
     it("should preserve all properties including optional ones", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "high", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "high",
+        "/project",
+      );
       const props = result.parameters["properties"] as Record<string, unknown>;
 
       expect(props).toHaveProperty("file_path");
@@ -37,7 +49,13 @@ describe("adaptToolSchema", () => {
 
   describe("MEDIUM tier", () => {
     it("should truncate description to 2 sentences", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "medium", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "medium",
+        "/project",
+      );
 
       // Should have at most 2 sentences
       const sentenceCount = (result.description.match(/\./g) ?? []).length;
@@ -46,7 +64,13 @@ describe("adaptToolSchema", () => {
     });
 
     it("should filter out optional params with defaults", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "medium", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "medium",
+        "/project",
+      );
       const props = result.parameters["properties"] as Record<string, unknown>;
 
       expect(props).toHaveProperty("file_path");
@@ -56,14 +80,26 @@ describe("adaptToolSchema", () => {
     });
 
     it("should not include examples", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "medium", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "medium",
+        "/project",
+      );
       expect(result.examples).toBeUndefined();
     });
   });
 
   describe("LOW tier", () => {
     it("should truncate description to 1 sentence", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "low", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "low",
+        "/project",
+      );
 
       const sentenceCount = (result.description.match(/\./g) ?? []).length;
       expect(sentenceCount).toBeLessThanOrEqual(1);
@@ -71,7 +107,13 @@ describe("adaptToolSchema", () => {
     });
 
     it("should keep only required parameters", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "low", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "low",
+        "/project",
+      );
       const props = result.parameters["properties"] as Record<string, unknown>;
 
       expect(props).toHaveProperty("file_path");
@@ -80,7 +122,13 @@ describe("adaptToolSchema", () => {
     });
 
     it("should include few-shot examples for known tools", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "low", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "low",
+        "/project",
+      );
 
       expect(result.examples).toBeDefined();
       expect(result.examples!.length).toBeGreaterThan(0);
@@ -120,7 +168,13 @@ describe("adaptToolSchema", () => {
     });
 
     it("should preserve required array in filtered output", () => {
-      const result = adaptToolSchema("file_read", FULL_DESCRIPTION, FULL_PARAMETERS, "low", "/project");
+      const result = adaptToolSchema(
+        "file_read",
+        FULL_DESCRIPTION,
+        FULL_PARAMETERS,
+        "low",
+        "/project",
+      );
       expect(result.parameters["required"]).toEqual(["file_path"]);
     });
   });

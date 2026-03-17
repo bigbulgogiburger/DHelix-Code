@@ -117,7 +117,7 @@ function filterToCoreParams(params: Record<string, unknown>): Record<string, unk
     // 필수 매개변수는 항상 포함
     if (requiredSet.has(key)) {
       filtered[key] = value;
-    // 비필수이지만 기본값(default)이 없는 매개변수도 포함 (중요할 수 있으므로)
+      // 비필수이지만 기본값(default)이 없는 매개변수도 포함 (중요할 수 있으므로)
     } else if (value && typeof value === "object" && !("default" in value)) {
       filtered[key] = value;
     }
@@ -142,9 +142,7 @@ const TOOL_EXAMPLES: Readonly<Record<string, readonly string[]>> = {
     'file_read({"file_path": "/absolute/path/to/file.ts"})',
     'file_read({"file_path": "/project/src/index.ts", "offset": 10, "limit": 50})',
   ],
-  file_write: [
-    'file_write({"file_path": "/absolute/path/to/file.ts", "content": "const x = 1;"})',
-  ],
+  file_write: ['file_write({"file_path": "/absolute/path/to/file.ts", "content": "const x = 1;"})'],
   file_edit: [
     'file_edit({"file_path": "/absolute/path/to/file.ts", "old_string": "const x = 1;", "new_string": "const x = 2;"})',
   ],
@@ -152,12 +150,8 @@ const TOOL_EXAMPLES: Readonly<Record<string, readonly string[]>> = {
     'bash_exec({"command": "npm test"})',
     'bash_exec({"command": "ls -la /project/src"})',
   ],
-  grep_search: [
-    'grep_search({"pattern": "function\\\\s+\\\\w+", "path": "/project/src"})',
-  ],
-  glob_search: [
-    'glob_search({"pattern": "**/*.ts", "path": "/project/src"})',
-  ],
+  grep_search: ['grep_search({"pattern": "function\\\\s+\\\\w+", "path": "/project/src"})'],
+  glob_search: ['glob_search({"pattern": "**/*.ts", "path": "/project/src"})'],
 };
 
 /**
