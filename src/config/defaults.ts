@@ -26,7 +26,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     temperature: LLM_DEFAULTS.temperature, // 응답 창의성 (0.0 = 결정적, 2.0 = 창의적)
     maxTokens: LLM_DEFAULTS.maxTokens, // 한 번의 응답에서 생성할 최대 토큰 수
     contextWindow: 1_000_000, // 모델이 한 번에 처리할 수 있는 최대 토큰 수 (컨텍스트 윈도우)
-    timeout: 60_000, // API 요청 타임아웃 (밀리초, 60초)
+    timeout: 120_000, // API 요청 타임아웃 (밀리초, 120초) — bash 도구와 일치
   },
   /** 권한 모드 — 도구 실행 시 사용자 확인 방식 */
   permissionMode: "default",

@@ -120,6 +120,23 @@ const DEFAULTS: ModelCapabilities = {
  * - 첫 번째로 매칭되는 패턴이 사용됩니다
  */
 const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
+  // ─── MiniMax 시리즈 ───────────────────────────────────────────────
+  // MiniMax-M2.5: Local LLM — 1M context, tool calling support
+  [
+    /^minimax/i,
+    {
+      maxContextTokens: 1_000_000,
+      maxOutputTokens: 8192,
+      tokenizer: "cl100k",
+      supportsTools: true,
+      supportsSystemMessage: true,
+      supportsTemperature: true,
+      pricing: { inputPerMillion: 0, outputPerMillion: 0 },
+      capabilityTier: "medium",
+      useMaxCompletionTokens: false,
+    },
+  ],
+
   // ─── OpenAI GPT 시리즈 ────────────────────────────────────────────
   // gpt-4o-mini: 경량화 모델 — gpt-4o보다 저렴하지만 준수한 성능
   [

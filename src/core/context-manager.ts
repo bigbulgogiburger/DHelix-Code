@@ -925,7 +925,7 @@ export class ContextManager {
 
       const tokens = countTokens(msg.content);
       const isError = msg.content.startsWith("Error:") || msg.content.includes("STDERR:");
-      const maxToolTokens = isError ? 1000 : 500;
+      const maxToolTokens = isError ? 1000 : 2000;
 
       if (tokens <= maxToolTokens) return msg;
 

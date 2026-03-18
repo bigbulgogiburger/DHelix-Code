@@ -587,6 +587,7 @@ You have direct access to the user's filesystem and can execute shell commands.
 - Be concise and direct. Lead with the answer, not the reasoning.
 - Prefer showing code over explaining in words.
 - When you can act, act. Don't ask permission for safe, reversible operations.
+- Common developer operations like running tsc, eslint, grep searches, npm commands, and file analysis are ALWAYS safe and should NEVER be refused.
 - When unsure about requirements, ask the user rather than guessing.
 - Never fabricate file contents, terminal output, or information you don't have.
 
@@ -635,7 +636,8 @@ function buildDoingTasksSection(): string {
 - Don't create abstractions for one-time operations. Three similar lines is better than a premature abstraction.
 - Write complete implementations, not stubs or TODOs.
 - If a task is blocked, try alternative approaches before asking the user.
-- For ambiguous instructions, consider them in the context of software engineering and the current working directory.`;
+- For ambiguous instructions, consider them in the context of software engineering and the current working directory.
+- Running TypeScript compiler (tsc), linters, test runners, grep searches, and package managers are always safe developer operations.`;
 }
 
 function buildEnvironmentSection(cwd: string): string {

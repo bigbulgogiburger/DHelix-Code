@@ -57,8 +57,10 @@ function loadEnvConfig(): Partial<AppConfig> {
   const env: Partial<AppConfig> = {};
   const llm: Record<string, unknown> = {};
 
-  // Base URL 결정: DBCODE_BASE_URL > OPENAI_BASE_URL > 기본값
-  if (process.env.DBCODE_BASE_URL) {
+  // Base URL 결정: LOCAL_API_BASE_URL > DBCODE_BASE_URL > OPENAI_BASE_URL > 기본값
+  if (process.env.LOCAL_API_BASE_URL) {
+    llm.baseUrl = process.env.LOCAL_API_BASE_URL;
+  } else if (process.env.DBCODE_BASE_URL) {
     llm.baseUrl = process.env.DBCODE_BASE_URL;
   } else if (process.env.OPENAI_BASE_URL) {
     llm.baseUrl = process.env.OPENAI_BASE_URL;
@@ -75,8 +77,10 @@ function loadEnvConfig(): Partial<AppConfig> {
     }
   }
 
-  // 모델명 결정: DBCODE_MODEL > OPENAI_MODEL > 기본값
-  if (process.env.DBCODE_MODEL) {
+  // 모델명 결정: LOCAL_MODEL > DBCODE_MODEL > OPENAI_MODEL > 기본값
+  if (process.env.LOCAL_MODEL) {
+    llm.model = process.env.LOCAL_MODEL;
+  } else if (process.env.DBCODE_MODEL) {
     llm.model = process.env.DBCODE_MODEL;
   } else if (process.env.OPENAI_MODEL) {
     llm.model = process.env.OPENAI_MODEL;

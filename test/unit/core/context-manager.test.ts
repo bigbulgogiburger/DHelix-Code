@@ -153,8 +153,8 @@ describe("ContextManager", () => {
       preserveRecentTurns: 1,
     });
 
-    // Use a moderately large tool result (3000 chars ~ 750 tokens, above 500 token threshold)
-    const largeToolResult = "test output line\n".repeat(200);
+    // Use a large tool result (12000 chars ~ 3000 tokens, above 2000 token threshold)
+    const largeToolResult = "test output line\n".repeat(800);
     const messages: ChatMessage[] = [
       msg("user", "run test"),
       { role: "tool", content: largeToolResult, toolCallId: "t1" },

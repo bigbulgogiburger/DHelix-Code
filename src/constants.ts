@@ -93,12 +93,13 @@ export const TOOL_TIMEOUTS = {
 /**
  * 기본 LLM 모델명 — 환경변수에서 결정되는 단일 소스(Single Source of Truth)
  *
- * 우선순위: DBCODE_MODEL > OPENAI_MODEL > "gpt-4o-mini" (빌트인 폴백)
+ * 우선순위: LOCAL_MODEL > DBCODE_MODEL > OPENAI_MODEL > "gpt-4o-mini" (빌트인 폴백)
  *
  * 중요: 다른 파일에서 모델명을 하드코딩하지 마세요.
  * 항상 이 상수를 import하여 사용해야 합니다.
  */
-export const DEFAULT_MODEL = process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
+export const DEFAULT_MODEL =
+  process.env.LOCAL_MODEL || process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
 
 /**
  * 토큰 카운터 기본값
@@ -116,9 +117,12 @@ export const TOKEN_DEFAULTS = {
  * config/defaults.ts에서 이 값을 참조하여 하드코딩을 방지합니다.
  */
 export const LLM_DEFAULTS = {
-  /** 기본 API Base URL — DBCODE_BASE_URL > OPENAI_BASE_URL > OpenAI 공식 */
+  /** 기본 API Base URL — LOCAL_API_BASE_URL > DBCODE_BASE_URL > OPENAI_BASE_URL > OpenAI 공식 */
   baseUrl:
-    process.env.DBCODE_BASE_URL || process.env.OPENAI_BASE_URL || "https://api.openai.com/v1",
+    process.env.LOCAL_API_BASE_URL ||
+    process.env.DBCODE_BASE_URL ||
+    process.env.OPENAI_BASE_URL ||
+    "https://api.openai.com/v1",
   /** 기본 모델명 — 환경변수에서 결정 */
   model: DEFAULT_MODEL,
   /** 기본 온도 — 0.0 (결정적, 동일 입력에 동일 출력) */

@@ -402,19 +402,18 @@ export interface OpenAIClientConfig {
 }
 
 /**
- * Azure OpenAI URL을 OpenAI SDK에 맞게 정규화
+ * Base URL을 OpenAI SDK에 맞게 정규화
  *
- * Azure OpenAI는 URL 형식이 다르므로 SDK가 인식할 수 있도록 변환합니다.
+ * Azure OpenAI와 일반 로컬/외부 서버 모두에 대해 URL을 정규화합니다.
  * - 엔드포인트 경로(/chat/completions, /responses 등)를 제거
- * - api-version 쿼리 파라미터를 추출
- * - 배포(deployment) 경로를 제거
+ * - Azure인 경우: api-version 쿼리 파라미터를 추출, 배포(deployment) 경로를 제거
  *
  * SDK가 자동으로 /chat/completions를 추가하므로 중복을 방지합니다.
  *
- * @param baseURL - 원본 Azure OpenAI URL
+ * @param baseURL - 원본 URL (Azure 또는 로컬/일반 서버)
  * @returns 정규화된 URL과 Azure 관련 메타데이터
  */
-function normalizeAzureUrl(baseURL: string): {
+function normalizeBaseUrl(baseURL: string): {
   baseURL: string;
   apiVersion?: string;
   isAzure: boolean;
@@ -423,7 +422,10 @@ function normalizeAzureUrl(baseURL: string): {
   const isAzure =
     baseURL.includes(".openai.azure.com") || baseURL.includes(".cognitiveservices.azure.com");
   if (!isAzure) {
-    return { baseURL, isAzure: false };
+    // Azure가 아닌 경우: 사용자가 실수로 포함시킨 엔드포인트 경로를 제거
+    // 예: "http://localhost:8080/v1/chat/completions" → "http://localhost:8080/v1"
+    const cleanURL = baseURL.replace(/\/(chat\/completions|completions|responses)\/?$/, "");
+    return { baseURL: cleanURL, isAzure: false };
   }
 
   // URL에서 api-version 쿼리 파라미터 추출
@@ -463,8 +465,8 @@ export class OpenAICompatibleClient implements LLMProvider {
    * @param config - 클라이언트 설정 (baseURL, apiKey, timeout)
    */
   constructor(config: OpenAIClientConfig) {
-    // Azure URL이면 정규화하고, Azure 전용 헤더/쿼리를 설정
-    const { baseURL, apiVersion, isAzure } = normalizeAzureUrl(config.baseURL);
+    // URL을 정규화하고, Azure인 경우 전용 헤더/쿼리를 설정
+    const { baseURL, apiVersion, isAzure } = normalizeBaseUrl(config.baseURL);
     const apiKey = config.apiKey ?? "no-key-required";
 
     this.client = new OpenAI({
@@ -568,15 +570,15 @@ export class OpenAICompatibleClient implements LLMProvider {
     // 도구 호출 응답을 내부 형식으로 변환
     const toolCalls: ToolCallRequest[] =
       choice.message.tool_calls
-        ?.filter(
-          (tc): tc is OpenAI.Chat.Completions.ChatCompletionMessageToolCall =>
-            tc.type === "function",
-        )
-        .map((tc) => ({
-          id: tc.id,
-          name: tc.function.name,
-          arguments: tc.function.arguments,
-        })) ?? [];
+        ?.filter((tc) => tc.type === "function" && "function" in tc)
+        .map((tc) => {
+          const funcTc = tc as OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall;
+          return {
+            id: funcTc.id,
+            name: funcTc.function.name,
+            arguments: funcTc.function.arguments,
+          };
+        }) ?? [];
 
     return {
       content: choice.message.content ?? "",

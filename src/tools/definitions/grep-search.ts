@@ -220,7 +220,16 @@ async function searchWithRipgrep(
   // 실제 매칭 줄 수 계산 (':' 구분자가 있는 줄만, 컨텍스트 줄('-')은 제외)
   const matchCount = normalizedLines.filter((l) => l !== "--" && /^.+?:\d+:/.test(l)).length;
 
-  const output = normalizedLines.join("\n");
+  // 매칭된 파일 목록 추출 (LLM이 잘린 경우에도 모든 파일명을 볼 수 있도록 헤더 추가)
+  const uniqueFiles = new Set(
+    normalizedLines.filter((l) => l !== "--" && /^.+?:\d+:/.test(l)).map((l) => l.split(":")[0]),
+  );
+  const fileCount = uniqueFiles.size;
+  const header =
+    `Found ${matchCount} match${matchCount === 1 ? "" : "es"} in ${fileCount}` +
+    ` file${fileCount === 1 ? "" : "s"}: ${[...uniqueFiles].join(", ")}`;
+
+  const output = `${header}\n---\n${normalizedLines.join("\n")}`;
 
   return { output, matchCount };
 }
@@ -276,12 +285,21 @@ async function searchWithJavaScript(
     return { output: "No matches found.", isError: false };
   }
 
+  // 매칭된 파일 목록 추출 (LLM이 잘린 경우에도 모든 파일명을 볼 수 있도록 헤더 추가)
+  const uniqueJsFiles = new Set(results.map((l) => l.split(":")[0]));
+  const jsMatchCount = results.length;
+  const jsFileCount = uniqueJsFiles.size;
+  const jsHeader =
+    `Found ${jsMatchCount} match${jsMatchCount === 1 ? "" : "es"} in ${jsFileCount}` +
+    ` file${jsFileCount === 1 ? "" : "s"}: ${[...uniqueJsFiles].join(", ")}`;
+
   // 최대 200개까지만 표시 (과도한 결과 방지)
-  const output = results.slice(0, 200).join("\n");
+  const detailLines = results.slice(0, 200).join("\n");
   const truncated = results.length > 200 ? `\n... (${results.length - 200} more matches)` : "";
+  const output = `${jsHeader}\n---\n${detailLines}${truncated}`;
 
   return {
-    output: output + truncated,
+    output,
     isError: false,
     metadata: { matchCount: results.length, pattern: params.pattern, backend: "javascript" },
   };
@@ -351,7 +369,11 @@ export const grepSearchTool: ToolDefinition<Params> = {
   description:
     "Search file contents using a regular expression pattern. Returns matching lines with file paths and line numbers. " +
     "Supports case-insensitive search, context lines, file type filtering, and multiline matching. " +
-    "Uses ripgrep (rg) for fast searching when available, with automatic fallback to built-in search.",
+    "Uses ripgrep (rg) for fast searching when available, with automatic fallback to built-in search. " +
+    "IMPORTANT for dependency/import analysis: never use a single pattern. Use the comprehensive 4-clause pattern " +
+    'to catch ALL import styles: "(from\\s+[\'"]PKG[\'"]|require\\s*\\(\\s*[\'"]PKG[\'"]\\s*\\)|import\\s*\\(\\s*[\'"]PKG[\'"]\\s*\\)|^import\\s+[\'"]PKG[\'"])." ' +
+    "This covers: ESM default (import x from 'pkg'), named (import { x } from 'pkg'), namespace (import * as x from 'pkg'), " +
+    "CommonJS require('pkg'), dynamic import('pkg'), and side-effect import 'pkg'. A package is only unused when ALL clauses return zero results.",
   parameterSchema: paramSchema,
   permissionLevel: "safe",
   timeoutMs: 30_000,
