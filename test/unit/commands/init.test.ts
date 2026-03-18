@@ -100,7 +100,7 @@ describe("initCommand", () => {
   });
 
   it("should have usage and execute", () => {
-    expect(initCommand.usage).toBe("/init");
+    expect(initCommand.usage).toBe("/init [-i | --interactive]");
     expect(initCommand.execute).toBeTypeOf("function");
   });
 
