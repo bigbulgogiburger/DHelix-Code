@@ -818,6 +818,7 @@ async function executeSubagent(params: {
           workingDirectory: effectiveWorkingDir,
           maxContextTokens,
           maxTokens: subagentModelCaps.maxOutputTokens,
+          useStreaming: true,
         },
         initialMessages,
       ),
