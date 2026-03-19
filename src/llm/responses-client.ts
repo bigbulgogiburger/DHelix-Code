@@ -190,6 +190,35 @@ function toResponsesInput(messages: readonly ChatMessage[]): unknown[] {
     }
   }
 
+  // ── Issue 4-D: function_call ↔ function_call_output 일관성 검증 ──
+  const functionCallIds = new Set<string>();
+  const functionOutputIds = new Set<string>();
+
+  for (const item of input) {
+    const it = item as Record<string, unknown>;
+    if (it.type === "function_call" && typeof it.call_id === "string") {
+      functionCallIds.add(it.call_id);
+    }
+    if (it.type === "function_call_output" && typeof it.call_id === "string") {
+      functionOutputIds.add(it.call_id);
+    }
+  }
+
+  // 누락된 function_call_output 자동 생성 (Responses API 400 방지)
+  for (const callId of functionCallIds) {
+    if (!functionOutputIds.has(callId)) {
+      trace(
+        "responses-api",
+        `⚠️ function_call ${callId} has no matching output — auto-generating placeholder`,
+      );
+      input.push({
+        type: "function_call_output",
+        call_id: callId,
+        output: "[No output — tool execution may have been interrupted]",
+      });
+    }
+  }
+
   return input;
 }
 
@@ -590,6 +619,8 @@ export class ResponsesAPIClient implements LLMProvider {
       request.signal.addEventListener("abort", () => controller.abort(), { once: true });
     }
 
+    trace("responses-api", `_chatOnce: timeout=${this.timeout}ms, model=${request.model}`);
+
     let response: Response;
     try {
       response = await fetch(this.endpoint, {
@@ -681,6 +712,8 @@ export class ResponsesAPIClient implements LLMProvider {
     if (request.signal) {
       request.signal.addEventListener("abort", () => controller.abort(), { once: true });
     }
+
+    trace("responses-api", `_streamOnce: timeout=${this.timeout}ms, model=${request.model}`);
 
     let response: Response;
     try {

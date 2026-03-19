@@ -1168,9 +1168,13 @@ export async function runAgentLoop(
         if (fp) filesModified.add(fp);
       }
     }
+    trace(
+      "agent-loop",
+      `CB iteration: hasOutput=${response.content.length > 0 || extractedCalls.length > 0}, toolCalls=${extractedCalls.length}, filesModified=${filesModified.size}`,
+    );
     circuitBreaker.recordIteration({
       filesModified,
-      hasOutput: response.content.length > 0,
+      hasOutput: response.content.length > 0 || extractedCalls.length > 0,
       error: results.some((r) => r.isError) ? results.find((r) => r.isError)?.output : undefined,
     });
 
