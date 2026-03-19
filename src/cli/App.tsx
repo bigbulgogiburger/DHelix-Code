@@ -168,6 +168,7 @@ export function App({
   const {
     isProcessing,
     isStreamingFinal,
+    agentPhase,
     completedTurns,
     liveTurn,
     handleSubmit,
@@ -489,6 +490,7 @@ export function App({
             tokenCount={tokenCount}
             maxTokens={getModelCapabilities(activeModel).maxContextTokens}
             isStreaming={isProcessing}
+            agentPhase={agentPhase}
             inputTokens={inputTokens}
             outputTokens={outputTokens}
             permissionMode={MODE_LABELS[permissionMode]}

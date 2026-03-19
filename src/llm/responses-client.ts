@@ -26,6 +26,10 @@ import {
 import { countTokens } from "./token-counter.js";
 import { LLMError } from "../utils/error.js";
 
+const trace = (tag: string, msg: string) => {
+  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+};
+
 // ─── 재시도 관련 상수 ────────────────────────────────────────────────
 
 /** 일시적 에러(500, 502, 503, 504, 타임아웃, 네트워크)에 대한 최대 재시도 횟수 */
@@ -278,6 +282,11 @@ function fromResponsesOutput(result: ResponsesAPIResponse): ChatResponse {
       });
     }
   }
+
+  trace(
+    "responses-api",
+    `fromResponsesOutput: content.length=${content.length}, toolCalls=${toolCalls.length}, status=${result.status}`,
+  );
 
   return {
     content,
@@ -805,6 +814,10 @@ export class ResponsesAPIClient implements LLMProvider {
                   name: (item.name ?? "") as string,
                   arguments: "",
                 });
+                trace(
+                  "responses-sse",
+                  `output_item.added: type=${(item as Record<string, unknown>)?.type}, id=${itemId}, name=${(item as Record<string, unknown>)?.name}`,
+                );
               }
             }
 
@@ -832,6 +845,10 @@ export class ResponsesAPIClient implements LLMProvider {
                   arguments: argDelta,
                 },
               };
+              trace(
+                "responses-sse",
+                `fn_call_args.delta: itemId=${itemId}, existing=${!!existing}, name=${existing?.name ?? "(none)"}, argLen=${argDelta.length}`,
+              );
             }
 
             // 응답 완료 이벤트 — 토큰 사용량 및 상태 추출

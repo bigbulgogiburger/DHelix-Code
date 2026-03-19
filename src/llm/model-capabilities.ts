@@ -173,6 +173,7 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
   [
     /^gpt-5\.1-codex/i,
     {
+      supportsTools: true,
       maxContextTokens: 400_000,
       maxOutputTokens: 100_000,
       tokenizer: "o200k",

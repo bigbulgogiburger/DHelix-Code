@@ -51,6 +51,10 @@ export interface ToolContext {
   readonly events?: AppEventEmitter;
   /** 도구 호출 ID(선택사항) — 이벤트 상관관계(correlation)를 위한 고유 식별자 */
   readonly toolCallId?: string;
+  /** 현재 활성 LLM 클라이언트 (동적 모델 전환 지원) */
+  readonly activeClient?: import("../llm/provider.js").LLMProvider;
+  /** 현재 활성 모델명 (동적 모델 전환 지원) */
+  readonly activeModel?: string;
 }
 
 /**

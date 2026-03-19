@@ -4,15 +4,22 @@
  * 사용자가 /model을 입력하면 사용 가능한 모델 목록을 보여주고,
  * /model <모델명>으로 세션 중간에 모델을 변경할 수 있습니다.
  *
- * 모델 전환 시 해당 모델의 능력 정보(컨텍스트 크기, 도구 지원 등)도
- * 함께 표시됩니다.
+ * 프로바이더 프로필 지원:
+ *   - 🏠 Local Default: LOCAL_MODEL + LOCAL_API_BASE_URL + LOCAL_API_KEY
+ *   - ☁️ OpenAI Default: OPENAI_MODEL + OPENAI_BASE_URL + OPENAI_API_KEY
+ *   프로바이더 선택 시 model + baseURL + apiKey 3종 세트가 함께 전환됩니다.
  *
  * 사용 시점:
+ *   - Local ↔ Cloud 전환이 필요할 때
  *   - 복잡한 작업에 고성능 모델이 필요할 때
  *   - 간단한 작업에 비용 효율적인 모델로 전환하고 싶을 때
  */
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
+
+/** 프로바이더 프로필 식별자 — interactiveSelect의 value로 사용 */
+const LOCAL_PROVIDER_KEY = "__provider:local__";
+const OPENAI_PROVIDER_KEY = "__provider:openai__";
 
 /**
  * 대화형 선택 목록에 표시할 잘 알려진 모델 목록
@@ -34,32 +41,134 @@ const STATIC_MODELS = [
 ] as const;
 
 /**
- * 런타임에 .env 기반 기본 모델을 읽어 Default 항목 + 정적 모델 목록을 반환
+ * 환경변수에서 프로바이더 프로필 정보를 읽어옵니다.
  *
- * 주의: constants.ts의 DEFAULT_MODEL은 import 시점(dotenv 로드 전)에 평가되므로
- * .env 값이 반영되지 않습니다. 여기서는 /model 호출 시점(dotenv 로드 후)에
- * process.env를 직접 읽어 정확한 값을 표시합니다.
+ * Local: LOCAL_MODEL + LOCAL_API_BASE_URL + LOCAL_API_KEY
+ * OpenAI: OPENAI_MODEL + OPENAI_BASE_URL + OPENAI_API_KEY
  */
-function getKnownModels(): ReadonlyArray<{ label: string; value: string; description: string }> {
-  const envModel = process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-5.1-codex-mini";
-  const defaultEntry = {
-    label: `Default (${envModel})`,
-    value: envModel,
-    description: "env 기반 기본 모델",
+interface ProviderProfile {
+  readonly model: string;
+  readonly baseURL: string;
+  readonly apiKey: string;
+}
+
+function getLocalProvider(): ProviderProfile | undefined {
+  const model = process.env.LOCAL_MODEL;
+  const baseURL = process.env.LOCAL_API_BASE_URL;
+  if (!model || !baseURL) return undefined;
+  return {
+    model,
+    baseURL,
+    apiKey: process.env.LOCAL_API_KEY ?? "no-key-required",
   };
-  // Default 모델이 이미 정적 리스트에 있으면 중복 제거
-  const filtered = STATIC_MODELS.filter((m) => m.value !== envModel);
-  return [defaultEntry, ...filtered];
+}
+
+function getOpenAIProvider(): ProviderProfile | undefined {
+  const model = process.env.OPENAI_MODEL;
+  const baseURL = process.env.OPENAI_BASE_URL;
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!model || !baseURL || !apiKey) return undefined;
+  return { model, baseURL, apiKey };
 }
 
 /**
- * /model 슬래시 명령어 정의 — 세션 중 활성 모델 전환
+ * 런타임에 .env 기반 프로바이더 프로필 + 정적 모델 목록을 반환
+ *
+ * 프로바이더 프로필이 설정되어 있으면 목록 상단에 🏠/☁️ 아이콘과 함께 표시합니다.
+ * 프로바이더 선택 시 model + baseURL + apiKey가 함께 전환됩니다.
+ */
+function getKnownModels(): ReadonlyArray<{ label: string; value: string; description: string }> {
+  const entries: { label: string; value: string; description: string }[] = [];
+  const providerModelValues = new Set<string>();
+
+  // 🏠 Local Default
+  const local = getLocalProvider();
+  if (local) {
+    entries.push({
+      label: `🏠 Local Default (${local.model})`,
+      value: LOCAL_PROVIDER_KEY,
+      description: local.baseURL.replace(/\/v1\/chat\/completions\/?$/, ""),
+    });
+    providerModelValues.add(local.model);
+  }
+
+  // ☁️ OpenAI Default
+  const openai = getOpenAIProvider();
+  if (openai) {
+    entries.push({
+      label: `☁️  OpenAI Default (${openai.model})`,
+      value: OPENAI_PROVIDER_KEY,
+      description: openai.baseURL.replace(/https?:\/\//, "").split("/")[0] ?? "",
+    });
+    providerModelValues.add(openai.model);
+  }
+
+  // 프로바이더가 없으면 기존 방식으로 Default 표시
+  if (entries.length === 0) {
+    const envModel = process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
+    entries.push({
+      label: `Default (${envModel})`,
+      value: envModel,
+      description: "env 기반 기본 모델",
+    });
+    providerModelValues.add(envModel);
+  }
+
+  // 정적 모델 리스트 (프로바이더 모델과 중복되면 제거)
+  const filtered = STATIC_MODELS.filter((m) => !providerModelValues.has(m.value));
+  return [...entries, ...filtered];
+}
+
+/**
+ * 프로바이더 키 선택을 처리합니다.
+ * __provider:local__ 또는 __provider:openai__가 선택되면
+ * newProvider를 반환하여 클라이언트를 재생성합니다.
+ */
+function handleProviderSelection(providerKey: string): CommandResult | undefined {
+  if (providerKey === LOCAL_PROVIDER_KEY) {
+    const provider = getLocalProvider();
+    if (!provider) {
+      return {
+        output: "LOCAL_MODEL / LOCAL_API_BASE_URL 환경변수가 설정되지 않았습니다.",
+        success: false,
+      };
+    }
+    const caps = getModelCapabilities(provider.model);
+    return {
+      output: `🏠 Local provider로 전환: ${provider.model} (${(caps.maxContextTokens / 1000).toFixed(0)}K context)`,
+      success: true,
+      newModel: provider.model,
+      newProvider: provider,
+    };
+  }
+
+  if (providerKey === OPENAI_PROVIDER_KEY) {
+    const provider = getOpenAIProvider();
+    if (!provider) {
+      return {
+        output: "OPENAI_MODEL / OPENAI_BASE_URL / OPENAI_API_KEY 환경변수가 설정되지 않았습니다.",
+        success: false,
+      };
+    }
+    const caps = getModelCapabilities(provider.model);
+    return {
+      output: `☁️  OpenAI provider로 전환: ${provider.model} (${(caps.maxContextTokens / 1000).toFixed(0)}K context)`,
+      success: true,
+      newModel: provider.model,
+      newProvider: provider,
+    };
+  }
+
+  return undefined;
+}
+
+/**
+ * /model 슬래시 명령어 정의 — 세션 중 활성 모델/프로바이더 전환
  *
  * 인자 없이 호출하면 대화형 모델 선택기를 보여주고,
  * 모델명을 인자로 전달하면 즉시 전환합니다.
  *
- * interactiveSelect를 통해 사용자가 화살표 키로 모델을 선택할 수 있습니다.
- * newModel 필드로 상위 컴포넌트에 모델 변경을 알립니다.
+ * 🏠 Local Default / ☁️ OpenAI Default 선택 시 model + baseURL + apiKey가 함께 전환됩니다.
  */
 export const modelCommand: SlashCommand = {
   name: "model",
@@ -85,6 +194,11 @@ export const modelCommand: SlashCommand = {
       };
     }
 
+    // 프로바이더 키 선택 처리
+    const providerResult = handleProviderSelection(newModel);
+    if (providerResult) return providerResult;
+
+    // 일반 모델명 선택 — 기존 동작 (모델만 변경, baseURL/apiKey 유지)
     const caps = getModelCapabilities(newModel);
     const notes: string[] = [];
     if (!caps.supportsTools) notes.push("text-parsing fallback for tools");

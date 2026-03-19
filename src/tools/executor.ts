@@ -20,6 +20,7 @@ import {
   type ToolCallResult,
 } from "./types.js";
 import { type ToolRegistry } from "./registry.js";
+import { type LLMProvider } from "../llm/provider.js";
 import { type AppEventEmitter } from "../utils/events.js";
 import { parseToolArguments } from "./validation.js";
 import { correctToolCall } from "./tool-call-corrector.js";
@@ -78,6 +79,8 @@ export async function executeTool(
     events?: AppEventEmitter;
     toolCallId?: string;
     capabilityTier?: CapabilityTier;
+    activeClient?: LLMProvider;
+    activeModel?: string;
   },
 ): Promise<ToolResult> {
   // 도구별 타임아웃이 지정되어 있으면 사용, 없으면 전역 기본값 사용
@@ -107,6 +110,8 @@ export async function executeTool(
     platform: getPlatform(),
     events: options?.events,
     toolCallId: options?.toolCallId,
+    activeClient: options?.activeClient,
+    activeModel: options?.activeModel,
   };
 
   try {
@@ -171,6 +176,8 @@ export async function executeToolCall(
     signal?: AbortSignal;
     events?: AppEventEmitter;
     capabilityTier?: CapabilityTier;
+    activeClient?: LLMProvider;
+    activeModel?: string;
   },
 ): Promise<ToolCallResult> {
   // 레지스트리에서 도구를 이름으로 조회
@@ -192,6 +199,8 @@ export async function executeToolCall(
     events: options?.events,
     toolCallId: call.id,
     capabilityTier: options?.capabilityTier,
+    activeClient: options?.activeClient,
+    activeModel: options?.activeModel,
   });
   return {
     id: call.id,

@@ -118,11 +118,12 @@ export function createAgentTool(deps: AgentToolDeps): ToolDefinition<Params> {
 
     try {
       // spawnSubagent — 새로운 에이전트 루프를 생성하고 실행
+      // context.activeClient/activeModel은 /model 전환 시 최신 클라이언트를 반영
       const result = await spawnSubagent({
         type: subagentType,
         prompt: params.prompt,
-        client: deps.client,
-        model: deps.model,
+        client: context.activeClient ?? deps.client,
+        model: context.activeModel ?? deps.model,
         strategy: deps.strategy,
         toolRegistry: deps.toolRegistry,
         workingDirectory: context.workingDirectory,

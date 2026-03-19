@@ -373,6 +373,18 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
     sections.push(...options.customSections);
   }
 
+  // Anti-early-stop directive for agentic models
+  sections.push({
+    id: "action-bias",
+    content:
+      "\n## Important: Action Bias\n" +
+      "Do NOT end your turn by merely describing what you plan to do. " +
+      "Always use tools to take action. If you need to read files, call file_read. " +
+      "If you need to search, call grep_search. Never say 'I will read the file' without actually calling the tool. " +
+      "Continue calling tools until the task is fully complete.",
+    priority: 77, // Between tone(76) and skills(78)
+  });
+
   // Use explicit budget if provided, otherwise fall back to tier-based budget
   const effectiveBudget = options?.totalTokenBudget ?? tierBudget?.totalBudget;
   return assembleSections(sections, effectiveBudget);

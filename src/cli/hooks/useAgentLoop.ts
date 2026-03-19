@@ -24,6 +24,7 @@ import { useState, useCallback, useMemo, useRef, useEffect } from "react";
 import { useConversation } from "./useConversation.js";
 import { useTextBuffering } from "./useTextBuffering.js";
 import { type LLMProvider, type ChatMessage } from "../../llm/provider.js";
+import { createLLMClientForModel } from "../../llm/client-factory.js";
 import { type ToolCallStrategy } from "../../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../../tools/registry.js";
 import { type PermissionResult, runAgentLoop } from "../../core/agent-loop.js";
@@ -115,6 +116,9 @@ export function useAgentLoop({
   // LLM이 최종 응답(도구 호출 없이 끝나는 응답)을 스트리밍 중인지 여부
   // true이면 AgentStatus 스피너를 숨기고 스트리밍 텍스트를 표시한다
   const [isStreamingFinal, setIsStreamingFinal] = useState(false);
+  const [agentPhase, setAgentPhase] = useState<
+    "idle" | "llm-thinking" | "llm-streaming" | "tools-running" | "tools-done"
+  >("idle");
   const {
     text: streamingText,
     appendText,
@@ -126,6 +130,13 @@ export function useAgentLoop({
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(initialModel);
   const [interactiveSelect, setInteractiveSelect] = useState<InteractiveSelect | null>(null);
+
+  // 프로바이더 전환 지원 — client를 ref로 관리하여 /model에서 동적 교체 가능
+  // useRef는 초기값만 사용하므로, 부모가 client prop을 변경하면 동기화 필요
+  const clientRef = useRef<LLMProvider>(client);
+  useEffect(() => {
+    clientRef.current = client;
+  }, [client]);
 
   // ask_user 도구가 사용자에게 질문을 보냈을 때의 대기 상태
   const [pendingAskUser, setPendingAskUser] = useState<{
@@ -283,6 +294,7 @@ export function useAgentLoop({
     };
     const onTextDelta = ({ text }: { text: string }) => {
       appendText(text);
+      setAgentPhase("llm-streaming");
     };
     const onAssistantMessage = ({
       content,
@@ -310,6 +322,9 @@ export function useAgentLoop({
       // isFinal = true: 도구 호출 없이 끝나는 최종 응답
       // isFinal = false: 이후 도구 호출이 따라오는 중간 응답
       setIsStreamingFinal(isFinal);
+      if (isFinal) {
+        setAgentPhase("idle");
+      }
 
       // Only track intermediate messages (those followed by tool calls).
       // The final message is already handled after runAgentLoop returns.
@@ -346,6 +361,15 @@ export function useAgentLoop({
     // LLM 호출 시작 시 재시도 카운트다운을 해제 (다음 반복 시작)
     const onLlmStart = () => {
       setRetryInfo(null);
+      setAgentPhase("llm-thinking");
+      setIsStreamingFinal(false);
+    };
+
+    const onToolsExecuting = () => {
+      setAgentPhase("tools-running");
+    };
+    const onToolsDone = () => {
+      setAgentPhase("tools-done");
     };
 
     events.on("tool:start", onToolStart);
@@ -357,6 +381,8 @@ export function useAgentLoop({
     events.on("ask_user:prompt", onAskUserPrompt);
     events.on("agent:retry", onAgentRetry);
     events.on("llm:start", onLlmStart);
+    events.on("agent:tools-executing", onToolsExecuting);
+    events.on("agent:tools-done", onToolsDone);
     return () => {
       events.off("tool:start", onToolStart);
       events.off("tool:complete", onToolComplete);
@@ -367,6 +393,8 @@ export function useAgentLoop({
       events.off("ask_user:prompt", onAskUserPrompt);
       events.off("agent:retry", onAgentRetry);
       events.off("llm:start", onLlmStart);
+      events.off("agent:tools-executing", onToolsExecuting);
+      events.off("agent:tools-done", onToolsDone);
     };
   }, [events, appendText, syncCurrentTurn]);
 
@@ -455,6 +483,7 @@ export function useAgentLoop({
           setError(`Blocked by hook: ${hookResult.blockReason ?? "Unknown reason"}`);
           setIsProcessing(false);
           setIsStreamingFinal(false);
+          setAgentPhase("idle");
           return;
         }
       }
@@ -512,7 +541,7 @@ export function useAgentLoop({
 
         const result = await runAgentLoop(
           {
-            client,
+            client: clientRef.current,
             model: activeModel,
             toolRegistry,
             strategy,
@@ -551,7 +580,7 @@ export function useAgentLoop({
           const msg = newMessages[i];
           if (msg.role === "assistant") {
             addAssistantMessage(msg.content, msg.toolCalls ?? []);
-            setTokenCount((prev) => prev + client.countTokens(msg.content));
+            setTokenCount((prev) => prev + clientRef.current.countTokens(msg.content));
             i++;
 
             // Collect subsequent tool messages belonging to this assistant
@@ -612,6 +641,7 @@ export function useAgentLoop({
 
         setIsProcessing(false);
         setIsStreamingFinal(false);
+        setAgentPhase("idle");
         setRetryInfo(null);
         resetText();
 
@@ -630,7 +660,7 @@ export function useAgentLoop({
       addUserMessage,
       addAssistantMessage,
       addToolResults,
-      client,
+      clientRef,
       activeModel,
       toolRegistry,
       strategy,
@@ -689,7 +719,11 @@ export function useAgentLoop({
           if (result.shouldClear) {
             clearConversation();
           }
-          if (result.newModel) {
+          if (result.newProvider) {
+            // 프로바이더 전환: model + baseURL + apiKey 3종 세트 교체
+            clientRef.current = createLLMClientForModel(result.newProvider);
+            setActiveModel(result.newProvider.model);
+          } else if (result.newModel) {
             setActiveModel(result.newModel);
           }
           if (result.newTone) {
@@ -757,6 +791,7 @@ export function useAgentLoop({
     isProcessing,
     streamingText,
     isStreamingFinal,
+    agentPhase,
     completedTurns,
     currentTurn,
     liveTurn,

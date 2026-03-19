@@ -41,6 +41,59 @@ const MIME_TYPES: Record<string, string> = {
   ".svg": "image/svg+xml",
 };
 
+/** .env 등 민감 파일에서 시크릿 값을 마스킹할 키 패턴 (대소문자 무시) */
+/** 활성 라인의 시크릿 키 패턴 */
+const SECRET_KEY_PATTERN =
+  /^([^#\s][^=]*?(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[^=]*?)=(.+?)[\r]?$/i;
+/** 주석 라인(# )의 시크릿 키 패턴 — 주석 처리된 키도 마스킹 */
+const COMMENT_SECRET_KEY_PATTERN =
+  /^(#\s*)([^=]*?(KEY|SECRET|TOKEN|PASSWORD|CREDENTIAL|AUTH)[^=]*?)=(.+?)[\r]?$/i;
+
+/** 시크릿 마스킹이 필요한 파일명 패턴 */
+const SENSITIVE_FILE_NAMES = new Set([".env", ".env.local", ".env.production", ".env.development"]);
+
+/** 시크릿 값을 마스킹 — 짧으면 전체 마스킹, 길면 앞 4자만 표시 */
+function maskValue(value: string): string {
+  if (value.length <= 8) return "***";
+  return value.slice(0, 4) + "***" + (value.length > 12 ? ` (${value.length} chars)` : "");
+}
+
+/**
+ * 민감 파일의 시크릿 값을 마스킹합니다.
+ *
+ * KEY, SECRET, TOKEN, PASSWORD 등이 포함된 키의 값을 마스킹하여
+ * LLM에 API 키가 노출되는 것을 방지합니다.
+ *
+ * @param content - 파일 내용
+ * @param fileName - 파일 이름 (basename)
+ * @returns 마스킹된 내용 (민감 파일이 아니면 원본 그대로)
+ */
+function maskSecrets(content: string, fileName: string): string {
+  if (!SENSITIVE_FILE_NAMES.has(fileName.toLowerCase())) return content;
+
+  return content
+    .split("\n")
+    .map((line) => {
+      // 활성 라인 매치
+      const match = line.match(SECRET_KEY_PATTERN);
+      if (match) {
+        const key = match[1];
+        const value = match[3].trim();
+        return `${key}=${maskValue(value)}`;
+      }
+      // 주석 라인 매치
+      const commentMatch = line.match(COMMENT_SECRET_KEY_PATTERN);
+      if (commentMatch) {
+        const prefix = commentMatch[1]; // "# "
+        const key = commentMatch[2];
+        const value = commentMatch[4].trim();
+        return `${prefix}${key}=${maskValue(value)}`;
+      }
+      return line;
+    })
+    .join("\n");
+}
+
 /** 기본 줄 수 제한 — 이보다 많은 줄은 offset/limit 없이 읽으면 자동으로 잘림 */
 const DEFAULT_LINE_LIMIT = 2000;
 /** 한 줄의 최대 길이 — 이보다 긴 줄은 잘라냄 (미니파이된 파일 등) */
@@ -552,6 +605,8 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     }
 
     const content = await readFile(filePath, "utf-8");
+    // .env 등 민감 파일은 display용 마스킹 버전을 별도 생성
+    const isSensitive = SENSITIVE_FILE_NAMES.has(basename(filePath).toLowerCase());
     const lines = content.split("\n");
     // offset 기본값: 0 (파일 시작), limit 기본값: 파일 전체 또는 2000줄 중 작은 값
     const offset = params.offset ?? 0;
@@ -571,6 +626,17 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
         ? `\n\n[File truncated: showing ${DEFAULT_LINE_LIMIT} of ${lines.length} lines. Use offset/limit to read more.]`
         : "";
 
+    // 민감 파일: display용 마스킹 버전을 metadata에 포함
+    // output은 원본 (LLM이 분석할 수 있도록), displayOutput은 사용자에게 표시할 마스킹 버전
+    const maskedContent = isSensitive ? maskSecrets(content, basename(filePath)) : undefined;
+    const displayOutput = maskedContent
+      ? maskedContent
+          .split("\n")
+          .slice(offset, offset + limit)
+          .map((line, i) => `${String(offset + i + 1).padStart(6)} | ${truncateLine(line)}`)
+          .join("\n") + truncatedNotice
+      : undefined;
+
     return {
       output: numbered + truncatedNotice,
       isError: false,
@@ -579,6 +645,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
         totalLines: lines.length, // 전체 줄 수
         readFrom: offset, // 읽기 시작 줄 (0-based)
         readTo: Math.min(offset + limit, lines.length), // 읽기 끝 줄
+        ...(displayOutput ? { displayOutput } : {}),
       },
     };
   } catch (error) {

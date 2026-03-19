@@ -89,10 +89,7 @@ export function extractExportedSymbols(content: string): readonly string[] {
  * @param workingDirectory - 프로젝트 루트 디렉토리
  * @returns 힌트 문자열 (빈 문자열이면 힌트 없음)
  */
-export async function buildImportHint(
-  filePath: string,
-  workingDirectory: string,
-): Promise<string> {
+export async function buildImportHint(filePath: string, workingDirectory: string): Promise<string> {
   const ext = extname(filePath).toLowerCase();
 
   // TypeScript/JavaScript 파일이 아니면 힌트 생성하지 않음
@@ -118,11 +115,7 @@ export async function buildImportHint(
     const searchPattern = `(from\\s+['"][^'"]*/${fileBaseName}(?:\\.[^'"]*)?['"]|require\\s*\\(\\s*['"][^'"]*/${fileBaseName}(?:\\.[^'"]*)?['"]\\s*\\)|from\\s+['"]\\./${fileBaseName}(?:\\.[^'"]*)?['"])`;
 
     // ripgrep으로 검색
-    const importingFiles = await findImportingFiles(
-      searchPattern,
-      workingDirectory,
-      filePath,
-    );
+    const importingFiles = await findImportingFiles(searchPattern, workingDirectory, filePath);
 
     if (importingFiles.length === 0) {
       return "";
@@ -139,9 +132,7 @@ export async function buildImportHint(
       filePath.replace(workingDirectory, "").replace(/^[/\\]/, ""),
     );
 
-    const fileList = importingFiles
-      .slice(0, MAX_HINT_FILES)
-      .join(", ");
+    const fileList = importingFiles.slice(0, MAX_HINT_FILES).join(", ");
     const truncated =
       importingFiles.length > MAX_HINT_FILES
         ? ` (+${importingFiles.length - MAX_HINT_FILES} more)`
@@ -175,9 +166,12 @@ async function findImportingFiles(
     const args = [
       "--files-with-matches",
       "--no-heading",
-      "--color", "never",
-      "--type", "ts",
-      "--type", "js",
+      "--color",
+      "never",
+      "--type",
+      "ts",
+      "--type",
+      "js",
       pattern,
       cwd,
     ];
@@ -197,9 +191,7 @@ async function findImportingFiles(
       .split("\n")
       .map((line) => normalizePath(line.trim()))
       .filter((f) => f !== normalizedExclude)
-      .map((f) =>
-        normalizePath(f.replace(cwd, "").replace(/^[/\\]/, "")),
-      );
+      .map((f) => normalizePath(f.replace(cwd, "").replace(/^[/\\]/, "")));
 
     return files;
   } catch (error) {

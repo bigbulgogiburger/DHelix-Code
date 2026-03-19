@@ -50,6 +50,10 @@ import {
 import { resolveProvider } from "../llm/model-router.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 
+const trace = (tag: string, msg: string) => {
+  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+};
+
 /** execFile의 Promise 버전 — 비동기적으로 외부 프로세스를 실행 */
 const execFileAsync = promisify(execFile);
 
@@ -703,6 +707,10 @@ async function executeSubagent(params: {
     params.client,
     modelOverride,
   );
+  trace(
+    "subagent",
+    `Spawning ${type}: model=${effectiveModel}, client=${effectiveClient.constructor.name}, agentId=${agentId}`,
+  );
 
   let effectiveWorkingDir = params.workingDirectory;
   let worktreeCleanup: (() => Promise<void>) | undefined;
@@ -835,6 +843,11 @@ async function executeSubagent(params: {
       });
     }
 
+    trace(
+      "subagent",
+      `${type} completed: agentId=${agentId}, iterations=${result.iterations}, response.length=${response.length}, aborted=${result.aborted}`,
+    );
+
     return {
       agentId,
       type,
@@ -857,10 +870,15 @@ async function executeSubagent(params: {
       });
     }
 
-    throw new SubagentError(`Subagent (${type}) failed`, {
+    trace(
+      "subagent",
+      `${type} FAILED: agentId=${agentId}, error=${error instanceof Error ? error.message : String(error)}`,
+    );
+    const causeMsg = error instanceof Error ? error.message : String(error);
+    throw new SubagentError(`Subagent (${type}) failed: ${causeMsg}`, {
       agentId,
       type,
-      cause: error instanceof Error ? error.message : String(error),
+      cause: causeMsg,
     });
   } finally {
     // 워크트리 정리 — 성공/실패와 관계없이 항상 실행

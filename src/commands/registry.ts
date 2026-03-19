@@ -99,6 +99,12 @@ export interface CommandResult {
   readonly shouldExit?: boolean;
   /** 변경된 모델명 (/model, /config에서 사용) */
   readonly newModel?: string;
+  /** 프로바이더 전환 — model + baseURL + apiKey 세트 변경 (/model에서 Local↔Cloud 전환) */
+  readonly newProvider?: {
+    readonly model: string;
+    readonly baseURL: string;
+    readonly apiKey: string;
+  };
   /** true면 프로젝트 설정(DBCODE.md 등)을 디스크에서 다시 로드 */
   readonly refreshInstructions?: boolean;
   /** true면 출력을 사용자 메시지로 LLM에 주입 (/commit, /review 등에서 사용) */

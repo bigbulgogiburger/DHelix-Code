@@ -243,13 +243,17 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
 
       {/* Collapsed output preview — show first 3 lines when not expanded */}
       {/* Skip collapsed preview when MCP debug info is already shown */}
+      {/* .env 등 민감 파일: metadata.displayOutput(마스킹 버전)을 우선 표시 */}
       {!isExpanded &&
         !preview &&
         !mcpDebugInfo &&
         output &&
         status !== "running" &&
         (() => {
-          const lines = output.trim().split("\n");
+          const displayText = (
+            typeof metadata?.displayOutput === "string" ? metadata.displayOutput : output
+          ).trim();
+          const lines = displayText.split("\n");
           const max = 3;
           const shown = lines.slice(0, max);
           const hidden = lines.length - max;
@@ -272,10 +276,15 @@ export const ToolCallBlock = React.memo(function ToolCallBlock({
         })()}
 
       {/* Raw output fallback — only when expanded and no diff */}
+      {/* .env 등 민감 파일: 확장 표시에서도 마스킹 버전 사용 */}
       {isExpanded && output && !preview ? (
         <Box marginLeft={4}>
           <Text color="gray" wrap="truncate-end">
-            {output.length > 2000 ? output.slice(0, 2000) + "..." : output}
+            {(() => {
+              const displayText =
+                typeof metadata?.displayOutput === "string" ? metadata.displayOutput : output;
+              return displayText.length > 2000 ? displayText.slice(0, 2000) + "..." : displayText;
+            })()}
           </Text>
         </Box>
       ) : null}

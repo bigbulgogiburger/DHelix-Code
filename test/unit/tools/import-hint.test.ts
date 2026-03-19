@@ -115,10 +115,18 @@ describe("buildImportHint", () => {
 
     // Create files that import from types.ts
     const serviceFile = join(dir, "service.ts");
-    await writeFile(serviceFile, `import { Product } from './types.js';\nconsole.log("service");`, "utf-8");
+    await writeFile(
+      serviceFile,
+      `import { Product } from './types.js';\nconsole.log("service");`,
+      "utf-8",
+    );
 
     const repoFile = join(dir, "repo.ts");
-    await writeFile(repoFile, `import { ProductId } from './types.js';\nconsole.log("repo");`, "utf-8");
+    await writeFile(
+      repoFile,
+      `import { ProductId } from './types.js';\nconsole.log("repo");`,
+      "utf-8",
+    );
 
     // Create a file that does NOT import types.ts
     const otherFile = join(dir, "other.ts");

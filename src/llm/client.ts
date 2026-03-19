@@ -895,3 +895,15 @@ export class OpenAICompatibleClient implements LLMProvider {
     return countTokens(text);
   }
 }
+
+/**
+ * 모델과 연결 정보로 OpenAI 호환 LLM 클라이언트를 생성하는 팩토리 함수
+ *
+ * /model 명령에서 프로바이더 전환 시 새 클라이언트를 동적으로 생성하는 데 사용됩니다.
+ *
+ * 참고: Responses API 전용 모델(gpt-5.x-codex)은
+ * createLLMClientForModel() (llm/client-factory.ts)을 사용하세요.
+ */
+export function createLLMClient(config: OpenAIClientConfig): OpenAICompatibleClient {
+  return new OpenAICompatibleClient(config);
+}

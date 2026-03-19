@@ -134,6 +134,7 @@ export type AppEvents = {
     readonly totalTokens: number; // 사용된 총 토큰 수
     readonly toolCallCount: number; // 실행된 도구 호출 횟수
     readonly aborted: boolean; // 사용자에 의해 중단되었는지 여부
+    readonly reason?: "completed" | "aborted" | "max-iterations" | "circuit-breaker"; // 종료 사유
   };
 
   /** 음성 입력 토글 (/voice 명령으로 전환) */
@@ -163,6 +164,17 @@ export type AppEvents = {
     readonly reason: string;
     readonly attempt: number;
     readonly maxRetries: number;
+  };
+
+  /** 도구 그룹 실행이 시작됨 — UI에서 "도구 실행 중" 상태를 표시 */
+  "agent:tools-executing": {
+    readonly toolNames: readonly string[];
+    readonly count: number;
+  };
+  /** 모든 도구 그룹 실행이 완료됨 — UI에서 "생각 중..." 상태로 전환 */
+  "agent:tools-done": {
+    readonly count: number;
+    readonly nextAction: string;
   };
 };
 

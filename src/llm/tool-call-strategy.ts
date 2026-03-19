@@ -21,6 +21,7 @@ import { type ExtractedToolCall } from "../tools/types.js";
 import { NativeFunctionCallingStrategy } from "./strategies/native-function-calling.js";
 import { TextParsingStrategy } from "./strategies/text-parsing.js";
 import { getModelCapabilities } from "./model-capabilities.js";
+import { isResponsesOnlyModel } from "./responses-client.js";
 
 /**
  * 도구 포함 요청 — 도구 정의가 요청에 포함된 형태
@@ -102,6 +103,11 @@ export interface ToolCallStrategy {
  * @returns 선택된 도구 호출 전략
  */
 export function selectStrategy(modelName: string): ToolCallStrategy {
+  // Responses API models always use native function calling
+  // (prevents strategy mismatch if supportsTools is accidentally unset)
+  if (isResponsesOnlyModel(modelName)) {
+    return new NativeFunctionCallingStrategy();
+  }
   const caps = getModelCapabilities(modelName);
   if (caps.supportsTools) {
     return new NativeFunctionCallingStrategy();

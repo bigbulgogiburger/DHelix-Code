@@ -247,7 +247,8 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     emitHeadlessOutput(result, model, outputFormat);
   } else {
     // 에이전트 루프 자체가 실패한 경우 — 에러 정보와 함께 종료
-    const errorMsg = lastError instanceof Error ? lastError.message : String(lastError ?? "Unknown error");
+    const errorMsg =
+      lastError instanceof Error ? lastError.message : String(lastError ?? "Unknown error");
     emitHeadlessErrorOutput(errorMsg, model, outputFormat);
     process.exitCode = 1;
   }

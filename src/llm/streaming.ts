@@ -11,6 +11,10 @@
  */
 import { type ChatChunk, type TokenUsage, type ToolCallRequest } from "./provider.js";
 
+const trace = (tag: string, msg: string) => {
+  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+};
+
 /**
  * 기본 최대 버퍼 크기 (1MB)
  * 이 크기를 초과하면 오래된 텍스트를 잘라냅니다.
@@ -185,11 +189,16 @@ export function accumulateChunk(
 
       // 새로운 도구 호출 시작 — id와 name이 모두 있어야 유효
       if (id && name) {
+        trace("streaming", `New tool call accumulated: id=${id}, name=${name}`);
         return {
           ...state,
           toolCalls: [...state.toolCalls, { id, name, arguments: args ?? "" }],
         };
       }
+      trace(
+        "streaming",
+        `tool-call-delta DROPPED: id=${id || "(empty)"}, name=${name || "(empty)"}`,
+      );
 
       return state;
     }

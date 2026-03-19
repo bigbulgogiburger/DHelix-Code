@@ -50,6 +50,10 @@ import { CircuitBreaker } from "./circuit-breaker.js";
 import { applyObservationMasking } from "./observation-masking.js";
 import { type DualModelRouter, detectPhase } from "../llm/dual-model-router.js";
 
+const trace = (tag: string, msg: string) => {
+  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+};
+
 /**
  * 에이전트 루프 설정
  *
@@ -500,6 +504,10 @@ export async function runAgentLoop(
   let consecutiveEmptyResponses = 0;
   const MAX_EMPTY_RESPONSE_RETRIES = 2;
 
+  // Responses API incomplete 상태 재시도 카운터 (Codex 모델 early-stop 대응)
+  let consecutiveIncompleteResponses = 0;
+  const MAX_INCOMPLETE_RETRIES = 2;
+
   // HeadlessGuard: 중복 도구 호출 감지 — 같은 도구+파라미터 조합의 연속 호출 횟수 추적
   let lastToolCallSignature = "";
   let duplicateToolCallCount = 0;
@@ -523,12 +531,15 @@ export async function runAgentLoop(
         totalTokens: usage.totalTokens,
         toolCallCount: usage.toolCallCount,
         aborted: true,
+        reason: "aborted",
       });
+      trace("agent-loop", `Loop complete: reason=aborted, iterations=${iterations}`);
       return { messages, iterations, aborted: true, usage };
     }
 
     iterations++;
     config.events.emit("agent:iteration", { iteration: iterations });
+    trace("agent-loop", `--- Iteration ${iterations} start ---`);
 
     // Dual-model routing: detect phase and select client/model for this iteration
     let activeClient = config.client;
@@ -561,6 +572,10 @@ export async function runAgentLoop(
 
     // Call LLM with retry logic
     config.events.emit("llm:start", { iteration: iterations });
+    trace(
+      "agent-loop",
+      `Iter ${iterations}: LLM call starting (model=${activeModel}, streaming=${!!config.useStreaming})`,
+    );
 
     const chatRequest = {
       model: activeModel,
@@ -690,6 +705,10 @@ export async function runAgentLoop(
     config.events.emit("llm:complete", {
       tokenCount: response.usage.totalTokens,
     });
+    trace(
+      "agent-loop",
+      `Iter ${iterations}: LLM response — content.length=${response.content.length}, toolCalls=${response.toolCalls.length}, finishReason=${response.finishReason}`,
+    );
 
     // Record usage in aggregator and emit running totals
     usageAggregator.recordLLMUsage(response.usage);
@@ -714,7 +733,38 @@ export async function runAgentLoop(
       response.content,
       response.toolCalls,
     );
-    const extractedCalls = filterValidToolCalls(rawExtractedCalls, config.events);
+    let extractedCalls = filterValidToolCalls(rawExtractedCalls, config.events);
+
+    // Fallback: if strategy extracted nothing but response has native toolCalls,
+    // try direct extraction (prevents tool call drop from strategy mismatch)
+    if (extractedCalls.length === 0 && response.toolCalls.length > 0) {
+      const fallbackCalls: ExtractedToolCall[] = response.toolCalls.map((tc) => {
+        let args: Record<string, unknown>;
+        try {
+          args =
+            typeof tc.arguments === "string"
+              ? (JSON.parse(tc.arguments) as Record<string, unknown>)
+              : ((tc.arguments as Record<string, unknown>) ?? {});
+        } catch {
+          args = {};
+        }
+        return { id: tc.id, name: tc.name, arguments: args };
+      });
+      const validFallback = filterValidToolCalls(fallbackCalls, config.events);
+      if (validFallback.length > 0) {
+        extractedCalls = validFallback;
+      }
+    }
+    trace(
+      "agent-loop",
+      `Iter ${iterations}: extractedCalls=${extractedCalls.length} (raw=${rawExtractedCalls.length}, response.toolCalls=${response.toolCalls.length})`,
+    );
+    if (extractedCalls.length === 0 && response.toolCalls.length > 0) {
+      trace(
+        "agent-loop",
+        `WARNING: response had ${response.toolCalls.length} toolCalls but extraction yielded 0! Strategy may be dropping native calls.`,
+      );
+    }
 
     // If the LLM attempted tool calls but all were invalid, inject feedback and retry
     if (rawExtractedCalls.length > 0 && extractedCalls.length === 0) {
@@ -762,6 +812,10 @@ export async function runAgentLoop(
     });
 
     if (extractedCalls.length === 0) {
+      trace(
+        "agent-loop",
+        `Iter ${iterations}: No tool calls detected → loop ending (finishReason=${response.finishReason})`,
+      );
       // Auto-retry when response was truncated due to token limit
       if (response.finishReason === "length") {
         config.events.emit("llm:error", {
@@ -777,6 +831,39 @@ export async function runAgentLoop(
         continue; // Re-enter the agent loop for continuation
       }
 
+      // Auto-retry when Responses API returns "incomplete" status
+      // (Codex models may enter "conversational mode" and stop early)
+      if (response.finishReason === "incomplete") {
+        consecutiveIncompleteResponses++;
+        if (consecutiveIncompleteResponses <= MAX_INCOMPLETE_RETRIES) {
+          trace(
+            "agent-loop",
+            `Iter ${iterations}: finishReason=incomplete, retrying (${consecutiveIncompleteResponses}/${MAX_INCOMPLETE_RETRIES})`,
+          );
+          config.events.emit("llm:error", {
+            error: new Error(
+              `Response incomplete (attempt ${consecutiveIncompleteResponses}/${MAX_INCOMPLETE_RETRIES}), nudging model to continue...`,
+            ),
+          });
+          const incompleteNudge: ChatMessage = {
+            role: "user",
+            content:
+              "[System] Your response ended with status 'incomplete' and no tool calls. " +
+              "The task is NOT finished. Continue working by calling the appropriate tools. " +
+              "Do not describe what you plan to do — take action with tools immediately.",
+          };
+          messages.push(incompleteNudge);
+          continue; // Re-enter the agent loop
+        }
+        trace(
+          "agent-loop",
+          `Iter ${iterations}: finishReason=incomplete, max retries exhausted — exiting`,
+        );
+        // Fall through to normal completion after max retries
+      } else {
+        consecutiveIncompleteResponses = 0;
+      }
+
       // No tool calls — conversation turn complete
       const doneUsage = usageAggregator.snapshot();
       config.events.emit("agent:complete", {
@@ -784,7 +871,12 @@ export async function runAgentLoop(
         totalTokens: doneUsage.totalTokens,
         toolCallCount: doneUsage.toolCallCount,
         aborted: false,
+        reason: "completed",
       });
+      trace(
+        "agent-loop",
+        `Loop complete: reason=no-tool-calls, iterations=${iterations}, aborted=false`,
+      );
       return { messages, iterations, aborted: false, usage: doneUsage };
     }
 
@@ -819,6 +911,19 @@ export async function runAgentLoop(
     // Execute tool calls in parallel groups
     const groups = groupToolCalls(extractedCalls);
     const results: ToolCallResult[] = [];
+
+    // Emit tools-executing event for UI state tracking
+    config.events.emit("agent:tools-executing", {
+      toolNames: groups.flat().map((tc) => tc.name),
+      count: groups.flat().length,
+    });
+    trace(
+      "agent-loop",
+      `Iter ${iterations}: Executing ${groups.flat().length} tool calls: [${groups
+        .flat()
+        .map((tc) => tc.name)
+        .join(", ")}]`,
+    );
 
     for (const group of groups) {
       // Pre-flight checks (permission + input guardrails) are sequential
@@ -933,6 +1038,8 @@ export async function runAgentLoop(
             workingDirectory: config.workingDirectory ?? process.cwd(),
             signal: config.signal,
             events: config.events,
+            activeClient: activeClient,
+            activeModel: activeModel,
           });
 
           // Apply output guardrails
@@ -993,6 +1100,12 @@ export async function runAgentLoop(
         }
       }
     }
+
+    // Emit tools-done event — UI can show "Thinking..." while waiting for next LLM call
+    config.events.emit("agent:tools-done", {
+      count: results.length,
+      nextAction: "llm-call",
+    });
 
     // Record executed tool calls in usage aggregator
     usageAggregator.recordToolCalls(extractedCalls.length);
@@ -1067,6 +1180,10 @@ export async function runAgentLoop(
       config.events.emit("llm:error", {
         error: new Error(`Circuit breaker opened: ${status.reason ?? "No progress detected"}`),
       });
+      trace(
+        "agent-loop",
+        `Loop complete: reason=circuit-breaker, iterations=${iterations}, cbReason=${status.reason}`,
+      );
     }
   }
 
@@ -1076,7 +1193,9 @@ export async function runAgentLoop(
     totalTokens: finalUsage.totalTokens,
     toolCallCount: finalUsage.toolCallCount,
     aborted: false,
+    reason: circuitBreaker.shouldContinue() ? "max-iterations" : "circuit-breaker",
   });
+  trace("agent-loop", `Loop complete: reason=max-iterations, iterations=${iterations}`);
 
   return { messages, iterations, aborted: false, usage: finalUsage };
 }

@@ -33,6 +33,7 @@ interface StatusBarProps {
   readonly tokenCount: number;
   readonly maxTokens: number;
   readonly isStreaming: boolean;
+  readonly agentPhase?: "idle" | "llm-thinking" | "llm-streaming" | "tools-running" | "tools-done";
   readonly effortLevel?: string;
   readonly sessionName?: string;
   readonly modelName?: string;
@@ -78,6 +79,7 @@ export const StatusBar = React.memo(function StatusBar({
   tokenCount,
   maxTokens,
   isStreaming,
+  agentPhase,
   effortLevel,
   sessionName,
   modelName,
@@ -132,7 +134,14 @@ export const StatusBar = React.memo(function StatusBar({
       </Box>
       <Box gap={1}>
         {mcpStatus ? <Text color="cyan">{mcpStatus}</Text> : null}
-        {isStreaming ? <Text color="yellow">streaming...</Text> : <Text color="gray">ready</Text>}
+        {(() => {
+          if (agentPhase === "llm-thinking") return <Text color="yellow">thinking...</Text>;
+          if (agentPhase === "llm-streaming") return <Text color="yellow">streaming...</Text>;
+          if (agentPhase === "tools-running") return <Text color="cyan">tools running...</Text>;
+          if (agentPhase === "tools-done") return <Text color="cyan">preparing...</Text>;
+          if (isStreaming) return <Text color="yellow">streaming...</Text>;
+          return <Text color="gray">ready</Text>;
+        })()}
       </Box>
     </Box>
   );
