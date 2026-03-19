@@ -18,6 +18,7 @@ import { z } from "zod";
 import { readFile, writeFile } from "node:fs/promises";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath, normalizePath } from "../../utils/path.js";
+import { buildImportHint } from "../import-hint.js";
 
 /**
  * 매개변수 스키마 — 편집 대상 파일, 검색 문자열, 교체 문자열을 정의
@@ -108,8 +109,12 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     const endLine = Math.min(updatedLines.length, lineNumber - 1 + linesAdded + contextAfter);
     const contextLines = updatedLines.slice(startLine, endLine);
 
+    // Import hint — 수정된 파일을 import하는 다른 파일 목록 제공
+    const hint = await buildImportHint(filePath, context.workingDirectory);
+    const outputMsg = `Successfully edited ${normalizePath(params.path)}${hint}`;
+
     return {
-      output: `Successfully edited ${normalizePath(params.path)}`,
+      output: outputMsg,
       isError: false,
       metadata: {
         path: normalizePath(filePath),

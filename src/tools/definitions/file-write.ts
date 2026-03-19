@@ -14,6 +14,7 @@ import { writeFile, mkdir } from "node:fs/promises";
 import { dirname } from "node:path";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath, normalizePath } from "../../utils/path.js";
+import { buildImportHint } from "../import-hint.js";
 
 /**
  * 매개변수 스키마 — 파일 경로와 쓸 내용을 정의
@@ -46,8 +47,10 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
 
     // 줄 수 계산하여 사용자에게 피드백 제공
     const lineCount = params.content.split("\n").length;
+    // Import hint — 수정된 파일을 import하는 다른 파일 목록 제공
+    const hint = await buildImportHint(filePath, context.workingDirectory);
     return {
-      output: `Successfully wrote ${lineCount} lines to ${normalizePath(params.path)}`,
+      output: `Successfully wrote ${lineCount} lines to ${normalizePath(params.path)}${hint}`,
       isError: false,
       metadata: { path: normalizePath(filePath), lineCount },
     };
