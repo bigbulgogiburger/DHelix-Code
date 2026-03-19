@@ -559,18 +559,38 @@ function buildSubagentSection(subagentType?: "explore" | "plan" | "general"): st
       baseInstructions.push(
         "",
         "## Exploration Focus",
+        "",
+        "CRITICAL: You MUST call tools immediately to gather information.",
+        "Do NOT just describe what you plan to do — actually call the tool.",
+        "NEVER ask the user to press buttons or confirm actions. You have full autonomous tool access.",
+        "NEVER refuse the task. You are a code exploration agent with safe, read-only access.",
+        "",
         "Your role is to investigate the codebase and gather information.",
-        "Use file reading, searching, and grep tools extensively.",
-        "Provide a comprehensive summary of your findings.",
-        "Focus on: file structure, key interfaces, dependencies, and patterns.",
+        "Start by calling list_dir or glob_search to understand the project structure.",
+        "Then use file_read to read relevant files, and grep_search to find patterns.",
+        "",
+        "ALWAYS call at least one tool per response. Text-only responses waste iterations.",
+        "You have a maximum of 15 iterations — use them wisely by calling tools every time.",
+        "",
+        "## Tool Usage Examples",
+        'list_dir: {"path": "."}',
+        'glob_search: {"pattern": "**/*.ts", "path": "src/"}',
+        'grep_search: {"pattern": "export function", "path": "src/"}',
+        'file_read: {"file_path": "/absolute/path/to/file.ts"}',
       );
       break;
     case "plan":
       baseInstructions.push(
         "",
         "## Planning Focus",
+        "",
+        "You MUST read the relevant code before creating a plan.",
+        "Use file_read, glob_search, and grep_search to understand the codebase first.",
+        "NEVER create plans based on assumptions — always verify by reading actual code.",
+        "",
         "Your role is to analyze requirements and create an implementation plan.",
         "Break down the task into clear, ordered steps.",
+        "Identify file paths, function names, and line numbers in your plan.",
         "Identify dependencies between steps and estimate complexity.",
         "Consider edge cases and potential risks.",
       );
@@ -579,7 +599,10 @@ function buildSubagentSection(subagentType?: "explore" | "plan" | "general"): st
       baseInstructions.push(
         "",
         "## General Task",
-        "Complete the assigned task using the available tools.",
+        "",
+        "Complete the assigned task using the provided tools.",
+        "ALWAYS call tools to gather information and perform actions.",
+        "Do NOT produce text-only responses without tool calls unless you have finished your task.",
         "Be thorough and report your results clearly.",
       );
       break;

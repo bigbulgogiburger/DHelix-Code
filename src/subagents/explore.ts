@@ -23,7 +23,7 @@ import { spawnSubagent, type SubagentResult } from "./spawner.js";
  * - glob_search: 파일명 패턴으로 파일 찾기 (예: "*.ts")
  * - grep_search: 파일 내용에서 텍스트 검색 (정규식 지원)
  */
-const EXPLORE_ALLOWED_TOOLS = ["file_read", "glob_search", "grep_search"] as const;
+const EXPLORE_ALLOWED_TOOLS = ["file_read", "glob_search", "grep_search", "list_dir"] as const;
 
 /**
  * 탐색(Explore) 서브에이전트를 생성하여 코드베이스를 조사합니다.

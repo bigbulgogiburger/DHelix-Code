@@ -401,7 +401,14 @@ function createFilteredRegistryWithBlacklist(
  * @param toolRegistry - 사용 가능한 도구 레지스트리 (프롬프트에 도구 목록 포함)
  * @returns 구성된 시스템 프롬프트 텍스트
  */
-function buildSubagentSystemPrompt(type: SubagentType, toolRegistry: ToolRegistry): string {
+function buildSubagentSystemPrompt(
+  type: SubagentType,
+  toolRegistry: ToolRegistry,
+  options?: {
+    readonly capabilityTier?: import("../llm/model-capabilities.js").CapabilityTier;
+    readonly workingDirectory?: string;
+  },
+): string {
   const toolNames = toolRegistry.getAll().map((t) => t.name);
   const builtinTypes = new Set<string>(["explore", "plan", "general"]);
 
@@ -415,7 +422,12 @@ function buildSubagentSystemPrompt(type: SubagentType, toolRegistry: ToolRegistr
     features: {},
   };
 
-  return buildSystemPrompt({ toolRegistry, sessionState });
+  return buildSystemPrompt({
+    toolRegistry,
+    sessionState,
+    capabilityTier: options?.capabilityTier,
+    workingDirectory: options?.workingDirectory,
+  });
 }
 
 /**
@@ -753,9 +765,13 @@ async function executeSubagent(params: {
 
     // 5단계: 시스템 프롬프트 구성
     // 커스텀 에이전트 정의가 있으면 그 본문을 사용, 없으면 유형 기반 기본 프롬프트 생성
+    const subagentModelCaps = getModelCapabilities(effectiveModel);
     const systemPrompt = agentDefinition
       ? agentDefinition.systemPrompt
-      : buildSubagentSystemPrompt(type, agentRegistry);
+      : buildSubagentSystemPrompt(type, agentRegistry, {
+          capabilityTier: subagentModelCaps.capabilityTier,
+          workingDirectory: effectiveWorkingDir,
+        });
 
     // 격리된 이벤트 발행기 생성 — 서브에이전트의 이벤트가 부모에게 직접 전파되지 않음
     const events = createEventEmitter();
@@ -804,7 +820,6 @@ async function executeSubagent(params: {
     });
 
     // Promise.race로 에이전트 루프와 타임아웃 중 먼저 완료되는 것을 사용
-    const subagentModelCaps = getModelCapabilities(effectiveModel);
     const result: AgentLoopResult = await Promise.race([
       runAgentLoop(
         {
@@ -819,6 +834,7 @@ async function executeSubagent(params: {
           maxContextTokens,
           maxTokens: subagentModelCaps.maxOutputTokens,
           useStreaming: true,
+          isSubagent: true,
         },
         initialMessages,
       ),

@@ -14,8 +14,34 @@
  *   - 복잡한 작업에 고성능 모델이 필요할 때
  *   - 간단한 작업에 비용 효율적인 모델로 전환하고 싶을 때
  */
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
+import { CONFIG_DIR } from "../constants.js";
+import { joinPath } from "../utils/path.js";
+
+/**
+ * 사용자의 모델 선택을 ~/.dbcode/config.json에 영속화합니다.
+ * 다음 세션에서도 선택한 모델이 기본값으로 사용됩니다.
+ */
+async function persistModelChoice(model: string): Promise<void> {
+  const configPath = joinPath(CONFIG_DIR, "config.json");
+  try {
+    await mkdir(CONFIG_DIR, { recursive: true });
+    let existing: Record<string, unknown> = {};
+    try {
+      const content = await readFile(configPath, "utf-8");
+      existing = JSON.parse(content) as Record<string, unknown>;
+    } catch {
+      // 파일이 없으면 빈 객체로 시작
+    }
+    const llm = (existing.llm ?? {}) as Record<string, unknown>;
+    existing.llm = { ...llm, model };
+    await writeFile(configPath, JSON.stringify(existing, null, 2) + "\n", "utf-8");
+  } catch {
+    // 영속화 실패는 세션에 영향을 주지 않음
+  }
+}
 
 /** 프로바이더 프로필 식별자 — interactiveSelect의 value로 사용 */
 const LOCAL_PROVIDER_KEY = "__provider:local__";
@@ -135,7 +161,7 @@ function handleProviderSelection(providerKey: string): CommandResult | undefined
     }
     const caps = getModelCapabilities(provider.model);
     return {
-      output: `🏠 Local provider로 전환: ${provider.model} (${(caps.maxContextTokens / 1000).toFixed(0)}K context)`,
+      output: `🏠 Local provider로 전환: ${provider.model} (${(caps.maxContextTokens / 1000).toFixed(0)}K context)\n  ✓ Saved as default for future sessions`,
       success: true,
       newModel: provider.model,
       newProvider: provider,
@@ -152,7 +178,7 @@ function handleProviderSelection(providerKey: string): CommandResult | undefined
     }
     const caps = getModelCapabilities(provider.model);
     return {
-      output: `☁️  OpenAI provider로 전환: ${provider.model} (${(caps.maxContextTokens / 1000).toFixed(0)}K context)`,
+      output: `☁️  OpenAI provider로 전환: ${provider.model} (${(caps.maxContextTokens / 1000).toFixed(0)}K context)\n  ✓ Saved as default for future sessions`,
       success: true,
       newModel: provider.model,
       newProvider: provider,
@@ -196,6 +222,9 @@ export const modelCommand: SlashCommand = {
 
     // 프로바이더 키 선택 처리
     const providerResult = handleProviderSelection(newModel);
+    if (providerResult?.success && providerResult.newModel) {
+      await persistModelChoice(providerResult.newModel);
+    }
     if (providerResult) return providerResult;
 
     // 일반 모델명 선택 — 기존 동작 (모델만 변경, baseURL/apiKey 유지)
@@ -207,8 +236,11 @@ export const modelCommand: SlashCommand = {
 
     const info = `(${(caps.maxContextTokens / 1000).toFixed(0)}K context${notes.length > 0 ? ", " + notes.join(", ") : ""})`;
 
+    // 선택한 모델을 ~/.dbcode/config.json에 영속화 (다음 세션에서도 유지)
+    await persistModelChoice(newModel);
+
     return {
-      output: `Model switched to: ${newModel} ${info}`,
+      output: `Model switched to: ${newModel} ${info}\n  ✓ Saved as default for future sessions`,
       success: true,
       newModel,
     };

@@ -104,6 +104,8 @@ export interface AgentLoopConfig {
   readonly thinking?: ThinkingConfig;
   /** Dual-model router for architect/editor pattern (optional) */
   readonly dualModelRouter?: DualModelRouter;
+  /** Whether this agent loop is running as a subagent (for retry behavior) */
+  readonly isSubagent?: boolean;
 }
 
 /**
@@ -812,6 +814,19 @@ export async function runAgentLoop(
     });
 
     if (extractedCalls.length === 0) {
+      // Subagent auto-retry: if first iteration produced no tool calls, nudge the model
+      if (config.isSubagent && iterations === 1) {
+        trace(
+          "agent-loop",
+          `Iter ${iterations}: Subagent produced no tool calls — injecting retry nudge`,
+        );
+        messages.push({
+          role: "user",
+          content:
+            "You MUST use your available tools to complete the task. Call a tool now — do not respond with text only.",
+        });
+        continue;
+      }
       trace(
         "agent-loop",
         `Iter ${iterations}: No tool calls detected → loop ending (finishReason=${response.finishReason})`,
