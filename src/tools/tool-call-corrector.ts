@@ -1,31 +1,26 @@
 /**
- * 도구 호출 자동 교정기 — 저성능 LLM 모델의 흔한 인수 오류를 자동으로 교정하는 모듈
+ * 도구 호출 자동 교정기 — LLM 모델의 흔한 인수 오류를 자동으로 교정하는 모듈
  *
- * 저성능(low/medium tier) 모델은 도구를 호출할 때 다음과 같은 실수를 자주 합니다:
- * 1. 상대 경로를 사용 (예: "src/index.ts" → 절대 경로로 변환 필요)
- * 2. 타입 오류 (예: "true" 문자열 → boolean true로 변환 필요)
+ * LLM 모델은 도구를 호출할 때 다음과 같은 실수를 할 수 있습니다:
+ * 1. Git Bash 경로 사용 (예: "/c/Users/..." → Windows 경로로 변환 필요)
+ * 2. 상대 경로를 사용 (예: "src/index.ts" → 절대 경로로 변환 필요)
+ * 3. 타입 오류 (예: "true" 문자열 → boolean true로 변환 필요)
  *
- * 이 모듈은 이런 실수를 검증(validation) 전에 자동으로 교정하여,
- * 저성능 모델의 도구 호출 성공률을 높입니다.
- *
- * 고성능(high tier) 모델은 이런 실수를 거의 하지 않으므로,
- * 불필요한 오버헤드를 피하기 위해 교정을 건너뜁니다.
+ * Git Bash 경로 변환은 모든 성능 등급에 적용됩니다.
+ * 상대 경로/타입 교정은 저성능(low/medium tier) 모델에만 적용됩니다.
  */
 import { resolve, isAbsolute } from "node:path";
 import type { CapabilityTier } from "../llm/model-capabilities.js";
+import { isGitBashPath, gitBashToWindows } from "../utils/path.js";
+import { isWindows } from "../utils/platform.js";
 
 /**
  * 도구 호출 인수를 자동 교정
  *
- * CapabilityTier(모델 성능 등급)에 따라 동작:
- * - "high": 교정 없이 원본 인수를 그대로 반환 (오버헤드 제로)
- * - "medium"/"low": 경로와 타입 교정 적용
- *
- * 교정 항목:
- * 1. 상대 경로 → 절대 경로 변환 (작업 디렉토리 기준)
- * 2. 문자열 타입을 실제 타입으로 변환:
- *    - "true"/"false" → boolean
- *    - 숫자 문자열 → number (숫자 관련 키에만 적용)
+ * 교정 순서:
+ * 0. Git Bash 경로 → Windows 경로 변환 (모든 tier에 적용)
+ * 1. 상대 경로 → 절대 경로 변환 (medium/low tier만)
+ * 2. 문자열 타입 → 올바른 타입 변환 (medium/low tier만)
  *
  * @param args - LLM이 전달한 원시 인수 객체
  * @param workingDirectory - 상대 경로 해석의 기준이 되는 작업 디렉토리
@@ -37,11 +32,16 @@ export function correctToolCall(
   workingDirectory: string,
   tier: CapabilityTier,
 ): Record<string, unknown> {
-  // 고성능 모델은 교정 불필요 — 즉시 원본 반환으로 성능 최적화
-  if (tier === "high") return args;
+  // 0단계: Windows 환경에서 Git Bash 경로를 Windows 경로로 변환
+  // 모든 성능 등급에 적용 — LLM이 시스템 프롬프트/도구 결과의 Git Bash 경로를 그대로 반환하는 경우
+  // 예: "/c/Users/DBInc/dbcode/src" → "C:\Users\DBInc\dbcode\src"
+  const gitBashCorrected = correctGitBashPaths(args);
+
+  // 고성능 모델은 추가 교정 불필요 — Git Bash 변환만 적용 후 반환
+  if (tier === "high") return gitBashCorrected;
 
   // 원본을 변경하지 않기 위해 얕은 복사(spread copy) 생성
-  const corrected = { ...args };
+  const corrected = { ...gitBashCorrected };
 
   // 1단계: 상대 경로 → 절대 경로 변환
   // 경로 관련 키(file_path, path 등)의 값이 상대 경로이면 절대 경로로 변환
@@ -65,6 +65,34 @@ export function correctToolCall(
   }
 
   return corrected;
+}
+
+/**
+ * Windows 환경에서 Git Bash 형식 경로(/c/Users/...)를 Windows 경로(C:\Users\...)로 변환
+ *
+ * LLM은 Git Bash 셸 출력에서 경로를 학습하여 /c/Users/... 형식으로 전달하는 경우가 많습니다.
+ * Windows의 Node.js path.resolve()는 이를 "C:\c\Users\..."로 잘못 해석하므로,
+ * 도구 실행 전에 올바른 Windows 경로로 변환해야 합니다.
+ *
+ * Windows가 아닌 환경에서는 변환하지 않습니다.
+ *
+ * @param args - LLM이 전달한 원시 인수 객체
+ * @returns Git Bash 경로가 Windows 경로로 변환된 새 인수 객체
+ */
+function correctGitBashPaths(args: Record<string, unknown>): Record<string, unknown> {
+  if (!isWindows()) return args;
+
+  let hasChanges = false;
+  const corrected = { ...args };
+
+  for (const [key, value] of Object.entries(corrected)) {
+    if (typeof value === "string" && isPathKey(key) && isGitBashPath(value)) {
+      corrected[key] = gitBashToWindows(value);
+      hasChanges = true;
+    }
+  }
+
+  return hasChanges ? corrected : args;
 }
 
 /**

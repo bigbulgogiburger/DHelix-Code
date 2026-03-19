@@ -9,11 +9,17 @@
  * - "text": 일반 텍스트 (기본값)
  * - "json": 구조화된 JSON
  * - "stream-json": NDJSON (줄 단위 JSON 스트리밍)
+ *
+ * 안정성 기능 (HeadlessGuard):
+ * - 에러 발생 시 stderr 출력 + exit(1) (silent exit 0 방지)
+ * - 빈 응답 감지 시 자동 재시도 (최대 2회)
+ * - ask_user 호출에 더 명확한 지시문 반환
+ * - 부분 결과가 있으면 출력 후 종료
  */
 import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
 import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../tools/registry.js";
-import { runAgentLoop } from "../core/agent-loop.js";
+import { runAgentLoop, type AgentLoopResult } from "../core/agent-loop.js";
 import { buildSystemPrompt } from "../core/system-prompt-builder.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { createEventEmitter } from "../utils/events.js";
@@ -60,7 +66,11 @@ interface HeadlessJsonOutput {
   readonly model: string;
   readonly iterations: number;
   readonly aborted: boolean;
+  readonly error?: string;
 }
+
+/** 빈 응답 자동 재시도 최대 횟수 */
+const MAX_EMPTY_RESPONSE_RETRIES = 2;
 
 /**
  * 헤드리스 모드로 dbcode를 실행합니다 (대화형 UI 없이).
@@ -100,6 +110,7 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     workingDirectory,
     projectInstructions: instructions?.combined,
     autoMemoryContent: autoMemoryContent || undefined,
+    isHeadless: true,
   });
 
   const initialMessages: ChatMessage[] = [
@@ -108,10 +119,11 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
   ];
 
   // 헤드리스 모드에서는 사용자 입력을 받을 수 없으므로 ask_user에 자동 응답
+  // HeadlessGuard: 더 명확한 지시문으로 LLM이 진행하도록 유도
   events.on("ask_user:prompt", (data) => {
     const answer = data.choices?.length
       ? String(data.choices[0])
-      : "[No interactive input available in headless mode]";
+      : "Headless mode: proceed with the most reasonable default. Do not ask further clarifying questions. Complete the task with your best judgment.";
 
     events.emit("ask_user:response", {
       toolCallId: data.toolCallId,
@@ -154,24 +166,110 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
   }
 
   const modelCaps = getModelCapabilities(model);
-  const result = await runAgentLoop(
-    {
-      client,
-      model,
-      toolRegistry,
-      strategy,
-      events,
-      maxIterations,
-      workingDirectory,
-      maxContextTokens: modelCaps.maxContextTokens,
-      maxTokens: modelCaps.maxOutputTokens,
-    },
-    initialMessages,
-  );
 
-  // 에이전트 루프 결과에서 마지막 어시스턴트 응답을 추출
+  // HeadlessGuard: 에러 처리 강화 — silent exit 0 방지 + 부분 결과 출력
+  let result: AgentLoopResult | undefined;
+  let lastError: unknown;
+
+  try {
+    result = await runAgentLoop(
+      {
+        client,
+        model,
+        toolRegistry,
+        strategy,
+        events,
+        maxIterations,
+        workingDirectory,
+        maxContextTokens: modelCaps.maxContextTokens,
+        maxTokens: modelCaps.maxOutputTokens,
+      },
+      initialMessages,
+    );
+  } catch (error) {
+    lastError = error;
+    process.stderr.write(
+      `[headless] Agent loop error: ${error instanceof Error ? error.message : String(error)}\n`,
+    );
+  }
+
+  // HeadlessGuard: 빈 응답 감지 시 자동 재시도 (최대 MAX_EMPTY_RESPONSE_RETRIES 회)
+  if (result) {
+    let responseText = extractLastAssistantContent(result);
+
+    if (responseText.trim() === "" && !result.aborted) {
+      for (let retry = 0; retry < MAX_EMPTY_RESPONSE_RETRIES; retry++) {
+        process.stderr.write(
+          `[headless] Empty response detected, retrying (${retry + 1}/${MAX_EMPTY_RESPONSE_RETRIES})...\n`,
+        );
+
+        // 이전 결과의 메시지를 이어받아서 재시도 프롬프트 추가
+        const retryMessages: ChatMessage[] = [
+          ...result.messages,
+          {
+            role: "user",
+            content:
+              "[System] Your previous response was empty. Please complete the requested task. " +
+              "Provide a substantive response.",
+          },
+        ];
+
+        try {
+          result = await runAgentLoop(
+            {
+              client,
+              model,
+              toolRegistry,
+              strategy,
+              events,
+              maxIterations,
+              workingDirectory,
+              maxContextTokens: modelCaps.maxContextTokens,
+              maxTokens: modelCaps.maxOutputTokens,
+            },
+            retryMessages,
+          );
+          responseText = extractLastAssistantContent(result);
+          if (responseText.trim() !== "") break;
+        } catch (error) {
+          lastError = error;
+          process.stderr.write(
+            `[headless] Retry ${retry + 1} failed: ${error instanceof Error ? error.message : String(error)}\n`,
+          );
+          break;
+        }
+      }
+    }
+  }
+
+  // HeadlessGuard: 결과 출력 (에러 발생 시에도 부분 결과가 있으면 출력)
+  if (result) {
+    emitHeadlessOutput(result, model, outputFormat);
+  } else {
+    // 에이전트 루프 자체가 실패한 경우 — 에러 정보와 함께 종료
+    const errorMsg = lastError instanceof Error ? lastError.message : String(lastError ?? "Unknown error");
+    emitHeadlessErrorOutput(errorMsg, model, outputFormat);
+    process.exitCode = 1;
+  }
+}
+
+/**
+ * 에이전트 루프 결과에서 마지막 어시스턴트 응답 텍스트를 추출합니다.
+ */
+function extractLastAssistantContent(result: AgentLoopResult): string {
   const lastAssistant = [...result.messages].reverse().find((m) => m.role === "assistant");
-  const responseText = lastAssistant?.content ?? "";
+  return lastAssistant?.content ?? "";
+}
+
+/**
+ * 정상 결과를 outputFormat에 맞게 stdout에 출력합니다.
+ */
+function emitHeadlessOutput(
+  result: AgentLoopResult,
+  model: string,
+  outputFormat: HeadlessOutputFormat,
+): void {
+  const responseText = extractLastAssistantContent(result);
 
   switch (outputFormat) {
     case "text":
@@ -188,13 +286,47 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
       break;
     }
     case "stream-json":
-      // Final result event
       process.stdout.write(
         JSON.stringify({
           type: "result",
           text: responseText,
           iterations: result.iterations,
           aborted: result.aborted,
+        }) + "\n",
+      );
+      break;
+  }
+}
+
+/**
+ * HeadlessGuard: 에러 발생 시 outputFormat에 맞게 에러 정보를 출력합니다.
+ * silent exit 0을 방지하고, 에러 정보를 항상 출력하여 문제를 진단할 수 있게 합니다.
+ */
+function emitHeadlessErrorOutput(
+  errorMessage: string,
+  model: string,
+  outputFormat: HeadlessOutputFormat,
+): void {
+  switch (outputFormat) {
+    case "text":
+      process.stderr.write(`[headless] Fatal error: ${errorMessage}\n`);
+      break;
+    case "json": {
+      const output: HeadlessJsonOutput = {
+        result: "",
+        model,
+        iterations: 0,
+        aborted: true,
+        error: errorMessage,
+      };
+      process.stdout.write(JSON.stringify(output, null, 2) + "\n");
+      break;
+    }
+    case "stream-json":
+      process.stdout.write(
+        JSON.stringify({
+          type: "error",
+          error: errorMessage,
         }) + "\n",
       );
       break;

@@ -14,7 +14,7 @@
 import { execSync } from "node:child_process";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { getPlatform } from "../utils/platform.js";
+import { getPlatform, getShellType } from "../utils/platform.js";
 import { APP_NAME, VERSION, getProjectConfigPaths } from "../constants.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { estimateTokens } from "../llm/token-counter.js";
@@ -171,6 +171,8 @@ export interface BuildSystemPromptOptions {
   readonly tone?: string;
   /** Pre-rendered repo map content (from buildRepoMap + renderRepoMap) */
   readonly repoMapContent?: string;
+  /** Whether running in headless mode (no interactive UI) */
+  readonly isHeadless?: boolean;
 }
 
 /** 시스템 프롬프트의 기본 토큰 예산 (32,000 토큰) */
@@ -273,6 +275,15 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
     content: getToneProfile(tone).systemPromptSection,
     priority: 76,
     condition: () => tone !== "normal",
+  });
+
+  // HeadlessGuard: headless 모드에서 ask_user 억제 + 자율 진행 지시
+  const isHeadless = options?.isHeadless === true;
+  sections.push({
+    id: "headless-mode",
+    content: buildHeadlessModeSection(),
+    priority: 96, // identity(100) 다음으로 높은 우선순위
+    condition: () => isHeadless,
   });
 
   // CoT scaffolding for low-tier models
@@ -637,18 +648,60 @@ function buildDoingTasksSection(): string {
 - Write complete implementations, not stubs or TODOs.
 - If a task is blocked, try alternative approaches before asking the user.
 - For ambiguous instructions, consider them in the context of software engineering and the current working directory.
-- Running TypeScript compiler (tsc), linters, test runners, grep searches, and package managers are always safe developer operations.`;
+- Running TypeScript compiler (tsc), linters, test runners, grep searches, and package managers are always safe developer operations.
+
+## Output format rules
+
+- When showing directory structures, ALWAYS use ASCII tree format with \`├──\`, \`└──\`, and \`│\` characters.
+- When reporting build errors, type errors, or lint issues: first count the EXACT total number, then list ALL errors without omission. Never under-report or summarize as "N errors" without listing each one.
+- When reporting file counts or line counts, quote the exact number from the command output. Do NOT estimate, round, or approximate.
+
+## Completeness rules
+
+- When generating code, implement ALL requested items. Never implement only a subset and omit the rest.
+- When creating config files, schemas, or type definitions, include EVERY field/variable/property specified in the request.
+- When given a list of N items to process, verify your output contains exactly N items before finishing.
+
+## Dependency / import analysis
+
+When analyzing which packages or modules are used in a codebase, search ALL 4 import patterns:
+1. \`from 'PKG'\` or \`from "PKG"\` — ESM static import
+2. \`require('PKG')\` or \`require("PKG")\` — CommonJS require
+3. \`import('PKG')\` or \`import("PKG")\` — dynamic import
+4. \`import 'PKG'\` or \`import "PKG"\` — side-effect import
+Compile results into a table with columns: Package, Used (yes/no), Import locations.
+
+## Multi-file editing consistency
+
+When modifying types, interfaces, or exported symbols:
+1. After editing a file, check the [Hint] in the tool result for files that import the modified symbols.
+2. Use grep_search to find ALL files that import or reference the changed symbol.
+3. Update EVERY file that uses the modified type/interface/function — not just the ones you remember.
+4. After all edits, run the project's type checker (e.g., \`tsc --noEmit\`) to verify no references were missed.
+5. Present a summary table of all files changed and why.
+
+Common missed patterns:
+- Adding a field to a type → update all object literals that create instances of that type.
+- Renaming an export → update all import statements AND all usages of that symbol.
+- Changing a function signature → update all call sites, not just the definition.`;
 }
 
 function buildEnvironmentSection(cwd: string): string {
   const platform = getPlatform();
+  const shellType = getShellType();
+  const shellLabel =
+    shellType === "git-bash"
+      ? "Git Bash (use Unix/POSIX commands, forward slashes)"
+      : shellType === "cmd"
+        ? "cmd.exe (Windows commands)"
+        : "/bin/bash";
 
   const lines = [
     `# Environment`,
     ``,
     `- Platform: ${platform}`,
     `- Working directory: ${cwd}`,
-    `- Shell: ${platform === "win32" ? "PowerShell" : "/bin/bash"}`,
+    `- Shell: ${shellLabel}`,
     `- Date: ${new Date().toISOString().split("T")[0]}`,
   ];
 
@@ -783,7 +836,16 @@ ${lines.join("\n")}
 - Use **bash_exec** for commands (build, test, git). Avoid destructive commands.
 - Use **list_dir** to see directory structure before searching.
 - You can call multiple independent tools in parallel for efficiency.
-- For large outputs, prefer targeted searches over reading entire files.`;
+- For large outputs, prefer targeted searches over reading entire files.
+- **file_edit** and **file_write** return [Hint] lines listing files that import the modified file's exports. Always review these hints and update the listed files if your change affects the exported symbols.
+
+## Dependency analysis with grep_search
+
+When analyzing dependencies or performing renames:
+1. Search for ALL import styles using the comprehensive 4-clause pattern (see grep_search description).
+2. Present results as a table: | File | Line | Import Type | Symbol |
+3. A symbol is only confirmed unused when ALL import patterns return zero results.
+4. After bulk edits, run the type checker to catch any missed references.`;
 }
 
 function buildCotScaffoldingSection(): string {
@@ -835,6 +897,18 @@ function buildLocaleSection(locale: string): string {
 Respond in ${langName}.
 All explanations, comments, and documentation should be in ${langName}.
 Code identifiers (variable names, function names) remain in English.`;
+}
+
+function buildHeadlessModeSection(): string {
+  return `# Headless Mode
+
+You are running in headless (non-interactive) mode. Follow these rules strictly:
+- NEVER use ask_user tool. NEVER ask the user questions or request clarification. Choose the most reasonable default and proceed autonomously.
+- ALWAYS produce a substantive text response for every task. Never end with an empty response.
+- If you encounter ambiguity, make the best judgment call and explain your reasoning.
+- If a task is too complex to complete fully, finish as much as possible and mark remaining items as TODO.
+- When a multi-step task is interrupted, output ALL partial results gathered so far.
+- After completing tool calls, ALWAYS provide a final summary response describing what was done.`;
 }
 
 /**

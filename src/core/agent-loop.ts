@@ -496,6 +496,15 @@ export async function runAgentLoop(
   const permissionDenialCounts = new Map<string, number>();
   const MAX_DENIALS_BEFORE_STOP = 2;
 
+  // HeadlessGuard: 빈 응답(empty content + no tool calls) 연속 감지 카운터
+  let consecutiveEmptyResponses = 0;
+  const MAX_EMPTY_RESPONSE_RETRIES = 2;
+
+  // HeadlessGuard: 중복 도구 호출 감지 — 같은 도구+파라미터 조합의 연속 호출 횟수 추적
+  let lastToolCallSignature = "";
+  let duplicateToolCallCount = 0;
+  const MAX_DUPLICATE_TOOL_CALLS = 3;
+
   // Context manager for auto-compaction when token budget is exceeded
   const contextManager = new ContextManager({
     maxContextTokens: config.maxContextTokens,
@@ -720,6 +729,30 @@ export async function runAgentLoop(
       continue; // Re-enter the loop for LLM to retry
     }
 
+    // HeadlessGuard: 빈 응답(content 없고 tool call도 없음) 감지 시 자동 재시도
+    if (response.content.trim() === "" && extractedCalls.length === 0) {
+      consecutiveEmptyResponses++;
+      if (consecutiveEmptyResponses <= MAX_EMPTY_RESPONSE_RETRIES) {
+        config.events.emit("llm:error", {
+          error: new Error(
+            `Empty response detected (attempt ${consecutiveEmptyResponses}/${MAX_EMPTY_RESPONSE_RETRIES}), retrying...`,
+          ),
+        });
+        const nudgeMessage: ChatMessage = {
+          role: "user",
+          content:
+            "[System] Your previous response was empty. Please complete the requested task. " +
+            "Provide a substantive response with your answer or explanation.",
+        };
+        messages.push(nudgeMessage);
+        continue; // Re-enter the loop for retry
+      }
+      // Max retries exhausted — fall through to normal completion
+    } else {
+      // Reset counter on any non-empty response
+      consecutiveEmptyResponses = 0;
+    }
+
     // Emit assistant message event (intermediate if tool calls follow, final otherwise)
     config.events.emit("agent:assistant-message", {
       content: response.content,
@@ -753,6 +786,34 @@ export async function runAgentLoop(
         aborted: false,
       });
       return { messages, iterations, aborted: false, usage: doneUsage };
+    }
+
+    // HeadlessGuard: 중복 도구 호출 루프 감지
+    // 같은 도구+동일 파라미터 조합이 MAX_DUPLICATE_TOOL_CALLS 회 이상 연속되면 루프 탈출
+    const currentSignature = extractedCalls
+      .map((tc) => `${tc.name}:${JSON.stringify(tc.arguments)}`)
+      .join("|");
+    if (currentSignature === lastToolCallSignature) {
+      duplicateToolCallCount++;
+      if (duplicateToolCallCount >= MAX_DUPLICATE_TOOL_CALLS) {
+        config.events.emit("llm:error", {
+          error: new Error(
+            `Duplicate tool call loop detected (${duplicateToolCallCount} identical calls). Breaking loop.`,
+          ),
+        });
+        const loopBreakMessage: ChatMessage = {
+          role: "user",
+          content:
+            "[System] You are calling the same tool(s) with identical parameters repeatedly. " +
+            "This appears to be a loop. Stop calling these tools and provide your final answer " +
+            "based on the results you already have.",
+        };
+        messages.push(loopBreakMessage);
+        continue; // Re-enter the loop — LLM should respond with text instead of tool calls
+      }
+    } else {
+      lastToolCallSignature = currentSignature;
+      duplicateToolCallCount = 1;
     }
 
     // Execute tool calls in parallel groups

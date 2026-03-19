@@ -25,7 +25,7 @@ import { promisify } from "node:util";
 import fg from "fast-glob";
 import { join } from "node:path";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
-import { resolvePath, normalizePath } from "../../utils/path.js";
+import { resolvePath, normalizePath, autoResolveGitBashPath } from "../../utils/path.js";
 
 /** execFile의 Promise 버전 — 콜백 대신 async/await로 사용 */
 const execFileAsync = promisify(execFile);
@@ -192,6 +192,12 @@ async function searchWithRipgrep(
   const lines = stdout.trimEnd().split("\n");
   const normalizedLines: string[] = [];
 
+  // Windows에서 경로 비교를 위해 workingDirectory를 여러 형식으로 준비
+  // ripgrep은 Windows에서 백슬래시 경로를 반환할 수 있고,
+  // workingDirectory는 포워드 슬래시일 수 있으므로 양쪽 모두 준비
+  const wdForward = workingDirectory.replace(/\\/g, "/");
+  const wdBackward = workingDirectory.replace(/\//g, "\\");
+
   for (const line of lines) {
     // 컨텍스트 구분선 ("--")은 그대로 유지
     if (line === "--") {
@@ -208,9 +214,12 @@ async function searchWithRipgrep(
       const separator = match[3]; // ':' = 매칭 줄, '-' = 컨텍스트 줄
       const content = match[4];
       // 절대 경로 → 작업 디렉토리 기준 상대 경로로 변환
-      const relativePath = normalizePath(
-        filePath.replace(workingDirectory, "").replace(/^[/\\]/, ""),
-      );
+      // 포워드/백슬래시 양쪽 형식으로 제거를 시도하여 크로스 플랫폼 호환성 확보
+      const stripped = filePath
+        .replace(wdBackward, "")
+        .replace(wdForward, "")
+        .replace(workingDirectory, "");
+      const relativePath = normalizePath(stripped.replace(/^[/\\]/, ""));
       normalizedLines.push(`${relativePath}:${lineNum}${separator}${content}`);
     } else {
       normalizedLines.push(line);
@@ -260,6 +269,10 @@ async function searchWithJavaScript(
   const entries = await fg(includePattern, { cwd: searchPath, dot: false, onlyFiles: true });
   const files: string[] = entries.map((entry) => join(searchPath, entry));
 
+  // Windows에서 경로 비교를 위해 workingDirectory를 여러 형식으로 준비
+  const wdForward = workingDirectory.replace(/\\/g, "/");
+  const wdBackward = workingDirectory.replace(/\//g, "\\");
+
   for (const filePath of files) {
     try {
       const content = await readFile(filePath, "utf-8");
@@ -268,9 +281,12 @@ async function searchWithJavaScript(
       for (let i = 0; i < lines.length; i++) {
         if (regex.test(lines[i])) {
           // 절대 경로를 작업 디렉토리 기준 상대 경로로 변환
-          const relativePath = normalizePath(
-            filePath.replace(workingDirectory, "").replace(/^[/\\]/, ""),
-          );
+          // 포워드/백슬래시 양쪽 형식으로 제거 시도
+          const stripped = filePath
+            .replace(wdBackward, "")
+            .replace(wdForward, "")
+            .replace(workingDirectory, "");
+          const relativePath = normalizePath(stripped.replace(/^[/\\]/, ""));
           results.push(`${relativePath}:${i + 1}: ${lines[i].trim()}`);
         }
         // RegExp.lastIndex를 초기화해야 g 플래그에서 올바르게 동작
@@ -322,8 +338,10 @@ async function searchWithJavaScript(
  */
 async function execute(params: Params, context: ToolContext): Promise<ToolResult> {
   // 검색 경로 결정 — path가 지정되면 해당 경로, 아니면 작업 디렉토리
-  const searchPath = params.path
-    ? resolvePath(context.workingDirectory, params.path)
+  // Git Bash 형식 경로(/c/Users/...)를 Windows 경로로 변환 후 resolve
+  const resolvedParam = params.path ? autoResolveGitBashPath(params.path) : undefined;
+  const searchPath = resolvedParam
+    ? resolvePath(context.workingDirectory, resolvedParam)
     : context.workingDirectory;
 
   try {
@@ -373,7 +391,9 @@ export const grepSearchTool: ToolDefinition<Params> = {
     "IMPORTANT for dependency/import analysis: never use a single pattern. Use the comprehensive 4-clause pattern " +
     'to catch ALL import styles: "(from\\s+[\'"]PKG[\'"]|require\\s*\\(\\s*[\'"]PKG[\'"]\\s*\\)|import\\s*\\(\\s*[\'"]PKG[\'"]\\s*\\)|^import\\s+[\'"]PKG[\'"])." ' +
     "This covers: ESM default (import x from 'pkg'), named (import { x } from 'pkg'), namespace (import * as x from 'pkg'), " +
-    "CommonJS require('pkg'), dynamic import('pkg'), and side-effect import 'pkg'. A package is only unused when ALL clauses return zero results.",
+    "CommonJS require('pkg'), dynamic import('pkg'), and side-effect import 'pkg'. A package is only unused when ALL clauses return zero results. " +
+    "When performing dependency analysis, compile results into a summary table: | File | Line | Import Type | Symbol Used |. " +
+    "For cross-file rename/refactor operations, search for BOTH the import path AND the symbol name to find all usage sites.",
   parameterSchema: paramSchema,
   permissionLevel: "safe",
   timeoutMs: 30_000,

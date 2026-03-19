@@ -279,3 +279,41 @@ export function ensureLongPathSupport(path: string): string {
   if (path.startsWith("\\\\?\\")) return path;
   return "\\\\?\\" + path;
 }
+
+/**
+ * 주어진 경로가 Git Bash 형식(/c/Users/...)인지 확인합니다.
+ * Windows 환경에서 Git Bash 또는 MSYS2 쉘이 사용하는 경로 형식입니다.
+ *
+ * @param p - 확인할 경로
+ * @returns Git Bash 형식이면 true
+ *
+ * @example
+ * isGitBashPath("/c/Users/name") // → true
+ * isGitBashPath("/home/user") // → false (단일 문자 드라이브가 아님)
+ * isGitBashPath("C:\\Users") // → false (Windows 형식)
+ */
+export function isGitBashPath(p: string): boolean {
+  return /^\/[a-zA-Z](\/|$)/.test(p);
+}
+
+/**
+ * Git Bash 형식 경로를 자동 감지하여 Windows 경로로 변환합니다.
+ * Windows 플랫폼에서 Git Bash 형식(/c/Users/...)이 감지되면 변환하고,
+ * 그 외에는 원본 경로를 그대로 반환합니다.
+ *
+ * @param p - 자동 감지할 경로
+ * @returns 변환된 경로 (Git Bash 형식이면 Windows 경로로, 아니면 그대로)
+ *
+ * @example
+ * // Windows에서:
+ * autoResolveGitBashPath("/c/Users/name") // → "C:\\Users\\name"
+ * autoResolveGitBashPath("./relative") // → "./relative" (변환 불필요)
+ * // Linux/macOS에서:
+ * autoResolveGitBashPath("/c/Users/name") // → "/c/Users/name" (변환 안 함)
+ */
+export function autoResolveGitBashPath(p: string): string {
+  if (isWindows() && isGitBashPath(p)) {
+    return gitBashToWindows(p);
+  }
+  return p;
+}
