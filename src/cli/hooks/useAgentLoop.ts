@@ -25,7 +25,7 @@ import { useConversation } from "./useConversation.js";
 import { useTextBuffering } from "./useTextBuffering.js";
 import { type LLMProvider, type ChatMessage } from "../../llm/provider.js";
 import { createLLMClientForModel } from "../../llm/client-factory.js";
-import { type ToolCallStrategy } from "../../llm/tool-call-strategy.js";
+import { type ToolCallStrategy, selectStrategy } from "../../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../../tools/registry.js";
 import { type PermissionResult, runAgentLoop } from "../../core/agent-loop.js";
 import { type ContextManager } from "../../core/context-manager.js";
@@ -90,7 +90,7 @@ export function useAgentLoop({
   client,
   model: initialModel,
   toolRegistry,
-  strategy,
+  strategy: _initialStrategy,
   commandRegistry,
   contextManager,
   hookRunner,
@@ -129,7 +129,13 @@ export function useAgentLoop({
   const [tokenCount, setTokenCount] = useState(0);
   const [commandOutput, setCommandOutput] = useState<string | null>(null);
   const [activeModel, setActiveModel] = useState(initialModel);
+  // Strategy must be recalculated when activeModel changes (e.g., via /model command)
+  // to prevent strategy/model mismatch (GPT strategy used with Claude model)
+  const activeStrategy = useMemo(() => selectStrategy(activeModel), [activeModel]);
   const [interactiveSelect, setInteractiveSelect] = useState<InteractiveSelect | null>(null);
+
+  // Track whether session has been auto-named (first user message triggers naming)
+  const sessionNamedRef = useRef(false);
 
   // 프로바이더 전환 지원 — client를 ref로 관리하여 /model에서 동적 교체 가능
   // useRef는 초기값만 사용하므로, 부모가 client prop을 변경하면 동기화 필요
@@ -544,7 +550,7 @@ export function useAgentLoop({
             client: clientRef.current,
             model: activeModel,
             toolRegistry,
-            strategy,
+            strategy: activeStrategy,
             events,
             useStreaming: true,
             maxContextTokens: modelCaps.maxContextTokens,
@@ -619,6 +625,12 @@ export function useAgentLoop({
             const msg = err instanceof Error ? err.message : String(err);
             process.stderr.write(`[session-save] Failed to persist messages: ${msg}\n`);
           });
+
+          // Auto-name session from first user message (so /resume shows meaningful names)
+          if (!sessionNamedRef.current) {
+            sessionNamedRef.current = true;
+            sessionManager.autoNameSession(sessionId, input).catch(() => {});
+          }
         }
       } catch (err) {
         const errorMsg = err instanceof Error ? err.message : String(err);
@@ -663,7 +675,7 @@ export function useAgentLoop({
       clientRef,
       activeModel,
       toolRegistry,
-      strategy,
+      activeStrategy,
       contextManager,
       hookRunner,
       sessionManager,
@@ -744,6 +756,25 @@ export function useAgentLoop({
               })
               .catch(() => {});
           }
+          if (result.shouldCompact && contextManager) {
+            try {
+              const messagesToCompact = conversation.messages.map((m) => ({
+                role: m.role,
+                content: m.content,
+              }));
+              const compacted = await contextManager.manualCompact(
+                messagesToCompact as import("../../llm/provider.js").ChatMessage[],
+                result.compactFocusTopic,
+              );
+              setCommandOutput(
+                `Compacted: ${compacted.result.originalTokens} → ${compacted.result.compactedTokens} tokens (${compacted.result.removedMessages} messages removed)`,
+              );
+            } catch (err) {
+              setCommandOutput(
+                `Compaction failed: ${err instanceof Error ? err.message : String(err)}`,
+              );
+            }
+          }
         }
         return;
       }
@@ -765,6 +796,7 @@ export function useAgentLoop({
       isProcessing,
       processMessage,
       clearConversation,
+      contextManager,
     ],
   );
 

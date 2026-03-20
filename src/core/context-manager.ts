@@ -29,6 +29,7 @@ import { AGENT_LOOP, TOKEN_DEFAULTS, SESSIONS_DIR } from "../constants.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { buildSystemPrompt } from "./system-prompt-builder.js";
 import type { CapabilityTier } from "../llm/model-capabilities.js";
+import { getLogger } from "../utils/logger.js";
 
 /**
  * 모델 능력 수준(tier)별 컨텍스트 압축 설정을 반환합니다.
@@ -333,6 +334,14 @@ export class ContextManager {
       }
     }
 
+    // Prune orphaned access counts (hashes no longer in coldRefs)
+    const remainingHashes = new Set(Array.from(this.coldRefs.keys()));
+    for (const hash of this.coldRefAccessCount.keys()) {
+      if (!remainingHashes.has(hash)) {
+        this.coldRefAccessCount.delete(hash);
+      }
+    }
+
     return { removedFiles, bytesFreed };
   }
 
@@ -397,14 +406,19 @@ export class ContextManager {
       }
 
       // Store to disk and replace with cold reference
-      const ref = await this.writeColdStorage(coldStorageDir, msg.content);
-      this.coldRefs.set(ref.hash, ref);
-      microcompactTokensSaved += ref.originalTokens;
+      try {
+        const ref = await this.writeColdStorage(coldStorageDir, msg.content);
+        this.coldRefs.set(ref.hash, ref);
+        microcompactTokensSaved += ref.originalTokens;
 
-      result.push({
-        ...msg,
-        content: `[Tool output stored at: ${ref.path}. Re-read if needed. Original: ${ref.originalTokens} tokens]`,
-      });
+        result.push({
+          ...msg,
+          content: `[Tool output stored at: ${ref.path}. Re-read if needed. Original: ${ref.originalTokens} tokens]`,
+        });
+      } catch {
+        // Cold storage write failed — keep original content inline
+        result.push(msg);
+      }
     }
 
     // Track microcompaction token savings in overall metrics
@@ -598,19 +612,22 @@ export class ContextManager {
   }
 
   /**
-   * Calculate adaptive GC interval based on current context window usage.
-   * Higher usage → more frequent GC to free up space aggressively.
+   * Calculate adaptive GC interval based on current context window usage
+   * and cold storage pressure.
+   * Higher usage or more cold storage entries → more frequent GC.
    *
-   *   usage > 80%  → interval 1  (GC every compaction)
-   *   usage 50-80% → interval 5
-   *   usage < 50%  → interval 15
+   *   usage > 80% OR coldStorage > 100  → interval 1  (GC every compaction)
+   *   usage 50-80% OR coldStorage > 50   → interval 5
+   *   otherwise                          → interval 15
    */
   private getAdaptiveGcInterval(messages: readonly ChatMessage[]): number {
     const usage = this.getUsage(messages);
-    if (usage.usageRatio > 0.8) {
+    // Also consider cold storage pressure
+    const coldStorageCount = this.coldRefs.size;
+    if (usage.usageRatio > 0.8 || coldStorageCount > 100) {
       return 1;
     }
-    if (usage.usageRatio >= 0.5) {
+    if (usage.usageRatio >= 0.5 || coldStorageCount > 50) {
       return 5;
     }
     return 15;
@@ -632,7 +649,15 @@ export class ContextManager {
     }
 
     const fileContents: string[] = [];
+    let estimatedRehydrationTokens = 0;
+    const rehydrationBudget = Math.floor(this.tokenBudget * 0.05); // Reserve 5% of budget for rehydration
+
     for (const filePath of filesToRehydrate) {
+      // Stop adding files if rehydration budget is exhausted (prevents thrashing)
+      if (estimatedRehydrationTokens >= rehydrationBudget) {
+        break;
+      }
+
       try {
         const content = await readFile(filePath, "utf-8");
         // Limit each file to a reasonable size for rehydration
@@ -640,7 +665,9 @@ export class ContextManager {
           content.length > 4000
             ? content.slice(0, 3800) + "\n[... truncated for rehydration ...]"
             : content;
-        fileContents.push(`--- ${filePath} ---\n${truncated}`);
+        const entryText = `--- ${filePath} ---\n${truncated}`;
+        estimatedRehydrationTokens += countTokens(entryText);
+        fileContents.push(entryText);
       } catch {
         // File may have been deleted or moved — skip it
       }
@@ -773,8 +800,16 @@ export class ContextManager {
     if (this.client) {
       try {
         return await this.summarizeWithLLM(turns, focusTopic);
-      } catch {
-        // LLM summarization failed — fall back to local extraction
+      } catch (error: unknown) {
+        const logger = getLogger();
+        logger.warn(
+          {
+            error: error instanceof Error ? error.message : String(error),
+            turnsCount: turns.length,
+            focusTopic: focusTopic ?? "none",
+          },
+          "LLM summarization failed, falling back to local extraction",
+        );
       }
     }
     return this.summarizeTurns(turns, focusTopic);
@@ -993,7 +1028,14 @@ export class ContextManager {
     try {
       await readFile(filePath, "utf-8");
     } catch {
-      await writeFile(filePath, content, "utf-8");
+      try {
+        await writeFile(filePath, content, "utf-8");
+      } catch (writeErr) {
+        // Re-throw so the caller keeps original content inline instead of a broken reference
+        throw new Error(
+          `Cold storage write failed: ${writeErr instanceof Error ? writeErr.message : String(writeErr)}`,
+        );
+      }
     }
 
     return {
@@ -1001,5 +1043,17 @@ export class ContextManager {
       path: filePath,
       originalTokens: countTokens(content),
     };
+  }
+
+  /**
+   * Clean up all internal state to prevent memory leaks.
+   * Call when a session ends or context is reset.
+   */
+  dispose(): void {
+    this.coldRefs.clear();
+    this.coldRefAccessCount.clear();
+    this.fileAccessFrequency.clear();
+    this.recentFiles.length = 0;
+    this.totalCompressionRatios.length = 0;
   }
 }

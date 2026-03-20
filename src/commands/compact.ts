@@ -30,6 +30,8 @@ export const compactCommand: SlashCommand = {
         ? `Compaction triggered with focus: "${focusTopic}"`
         : "Compaction triggered.",
       success: true,
+      shouldCompact: true,
+      compactFocusTopic: focusTopic,
     };
   },
 };

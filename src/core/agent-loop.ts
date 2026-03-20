@@ -49,6 +49,7 @@ import { executeRecovery, resetRetryState } from "./recovery-executor.js";
 import { CircuitBreaker } from "./circuit-breaker.js";
 import { applyObservationMasking } from "./observation-masking.js";
 import { type DualModelRouter, detectPhase } from "../llm/dual-model-router.js";
+import { getModelCapabilities } from "../llm/model-capabilities.js";
 
 const trace = (tag: string, msg: string) => {
   if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
@@ -520,6 +521,8 @@ export async function runAgentLoop(
     maxContextTokens: config.maxContextTokens,
     sessionId: config.sessionId,
     workingDirectory: config.workingDirectory,
+    client: config.client,
+    summaryModel: config.model,
     onPreCompact: () => {
       config.events.emit("context:pre-compact", { compactionNumber: 0 });
     },
@@ -814,16 +817,24 @@ export async function runAgentLoop(
     });
 
     if (extractedCalls.length === 0) {
-      // Subagent auto-retry: if first iteration produced no tool calls, nudge the model
-      if (config.isSubagent && iterations === 1) {
+      // Subagent auto-retry: if early iterations produced no tool calls, nudge the model
+      // Allow up to 2 retry attempts (iterations 1 and 2) with increasingly specific messages
+      if (config.isSubagent && iterations <= 2) {
+        const toolNames = config.toolRegistry
+          .getAll()
+          .map((t) => t.name)
+          .join(", ");
+        const nudgeMessage =
+          iterations === 1
+            ? `You MUST use your available tools to complete the task. Call a tool now — do not respond with text only. Available tools: ${toolNames}`
+            : `CRITICAL: You have NOT called any tools yet. You MUST call one of these tools RIGHT NOW: ${toolNames}. For example, call list_dir with {"path": "."} or glob_search with {"pattern": "**/*.ts"}. Do NOT output any text without a tool call.`;
         trace(
           "agent-loop",
-          `Iter ${iterations}: Subagent produced no tool calls — injecting retry nudge`,
+          `Iter ${iterations}: Subagent produced no tool calls — injecting retry nudge (attempt ${iterations}/2)`,
         );
         messages.push({
           role: "user",
-          content:
-            "You MUST use your available tools to complete the task. Call a tool now — do not respond with text only.",
+          content: nudgeMessage,
         });
         continue;
       }
@@ -1055,6 +1066,11 @@ export async function runAgentLoop(
             events: config.events,
             activeClient: activeClient,
             activeModel: activeModel,
+            capabilityTier: getModelCapabilities(activeModel).capabilityTier,
+            checkPermission: config.checkPermission,
+            checkpointManager: config.checkpointManager,
+            sessionId: config.sessionId,
+            thinking: config.thinking,
           });
 
           // Apply output guardrails

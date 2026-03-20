@@ -76,7 +76,15 @@ export type AppEvents = {
   };
 
   /** 도구 실행 시작 */
-  "tool:start": { name: string; id: string; args?: Record<string, unknown> };
+  "tool:start": {
+    name: string;
+    id: string;
+    args?: Record<string, unknown>;
+    /** 서브에이전트에서 전파된 이벤트일 때 서브에이전트 ID */
+    subagentId?: string;
+    /** 서브에이전트에서 전파된 이벤트일 때 서브에이전트 유형 */
+    subagentType?: string;
+  };
   /** 도구 실행 완료 */
   "tool:complete": {
     name: string;
@@ -84,10 +92,21 @@ export type AppEvents = {
     isError: boolean; // 에러 발생 여부
     output?: string; // 도구 출력 결과
     metadata?: Readonly<Record<string, unknown>>; // 추가 메타데이터
+    /** 서브에이전트에서 전파된 이벤트일 때 서브에이전트 ID */
+    subagentId?: string;
+    /** 서브에이전트에서 전파된 이벤트일 때 서브에이전트 유형 */
+    subagentType?: string;
   };
 
   /** 컨텍스트 압축(compaction)이 시작되기 직전 — 토큰 절약을 위해 대화 내용을 요약할 때 */
   "context:pre-compact": { compactionNumber: number };
+
+  /** 컨텍스트 압축(compaction) 완료 — 원본/압축 토큰 수, 제거된 메시지 수 포함 */
+  "context:post-compact": {
+    originalTokens: number;
+    compactedTokens: number;
+    removedMessages: number;
+  };
 
   /** 대화에 메시지가 추가됨 */
   "conversation:message": { role: string };
@@ -126,6 +145,8 @@ export type AppEvents = {
     readonly completionTokens: number;
     readonly totalTokens: number;
     readonly iteration: number;
+    /** 서브에이전트에서 전파된 이벤트일 때 서브에이전트 ID */
+    readonly subagentId?: string;
   };
 
   /** 에이전트 루프 전체 완료 — 최종 요약 정보 */

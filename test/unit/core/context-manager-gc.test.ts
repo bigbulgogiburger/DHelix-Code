@@ -303,7 +303,7 @@ describe("Rehydration strategies", () => {
     await writeFile(fileC, "content C", "utf-8");
 
     const manager = new ContextManager({
-      maxContextTokens: 500,
+      maxContextTokens: 100_000,
       compactionThreshold: 0.5,
       preserveRecentTurns: 2,
     });
@@ -339,7 +339,7 @@ describe("Rehydration strategies", () => {
     await writeFile(fileB, "less accessed B", "utf-8");
 
     const manager = new ContextManager({
-      maxContextTokens: 500,
+      maxContextTokens: 100_000,
       compactionThreshold: 0.5,
       preserveRecentTurns: 2,
     });

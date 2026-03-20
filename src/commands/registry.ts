@@ -121,6 +121,10 @@ export interface CommandResult {
   readonly newLocale?: string;
   /** 음성 입력 토글 (true=활성화, false=비활성화, /voice에서 사용) */
   readonly voiceEnabled?: boolean;
+  /** true면 수동 컨텍스트 압축(compaction) 트리거 (/compact에서 사용) */
+  readonly shouldCompact?: boolean;
+  /** 압축 시 집중할 토픽 (/compact [topic]에서 사용) */
+  readonly compactFocusTopic?: string;
 }
 
 /**
