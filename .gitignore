@@ -18,3 +18,12 @@ testJava/
 .gradle/
 DBCODE.local.md
 .claude/settings.local.json
+
+# 임시/개인 파일
+bash.exe.stackdump
+fibonacci.py
+sum1to10.js
+sample.db
+openapi.yaml
+screenshot-settlement-confirmation.png
+www.naver.com.png
