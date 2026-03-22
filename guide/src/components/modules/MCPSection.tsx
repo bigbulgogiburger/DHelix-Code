@@ -7,29 +7,29 @@ import { ImplDirection } from "../ImplDirection";
 import { RevealOnScroll } from "../RevealOnScroll";
 
 const mcpLifecycleChart = `sequenceDiagram
-    participant APP as App
-    participant MGR as MCPManager
-    participant SCOPE as ScopeManager
-    participant CLIENT as MCPClient
-    participant SERVER as External Server
-    participant BRIDGE as ToolBridge
-    participant REG as ToolRegistry
+    participant APP as App<br/>CLI 앱 진입점
+    participant MGR as MCPManager<br/>MCP 서버 수명주기 관리
+    participant SCOPE as ScopeManager<br/>local>project>user 설정 병합
+    participant CLIENT as MCPClient<br/>개별 MCP 서버 연결 담당
+    participant SERVER as External Server<br/>외부 MCP 서버 프로세스
+    participant BRIDGE as ToolBridge<br/>MCP 도구를 dbcode 도구로 변환
+    participant REG as ToolRegistry<br/>도구 등록 저장소
 
-    APP->>MGR: connectAll()
-    MGR->>SCOPE: loadScopedConfigs()
-    SCOPE-->>MGR: local > project > user 병합
+    APP->>MGR: connectAll() — 모든 MCP 서버 연결 시작
+    MGR->>SCOPE: loadScopedConfigs() — 3-scope 설정 로드
+    SCOPE-->>MGR: local > project > user 우선순위로 병합된 설정 반환
 
     loop 각 서버 (병렬)
-        MGR->>CLIENT: connect(name, config)
-        CLIENT->>SERVER: JSON-RPC initialize
-        SERVER-->>CLIENT: capabilities
-        CLIENT->>SERVER: tools/list
-        SERVER-->>CLIENT: Tool[] 목록
-        CLIENT->>BRIDGE: registerTools(server, tools)
-        BRIDGE->>REG: register(mcp__server__tool)
+        MGR->>CLIENT: connect(name, config) — 서버별 클라이언트 생성
+        CLIENT->>SERVER: JSON-RPC initialize — 프로토콜 초기화 요청
+        SERVER-->>CLIENT: capabilities — 서버 기능 목록 응답
+        CLIENT->>SERVER: tools/list — 사용 가능한 도구 목록 요청
+        SERVER-->>CLIENT: Tool[] 목록 — 도구 스키마 배열 반환
+        CLIENT->>BRIDGE: registerTools(server, tools) — 도구 브릿지에 등록 요청
+        BRIDGE->>REG: register(mcp__server__tool) — 네임스페이스 접두사로 도구 등록
     end
 
-    MGR-->>APP: ConnectAllResult`;
+    MGR-->>APP: ConnectAllResult — 전체 연결 결과 반환`;
 
 const transports = [
   { name: "stdio", protocol: "stdin/stdout", useCase: "로컬 CLI 도구 (playwright, serena)", note: "가장 일반적. 프로세스 직접 스폰" },
@@ -38,26 +38,28 @@ const transports = [
 ];
 
 const scopes = [
-  { name: "Local (최우선)", path: ".dbcode/mcp-local.json", icon: "🔒", color: "border-t-accent-red", desc: "개인 전용 설정. .gitignore에 포함. API 키가 들어간 서버 설정에 사용." },
-  { name: "Project", path: ".dbcode/mcp.json", icon: "👥", color: "border-t-accent-blue", desc: "팀 공유 설정. Git에 커밋. 팀원 모두 같은 MCP 서버를 사용하도록." },
-  { name: "User (전역)", path: "~/.dbcode/mcp-servers.json", icon: "🌐", color: "border-t-accent-green", desc: "모든 프로젝트에 적용되는 전역 MCP 서버 설정." },
+  { name: "Local (최우선)", path: ".dbcode/mcp-local.json", icon: "🔒", color: "border-t-red-600", desc: "개인 전용 설정. .gitignore에 포함. API 키가 들어간 서버 설정에 사용." },
+  { name: "Project", path: ".dbcode/mcp.json", icon: "👥", color: "border-t-blue-600", desc: "팀 공유 설정. Git에 커밋. 팀원 모두 같은 MCP 서버를 사용하도록." },
+  { name: "User (전역)", path: "~/.dbcode/mcp-servers.json", icon: "🌐", color: "border-t-emerald-600", desc: "모든 프로젝트에 적용되는 전역 MCP 서버 설정." },
 ];
 
 export function MCPSection() {
   return (
-    <section id="mcp" className="py-20 bg-bg-secondary">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
+    <section id="mcp" className="py-16 bg-blue-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+      <div className="center-container">
         <RevealOnScroll>
-          <SectionHeader
-            label="MODULE 06"
-            labelColor="pink"
-            title="MCP System — 외부 도구 연동 파이프라인"
-            description="Model Context Protocol로 외부 서버의 도구/리소스/프롬프트를 표준화하여 연동합니다."
-          />
+          <div style={{ marginBottom: "48px" }}>
+            <SectionHeader
+              label="MODULE 06"
+              labelColor="pink"
+              title="MCP System — 외부 도구 연동 파이프라인"
+              description="Model Context Protocol로 외부 서버의 도구/리소스/프롬프트를 표준화하여 연동합니다."
+            />
+          </div>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <div className="flex gap-2 flex-wrap mb-5">
+          <div className="flex gap-2 flex-wrap mb-6">
             <FilePath path="src/mcp/manager.ts" />
             <FilePath path="src/mcp/client.ts" />
             <FilePath path="src/mcp/tool-bridge.ts" />
@@ -70,36 +72,36 @@ export function MCPSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mb-4">3-Scope 설정 우선순위</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>3-Scope 설정 우선순위</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5" style={{ gap: "20px" }}>
             {scopes.map((s) => (
-              <div key={s.name} className={`bg-bg-card border border-border rounded-2xl p-6 border-t-[3px] ${s.color}`}>
+              <div key={s.name} className={`border border-[#e2e8f0] rounded-lg p-5 bg-white hover:bg-gray-50 hover:border-gray-300 border-t-[3px] ${s.color}`} style={{ padding: "20px" }}>
                 <h4 className="text-sm font-bold mb-2">{s.icon} {s.name}</h4>
                 <div className="mb-2"><FilePath path={s.path} /></div>
-                <p className="text-xs text-text-secondary">{s.desc}</p>
+                <p className="text-xs text-gray-600">{s.desc}</p>
               </div>
             ))}
           </div>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mt-6 mb-4">Transport Layer 종류</h3>
-          <div className="bg-bg-card border border-border rounded-2xl overflow-hidden">
+          <h3 className="text-lg font-semibold text-gray-900 mt-8 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>Transport Layer 종류</h3>
+          <div className="border border-[#e2e8f0] rounded-lg overflow-hidden bg-white" style={{ marginBottom: "24px" }}>
             <table className="w-full border-collapse">
               <thead>
                 <tr>
                   {["Transport", "프로토콜", "사용 사례", "특징"].map((h) => (
-                    <th key={h} className="p-3 px-5 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">{h}</th>
+                    <th key={h} className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="text-[13px]">
+              <tbody className="text-sm">
                 {transports.map((t) => (
-                  <tr key={t.name} className="hover:bg-[rgba(59,130,246,0.03)] border-b border-[rgba(255,255,255,0.03)]">
-                    <td className="p-3 px-5 font-mono text-accent-cyan font-semibold">{t.name}</td>
-                    <td className="p-3 px-5">{t.protocol}</td>
-                    <td className="p-3 px-5">{t.useCase}</td>
-                    <td className="p-3 px-5">{t.note}</td>
+                  <tr key={t.name} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td className="p-3 px-4 text-sm font-mono text-cyan-600 font-semibold">{t.name}</td>
+                    <td className="p-3 px-4 text-sm">{t.protocol}</td>
+                    <td className="p-3 px-4 text-sm">{t.useCase}</td>
+                    <td className="p-3 px-4 text-sm">{t.note}</td>
                   </tr>
                 ))}
               </tbody>

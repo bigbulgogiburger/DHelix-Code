@@ -1,0 +1,11 @@
+{
+  "model": "gpt-4.1-mini",
+  "allowedTools": [
+    "file_read",
+    "file_write",
+    "file_edit",
+    "bash_exec",
+    "glob_search",
+    "grep_search"
+  ]
+}

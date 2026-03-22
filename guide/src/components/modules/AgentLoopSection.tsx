@@ -7,42 +7,42 @@ import { CodeBlock } from "../CodeBlock";
 import { ImplDirection } from "../ImplDirection";
 import { RevealOnScroll } from "../RevealOnScroll";
 
-const stateMachineChart = `stateDiagram-v2
-    [*] --> INIT: 사용자 입력 수신
-    INIT --> CONTEXT_PREPARE: 메시지 + 시스템 프롬프트 조립
-    CONTEXT_PREPARE --> CHECK_COMPACT: 컨텍스트 사용률 확인
-    CHECK_COMPACT --> AUTO_COMPACT: >= 83.5%
-    CHECK_COMPACT --> INPUT_GUARD: < 83.5%
-    AUTO_COMPACT --> INPUT_GUARD: 압축 완료
-    INPUT_GUARD --> LLM_CALL: 보안 통과
-    INPUT_GUARD --> BLOCKED: 인젝션 감지
-    LLM_CALL --> OUTPUT_PARSE: 스트리밍 완료
-    OUTPUT_PARSE --> NO_TOOLS: tool_calls 없음
-    OUTPUT_PARSE --> VALIDATE_TOOLS: tool_calls 있음
-    NO_TOOLS --> [*]: 응답 반환
-    VALIDATE_TOOLS --> PERMISSION_CHECK: Zod 스키마 통과
-    VALIDATE_TOOLS --> TOOL_CORRECT: 스키마 실패 (Low Tier)
-    TOOL_CORRECT --> PERMISSION_CHECK: 자동 교정 완료
-    PERMISSION_CHECK --> CHECKPOINT: 승인됨
-    PERMISSION_CHECK --> DENIED: 거부됨
-    DENIED --> LLM_CALL: 거부 사유 피드백
-    CHECKPOINT --> TOOL_GROUP: 스냅샷 저장
-    TOOL_GROUP --> PARALLEL_EXEC: 읽기 전용 그룹
-    TOOL_GROUP --> SERIAL_EXEC: 쓰기 포함 그룹
-    PARALLEL_EXEC --> OBS_MASK: 실행 완료
-    SERIAL_EXEC --> OBS_MASK: 실행 완료
-    OBS_MASK --> CIRCUIT_CHECK: 마스킹 적용
-    CIRCUIT_CHECK --> LLM_CALL: OK (closed)
-    CIRCUIT_CHECK --> RECOVERY: Trip (open)
-    RECOVERY --> LLM_CALL: compact / retry
-    RECOVERY --> STRATEGY_SWITCH: fallback
-    STRATEGY_SWITCH --> LLM_CALL: text-parsing 전환
-    BLOCKED --> [*]: 에러 반환`;
+const stateMachineChart = `graph TD
+    START(("시작")) --> INIT["INIT<br/><small>시스템 프롬프트 + 도구 목록 초기화</small>"]
+    INIT -->|"메시지 + 시스템 프롬프트 조립"| CONTEXT_PREPARE["CONTEXT_PREPARE<br/><small>메시지 배열 조립 + 토큰 계산</small>"]
+    CONTEXT_PREPARE -->|"컨텍스트 사용률 확인"| CHECK_COMPACT{"CHECK_COMPACT<br/><small>사용률 >= 83.5% 인지 확인</small>"}
+    CHECK_COMPACT -->|">= 83.5%"| AUTO_COMPACT["AUTO_COMPACT<br/><small>LLM 요약으로 오래된 메시지 압축</small>"]
+    CHECK_COMPACT -->|"< 83.5%"| INPUT_GUARD["INPUT_GUARD<br/><small>프롬프트 인젝션 + 비밀 키 검사</small>"]
+    AUTO_COMPACT -->|"압축 완료"| INPUT_GUARD
+    INPUT_GUARD -->|"보안 통과"| LLM_CALL["LLM_CALL<br/><small>OpenAI API 스트리밍 요청</small>"]
+    INPUT_GUARD -->|"인젝션 감지"| BLOCKED["BLOCKED<br/><small>서킷 차단 → 루프 중단</small>"]
+    LLM_CALL -->|"스트리밍 완료"| OUTPUT_PARSE["OUTPUT_PARSE<br/><small>텍스트 / 도구 호출 분리</small>"]
+    OUTPUT_PARSE -->|"tool_calls 없음"| NO_TOOLS["NO_TOOLS<br/><small>도구 호출 없음 → 응답 반환</small>"]
+    OUTPUT_PARSE -->|"tool_calls 있음"| VALIDATE_TOOLS["VALIDATE_TOOLS<br/><small>Zod 스키마로 인자 타입 검증</small>"]
+    NO_TOOLS --> END(("종료"))
+    VALIDATE_TOOLS -->|"Zod 스키마 통과"| PERMISSION_CHECK["PERMISSION_CHECK<br/><small>5단계 권한 결정 트리 확인</small>"]
+    VALIDATE_TOOLS -->|"스키마 실패 (Low Tier)"| TOOL_CORRECT["TOOL_CORRECT<br/><small>저성능 모델의 잘못된 인자 자동 교정</small>"]
+    TOOL_CORRECT -->|"자동 교정 완료"| PERMISSION_CHECK
+    PERMISSION_CHECK -->|"승인됨"| CHECKPOINT["CHECKPOINT<br/><small>파일 수정 전 SHA-256 스냅샷</small>"]
+    PERMISSION_CHECK -->|"거부됨"| DENIED["DENIED<br/><small>사용자가 도구 실행 거부</small>"]
+    DENIED -->|"거부 사유 피드백"| LLM_CALL
+    CHECKPOINT -->|"스냅샷 저장"| TOOL_GROUP["TOOL_GROUP<br/><small>병렬/직렬 실행 그룹 분류</small>"]
+    TOOL_GROUP -->|"읽기 전용 그룹"| PARALLEL_EXEC["PARALLEL_EXEC<br/><small>Promise.allSettled 병렬 실행</small>"]
+    TOOL_GROUP -->|"쓰기 포함 그룹"| SERIAL_EXEC["SERIAL_EXEC<br/><small>순차적 도구 실행</small>"]
+    PARALLEL_EXEC -->|"실행 완료"| OBS_MASK["OBS_MASK<br/><small>읽기 전용 도구 출력을 플레이스홀더로 대체</small>"]
+    SERIAL_EXEC -->|"실행 완료"| OBS_MASK
+    OBS_MASK -->|"마스킹 적용"| CIRCUIT_CHECK["CIRCUIT_CHECK<br/><small>무변경/에러 반복 횟수 확인</small>"]
+    CIRCUIT_CHECK -->|"OK (closed)"| LLM_CALL
+    CIRCUIT_CHECK -->|"Trip (open)"| RECOVERY["RECOVERY<br/><small>에러 유형별 복구 전략 실행</small>"]
+    RECOVERY -->|"compact / retry"| LLM_CALL
+    RECOVERY -->|"fallback"| STRATEGY_SWITCH["STRATEGY_SWITCH<br/><small>도구 호출 전략 변경</small>"]
+    STRATEGY_SWITCH -->|"text-parsing 전환"| LLM_CALL
+    BLOCKED --> END`;
 
 export function AgentLoopSection() {
   return (
-    <section id="agent-loop" className="py-20">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
+    <section id="agent-loop" className="py-16 bg-violet-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+      <div className="center-container">
         <RevealOnScroll>
           <SectionHeader
             label="MODULE 01"
@@ -61,8 +61,8 @@ export function AgentLoopSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mb-4">핵심 인터페이스</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>핵심 인터페이스</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ gap: "20px" }}>
             <CodeBlock>
               <span className="cm">{"// Agent Loop 설정"}</span>{"\n"}
               <span className="kw">interface</span> <span className="type">AgentLoopConfig</span> {"{"}{"\n"}

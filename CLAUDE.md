@@ -128,6 +128,8 @@ When compacting, always preserve:
 | Module Deep Dive   | 9개 모듈 내부 상태머신 + TS 인터페이스  | `docs/architecture-deep.html`              |
 | Deep Dive (Next.js)| 위와 동일 내용의 React/Next.js 버전     | `cd guide && npm run dev`                  |
 
+> `guide/` 디렉토리에 별도 `CLAUDE.md`가 있습니다. guide 작업 시 디자인 시스템(Ethereal Glass), Tailwind v4 함정, 컴포넌트 규칙 등을 참조하세요.
+
 ## Reference Docs
 
 작업 맥락에 따라 아래 문서를 참조하세요:

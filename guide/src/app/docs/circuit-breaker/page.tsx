@@ -12,20 +12,20 @@ import { SeeAlso } from "@/components/SeeAlso";
 
 export default function CircuitBreakerPage() {
   return (
-    <div className="min-h-screen pt-[100px] pb-20"><div className="max-w-[900px] mx-auto px-4 sm:px-8">
+    <div className="min-h-screen" style={{ paddingTop: "40px", paddingBottom: "80px" }}><div className="center-narrow">
       {/* ─── Header ─── */}
       <RevealOnScroll>
-        <div className="mb-14">
+        <div style={{ marginBottom: "48px" }}>
           <FilePath path="src/core/circuit-breaker.ts" />
-          <h1 className="text-[clamp(28px,4vw,44px)] font-black tracking-tight leading-[1.15] mt-4 mb-4">
-            <span className="bg-gradient-to-r from-accent-purple to-accent-pink bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight leading-[1.15] mt-4 mb-4">
+            <span className="text-gray-900">
               CircuitBreaker
             </span>
           </h1>
           <div className="flex items-center gap-3 mb-5">
             <LayerBadge layer="core" />
           </div>
-          <p className="text-[16px] text-text-secondary leading-relaxed">
+          <p className="text-[16px] text-gray-600 leading-relaxed">
             에이전트 루프가 무한 반복에 빠지는 것을 방지하는 안전장치 모듈입니다.
           </p>
         </div>
@@ -33,13 +33,13 @@ export default function CircuitBreakerPage() {
 
       {/* ─── 1. 개요 (Overview) ─── */}
       <RevealOnScroll>
-        <section className="mb-16">
-          <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
+        <section style={{ marginBottom: "64px" }}>
+          <h2 className="text-2xl font-extrabold flex items-center gap-3" style={{ marginBottom: "24px", marginTop: "0" }}>
             <span>📋</span> 개요
           </h2>
-          <div className="text-[14px] text-text-secondary leading-[1.85] mb-8 space-y-3">
+          <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
             <p>
-              <code className="text-accent-cyan">CircuitBreaker</code>는 전기의 차단기(circuit breaker)에서
+              <code className="text-cyan-600">CircuitBreaker</code>는 전기의 차단기(circuit breaker)에서
               이름을 따온 안전 패턴입니다. 에이전트 루프는 LLM 호출, 도구 실행, 결과 전달을 계속 반복하는데,
               가끔 LLM이 같은 실수를 되풀이하거나 아무 진전 없이 빙빙 도는 상황이 발생합니다.
             </p>
@@ -49,8 +49,8 @@ export default function CircuitBreakerPage() {
               프로덕션 에이전트에서 반드시 필요한 안전장치입니다.
             </p>
             <p>
-              상태는 두 가지뿐입니다: <code className="text-accent-green">&quot;closed&quot;</code>(정상 &mdash;
-              전기가 흐르는 상태)와 <code className="text-accent-red">&quot;open&quot;</code>(차단됨 &mdash; 전기가
+              상태는 두 가지뿐입니다: <code className="text-emerald-600">&quot;closed&quot;</code>(정상 &mdash;
+              전기가 흐르는 상태)와 <code className="text-red-600">&quot;open&quot;</code>(차단됨 &mdash; 전기가
               끊긴 상태). 일반적인 &quot;열림/닫힘&quot; 직관과 반대라는 점을 주의하세요.
             </p>
           </div>
@@ -71,11 +71,11 @@ export default function CircuitBreakerPage() {
   AL --> TOOLS
   AL -->|"차단 시 복구 위임"| RE
 
-  style CB fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9,stroke-width:3px
-  style AL fill:#1a2035,stroke:#3b82f6,color:#f1f5f9
-  style RE fill:#1a2035,stroke:#64748b,color:#f1f5f9
-  style LLM fill:#1a2035,stroke:#64748b,color:#f1f5f9
-  style TOOLS fill:#1a2035,stroke:#64748b,color:#f1f5f9`}
+  style CB fill:#ede9fe,stroke:#8b5cf6,color:#1e293b,stroke-width:3px
+  style AL fill:#e0e7ff,stroke:#3b82f6,color:#1e293b
+  style RE fill:#e0e7ff,stroke:#64748b,color:#1e293b
+  style LLM fill:#e0e7ff,stroke:#64748b,color:#1e293b
+  style TOOLS fill:#e0e7ff,stroke:#64748b,color:#1e293b`}
           />
 
           <Callout type="info" icon="💡">
@@ -88,16 +88,16 @@ export default function CircuitBreakerPage() {
 
       {/* ─── 2. 레퍼런스 (Reference) ─── */}
       <RevealOnScroll>
-        <section className="mb-16">
-          <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
+        <section style={{ marginBottom: "64px" }}>
+          <h2 className="text-2xl font-extrabold flex items-center gap-3" style={{ marginBottom: "24px", marginTop: "0" }}>
             <span>📖</span> 레퍼런스
           </h2>
 
           {/* IterationResult interface */}
-          <h3 className="text-lg font-bold text-accent-cyan mb-3 font-mono">
+          <h3 className="text-lg font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
             interface IterationResult
           </h3>
-          <p className="text-[13px] text-text-secondary mb-3 leading-relaxed">
+          <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
             에이전트 루프의 한 번의 반복 결과를 나타냅니다.
             서킷 브레이커가 &quot;진전이 있는지&quot; 판단하기 위해 이 데이터를 분석합니다.
           </p>
@@ -110,25 +110,25 @@ export default function CircuitBreakerPage() {
           />
 
           {/* CircuitState type */}
-          <h3 className="text-lg font-bold text-accent-cyan mb-3 mt-8 font-mono">
+          <h3 className="text-lg font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
             type CircuitState
           </h3>
-          <p className="text-[13px] text-text-secondary mb-3 leading-relaxed">
+          <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
             서킷 브레이커의 두 가지 상태를 나타내는 유니온 타입입니다.
           </p>
           <CodeBlock>
             <span className="kw">type</span> <span className="type">CircuitState</span> = <span className="str">&quot;closed&quot;</span> | <span className="str">&quot;open&quot;</span>;
           </CodeBlock>
-          <div className="text-[13px] text-text-secondary mt-2 space-y-1">
-            <p>&bull; <code className="text-accent-green">&quot;closed&quot;</code> &mdash; 정상 상태. 루프가 계속 실행됩니다. (전기가 흐르는 상태)</p>
-            <p>&bull; <code className="text-accent-red">&quot;open&quot;</code> &mdash; 차단 상태. 루프가 즉시 중단됩니다. (전기가 끊긴 상태)</p>
+          <div className="text-[13px] text-gray-600 mt-2 space-y-1">
+            <p>&bull; <code className="text-emerald-600">&quot;closed&quot;</code> &mdash; 정상 상태. 루프가 계속 실행됩니다. (전기가 흐르는 상태)</p>
+            <p>&bull; <code className="text-red-600">&quot;open&quot;</code> &mdash; 차단 상태. 루프가 즉시 중단됩니다. (전기가 끊긴 상태)</p>
           </div>
 
           {/* CircuitBreakerStatus interface */}
-          <h3 className="text-lg font-bold text-accent-cyan mb-3 mt-8 font-mono">
+          <h3 className="text-lg font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
             interface CircuitBreakerStatus
           </h3>
-          <p className="text-[13px] text-text-secondary mb-3 leading-relaxed">
+          <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
             서킷 브레이커의 현재 상태 스냅샷입니다. 디버깅이나 UI 표시에 사용됩니다.
           </p>
           <ParamTable
@@ -142,16 +142,16 @@ export default function CircuitBreakerPage() {
           />
 
           {/* CircuitBreaker class */}
-          <h3 className="text-lg font-bold text-accent-cyan mb-3 mt-8 font-mono">
+          <h3 className="text-lg font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
             class CircuitBreaker
           </h3>
-          <p className="text-[13px] text-text-secondary mb-4 leading-relaxed">
+          <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
             에이전트 루프의 무한 반복을 방지하는 메인 클래스입니다.
             세 가지 차단 조건 중 하나라도 충족되면 회로를 엽니다(차단).
           </p>
 
           {/* Constructor */}
-          <h4 className="text-sm font-bold text-text-primary mb-2 mt-6">
+          <h4 className="text-sm font-bold text-gray-900 mb-2 mt-6">
             constructor
           </h4>
           <CodeBlock>
@@ -164,10 +164,10 @@ export default function CircuitBreakerPage() {
           />
 
           {/* recordIteration */}
-          <h4 className="text-sm font-bold text-text-primary mb-2 mt-6">
+          <h4 className="text-sm font-bold text-gray-900 mb-2 mt-6">
             recordIteration(result)
           </h4>
-          <p className="text-[13px] text-text-secondary mb-3">
+          <p className="text-[13px] text-gray-600 mb-3">
             매 반복이 끝날 때마다 호출합니다. 결과를 분석하여 진전 여부를 판단하고,
             문제가 감지되면 회로를 차단합니다.
           </p>
@@ -181,10 +181,10 @@ export default function CircuitBreakerPage() {
           />
 
           {/* shouldContinue */}
-          <h4 className="text-sm font-bold text-text-primary mb-2 mt-6">
+          <h4 className="text-sm font-bold text-gray-900 mb-2 mt-6">
             shouldContinue()
           </h4>
-          <p className="text-[13px] text-text-secondary mb-3">
+          <p className="text-[13px] text-gray-600 mb-3">
             에이전트 루프가 계속 실행해도 되는지 확인합니다.
           </p>
           <CodeBlock>
@@ -194,10 +194,10 @@ export default function CircuitBreakerPage() {
           </CodeBlock>
 
           {/* getStatus */}
-          <h4 className="text-sm font-bold text-text-primary mb-2 mt-6">
+          <h4 className="text-sm font-bold text-gray-900 mb-2 mt-6">
             getStatus()
           </h4>
-          <p className="text-[13px] text-text-secondary mb-3">
+          <p className="text-[13px] text-gray-600 mb-3">
             현재 서킷 브레이커의 상태 스냅샷을 반환합니다. 디버깅이나 UI 표시에 유용합니다.
           </p>
           <CodeBlock>
@@ -205,10 +205,10 @@ export default function CircuitBreakerPage() {
           </CodeBlock>
 
           {/* reset */}
-          <h4 className="text-sm font-bold text-text-primary mb-2 mt-6">
+          <h4 className="text-sm font-bold text-gray-900 mb-2 mt-6">
             reset()
           </h4>
-          <p className="text-[13px] text-text-secondary mb-3">
+          <p className="text-[13px] text-gray-600 mb-3">
             서킷 브레이커를 초기 상태로 리셋합니다.
             새 에이전트 루프를 시작하거나 수동 복구 후에 사용합니다.
           </p>
@@ -217,26 +217,26 @@ export default function CircuitBreakerPage() {
           </CodeBlock>
 
           {/* Caveats */}
-          <h4 className="text-sm font-bold text-text-primary mb-3 mt-8">주의사항 (Caveats)</h4>
-          <ul className="text-[13px] text-text-secondary space-y-2 list-disc list-inside">
+          <h4 className="text-sm font-bold text-gray-900 mb-3 mt-8">주의사항 (Caveats)</h4>
+          <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
             <li>
-              <code className="text-accent-cyan">&quot;closed&quot;</code>가 &quot;정상&quot;이고
-              <code className="text-accent-cyan">&quot;open&quot;</code>이 &quot;차단&quot;입니다.
+              <code className="text-cyan-600">&quot;closed&quot;</code>가 &quot;정상&quot;이고
+              <code className="text-cyan-600">&quot;open&quot;</code>이 &quot;차단&quot;입니다.
               일상적인 열림/닫힘 직관과 반대이므로 주의하세요.
             </li>
             <li>
-              이미 <code className="text-accent-cyan">&quot;open&quot;</code> 상태에서
-              <code className="text-accent-cyan">recordIteration()</code>을 호출하면 아무 동작도 하지 않습니다.
+              이미 <code className="text-cyan-600">&quot;open&quot;</code> 상태에서
+              <code className="text-cyan-600">recordIteration()</code>을 호출하면 아무 동작도 하지 않습니다.
               (early return)
             </li>
             <li>
-              <code className="text-accent-cyan">reset()</code>을 호출하면 모든 카운터와 상태가 초기화됩니다.
+              <code className="text-cyan-600">reset()</code>을 호출하면 모든 카운터와 상태가 초기화됩니다.
               새 대화/루프 시작 전에 반드시 호출해야 합니다.
             </li>
             <li>
-              임계값 상수(<code className="text-accent-cyan">NO_CHANGE_THRESHOLD = 5</code>,
-              <code className="text-accent-cyan">SAME_ERROR_THRESHOLD = 5</code>,
-              <code className="text-accent-cyan">DEFAULT_MAX_ITERATIONS = 50</code>)는
+              임계값 상수(<code className="text-cyan-600">NO_CHANGE_THRESHOLD = 5</code>,
+              <code className="text-cyan-600">SAME_ERROR_THRESHOLD = 5</code>,
+              <code className="text-cyan-600">DEFAULT_MAX_ITERATIONS = 50</code>)는
               모듈 내부에 하드코딩되어 있어 외부에서 변경할 수 없습니다.
             </li>
           </ul>
@@ -245,16 +245,16 @@ export default function CircuitBreakerPage() {
 
       {/* ─── 3. 사용법 (Usage) ─── */}
       <RevealOnScroll>
-        <section className="mb-16">
-          <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
+        <section style={{ marginBottom: "64px" }}>
+          <h2 className="text-2xl font-extrabold flex items-center gap-3" style={{ marginBottom: "24px", marginTop: "0" }}>
             <span>🚀</span> 사용법
           </h2>
 
           {/* 기본 사용법 */}
-          <h3 className="text-lg font-bold mb-4">기본 사용법 &mdash; 에이전트 루프에서 사용하기</h3>
-          <p className="text-[13px] text-text-secondary mb-4 leading-relaxed">
+          <h3 className="text-lg font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>기본 사용법 &mdash; 에이전트 루프에서 사용하기</h3>
+          <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
             가장 일반적인 사용 패턴입니다.
-            에이전트 루프의 <code className="text-accent-cyan">while</code> 조건으로 사용하고,
+            에이전트 루프의 <code className="text-cyan-600">while</code> 조건으로 사용하고,
             매 반복 끝에 결과를 기록합니다.
           </p>
           <CodeBlock>
@@ -288,10 +288,10 @@ export default function CircuitBreakerPage() {
           </Callout>
 
           {/* 고급 사용법: 커스텀 maxIterations */}
-          <h3 className="text-lg font-bold mb-4 mt-10">
+          <h3 className="text-lg font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>
             고급 &mdash; 반복 횟수 제한 커스터마이징
           </h3>
-          <p className="text-[13px] text-text-secondary mb-4 leading-relaxed">
+          <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
             기본 최대 반복 횟수는 50회입니다. 서브에이전트처럼 짧은 작업에는 낮게,
             대규모 리팩토링처럼 긴 작업에는 높게 설정할 수 있습니다.
           </p>
@@ -307,11 +307,11 @@ export default function CircuitBreakerPage() {
           </CodeBlock>
 
           {/* 고급 사용법: 상태 모니터링 */}
-          <h3 className="text-lg font-bold mb-4 mt-10">
+          <h3 className="text-lg font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>
             고급 &mdash; 상태 모니터링과 차단 이유 확인
           </h3>
-          <p className="text-[13px] text-text-secondary mb-4 leading-relaxed">
-            <code className="text-accent-cyan">getStatus()</code>로 실시간 상태를 확인하여
+          <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
+            <code className="text-cyan-600">getStatus()</code>로 실시간 상태를 확인하여
             UI에 표시하거나 로그에 기록할 수 있습니다.
           </p>
           <CodeBlock>
@@ -334,16 +334,16 @@ export default function CircuitBreakerPage() {
 
           <DeepDive title="reset() 사용 시 주의사항">
             <p className="mb-3">
-              <code className="text-accent-cyan">reset()</code>을 호출하면 <strong>모든</strong> 내부
-              카운터가 0으로, 상태가 <code className="text-accent-green">&quot;closed&quot;</code>로 돌아갑니다.
+              <code className="text-cyan-600">reset()</code>을 호출하면 <strong>모든</strong> 내부
+              카운터가 0으로, 상태가 <code className="text-emerald-600">&quot;closed&quot;</code>로 돌아갑니다.
               다음 상황에서만 사용하세요:
             </p>
-            <ul className="list-disc list-inside space-y-1.5 text-text-secondary">
+            <ul className="list-disc list-inside space-y-1.5 text-gray-600">
               <li>새로운 대화/에이전트 루프를 시작할 때</li>
               <li>사용자가 명시적으로 &quot;재시도&quot;를 요청했을 때</li>
               <li>Recovery Executor가 복구 전략을 적용한 후</li>
             </ul>
-            <p className="mt-3 text-accent-orange">
+            <p className="mt-3 text-amber-600">
               루프 도중에 무분별하게 <code>reset()</code>을 호출하면 서킷 브레이커의
               보호 기능이 무효화되므로, 반드시 정당한 이유가 있을 때만 사용하세요.
             </p>
@@ -353,48 +353,44 @@ export default function CircuitBreakerPage() {
 
       {/* ─── 4. 내부 구현 (Internals) ─── */}
       <RevealOnScroll>
-        <section className="mb-16">
-          <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
+        <section style={{ marginBottom: "64px" }}>
+          <h2 className="text-2xl font-extrabold flex items-center gap-3" style={{ marginBottom: "24px", marginTop: "0" }}>
             <span>⚙️</span> 내부 구현
           </h2>
 
-          <h3 className="text-lg font-bold mb-4">상태 전이 다이어그램</h3>
-          <p className="text-[13px] text-text-secondary mb-4 leading-relaxed">
+          <h3 className="text-lg font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>상태 전이 다이어그램</h3>
+          <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
             서킷 브레이커는 두 상태 사이를 전이합니다.
-            <code className="text-accent-green">&quot;closed&quot;</code>에서 시작하여,
-            차단 조건이 충족되면 <code className="text-accent-red">&quot;open&quot;</code>으로 이동합니다.
-            <code className="text-accent-cyan">reset()</code>을 호출하면 다시
-            <code className="text-accent-green">&quot;closed&quot;</code>로 돌아갑니다.
+            <code className="text-emerald-600">&quot;closed&quot;</code>에서 시작하여,
+            차단 조건이 충족되면 <code className="text-red-600">&quot;open&quot;</code>으로 이동합니다.
+            <code className="text-cyan-600">reset()</code>을 호출하면 다시
+            <code className="text-emerald-600">&quot;closed&quot;</code>로 돌아갑니다.
           </p>
 
           <MermaidDiagram
             title="CircuitBreaker 상태 전이"
             titleColor="purple"
-            chart={`stateDiagram-v2
-  [*] --> Closed
-  Closed --> Closed : 진전 있음\\n(파일 수정 or 출력 있음)
-  Closed --> Open : 무변경 5회 연속
-  Closed --> Open : 동일 에러 5회 연속
-  Closed --> Open : 최대 반복 횟수 초과
-  Open --> Closed : reset() 호출
-  Open --> [*] : 루프 종료
+            chart={`graph TD
+  START(("시작")) --> CLOSED["Closed<br/><small>정상 — 루프 실행 중</small>"]
+  CLOSED -->|"진전 있음<br/>(파일 수정 or 출력)"| CLOSED
+  CLOSED -->|"무변경 5회 연속"| OPEN["Open<br/><small>차단 — 루프 즉시 중단</small>"]
+  CLOSED -->|"동일 에러 5회 연속"| OPEN
+  CLOSED -->|"최대 반복 횟수 초과"| OPEN
+  OPEN -->|"reset() 호출"| CLOSED
+  OPEN -->|"루프 종료"| END(("종료"))
 
-  state Closed {
-    [*] --> 정상작동
-    정상작동 : iterationCount++
-    정상작동 : 카운터 분석
-  }
+  RECORD["recordIteration()<br/><small>반복 결과 기록 + 카운터 분석</small>"] -.-> CLOSED
+  REASON["openReason<br/><small>차단 사유 저장 + 추가 기록 무시</small>"] -.-> OPEN
 
-  state Open {
-    [*] --> 차단됨
-    차단됨 : reason 기록
-    차단됨 : 추가 기록 무시
-  }`}
+  style CLOSED fill:#dcfce7,stroke:#10b981,color:#065f46,stroke-width:2px
+  style OPEN fill:#fee2e2,stroke:#ef4444,color:#991b1b,stroke-width:2px
+  style RECORD fill:#f1f5f9,stroke:#64748b,color:#1e293b
+  style REASON fill:#f1f5f9,stroke:#64748b,color:#1e293b`}
           />
 
-          <h3 className="text-lg font-bold mb-4 mt-10">핵심 코드 분석</h3>
-          <p className="text-[13px] text-text-secondary mb-4 leading-relaxed">
-            <code className="text-accent-cyan">recordIteration()</code> 메서드의 핵심 로직입니다.
+          <h3 className="text-lg font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>핵심 코드 분석</h3>
+          <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
+            <code className="text-cyan-600">recordIteration()</code> 메서드의 핵심 로직입니다.
             매 반복마다 이 코드가 실행되어 &quot;진전&quot;을 판단합니다.
           </p>
           <CodeBlock>
@@ -431,13 +427,13 @@ export default function CircuitBreakerPage() {
             {"\n"}{"}"}
           </CodeBlock>
 
-          <div className="bg-bg-card border border-border rounded-xl p-5 mt-4 text-[13px] text-text-secondary space-y-2.5">
-            <p><strong className="text-text-primary">[1]</strong> 이미 차단된 상태에서는 추가 기록이 의미 없으므로 즉시 반환합니다.</p>
-            <p><strong className="text-text-primary">[2]</strong> 총 반복 횟수를 1 증가시킵니다. 이 값이 <code className="text-accent-cyan">maxIterations</code>에 도달하면 차단됩니다.</p>
-            <p><strong className="text-text-primary">[3-4]</strong> 파일 수정이나 텍스트 출력이 없으면 &quot;진전 없음&quot;으로 판단합니다. 진전이 있으면 무변경 카운터를 0으로 초기화합니다.</p>
-            <p><strong className="text-text-primary">[5-6]</strong> 에러가 발생했고 이전 반복과 <strong>정확히 같은</strong> 에러 메시지라면, 같은 문제를 반복하고 있다고 판단합니다.</p>
-            <p><strong className="text-text-primary">[7]</strong> 에러가 발생했지만 이전과 다른 에러라면, 카운터를 1로 리셋하고 새 에러를 저장합니다. (다른 문제이므로 연속 카운트 시작)</p>
-            <p><strong className="text-text-primary">[8]</strong> 에러 없이 성공하면 에러 관련 카운터를 모두 초기화합니다.</p>
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mt-4 text-[13px] text-gray-600 space-y-2.5">
+            <p><strong className="text-gray-900">[1]</strong> 이미 차단된 상태에서는 추가 기록이 의미 없으므로 즉시 반환합니다.</p>
+            <p><strong className="text-gray-900">[2]</strong> 총 반복 횟수를 1 증가시킵니다. 이 값이 <code className="text-cyan-600">maxIterations</code>에 도달하면 차단됩니다.</p>
+            <p><strong className="text-gray-900">[3-4]</strong> 파일 수정이나 텍스트 출력이 없으면 &quot;진전 없음&quot;으로 판단합니다. 진전이 있으면 무변경 카운터를 0으로 초기화합니다.</p>
+            <p><strong className="text-gray-900">[5-6]</strong> 에러가 발생했고 이전 반복과 <strong>정확히 같은</strong> 에러 메시지라면, 같은 문제를 반복하고 있다고 판단합니다.</p>
+            <p><strong className="text-gray-900">[7]</strong> 에러가 발생했지만 이전과 다른 에러라면, 카운터를 1로 리셋하고 새 에러를 저장합니다. (다른 문제이므로 연속 카운트 시작)</p>
+            <p><strong className="text-gray-900">[8]</strong> 에러 없이 성공하면 에러 관련 카운터를 모두 초기화합니다.</p>
           </div>
 
           <DeepDive title="차단 조건 검사 로직 상세">
@@ -461,8 +457,8 @@ export default function CircuitBreakerPage() {
               {"\n"}{"  "}<span className="kw">this</span>.<span className="prop">openReason</span> = <span className="str">`5 consecutive same error: ...`</span>;
               {"\n"}{"}"}
             </CodeBlock>
-            <p className="mt-3 text-text-secondary">
-              <code className="text-accent-orange">else if</code> 구조이므로, 여러 조건이 동시에 충족되더라도
+            <p className="mt-3 text-gray-600">
+              <code className="text-amber-600">else if</code> 구조이므로, 여러 조건이 동시에 충족되더라도
               <strong>첫 번째로 매칭되는 조건</strong>만 차단 이유로 기록됩니다.
               최대 반복 횟수 초과가 가장 높은 우선순위를 가집니다.
             </p>
@@ -472,24 +468,24 @@ export default function CircuitBreakerPage() {
 
       {/* ─── 5. 트러블슈팅 (Troubleshooting) ─── */}
       <RevealOnScroll>
-        <section className="mb-16">
-          <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
+        <section style={{ marginBottom: "64px" }}>
+          <h2 className="text-2xl font-extrabold flex items-center gap-3" style={{ marginBottom: "24px", marginTop: "0" }}>
             <span>🔧</span> 트러블슈팅
           </h2>
 
           {/* FAQ 1 */}
-          <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
-            <h4 className="text-sm font-bold text-accent-orange mb-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+            <h4 className="text-sm font-bold text-amber-600 mb-3">
               &quot;에이전트가 5번만에 멈춰요. 더 오래 실행하고 싶어요.&quot;
             </h4>
-            <p className="text-[13px] text-text-secondary leading-relaxed mb-3">
+            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
               두 가지 가능성이 있습니다:
             </p>
-            <ul className="text-[13px] text-text-secondary space-y-2 list-disc list-inside">
+            <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
               <li>
                 <strong>무변경 감지:</strong> LLM이 파일을 수정하지 않고 텍스트 출력도 하지 않는 반복이
                 5회 연속되면 차단됩니다. LLM의 응답이 빈 문자열인지 확인하세요.
-                <code className="text-accent-cyan">hasOutput: true</code>만 되어도 카운터가 초기화됩니다.
+                <code className="text-cyan-600">hasOutput: true</code>만 되어도 카운터가 초기화됩니다.
               </li>
               <li>
                 <strong>동일 에러 반복:</strong> 같은 에러 메시지가 5회 연속 발생하면 차단됩니다.
@@ -504,14 +500,14 @@ export default function CircuitBreakerPage() {
           </div>
 
           {/* FAQ 2 */}
-          <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
-            <h4 className="text-sm font-bold text-accent-orange mb-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
+            <h4 className="text-sm font-bold text-amber-600 mb-3">
               &quot;서킷 브레이커가 작동했는데 다시 시작하려면 어떻게 하나요?&quot;
             </h4>
-            <p className="text-[13px] text-text-secondary leading-relaxed mb-3">
-              <code className="text-accent-cyan">reset()</code>을 호출하면 모든 카운터가 초기화되고
-              상태가 <code className="text-accent-green">&quot;closed&quot;</code>로 돌아갑니다.
-              단, 실제 코드에서는 <code className="text-accent-cyan">Recovery Executor</code>가
+            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
+              <code className="text-cyan-600">reset()</code>을 호출하면 모든 카운터가 초기화되고
+              상태가 <code className="text-emerald-600">&quot;closed&quot;</code>로 돌아갑니다.
+              단, 실제 코드에서는 <code className="text-cyan-600">Recovery Executor</code>가
               이 판단을 자동으로 수행합니다.
             </p>
             <CodeBlock>
@@ -528,18 +524,18 @@ export default function CircuitBreakerPage() {
           </div>
 
           {/* FAQ 3 */}
-          <div className="bg-bg-card border border-border rounded-xl p-5">
-            <h4 className="text-sm font-bold text-accent-orange mb-3">
+          <div className="bg-white border border-gray-200 rounded-xl p-5">
+            <h4 className="text-sm font-bold text-amber-600 mb-3">
               &quot;shouldContinue()가 계속 true인데 루프가 끝나지 않아요&quot;
             </h4>
-            <p className="text-[13px] text-text-secondary leading-relaxed mb-3">
-              <code className="text-accent-cyan">recordIteration()</code>을 매 반복마다 호출하고 있는지
+            <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
+              <code className="text-cyan-600">recordIteration()</code>을 매 반복마다 호출하고 있는지
               확인하세요. 이 메서드를 호출하지 않으면 서킷 브레이커는 어떤 반복이 일어났는지 알 수 없으므로,
-              영원히 <code className="text-accent-green">&quot;closed&quot;</code> 상태를 유지합니다.
+              영원히 <code className="text-emerald-600">&quot;closed&quot;</code> 상태를 유지합니다.
             </p>
-            <p className="text-[13px] text-text-secondary leading-relaxed">
-              또한 <code className="text-accent-cyan">IterationResult</code>의 필드가 올바르게 채워져 있는지
-              확인하세요. 예를 들어, 파일을 수정했는데 <code className="text-accent-cyan">filesModified</code>에
+            <p className="text-[13px] text-gray-600 leading-relaxed">
+              또한 <code className="text-cyan-600">IterationResult</code>의 필드가 올바르게 채워져 있는지
+              확인하세요. 예를 들어, 파일을 수정했는데 <code className="text-cyan-600">filesModified</code>에
               빈 Set을 전달하면 &quot;무변경&quot;으로 잘못 판단합니다.
             </p>
           </div>
@@ -548,8 +544,8 @@ export default function CircuitBreakerPage() {
 
       {/* ─── 6. 관련 문서 (See Also) ─── */}
       <RevealOnScroll>
-        <section>
-          <h2 className="text-2xl font-extrabold mb-6 flex items-center gap-3">
+        <section style={{ marginBottom: "64px" }}>
+          <h2 className="text-2xl font-extrabold flex items-center gap-3" style={{ marginBottom: "24px", marginTop: "0" }}>
             <span>🔗</span> 관련 문서
           </h2>
           <SeeAlso

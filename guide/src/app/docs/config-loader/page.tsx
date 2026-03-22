@@ -12,46 +12,46 @@ import { SeeAlso } from "@/components/SeeAlso";
 
 export default function ConfigLoaderPage() {
   return (
-    <div className="min-h-screen pt-[100px] pb-20">
-      <div className="max-w-[900px] mx-auto px-4 sm:px-8">
+    <div className="min-h-screen" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+      <div className="center-narrow">
 
         {/* ───────────────────── 1. Header ───────────────────── */}
         <RevealOnScroll>
-        <div className="mb-14">
+        <div style={{ marginBottom: "48px" }}>
           <div className="flex items-center gap-3 mb-4 flex-wrap">
             <FilePath path="src/config/loader.ts" />
             <LayerBadge layer="leaf" />
           </div>
-          <h1 className="text-[clamp(28px,4vw,44px)] font-black tracking-tight leading-[1.15] mb-3">
-            <span className="bg-gradient-to-r from-accent-orange to-accent-cyan bg-clip-text text-transparent">
+          <h1 className="text-3xl font-bold tracking-tight leading-[1.15] mb-3">
+            <span className="text-gray-900">
               Config Loader
             </span>
           </h1>
-          <p className="text-[16px] text-text-secondary max-w-[640px]">
+          <p className="text-[16px] text-gray-600 max-w-[640px]">
             5단계 계층에서 설정을 병합하여 최종 설정을 생성하는 모듈입니다.
-            CLI 플래그부터 기본값까지, 우선순위에 따라 <span className="text-accent-cyan font-semibold">deepMerge</span>로 합쳐집니다.
+            CLI 플래그부터 기본값까지, 우선순위에 따라 <span className="text-cyan-600 font-semibold">deepMerge</span>로 합쳐집니다.
           </p>
         </div>
         </RevealOnScroll>
 
         {/* ───────────────────── 2. 개요 ───────────────────── */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-2xl font-extrabold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>{"📦"}</span> 개요
             </h2>
-            <p className="text-[14px] text-text-secondary leading-relaxed mb-4">
+            <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
               dbcode는 하나의 설정 파일에 의존하지 않습니다.
-              <strong className="text-text-primary"> 5개 레이어</strong>에서 설정을 모아
-              <span className="text-accent-cyan font-semibold"> deepMerge</span>로 합치고,
-              마지막에 <span className="text-accent-purple font-semibold">Zod 스키마</span>로 검증합니다.
+              <strong className="text-gray-900"> 5개 레이어</strong>에서 설정을 모아
+              <span className="text-cyan-600 font-semibold"> deepMerge</span>로 합치고,
+              마지막에 <span className="text-violet-600 font-semibold">Zod 스키마</span>로 검증합니다.
               이 구조 덕분에 기본값 위에 사용자 설정을 얹고, 프로젝트별로 덮어쓰고,
               환경변수나 CLI 플래그로 일회성 오버라이드를 할 수 있습니다.
             </p>
 
             <Callout type="tip" icon="💡">
               <strong>핵심 원칙:</strong> 높은 레벨이 낮은 레벨을 덮어씁니다.
-              CLI 플래그가 가장 높고, <code className="text-accent-cyan text-xs">defaults.ts</code>가 가장 낮습니다.
+              CLI 플래그가 가장 높고, <code className="text-cyan-600 text-xs">defaults.ts</code>가 가장 낮습니다.
             </Callout>
 
             <MermaidDiagram
@@ -68,38 +68,38 @@ export default function ConfigLoaderPage() {
   L2 -->|deepMerge| L3
   L3 -->|deepMerge| L4
   L4 -->|deepMerge| L5
-  L5 -->|Zod 검증| FINAL["✅ ResolvedConfig"]
+  L5 -->|Zod 검증| FINAL["✅ ResolvedConfig<br/><small>최종 검증된 설정 객체</small>"]
 
-  style L1 fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-  style L2 fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-  style L3 fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-  style L4 fill:#1e293b,stroke:#10b981,color:#f1f5f9
-  style L5 fill:#1e293b,stroke:#ef4444,color:#f1f5f9
-  style FINAL fill:#0f172a,stroke:#06b6d4,color:#06b6d4,stroke-width:2px`}
+  style L1 fill:#f1f5f9,stroke:#f59e0b,color:#1e293b
+  style L2 fill:#f1f5f9,stroke:#8b5cf6,color:#1e293b
+  style L3 fill:#f1f5f9,stroke:#3b82f6,color:#1e293b
+  style L4 fill:#f1f5f9,stroke:#10b981,color:#1e293b
+  style L5 fill:#f1f5f9,stroke:#ef4444,color:#1e293b
+  style FINAL fill:#f8fafc,stroke:#06b6d4,color:#06b6d4,stroke-width:2px`}
             />
 
-            <div className="bg-bg-card border border-border rounded-xl p-5 mt-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mt-4">
               <h4 className="text-[14px] font-bold mb-3">각 레이어가 존재하는 이유</h4>
-              <div className="flex flex-col gap-2.5 text-[13px] text-text-secondary">
+              <div className="flex flex-col gap-2.5 text-[13px] text-gray-600">
                 <div className="flex gap-3">
-                  <span className="text-accent-orange font-bold shrink-0 w-20">Level 1</span>
-                  <span>아무 설정 없이도 앱이 동작하도록 보장하는 <strong className="text-text-primary">안전망</strong></span>
+                  <span className="text-amber-600 font-bold shrink-0 w-20">Level 1</span>
+                  <span>아무 설정 없이도 앱이 동작하도록 보장하는 <strong className="text-gray-900">안전망</strong></span>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-accent-purple font-bold shrink-0 w-20">Level 2</span>
+                  <span className="text-violet-600 font-bold shrink-0 w-20">Level 2</span>
                   <span>사용자 전역 설정 &mdash; 모든 프로젝트에 공통 적용 (API 키, 테마 등)</span>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-accent-blue font-bold shrink-0 w-20">Level 3</span>
-                  <span>프로젝트별 설정 &mdash; 팀원과 공유 가능 (<code className="text-accent-cyan text-xs">.dbcode/config.json</code>을 Git에 커밋)</span>
+                  <span className="text-blue-600 font-bold shrink-0 w-20">Level 3</span>
+                  <span>프로젝트별 설정 &mdash; 팀원과 공유 가능 (<code className="text-cyan-600 text-xs">.dbcode/config.json</code>을 Git에 커밋)</span>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-accent-green font-bold shrink-0 w-20">Level 4</span>
+                  <span className="text-emerald-600 font-bold shrink-0 w-20">Level 4</span>
                   <span>환경변수 &mdash; CI/CD, Docker 등 배포 환경별 설정 주입</span>
                 </div>
                 <div className="flex gap-3">
-                  <span className="text-accent-red font-bold shrink-0 w-20">Level 5</span>
-                  <span>CLI 플래그 &mdash; <code className="text-accent-cyan text-xs">--model gpt-4o</code>처럼 일회성 덮어쓰기</span>
+                  <span className="text-red-600 font-bold shrink-0 w-20">Level 5</span>
+                  <span>CLI 플래그 &mdash; <code className="text-cyan-600 text-xs">--model gpt-4o</code>처럼 일회성 덮어쓰기</span>
                 </div>
               </div>
             </div>
@@ -108,21 +108,21 @@ export default function ConfigLoaderPage() {
 
         {/* ───────────────────── 3. 레퍼런스 ───────────────────── */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-2xl font-extrabold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>{"📋"}</span> 레퍼런스
             </h2>
 
             {/* loadConfig */}
             <div className="mb-8">
               <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                <span className="font-mono text-accent-cyan">loadConfig()</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">exported</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(139,92,246,0.1)] text-accent-purple">async</span>
+                <span className="font-mono text-cyan-600">loadConfig()</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">exported</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600">async</span>
               </h3>
-              <p className="text-[13px] text-text-secondary mb-3">
+              <p className="text-[13px] text-gray-600 mb-3">
                 5단계 계층 설정 로더의 메인 함수입니다. 모든 설정 소스를 병합하고 Zod 스키마로 검증하여
-                <code className="text-accent-cyan text-xs"> ResolvedConfig</code>를 반환합니다.
+                <code className="text-cyan-600 text-xs"> ResolvedConfig</code>를 반환합니다.
               </p>
 
               <ParamTable
@@ -143,7 +143,7 @@ export default function ConfigLoaderPage() {
               />
 
               <div className="mt-3">
-                <h4 className="text-[13px] font-bold text-text-primary mb-2">반환 타입: <code className="text-accent-purple text-xs">Promise&lt;ResolvedConfig&gt;</code></h4>
+                <h4 className="text-[13px] font-bold text-gray-900 mb-2">반환 타입: <code className="text-violet-600 text-xs">Promise&lt;ResolvedConfig&gt;</code></h4>
                 <ParamTable
                   params={[
                     {
@@ -163,58 +163,58 @@ export default function ConfigLoaderPage() {
               </div>
 
               <Callout type="warn" icon="⚠️">
-                Zod 검증에 실패하면 <code className="text-accent-red text-xs">ConfigError</code>를 던집니다.
-                에러 객체의 <code className="text-accent-cyan text-xs">errors</code> 필드에 어떤 필드가 잘못됐는지 상세 정보가 담겨 있습니다.
+                Zod 검증에 실패하면 <code className="text-red-600 text-xs">ConfigError</code>를 던집니다.
+                에러 객체의 <code className="text-cyan-600 text-xs">errors</code> 필드에 어떤 필드가 잘못됐는지 상세 정보가 담겨 있습니다.
               </Callout>
             </div>
 
             {/* loadEnvConfig (내부 함수이지만 중요) */}
             <div className="mb-8">
               <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                <span className="font-mono text-accent-cyan">loadEnvConfig()</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(100,116,139,0.1)] text-text-muted">internal</span>
+                <span className="font-mono text-cyan-600">loadEnvConfig()</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-50 text-gray-400">internal</span>
               </h3>
-              <p className="text-[13px] text-text-secondary mb-3">
-                환경변수에서 설정 관련 값을 추출합니다. <code className="text-accent-cyan text-xs">DBCODE_*</code> 변수가
-                <code className="text-accent-cyan text-xs"> OPENAI_*</code> 변수보다 우선합니다.
+              <p className="text-[13px] text-gray-600 mb-3">
+                환경변수에서 설정 관련 값을 추출합니다. <code className="text-cyan-600 text-xs">DBCODE_*</code> 변수가
+                <code className="text-cyan-600 text-xs"> OPENAI_*</code> 변수보다 우선합니다.
               </p>
 
-              <div className="bg-bg-card border border-border rounded-xl p-4 mb-3">
+              <div className="bg-white border border-gray-200 rounded-xl p-4 mb-3">
                 <h4 className="text-[13px] font-bold mb-3">환경변수 우선순위 매트릭스</h4>
                 <div className="overflow-x-auto">
                   <table className="w-full border-collapse text-[12px]">
                     <thead>
                       <tr>
-                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">설정</th>
-                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">1순위 (최우선)</th>
-                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">2순위</th>
-                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">3순위</th>
+                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">설정</th>
+                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">1순위 (최우선)</th>
+                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">2순위</th>
+                        <th className="p-2.5 text-left text-[10px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">3순위</th>
                       </tr>
                     </thead>
                     <tbody className="font-mono">
-                      <tr className="border-b border-[rgba(255,255,255,0.03)]">
-                        <td className="p-2.5 text-text-secondary">Base URL</td>
-                        <td className="p-2.5 text-accent-red font-semibold">LOCAL_API_BASE_URL</td>
-                        <td className="p-2.5 text-accent-orange">DBCODE_BASE_URL</td>
-                        <td className="p-2.5 text-accent-green">OPENAI_BASE_URL</td>
+                      <tr className="border-b border-gray-200">
+                        <td className="p-2.5 text-gray-600">Base URL</td>
+                        <td className="p-2.5 text-red-600 font-semibold">LOCAL_API_BASE_URL</td>
+                        <td className="p-2.5 text-amber-600">DBCODE_BASE_URL</td>
+                        <td className="p-2.5 text-emerald-600">OPENAI_BASE_URL</td>
                       </tr>
-                      <tr className="border-b border-[rgba(255,255,255,0.03)]">
-                        <td className="p-2.5 text-text-secondary">API Key</td>
-                        <td className="p-2.5 text-accent-orange font-semibold">DBCODE_API_KEY</td>
-                        <td className="p-2.5 text-accent-green">OPENAI_API_KEY</td>
-                        <td className="p-2.5 text-text-muted">&mdash;</td>
+                      <tr className="border-b border-gray-200">
+                        <td className="p-2.5 text-gray-600">API Key</td>
+                        <td className="p-2.5 text-amber-600 font-semibold">DBCODE_API_KEY</td>
+                        <td className="p-2.5 text-emerald-600">OPENAI_API_KEY</td>
+                        <td className="p-2.5 text-gray-400">&mdash;</td>
                       </tr>
-                      <tr className="border-b border-[rgba(255,255,255,0.03)]">
-                        <td className="p-2.5 text-text-secondary">Model</td>
-                        <td className="p-2.5 text-accent-red font-semibold">LOCAL_MODEL</td>
-                        <td className="p-2.5 text-accent-orange">DBCODE_MODEL</td>
-                        <td className="p-2.5 text-accent-green">OPENAI_MODEL</td>
+                      <tr className="border-b border-gray-200">
+                        <td className="p-2.5 text-gray-600">Model</td>
+                        <td className="p-2.5 text-red-600 font-semibold">LOCAL_MODEL</td>
+                        <td className="p-2.5 text-amber-600">DBCODE_MODEL</td>
+                        <td className="p-2.5 text-emerald-600">OPENAI_MODEL</td>
                       </tr>
                       <tr>
-                        <td className="p-2.5 text-text-secondary">Verbose</td>
-                        <td className="p-2.5 text-accent-orange font-semibold">DBCODE_VERBOSE</td>
-                        <td className="p-2.5 text-text-muted">&mdash;</td>
-                        <td className="p-2.5 text-text-muted">&mdash;</td>
+                        <td className="p-2.5 text-gray-600">Verbose</td>
+                        <td className="p-2.5 text-amber-600 font-semibold">DBCODE_VERBOSE</td>
+                        <td className="p-2.5 text-gray-400">&mdash;</td>
+                        <td className="p-2.5 text-gray-400">&mdash;</td>
                       </tr>
                     </tbody>
                   </table>
@@ -222,20 +222,20 @@ export default function ConfigLoaderPage() {
               </div>
 
               <Callout type="info" icon="🔑">
-                <code className="text-accent-cyan text-xs">OPENAI_API_KEY</code>만 설정되고 Base URL이 없으면,
-                자동으로 <code className="text-accent-cyan text-xs">https://api.openai.com/v1</code>이 사용됩니다.
-                로컬 LLM을 쓸 때는 반드시 <code className="text-accent-cyan text-xs">LOCAL_API_BASE_URL</code>이나
-                <code className="text-accent-cyan text-xs"> DBCODE_BASE_URL</code>을 함께 설정하세요.
+                <code className="text-cyan-600 text-xs">OPENAI_API_KEY</code>만 설정되고 Base URL이 없으면,
+                자동으로 <code className="text-cyan-600 text-xs">https://api.openai.com/v1</code>이 사용됩니다.
+                로컬 LLM을 쓸 때는 반드시 <code className="text-cyan-600 text-xs">LOCAL_API_BASE_URL</code>이나
+                <code className="text-cyan-600 text-xs"> DBCODE_BASE_URL</code>을 함께 설정하세요.
               </Callout>
             </div>
 
             {/* deepMerge */}
             <div className="mb-4">
               <h3 className="text-lg font-bold mb-2 flex items-center gap-2">
-                <span className="font-mono text-accent-cyan">deepMerge()</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(100,116,139,0.1)] text-text-muted">internal</span>
+                <span className="font-mono text-cyan-600">deepMerge()</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-50 text-gray-400">internal</span>
               </h3>
-              <p className="text-[13px] text-text-secondary mb-3">
+              <p className="text-[13px] text-gray-600 mb-3">
                 두 객체를 재귀적으로 깊은 병합하는 유틸리티. 양쪽 모두 객체(배열 제외)이면 재귀 병합하고,
                 그 외에는 source 값이 target 값을 덮어씁니다. 원본은 변경하지 않습니다 (불변성 보장).
               </p>
@@ -261,15 +261,15 @@ export default function ConfigLoaderPage() {
 
         {/* ───────────────────── 4. 사용법 ───────────────────── */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-2xl font-extrabold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>{"🚀"}</span> 사용법
             </h2>
 
-            <h3 className="text-[15px] font-bold mb-3">기본 사용 (애플리케이션 부팅 시)</h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              앱이 시작될 때 <code className="text-accent-cyan text-xs">loadConfig()</code>를 호출합니다.
-              CLI에서 받은 플래그를 <code className="text-accent-cyan text-xs">cliOverrides</code>로 전달하면
+            <h3 className="text-[15px] font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>기본 사용 (애플리케이션 부팅 시)</h3>
+            <p className="text-[13px] text-gray-600 mb-3">
+              앱이 시작될 때 <code className="text-cyan-600 text-xs">loadConfig()</code>를 호출합니다.
+              CLI에서 받은 플래그를 <code className="text-cyan-600 text-xs">cliOverrides</code>로 전달하면
               가장 높은 우선순위로 적용됩니다.
             </p>
 
@@ -306,10 +306,10 @@ export default function ConfigLoaderPage() {
               <span className="text-[#8b949e]">{'// sources.get("llm") === "cli-flags"'}</span>
             </CodeBlock>
 
-            <h3 className="text-[15px] font-bold mb-3 mt-6">설정 파일로 오버라이드하기</h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              <code className="text-accent-cyan text-xs">~/.dbcode/config.json</code> (사용자 전역) 또는{" "}
-              <code className="text-accent-cyan text-xs">.dbcode/config.json</code> (프로젝트별)에
+            <h3 className="text-[15px] font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>설정 파일로 오버라이드하기</h3>
+            <p className="text-[13px] text-gray-600 mb-3">
+              <code className="text-cyan-600 text-xs">~/.dbcode/config.json</code> (사용자 전역) 또는{" "}
+              <code className="text-cyan-600 text-xs">.dbcode/config.json</code> (프로젝트별)에
               JSON 파일을 만들면 자동으로 로딩됩니다. 특정 키만 지정하면 나머지는 기본값이 유지됩니다.
             </p>
 
@@ -339,9 +339,9 @@ export default function ConfigLoaderPage() {
             <DeepDive title="환경변수로 설정하기 (CI/CD, Docker)">
               <p className="mb-3">
                 배포 환경에서는 설정 파일 대신 환경변수를 사용하는 것이 일반적입니다.
-                dbcode는 <code className="text-accent-cyan text-xs">DBCODE_*</code>,{" "}
-                <code className="text-accent-cyan text-xs">OPENAI_*</code>,{" "}
-                <code className="text-accent-cyan text-xs">LOCAL_*</code> 접두사의 환경변수를 자동 인식합니다.
+                dbcode는 <code className="text-cyan-600 text-xs">DBCODE_*</code>,{" "}
+                <code className="text-cyan-600 text-xs">OPENAI_*</code>,{" "}
+                <code className="text-cyan-600 text-xs">LOCAL_*</code> 접두사의 환경변수를 자동 인식합니다.
               </p>
 
               <CodeBlock>
@@ -371,16 +371,16 @@ export default function ConfigLoaderPage() {
               </CodeBlock>
 
               <Callout type="warn" icon="⚠️">
-                <code className="text-accent-cyan text-xs">LOCAL_API_BASE_URL</code>과{" "}
-                <code className="text-accent-cyan text-xs">LOCAL_MODEL</code>은 최우선순위입니다.
-                이 변수들이 설정되면 <code className="text-accent-cyan text-xs">DBCODE_*</code>이나{" "}
-                <code className="text-accent-cyan text-xs">OPENAI_*</code> 값은 무시됩니다.
+                <code className="text-cyan-600 text-xs">LOCAL_API_BASE_URL</code>과{" "}
+                <code className="text-cyan-600 text-xs">LOCAL_MODEL</code>은 최우선순위입니다.
+                이 변수들이 설정되면 <code className="text-cyan-600 text-xs">DBCODE_*</code>이나{" "}
+                <code className="text-cyan-600 text-xs">OPENAI_*</code> 값은 무시됩니다.
               </Callout>
             </DeepDive>
 
-            <h3 className="text-[15px] font-bold mb-3 mt-6">출처 추적하기 (디버깅용)</h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              <code className="text-accent-cyan text-xs">sources</code> Map을 사용하면
+            <h3 className="text-[15px] font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>출처 추적하기 (디버깅용)</h3>
+            <p className="text-[13px] text-gray-600 mb-3">
+              <code className="text-cyan-600 text-xs">sources</code> Map을 사용하면
               특정 설정이 어디서 왔는지 확인할 수 있어, &ldquo;왜 이 값이 적용됐지?&rdquo; 문제를 쉽게 디버깅할 수 있습니다.
             </p>
 
@@ -420,15 +420,15 @@ export default function ConfigLoaderPage() {
 
         {/* ───────────────────── 5. 내부 구현 ───────────────────── */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-2xl font-extrabold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>{"🔍"}</span> 내부 구현
             </h2>
 
-            <h3 className="text-[15px] font-bold mb-3">deepMerge 알고리즘</h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              설정 병합의 핵심은 <code className="text-accent-cyan text-xs">deepMerge</code> 함수입니다.
-              단순 <code className="text-accent-cyan text-xs">Object.assign</code>과 달리,
+            <h3 className="text-[15px] font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>deepMerge 알고리즘</h3>
+            <p className="text-[13px] text-gray-600 mb-3">
+              설정 병합의 핵심은 <code className="text-cyan-600 text-xs">deepMerge</code> 함수입니다.
+              단순 <code className="text-cyan-600 text-xs">Object.assign</code>과 달리,
               중첩된 객체도 재귀적으로 병합하여 하위 키를 보존합니다.
             </p>
 
@@ -436,27 +436,27 @@ export default function ConfigLoaderPage() {
               title="deepMerge 동작 흐름"
               titleColor="cyan"
               chart={`flowchart TD
-  START["deepMerge(target, source)"] --> COPY["result = { ...target }"]
-  COPY --> LOOP["source의 각 key 순회"]
+  START["deepMerge(target, source)<br/><small>두 객체를 재귀 병합</small>"] --> COPY["result = { ...target }<br/><small>target 얕은 복사</small>"]
+  COPY --> LOOP["source의 각 key 순회<br/><small>source 키 반복 처리</small>"]
   LOOP --> CHECK{"양쪽 모두\\n순수 객체?\\n(배열 아님)"}
-  CHECK -->|Yes| RECURSE["result[key] =\\ndeepMerge(targetVal, sourceVal)"]
-  CHECK -->|No| OVERWRITE["result[key] = sourceVal"]
-  RECURSE --> NEXT["다음 key"]
+  CHECK -->|Yes| RECURSE["result[key] =\\ndeepMerge(targetVal, sourceVal)<br/><small>중첩 객체 재귀 병합</small>"]
+  CHECK -->|No| OVERWRITE["result[key] = sourceVal<br/><small>source 값으로 덮어쓰기</small>"]
+  RECURSE --> NEXT["다음 key<br/><small>다음 키로 이동</small>"]
   OVERWRITE --> NEXT
   NEXT -->|더 있음| LOOP
-  NEXT -->|끝| RETURN["return result"]
+  NEXT -->|끝| RETURN["return result<br/><small>병합 완료된 객체 반환</small>"]
 
-  style START fill:#1e293b,stroke:#06b6d4,color:#f1f5f9
-  style CHECK fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-  style RECURSE fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-  style OVERWRITE fill:#1e293b,stroke:#ef4444,color:#f1f5f9
-  style RETURN fill:#0f172a,stroke:#10b981,color:#10b981,stroke-width:2px`}
+  style START fill:#f1f5f9,stroke:#06b6d4,color:#1e293b
+  style CHECK fill:#f1f5f9,stroke:#f59e0b,color:#1e293b
+  style RECURSE fill:#f1f5f9,stroke:#8b5cf6,color:#1e293b
+  style OVERWRITE fill:#f1f5f9,stroke:#ef4444,color:#1e293b
+  style RETURN fill:#f8fafc,stroke:#10b981,color:#10b981,stroke-width:2px`}
             />
 
-            <h3 className="text-[15px] font-bold mb-3 mt-6">병합 예시</h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              아래 예시를 보면 <code className="text-accent-cyan text-xs">model</code>만 덮어쓰이고,
-              <code className="text-accent-cyan text-xs"> timeout</code>은 원본 값이 유지되는 것을 확인할 수 있습니다.
+            <h3 className="text-[15px] font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>병합 예시</h3>
+            <p className="text-[13px] text-gray-600 mb-3">
+              아래 예시를 보면 <code className="text-cyan-600 text-xs">model</code>만 덮어쓰이고,
+              <code className="text-cyan-600 text-xs"> timeout</code>은 원본 값이 유지되는 것을 확인할 수 있습니다.
             </p>
 
             <CodeBlock>
@@ -496,14 +496,14 @@ export default function ConfigLoaderPage() {
 
             <Callout type="info" icon="📝">
               <strong>배열은 재귀 병합하지 않습니다.</strong> 배열은 source 값으로 <em>통째로 교체</em>됩니다.
-              예를 들어 <code className="text-accent-cyan text-xs">permissions.allow</code>를 프로젝트 설정에서 지정하면
+              예를 들어 <code className="text-cyan-600 text-xs">permissions.allow</code>를 프로젝트 설정에서 지정하면
               사용자 설정의 allow 리스트는 무시됩니다.
             </Callout>
 
-            <h3 className="text-[15px] font-bold mb-3 mt-6">설정 파일 로딩 전략</h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              <code className="text-accent-cyan text-xs">loadJsonFile()</code>은 파일이 없거나 파싱에 실패하면
-              <code className="text-accent-cyan text-xs"> undefined</code>를 반환합니다. 에러를 던지지 않는 &ldquo;조용한 실패&rdquo; 전략으로,
+            <h3 className="text-[15px] font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>설정 파일 로딩 전략</h3>
+            <p className="text-[13px] text-gray-600 mb-3">
+              <code className="text-cyan-600 text-xs">loadJsonFile()</code>은 파일이 없거나 파싱에 실패하면
+              <code className="text-cyan-600 text-xs"> undefined</code>를 반환합니다. 에러를 던지지 않는 &ldquo;조용한 실패&rdquo; 전략으로,
               설정 파일이 선택적(optional)이라는 설계 의도를 반영합니다.
             </p>
 
@@ -528,85 +528,85 @@ export default function ConfigLoaderPage() {
 
         {/* ───────────────────── 6. 트러블슈팅 ───────────────────── */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-2xl font-extrabold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>{"🔧"}</span> 트러블슈팅
             </h2>
 
             <div className="flex flex-col gap-4">
               {/* FAQ 1 */}
-              <div className="bg-bg-card border border-border rounded-xl p-5">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <h4 className="text-[14px] font-bold mb-2 flex items-center gap-2">
-                  <span className="text-accent-red">Q.</span> 설정 파일을 수정했는데 적용이 안 돼요
+                  <span className="text-red-600">Q.</span> 설정 파일을 수정했는데 적용이 안 돼요
                 </h4>
-                <div className="text-[13px] text-text-secondary leading-relaxed">
+                <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p className="mb-2">
-                    <strong className="text-text-primary">원인 1:</strong> 더 높은 우선순위 소스가 덮어쓰고 있습니다.
-                    <code className="text-accent-cyan text-xs"> sources.get(&quot;llm&quot;)</code>으로 실제 출처를 확인하세요.
+                    <strong className="text-gray-900">원인 1:</strong> 더 높은 우선순위 소스가 덮어쓰고 있습니다.
+                    <code className="text-cyan-600 text-xs"> sources.get(&quot;llm&quot;)</code>으로 실제 출처를 확인하세요.
                   </p>
                   <p className="mb-2">
-                    <strong className="text-text-primary">원인 2:</strong> JSON 문법 오류.{" "}
-                    <code className="text-accent-cyan text-xs">loadJsonFile</code>은 파싱 실패 시 조용히{" "}
-                    <code className="text-accent-cyan text-xs">undefined</code>를 반환합니다.
-                    터미널에서 <code className="text-accent-cyan text-xs">cat .dbcode/config.json | python3 -m json.tool</code>로 문법을 확인해보세요.
+                    <strong className="text-gray-900">원인 2:</strong> JSON 문법 오류.{" "}
+                    <code className="text-cyan-600 text-xs">loadJsonFile</code>은 파싱 실패 시 조용히{" "}
+                    <code className="text-cyan-600 text-xs">undefined</code>를 반환합니다.
+                    터미널에서 <code className="text-cyan-600 text-xs">cat .dbcode/config.json | python3 -m json.tool</code>로 문법을 확인해보세요.
                   </p>
                   <p>
-                    <strong className="text-text-primary">원인 3:</strong> 파일 경로가 틀렸습니다.
-                    사용자 설정은 <code className="text-accent-cyan text-xs">~/.dbcode/config.json</code>,
-                    프로젝트 설정은 <code className="text-accent-cyan text-xs">{"{projectDir}"}/.dbcode/config.json</code>이어야 합니다.
+                    <strong className="text-gray-900">원인 3:</strong> 파일 경로가 틀렸습니다.
+                    사용자 설정은 <code className="text-cyan-600 text-xs">~/.dbcode/config.json</code>,
+                    프로젝트 설정은 <code className="text-cyan-600 text-xs">{"{projectDir}"}/.dbcode/config.json</code>이어야 합니다.
                   </p>
                 </div>
               </div>
 
               {/* FAQ 2 */}
-              <div className="bg-bg-card border border-border rounded-xl p-5">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <h4 className="text-[14px] font-bold mb-2 flex items-center gap-2">
-                  <span className="text-accent-red">Q.</span> 환경변수를 설정했는데 로컬 LLM에 연결이 안 돼요
+                  <span className="text-red-600">Q.</span> 환경변수를 설정했는데 로컬 LLM에 연결이 안 돼요
                 </h4>
-                <div className="text-[13px] text-text-secondary leading-relaxed">
+                <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p className="mb-2">
-                    <strong className="text-text-primary">확인 1:</strong>{" "}
-                    <code className="text-accent-cyan text-xs">LOCAL_API_BASE_URL</code>을 설정했나요?
-                    <code className="text-accent-cyan text-xs"> OPENAI_API_KEY</code>만 설정하면 자동으로 OpenAI API로 연결됩니다.
+                    <strong className="text-gray-900">확인 1:</strong>{" "}
+                    <code className="text-cyan-600 text-xs">LOCAL_API_BASE_URL</code>을 설정했나요?
+                    <code className="text-cyan-600 text-xs"> OPENAI_API_KEY</code>만 설정하면 자동으로 OpenAI API로 연결됩니다.
                   </p>
                   <p>
-                    <strong className="text-text-primary">확인 2:</strong> URL에{" "}
-                    <code className="text-accent-cyan text-xs">/chat/completions</code> 경로가 포함되어 있지 않은지 확인하세요.
+                    <strong className="text-gray-900">확인 2:</strong> URL에{" "}
+                    <code className="text-cyan-600 text-xs">/chat/completions</code> 경로가 포함되어 있지 않은지 확인하세요.
                     LLM 클라이언트가 자동으로 추가합니다.
-                    올바른 예: <code className="text-accent-cyan text-xs">http://localhost:11434/v1</code>
+                    올바른 예: <code className="text-cyan-600 text-xs">http://localhost:11434/v1</code>
                   </p>
                 </div>
               </div>
 
               {/* FAQ 3 */}
-              <div className="bg-bg-card border border-border rounded-xl p-5">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <h4 className="text-[14px] font-bold mb-2 flex items-center gap-2">
-                  <span className="text-accent-red">Q.</span> ConfigError: Invalid configuration 에러가 발생해요
+                  <span className="text-red-600">Q.</span> ConfigError: Invalid configuration 에러가 발생해요
                 </h4>
-                <div className="text-[13px] text-text-secondary leading-relaxed">
+                <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p className="mb-2">
                     Zod 스키마 검증에 실패한 것입니다. 에러 메시지의{" "}
-                    <code className="text-accent-cyan text-xs">errors</code> 필드를 확인하세요.
+                    <code className="text-cyan-600 text-xs">errors</code> 필드를 확인하세요.
                   </p>
                   <p>
-                    흔한 원인: <code className="text-accent-cyan text-xs">temperature</code>가 0~2 범위 밖,{" "}
-                    <code className="text-accent-cyan text-xs">baseUrl</code>이 유효한 URL이 아님,{" "}
-                    <code className="text-accent-cyan text-xs">permissionMode</code>에 잘못된 문자열을 넣었을 때 등.
+                    흔한 원인: <code className="text-cyan-600 text-xs">temperature</code>가 0~2 범위 밖,{" "}
+                    <code className="text-cyan-600 text-xs">baseUrl</code>이 유효한 URL이 아님,{" "}
+                    <code className="text-cyan-600 text-xs">permissionMode</code>에 잘못된 문자열을 넣었을 때 등.
                   </p>
                 </div>
               </div>
 
               {/* FAQ 4 */}
-              <div className="bg-bg-card border border-border rounded-xl p-5">
+              <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <h4 className="text-[14px] font-bold mb-2 flex items-center gap-2">
-                  <span className="text-accent-red">Q.</span> 프로젝트 설정의 permissions.allow가 사용자 설정과 합쳐지지 않아요
+                  <span className="text-red-600">Q.</span> 프로젝트 설정의 permissions.allow가 사용자 설정과 합쳐지지 않아요
                 </h4>
-                <div className="text-[13px] text-text-secondary leading-relaxed">
+                <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p>
-                    <strong className="text-text-primary">이것은 의도된 동작입니다.</strong>{" "}
-                    <code className="text-accent-cyan text-xs">deepMerge</code>는 배열을 재귀 병합하지 않고{" "}
+                    <strong className="text-gray-900">이것은 의도된 동작입니다.</strong>{" "}
+                    <code className="text-cyan-600 text-xs">deepMerge</code>는 배열을 재귀 병합하지 않고{" "}
                     <em>통째로 교체</em>합니다. 프로젝트 설정에서{" "}
-                    <code className="text-accent-cyan text-xs">permissions.allow</code>를 지정하면
+                    <code className="text-cyan-600 text-xs">permissions.allow</code>를 지정하면
                     사용자 설정의 리스트가 완전히 대체됩니다.
                     두 리스트를 합치려면 프로젝트 설정에 사용자 설정의 항목도 포함시키세요.
                   </p>
@@ -618,8 +618,8 @@ export default function ConfigLoaderPage() {
 
         {/* ───────────────────── 7. 관련 문서 ───────────────────── */}
         <RevealOnScroll>
-          <section className="mb-8">
-            <h2 className="text-2xl font-extrabold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-2xl font-extrabold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>{"🔗"}</span> 관련 문서
             </h2>
 

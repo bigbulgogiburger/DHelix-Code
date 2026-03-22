@@ -11,35 +11,35 @@ import { RevealOnScroll } from "../RevealOnScroll";
 const compactionChart = `graph TB
     subgraph L1["Layer 1: Microcompaction"]
         direction LR
-        TOOL_OUT["도구 결과 200+ tokens"] --> SIZE_CHECK{"크기 > 200?"}
-        SIZE_CHECK -->|"Yes"| COLD["Cold Storage 디스크 저장"]
-        SIZE_CHECK -->|"No"| KEEP["인라인 유지"]
-        COLD --> REF["ColdStorageRef 참조만 남김"]
+        TOOL_OUT["도구 결과 200+ tokens<br/><small>토큰이 200 이상인 도구 출력만 대상</small>"] --> SIZE_CHECK{"크기 > 200?<br/><small>토큰 수 기준 필터링</small>"}
+        SIZE_CHECK -->|"Yes"| COLD["Cold Storage 디스크 저장<br/><small>JSON 파일로 디스크에 영구 저장</small>"]
+        SIZE_CHECK -->|"No"| KEEP["인라인 유지<br/><small>작은 출력은 메시지에 그대로 유지</small>"]
+        COLD --> REF["ColdStorageRef 참조만 남김<br/><small>원본 대신 경로 참조로 대체</small>"]
     end
     subgraph L2["Layer 2: Auto-compaction (83.5%)"]
         direction LR
-        USAGE["컨텍스트 사용률 >= 83.5%"] --> PRESERVE["보존: system + 최근 N턴"]
-        USAGE --> COMPRESS["압축: 오래된 메시지"]
-        COMPRESS --> SUMMARY["LLM 요약 핵심 정보 추출"]
-        SUMMARY --> MERGED["요약 + 보존 = 새 컨텍스트"]
+        USAGE["컨텍스트 사용률 >= 83.5%<br/><small>토큰 사용률이 임계값 초과 시 트리거</small>"] --> PRESERVE["보존: system + 최근 N턴<br/><small>시스템 프롬프트와 최근 대화는 보호</small>"]
+        USAGE --> COMPRESS["압축: 오래된 메시지<br/><small>오래된 메시지를 LLM으로 요약</small>"]
+        COMPRESS --> SUMMARY["LLM 요약 핵심 정보 추출<br/><small>핵심 결정사항 + 코드 변경사항 요약</small>"]
+        SUMMARY --> MERGED["요약 + 보존 = 새 컨텍스트<br/><small>요약 결과와 보존 메시지를 합쳐 새 컨텍스트 구성</small>"]
     end
     subgraph L3["Layer 3: Rehydration"]
         direction LR
-        COMPACT_DONE["압축 완료"] --> STRATEGY{"리하이드 전략"}
-        STRATEGY -->|"recency"| RECENT_F["최근 접근 파일 5개"]
-        STRATEGY -->|"frequency"| FREQ_F["자주 접근 파일 5개"]
-        STRATEGY -->|"mixed"| MIX_F["복합 우선순위 파일 5개"]
+        COMPACT_DONE["압축 완료<br/><small>Auto-compaction 결과물</small>"] --> STRATEGY{"리하이드 전략<br/><small>어떤 Cold Storage 항목을 복원할지 결정</small>"}
+        STRATEGY -->|"recency"| RECENT_F["최근 접근 파일 5개<br/><small>가장 최근에 저장된 항목부터 복원</small>"]
+        STRATEGY -->|"frequency"| FREQ_F["자주 접근 파일 5개<br/><small>자주 참조된 항목을 우선 복원</small>"]
+        STRATEGY -->|"mixed"| MIX_F["복합 우선순위 파일 5개<br/><small>최근성 + 빈도를 종합하여 복원</small>"]
     end
     L1 --> L2
     L2 --> L3
-    style L1 fill:#0d2137,stroke:#06b6d4,color:#f1f5f9
-    style L2 fill:#1a1a3e,stroke:#8b5cf6,color:#f1f5f9
-    style L3 fill:#0d2a1a,stroke:#10b981,color:#f1f5f9`;
+    style L1 fill:#cffafe,stroke:#06b6d4,color:#1e293b
+    style L2 fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+    style L3 fill:#dcfce7,stroke:#10b981,color:#1e293b`;
 
 export function ContextSection() {
   return (
-    <section id="context" className="py-20 bg-bg-secondary">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
+    <section id="context" className="py-16 bg-violet-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+      <div className="center-container">
         <RevealOnScroll>
           <SectionHeader
             label="MODULE 02"
@@ -56,8 +56,8 @@ export function ContextSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mb-4">Cold Storage 내부 구조</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>Cold Storage 내부 구조</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ gap: "20px" }}>
             <CodeBlock>
               <span className="cm">{"// Cold Storage 참조"}</span>{"\n"}
               <span className="kw">interface</span> <span className="type">ColdStorageRef</span> {"{"}{"\n"}
@@ -89,11 +89,11 @@ export function ContextSection() {
         <RevealOnScroll>
           <Callout type="tip" icon="🔑">
             <strong>핵심 상태 변수:</strong>{" "}
-            <code className="bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 rounded text-xs">coldRefs: Map</code>,{" "}
-            <code className="bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 rounded text-xs">recentFiles: string[]</code>,{" "}
-            <code className="bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 rounded text-xs">fileAccessFrequency: Map</code>,{" "}
-            <code className="bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 rounded text-xs">compactionCount</code>,{" "}
-            <code className="bg-[rgba(255,255,255,0.05)] px-1.5 py-0.5 rounded text-xs">totalTokensSaved</code>
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">coldRefs: Map</code>,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">recentFiles: string[]</code>,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">fileAccessFrequency: Map</code>,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">compactionCount</code>,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">totalTokensSaved</code>
           </Callout>
         </RevealOnScroll>
 

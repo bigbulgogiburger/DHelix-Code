@@ -10,39 +10,39 @@ import { RevealOnScroll } from "../RevealOnScroll";
 const toolPipelineChart = `graph TD
     subgraph REG["Registration Phase"]
         direction LR
-        BUILTIN["16 Built-in"] --> REGISTRY["ToolRegistry Map"]
-        MCP_TOOLS["MCP Tools mcp__*"] -->|"Deferred"| REGISTRY
-        HOT["Hot Tools 6개"] --> REGISTRY
+        BUILTIN["16 Built-in<br/><small>Read Edit Write Bash 등 16개</small>"] --> REGISTRY["ToolRegistry Map<br/><small>이름→정의 Map 저장소</small>"]
+        MCP_TOOLS["MCP Tools mcp__*<br/><small>MCP 서버에서 브릿지된 도구</small>"] -->|"Deferred"| REGISTRY
+        HOT["Hot Tools 6개<br/><small>자주 사용되는 도구 먼저 등록</small>"] --> REGISTRY
     end
     subgraph SCHEMA["Schema Phase"]
         direction LR
-        TIER{"모델 티어"} -->|"HIGH"| FULL["Full Schema"]
-        TIER -->|"MEDIUM"| REDUCED["Reduced Schema"]
-        TIER -->|"LOW"| MINIMAL["Minimal + few-shot"]
+        TIER{"모델 티어<br/><small>high/medium/low 능력 감지</small>"} -->|"HIGH"| FULL["Full Schema<br/><small>모든 파라미터 포함 high 모델용</small>"]
+        TIER -->|"MEDIUM"| REDUCED["Reduced Schema<br/><small>필수 파라미터만 medium 모델용</small>"]
+        TIER -->|"LOW"| MINIMAL["Minimal + few-shot<br/><small>이름+설명만 low 모델용</small>"]
     end
     subgraph EXEC["Execution Phase"]
         direction TB
-        CALL["LLM tool_call"] --> CORRECT["tool-call-corrector"]
-        CORRECT --> ZOD["Zod 스키마 검증"]
-        ZOD --> ABORT["AbortController"]
-        ABORT --> RUN["tool.execute()"]
-        RUN --> RETRY_T{"일시적 에러?"}
-        RETRY_T -->|"Yes"| BACKOFF["지수 백오프 재시도"]
-        RETRY_T -->|"No"| RESULT["ToolResult"]
+        CALL["LLM tool_call<br/><small>LLM이 반환한 tool_call 객체</small>"] --> CORRECT["tool-call-corrector<br/><small>잘못된 경로/타입 자동 수정</small>"]
+        CORRECT --> ZOD["Zod 스키마 검증<br/><small>스키마 기반 타입 검증</small>"]
+        ZOD --> ABORT["AbortController<br/><small>타임아웃+취소 신호 체이닝</small>"]
+        ABORT --> RUN["tool.execute()<br/><small>tool.execute 실행</small>"]
+        RUN --> RETRY_T{"일시적 에러?<br/><small>ECONNRESET 등 1회 재시도</small>"}
+        RETRY_T -->|"Yes"| BACKOFF["지수 백오프 재시도<br/><small>1s→2s 대기</small>"]
+        RETRY_T -->|"No"| RESULT["ToolResult<br/><small>ToolResult를 에이전트 루프에 전달</small>"]
         BACKOFF --> RUN
     end
     REG --> SCHEMA
     SCHEMA --> EXEC
-    style REG fill:#0d2a1a,stroke:#10b981,color:#f1f5f9
-    style SCHEMA fill:#1a1a3e,stroke:#8b5cf6,color:#f1f5f9
-    style EXEC fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9`;
+    style REG fill:#dcfce7,stroke:#10b981,color:#1e293b
+    style SCHEMA fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+    style EXEC fill:#dbeafe,stroke:#3b82f6,color:#1e293b`;
 
 const hotTools = ["file_read", "file_write", "file_edit", "bash_exec", "glob_search", "grep_search"];
 
 export function ToolsSection() {
   return (
-    <section id="tools" className="py-20 bg-bg-secondary">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
+    <section id="tools" className="py-16 bg-blue-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+      <div className="center-container">
         <RevealOnScroll>
           <SectionHeader
             label="MODULE 04"
@@ -66,8 +66,8 @@ export function ToolsSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mb-4">핵심 인터페이스: ToolDefinition</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>핵심 인터페이스: ToolDefinition</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ gap: "20px" }}>
             <CodeBlock>
               <span className="cm">{"// 도구 정의 — 새 도구 추가의 기본 단위"}</span>{"\n"}
               <span className="kw">interface</span> <span className="type">{"ToolDefinition<TParams>"}</span> {"{"}{"\n"}
@@ -103,21 +103,21 @@ export function ToolsSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mt-6 mb-4">Hot Tools vs Deferred Tools</h3>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="bg-bg-card border border-border rounded-2xl p-6 relative overflow-hidden before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-gradient-to-r before:from-accent-green before:to-accent-cyan">
-              <h4 className="text-[15px] mb-2.5 font-bold text-accent-green">🔥 Hot Tools (6개) — 항상 로딩</h4>
-              <p className="text-[13px] text-text-secondary mb-3">매 LLM 요청마다 스키마가 포함되는 핵심 도구.</p>
+          <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>Hot Tools vs Deferred Tools</h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ gap: "20px" }}>
+            <div className="border border-[#e2e8f0] rounded-lg p-5 bg-white hover:bg-gray-50 hover:border-gray-300 border-l-[3px] border-l-emerald-600" style={{ padding: "20px" }}>
+              <h4 className="text-[15px] mb-2.5 font-bold text-emerald-600">Hot Tools (6) -- always loaded</h4>
+              <p className="text-[13px] text-gray-600 mb-3">매 LLM 요청마다 스키마가 포함되는 핵심 도구.</p>
               <div className="flex flex-wrap gap-1.5">
                 {hotTools.map((t) => (
-                  <span key={t} className="text-[11px] px-2.5 py-1 bg-[rgba(16,185,129,0.1)] rounded-[5px] font-mono text-accent-green">{t}</span>
+                  <span key={t} className="text-[11px] px-2.5 py-1 bg-emerald-50 rounded-[5px] font-mono text-emerald-600">{t}</span>
                 ))}
               </div>
             </div>
-            <div className="bg-bg-card border border-border rounded-2xl p-6 relative overflow-hidden before:absolute before:top-0 before:left-0 before:right-0 before:h-0.5 before:bg-gradient-to-r before:from-accent-purple before:to-accent-pink">
-              <h4 className="text-[15px] mb-2.5 font-bold text-accent-purple">💤 Deferred Tools (MCP) — 필요 시 로딩</h4>
-              <p className="text-[13px] text-text-secondary mb-3">시스템 프롬프트에 이름만 노출하고, LLM이 요청하면 스키마를 로딩.</p>
-              <div className="text-xs text-text-muted font-mono leading-relaxed">
+            <div className="border border-[#e2e8f0] rounded-lg p-5 bg-white hover:bg-gray-50 hover:border-gray-300 border-l-[3px] border-l-violet-600" style={{ padding: "20px" }}>
+              <h4 className="text-[15px] mb-2.5 font-bold text-violet-600">Deferred Tools (MCP) -- on demand</h4>
+              <p className="text-[13px] text-gray-600 mb-3">시스템 프롬프트에 이름만 노출하고, LLM이 요청하면 스키마를 로딩.</p>
+              <div className="text-xs text-gray-400 font-mono leading-relaxed">
                 mcp__playwright__click<br/>
                 mcp__serena__find_symbol<br/>
                 mcp__chrome-devtools__navigate_page<br/>

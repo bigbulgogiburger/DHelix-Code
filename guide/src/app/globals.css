@@ -1,13 +1,20 @@
 @import "tailwindcss";
 
+/* ─── Light Theme (Spring.io style) ─── */
 :root {
-  --bg-primary: #0a0e1a;
-  --bg-secondary: #111827;
-  --bg-card: #1a2035;
-  --border: #2a3454;
-  --text-primary: #f1f5f9;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8fafc;
+  --bg-sidebar: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-code: #1e293b;
+  --border: #e2e8f0;
+  --border-hover: #cbd5e1;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #475569;
+  --accent: #6366f1;
+  --accent-hover: #4f46e5;
+  --accent-light: #eef2ff;
   --accent-blue: #3b82f6;
   --accent-cyan: #06b6d4;
   --accent-purple: #8b5cf6;
@@ -15,16 +22,51 @@
   --accent-orange: #f59e0b;
   --accent-pink: #ec4899;
   --accent-red: #ef4444;
+  --sidebar-active-bg: #eef2ff;
+  --sidebar-active-border: #6366f1;
+  --nav-height: 60px;
+  --sidebar-width: 260px;
+}
+
+/* ─── Dark Mode ─── */
+@media (prefers-color-scheme: dark) {
+  :root.dark,
+  :root {
+    /* Only activate when .dark class is present */
+  }
+}
+:root.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-sidebar: #1e293b;
+  --bg-card: #1e293b;
+  --bg-code: #0f172a;
+  --border: #334155;
+  --border-hover: #475569;
+  --text-primary: #f1f5f9;
+  --text-secondary: #cbd5e1;
+  --text-muted: #94a3b8;
+  --accent: #818cf8;
+  --accent-hover: #6366f1;
+  --accent-light: rgba(99,102,241,0.1);
+  --sidebar-active-bg: rgba(99,102,241,0.1);
+  --sidebar-active-border: #818cf8;
 }
 
 @theme inline {
   --color-bg-primary: var(--bg-primary);
   --color-bg-secondary: var(--bg-secondary);
+  --color-bg-sidebar: var(--bg-sidebar);
   --color-bg-card: var(--bg-card);
+  --color-bg-code: var(--bg-code);
   --color-border: var(--border);
+  --color-border-hover: var(--border-hover);
   --color-text-primary: var(--text-primary);
   --color-text-secondary: var(--text-secondary);
   --color-text-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --color-accent-light: var(--accent-light);
   --color-accent-blue: var(--accent-blue);
   --color-accent-cyan: var(--accent-cyan);
   --color-accent-purple: var(--accent-purple);
@@ -33,44 +75,106 @@
   --color-accent-pink: var(--accent-pink);
   --color-accent-red: var(--accent-red);
   --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+
+  /* Spacing tokens — Tailwind v4 spacing 유틸리티 활성화 */
+  --spacing: 4px;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+/* ─── Base Element Spacing ─── */
+h1 { margin-bottom: 16px; }
+h2 { margin-top: 48px; margin-bottom: 24px; }
+h3 { margin-top: 32px; margin-bottom: 16px; }
+h4 { margin-top: 24px; margin-bottom: 12px; }
+h2:first-child, h3:first-child, h4:first-child { margin-top: 0; }
+p { margin-bottom: 16px; }
+p:last-child { margin-bottom: 0; }
+ul, ol { margin-bottom: 16px; padding-left: 24px; }
+li { margin-bottom: 4px; }
+table { margin-bottom: 24px; }
+pre { margin-bottom: 16px; }
+hr { margin: 32px 0; border: none; border-top: 1px solid var(--border); }
+
 html {
   scroll-behavior: smooth;
   scrollbar-width: thin;
-  scrollbar-color: var(--border) var(--bg-primary);
+  scrollbar-color: var(--border) transparent;
 }
 
 body {
   background: var(--bg-primary);
   color: var(--text-primary);
-  line-height: 1.7;
+  line-height: 1.75;
   overflow-x: hidden;
   font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  word-break: keep-all;
+  font-size: 16px;
 }
 
 ::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
-/* Mermaid override */
-.mermaid svg { max-width: 100%; height: auto; }
-
-/* Reveal animation */
-.reveal {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.reveal.visible {
-  opacity: 1;
-  transform: translateY(0);
+/* ─── Typography ─── */
+h1, h2, h3, h4 {
+  text-wrap: balance;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
 }
 
-/* Code block syntax colors */
+p, li {
+  text-wrap: pretty;
+  color: var(--text-secondary);
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* ─── Center Containers (Tailwind v4 mx-auto workaround) ─── */
+.center-wide {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.center-container {
+  width: 100%;
+  max-width: 1024px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+.center-narrow {
+  width: 100%;
+  max-width: 800px;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+}
+
+/* ─── Mermaid ─── */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ─── Code block syntax (dark background) ─── */
 .code-block .kw { color: #ff7b72; }
 .code-block .str { color: #a5d6ff; }
 .code-block .type { color: #79c0ff; }
@@ -79,8 +183,104 @@ body {
 .code-block .prop { color: #7ee787; }
 .code-block .num { color: #ffa657; }
 
-/* Hero glow animation */
-@keyframes heroGlow {
-  0% { transform: translate(0, 0); }
-  100% { transform: translate(-3%, 3%); }
+/* ─── Reveal animation ─── */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(16px);
+    transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; }
+}
+
+/* ─── Layout: Sidebar + Content ─── */
+.layout-with-sidebar {
+  display: flex;
+  min-height: calc(100vh - var(--nav-height));
+}
+
+.sidebar {
+  width: var(--sidebar-width);
+  min-width: var(--sidebar-width);
+  border-right: 1px solid var(--border);
+  background: var(--bg-sidebar);
+  position: sticky;
+  top: var(--nav-height);
+  height: calc(100vh - var(--nav-height));
+  overflow-y: auto;
+  padding: 1.5rem 0;
+  scrollbar-width: thin;
+}
+
+.sidebar-content {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 1024px) {
+  .sidebar {
+    display: none;
+  }
+  .layout-with-sidebar {
+    display: block;
+  }
+}
+
+/* ─── Section divider ─── */
+.section-divider {
+  height: 1px;
+  background: var(--border);
+}
+
+/* ─── Section anchor links ─── */
+h2[id]:hover .anchor-link,
+h3[id]:hover .anchor-link {
+  opacity: 1;
+}
+.anchor-link {
+  opacity: 0;
+  transition: opacity 0.2s;
+  margin-left: 8px;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: normal;
+}
+
+/* ─── Focus styles for keyboard navigation ─── */
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ─── Skip to content link ─── */
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 16px;
+  z-index: 100;
+  padding: 8px 16px;
+  background: var(--accent);
+  color: white;
+  border-radius: 0 0 8px 8px;
+  font-size: 14px;
+  font-weight: 600;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 0;
+}
+
+/* ─── Print styles ─── */
+@media print {
+  nav, .sidebar, .back-to-top, .scroll-progress { display: none !important; }
+  .center-narrow { max-width: 100% !important; padding: 0 !important; }
+  a[href]::after { content: " (" attr(href) ")"; font-size: 0.8em; }
 }

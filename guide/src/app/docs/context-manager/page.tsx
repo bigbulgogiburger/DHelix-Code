@@ -17,29 +17,29 @@ import { SeeAlso } from "@/components/SeeAlso";
 
 export default function ContextManagerPage() {
   return (
-    <div className="min-h-screen pt-[100px] pb-20">
-      <div className="max-w-[900px] mx-auto px-4 sm:px-8">
+    <div className="min-h-screen" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+      <div className="center-narrow">
 
         {/* ════════════════════════════════════════════
             Section 1: Header
             ════════════════════════════════════════════ */}
         <RevealOnScroll>
-          <div className="mb-12">
+          <div style={{ marginBottom: "48px" }}>
             <FilePath path="src/core/context-manager.ts" />
-            <h1 className="text-[clamp(28px,4vw,44px)] font-black tracking-tight leading-[1.15] mt-4 mb-3">
-              <span className="bg-gradient-to-r from-accent-purple to-accent-pink bg-clip-text text-transparent">
+            <h1 className="text-3xl font-bold tracking-tight leading-[1.15] mt-4 mb-3">
+              <span className="text-gray-900">
                 ContextManager
               </span>
             </h1>
             <div className="flex items-center gap-3 mb-4">
               <LayerBadge layer="core" />
-              <span className="text-[13px] text-text-secondary">
+              <span className="text-[13px] text-gray-600">
                 3-Layer 컨텍스트 압축 파이프라인 — LLM 토큰 윈도우의 지능적 관리자
               </span>
             </div>
-            <p className="text-[15px] text-text-secondary leading-relaxed">
+            <p className="text-[15px] text-gray-600 leading-relaxed">
               LLM은 한 번에 처리할 수 있는 텍스트 양(토큰 수)에 한계가 있습니다.
-              대화가 길어지면 이전 내용을 잃게 되는데, <strong className="text-text-primary">ContextManager</strong>는
+              대화가 길어지면 이전 내용을 잃게 되는데, <strong className="text-gray-900">ContextManager</strong>는
               이 문제를 3단계 압축 전략으로 해결합니다. 대용량 도구 출력을 디스크에 저장하고(Microcompaction),
               오래된 대화를 구조화된 요약으로 교체하며(Auto-compaction), 압축 후 중요한 파일을
               다시 읽어 신선한 컨텍스트를 제공합니다(Rehydration).
@@ -51,24 +51,24 @@ export default function ContextManagerPage() {
             Section 2: 개요
             ════════════════════════════════════════════ */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-xl font-bold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>&#x1F3D7;&#xFE0F;</span> 개요
             </h2>
 
-            <div className="text-[14px] text-text-secondary leading-relaxed mb-6 space-y-3">
+            <div className="text-[14px] text-gray-600 leading-relaxed mb-6 space-y-3">
               <p>
-                ContextManager는 dbcode의 <strong className="text-text-primary">가장 중요한 Core 모듈</strong> 중 하나입니다.
-                Agent Loop가 매 턴마다 LLM에 메시지를 보내기 전에 <code className="text-accent-cyan text-[13px]">prepare()</code>를
+                ContextManager는 dbcode의 <strong className="text-gray-900">가장 중요한 Core 모듈</strong> 중 하나입니다.
+                Agent Loop가 매 턴마다 LLM에 메시지를 보내기 전에 <code className="text-cyan-600 text-[13px]">prepare()</code>를
                 호출하여 컨텍스트 윈도우를 최적화합니다.
               </p>
               <p>
-                핵심 임계값은 <strong className="text-accent-purple">83.5%</strong>입니다.
+                핵심 임계값은 <strong className="text-violet-600">83.5%</strong>입니다.
                 컨텍스트 사용량이 이 비율에 도달하면 자동 압축이 트리거됩니다.
                 이 숫자는 high-tier 모델 기준이며, medium 모델은 75%, low 모델은 65%로 더 일찍 압축합니다.
               </p>
               <p>
-                Cold Storage는 SHA-256 해시 기반의 <strong className="text-text-primary">content-addressable storage</strong>입니다.
+                Cold Storage는 SHA-256 해시 기반의 <strong className="text-gray-900">content-addressable storage</strong>입니다.
                 동일한 도구 출력은 중복 저장되지 않으며, 24시간 TTL 기반의 가비지 컬렉션이 자동으로 실행됩니다.
               </p>
             </div>
@@ -78,21 +78,21 @@ export default function ContextManagerPage() {
               titleColor="purple"
               chart={`graph TD
     subgraph CLI["Layer 1: CLI"]
-        APP["App.tsx"]
-        HOOKS["useAgentLoop"]
+        APP["App.tsx<br/><small>루트 UI 컴포넌트</small>"]
+        HOOKS["useAgentLoop<br/><small>에이전트 실행 훅</small>"]
     end
     subgraph CORE["Layer 2: Core"]
-        AGENT["Agent Loop"]
-        CTX["ContextManager\\n3-Layer Compaction"]
-        SYS["SystemPromptBuilder"]
+        AGENT["Agent Loop<br/><small>ReAct 메인 루프</small>"]
+        CTX["ContextManager<br/><small>3-Layer 토큰 압축</small>"]
+        SYS["SystemPromptBuilder<br/><small>시스템 프롬프트 조립</small>"]
     end
     subgraph INFRA["Layer 3: Infrastructure"]
-        LLM["LLM Client"]
-        TOOLS["Tool System"]
+        LLM["LLM Client<br/><small>LLM API 호출</small>"]
+        TOOLS["Tool System<br/><small>도구 실행 엔진</small>"]
     end
     subgraph LEAF["Layer 4: Leaf"]
-        TOKEN["token-counter"]
-        CONFIG["Config"]
+        TOKEN["token-counter<br/><small>토큰 수 계산</small>"]
+        CONFIG["Config<br/><small>5계층 설정 병합</small>"]
     end
 
     APP --> AGENT
@@ -104,31 +104,31 @@ export default function ContextManagerPage() {
     CTX -->|"buildSystemPrompt()"| SYS
     CTX -->|"LLM summarize"| LLM
 
-    style CTX fill:#2a1e4a,stroke:#8b5cf6,stroke-width:3px,color:#f1f5f9
-    style AGENT fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    style LLM fill:#1e293b,stroke:#10b981,color:#f1f5f9
-    style TOKEN fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    style SYS fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    style APP fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    style HOOKS fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    style TOOLS fill:#1e293b,stroke:#10b981,color:#f1f5f9
-    style CONFIG fill:#1e293b,stroke:#f59e0b,color:#f1f5f9`}
+    style CTX fill:#ede9fe,stroke:#8b5cf6,stroke-width:3px,color:#1e293b
+    style AGENT fill:#f1f5f9,stroke:#3b82f6,color:#1e293b
+    style LLM fill:#f1f5f9,stroke:#10b981,color:#1e293b
+    style TOKEN fill:#f1f5f9,stroke:#f59e0b,color:#1e293b
+    style SYS fill:#f1f5f9,stroke:#3b82f6,color:#1e293b
+    style APP fill:#f1f5f9,stroke:#3b82f6,color:#1e293b
+    style HOOKS fill:#f1f5f9,stroke:#3b82f6,color:#1e293b
+    style TOOLS fill:#f1f5f9,stroke:#10b981,color:#1e293b
+    style CONFIG fill:#f1f5f9,stroke:#f59e0b,color:#1e293b`}
             />
 
             <MermaidDiagram
               title="3-Layer 압축 파이프라인"
               titleColor="purple"
               chart={`flowchart LR
-    INPUT["Messages\\n입력"] --> L1["Layer 1\\nMicrocompaction"]
-    L1 -->|"대용량 도구 출력\\n→ Cold Storage"| L2["Layer 2\\nAuto-compaction"]
-    L2 -->|"usage >= 83.5%\\n→ 구조화 요약"| L3["Layer 3\\nRehydration"]
-    L3 -->|"최근 파일\\n재읽기"| OUTPUT["Optimized\\nMessages"]
+    INPUT["Messages<br/><small>원본 대화 입력</small>"] --> L1["Layer 1<br/><small>대용량 출력을 디스크 이동</small>"]
+    L1 -->|"대용량 도구 출력\\n→ Cold Storage"| L2["Layer 2<br/><small>오래된 대화 요약 교체</small>"]
+    L2 -->|"usage >= 83.5%\\n→ 구조화 요약"| L3["Layer 3<br/><small>중요 파일 다시 읽기</small>"]
+    L3 -->|"최근 파일\\n재읽기"| OUTPUT["Optimized<br/><small>최적화된 메시지</small>"]
 
-    style L1 fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
-    style L2 fill:#2a1e4a,stroke:#ec4899,color:#f1f5f9
-    style L3 fill:#2a1e4a,stroke:#06b6d4,color:#f1f5f9
-    style INPUT fill:#1e293b,stroke:#64748b,color:#f1f5f9
-    style OUTPUT fill:#1a3a2a,stroke:#10b981,color:#f1f5f9`}
+    style L1 fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+    style L2 fill:#ede9fe,stroke:#ec4899,color:#1e293b
+    style L3 fill:#ede9fe,stroke:#06b6d4,color:#1e293b
+    style INPUT fill:#f1f5f9,stroke:#64748b,color:#1e293b
+    style OUTPUT fill:#dcfce7,stroke:#10b981,color:#1e293b`}
             />
           </section>
         </RevealOnScroll>
@@ -137,16 +137,16 @@ export default function ContextManagerPage() {
             Section 3: 레퍼런스
             ════════════════════════════════════════════ */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-xl font-bold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>&#x1F4D6;</span> 레퍼런스
             </h2>
 
             {/* --- ContextManagerConfig --- */}
-            <h3 className="text-[16px] font-bold text-accent-cyan mt-8 mb-3 font-mono">
+            <h3 className="text-[16px] font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
               ContextManagerConfig
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               ContextManager를 생성할 때 전달하는 설정 인터페이스입니다. 모든 필드가 선택적이며, 기본값이 제공됩니다.
             </p>
             <ParamTable
@@ -166,12 +166,12 @@ export default function ContextManagerPage() {
             />
 
             {/* --- ContextUsage --- */}
-            <h3 className="text-[16px] font-bold text-accent-cyan mt-8 mb-3 font-mono">
+            <h3 className="text-[16px] font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
               ContextUsage
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               현재 컨텍스트 윈도우 사용량을 나타내는 읽기 전용 인터페이스입니다.
-              <code className="text-accent-cyan text-[12px] mx-1">getUsage()</code>가 반환합니다.
+              <code className="text-cyan-600 text-[12px] mx-1">getUsage()</code>가 반환합니다.
             </p>
             <ParamTable
               params={[
@@ -183,10 +183,10 @@ export default function ContextManagerPage() {
             />
 
             {/* --- ColdStorageRef --- */}
-            <h3 className="text-[16px] font-bold text-accent-cyan mt-8 mb-3 font-mono">
+            <h3 className="text-[16px] font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
               ColdStorageRef
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               디스크에 저장된 도구 출력에 대한 참조입니다. SHA-256 해시 기반으로 중복 저장을 방지합니다.
             </p>
             <ParamTable
@@ -198,13 +198,13 @@ export default function ContextManagerPage() {
             />
 
             {/* --- CompactionResult --- */}
-            <h3 className="text-[16px] font-bold text-accent-cyan mt-8 mb-3 font-mono">
+            <h3 className="text-[16px] font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
               CompactionResult
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               압축 작업의 결과를 나타냅니다.
-              <code className="text-accent-cyan text-[12px] mx-1">compact()</code> 및
-              <code className="text-accent-cyan text-[12px] mx-1">manualCompact()</code>가 반환합니다.
+              <code className="text-cyan-600 text-[12px] mx-1">compact()</code> 및
+              <code className="text-cyan-600 text-[12px] mx-1">manualCompact()</code>가 반환합니다.
             </p>
             <ParamTable
               params={[
@@ -216,12 +216,12 @@ export default function ContextManagerPage() {
             />
 
             {/* --- CompactionMetrics --- */}
-            <h3 className="text-[16px] font-bold text-accent-cyan mt-8 mb-3 font-mono">
+            <h3 className="text-[16px] font-bold text-indigo-600 font-mono" style={{ marginTop: "32px", marginBottom: "16px" }}>
               CompactionMetrics
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               누적 압축 메트릭. 관측(observability)용으로 사용되며
-              <code className="text-accent-cyan text-[12px] mx-1">getCompactionMetrics()</code>가 반환합니다.
+              <code className="text-cyan-600 text-[12px] mx-1">getCompactionMetrics()</code>가 반환합니다.
             </p>
             <ParamTable
               params={[
@@ -235,17 +235,17 @@ export default function ContextManagerPage() {
             />
 
             {/* --- Public Methods --- */}
-            <h3 className="text-[16px] font-bold text-accent-purple mt-10 mb-4">
+            <h3 className="text-[16px] font-bold text-violet-600" style={{ marginTop: "32px", marginBottom: "16px" }}>
               Public Methods
             </h3>
 
             {/* tokenBudget */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">tokenBudget</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(139,92,246,0.1)] text-accent-purple">getter</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">tokenBudget</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-violet-50 text-violet-600">getter</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 응답 예약분을 제외한 실효 토큰 예산을 반환합니다.
               </p>
               <CodeBlock>
@@ -255,12 +255,12 @@ export default function ContextManagerPage() {
             </div>
 
             {/* getUsage */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">getUsage</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">getUsage</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 메시지 배열의 현재 컨텍스트 사용량을 계산합니다.
               </p>
               <CodeBlock>
@@ -274,15 +274,15 @@ export default function ContextManagerPage() {
             </div>
 
             {/* needsCompaction */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">needsCompaction</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">needsCompaction</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 현재 사용량이 압축 임계값을 초과하는지 확인합니다.
-                내부적으로 <code className="text-accent-cyan text-[12px]">getUsage()</code>를 호출하여
-                <code className="text-accent-cyan text-[12px]"> usageRatio &gt;= compactionThreshold</code>를 비교합니다.
+                내부적으로 <code className="text-cyan-600 text-[12px]">getUsage()</code>를 호출하여
+                <code className="text-cyan-600 text-[12px]"> usageRatio &gt;= compactionThreshold</code>를 비교합니다.
               </p>
               <CodeBlock>
                 {`needsCompaction(messages: readonly ChatMessage[]): boolean`}
@@ -290,12 +290,12 @@ export default function ContextManagerPage() {
             </div>
 
             {/* trackFileAccess */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">trackFileAccess</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">trackFileAccess</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 파일 접근을 추적합니다. 리하이드레이션 시 어떤 파일을 다시 읽을지 결정하는 데 사용됩니다.
                 최근성(recency)과 빈도(frequency) 모두 업데이트합니다.
               </p>
@@ -305,15 +305,15 @@ export default function ContextManagerPage() {
             </div>
 
             {/* prepare */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">prepare</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(239,68,68,0.1)] text-accent-red">핵심 메서드</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">prepare</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-50 text-red-600">핵심 메서드</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
-                LLM에 보내기 전 메시지를 최적화하는 <strong className="text-text-primary">진입점</strong>입니다.
+              <p className="text-[13px] text-gray-600 mb-2">
+                LLM에 보내기 전 메시지를 최적화하는 <strong className="text-gray-900">진입점</strong>입니다.
                 Layer 1(microcompact) → Layer 2(auto-compact, 조건부) → GC(주기적)를 순서대로 실행합니다.
-                <strong className="text-text-primary"> 입력을 절대 변경하지 않고 새 배열을 반환합니다.</strong>
+                <strong className="text-gray-900"> 입력을 절대 변경하지 않고 새 배열을 반환합니다.</strong>
               </p>
               <CodeBlock>
                 {`async prepare(
@@ -323,12 +323,12 @@ export default function ContextManagerPage() {
             </div>
 
             {/* compact */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">compact</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">compact</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 Layer 2 + 3 통합 압축. 시스템 프롬프트를 디스크에서 재로딩하고,
                 대화를 턴 단위로 분리하여 오래된 턴을 구조화된 요약으로 교체한 뒤,
                 리하이드레이션을 수행합니다.
@@ -351,14 +351,14 @@ export default function ContextManagerPage() {
             </div>
 
             {/* manualCompact */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">manualCompact</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">manualCompact</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
-                사용자가 <code className="text-accent-cyan text-[12px]">/compact [focus]</code> 명령으로 수동 트리거하는 압축입니다.
-                내부적으로 <code className="text-accent-cyan text-[12px]">compact()</code>를 호출합니다.
+              <p className="text-[13px] text-gray-600 mb-2">
+                사용자가 <code className="text-cyan-600 text-[12px]">/compact [focus]</code> 명령으로 수동 트리거하는 압축입니다.
+                내부적으로 <code className="text-cyan-600 text-[12px]">compact()</code>를 호출합니다.
               </p>
               <CodeBlock>
                 {`async manualCompact(
@@ -369,12 +369,12 @@ export default function ContextManagerPage() {
             </div>
 
             {/* microcompact */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">microcompact</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">microcompact</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 Layer 1: 대용량 도구 출력을 콜드 스토리지로 이동합니다.
                 최근 {String(5)}개의 높은 우선순위 도구 결과(Hot Tail)는 인라인으로 유지하고,
                 나머지는 디스크 참조로 교체합니다.
@@ -387,12 +387,12 @@ export default function ContextManagerPage() {
             </div>
 
             {/* getCompactionMetrics */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">getCompactionMetrics</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">getCompactionMetrics</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 누적 압축 메트릭을 반환합니다. 압축 횟수, 절약 토큰, 콜드 스토리지 상태, 평균 압축 비율 등을 확인할 수 있습니다.
               </p>
               <CodeBlock>
@@ -401,14 +401,14 @@ export default function ContextManagerPage() {
             </div>
 
             {/* cleanupColdStorage */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">cleanupColdStorage</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">cleanupColdStorage</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 TTL 초과 또는 고아 상태(orphaned)의 콜드 스토리지 파일을 정리합니다.
-                <code className="text-accent-cyan text-[12px] mx-1">prepare()</code>에서 주기적으로 백그라운드 실행됩니다.
+                <code className="text-cyan-600 text-[12px] mx-1">prepare()</code>에서 주기적으로 백그라운드 실행됩니다.
               </p>
               <CodeBlock>
                 {`async cleanupColdStorage(): Promise<CleanupResult>`}
@@ -416,12 +416,12 @@ export default function ContextManagerPage() {
             </div>
 
             {/* trackColdRefAccess */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">trackColdRefAccess</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">trackColdRefAccess</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 콜드 스토리지 참조의 접근 횟수를 추적합니다.
                 자주 접근되는 콜드 참조는 Hot Tail에서 더 높은 우선순위를 받습니다(3회 이상 접근 시 score 60).
               </p>
@@ -431,12 +431,12 @@ export default function ContextManagerPage() {
             </div>
 
             {/* dispose */}
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">dispose</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(16,185,129,0.1)] text-accent-green">method</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">dispose</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-600">method</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 모든 내부 상태를 초기화하여 메모리 누수를 방지합니다.
                 세션 종료 시 또는 컨텍스트 리셋 시 호출합니다.
               </p>
@@ -446,15 +446,15 @@ export default function ContextManagerPage() {
             </div>
 
             {/* --- getContextConfig (standalone function) --- */}
-            <h3 className="text-[16px] font-bold text-accent-purple mt-10 mb-4">
+            <h3 className="text-[16px] font-bold text-violet-600" style={{ marginTop: "32px", marginBottom: "16px" }}>
               Standalone Functions
             </h3>
-            <div className="bg-bg-card border border-border rounded-xl p-5 mb-4">
+            <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <div className="flex items-center gap-2 mb-2">
-                <span className="font-mono text-sm font-bold text-accent-cyan">getContextConfig</span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-[rgba(245,158,11,0.1)] text-accent-orange">function</span>
+                <span className="font-mono text-sm font-bold text-cyan-600">getContextConfig</span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-600">function</span>
               </div>
-              <p className="text-[13px] text-text-secondary mb-2">
+              <p className="text-[13px] text-gray-600 mb-2">
                 모델 능력 수준(tier)별 컨텍스트 압축 설정을 반환합니다.
                 소형 모델은 더 일찍, 더 공격적으로 압축합니다.
               </p>
@@ -467,33 +467,33 @@ export default function ContextManagerPage() {
             </div>
 
             {/* --- Caveats --- */}
-            <h3 className="text-[16px] font-bold text-accent-red mt-10 mb-4">
+            <h3 className="text-[16px] font-bold text-red-600" style={{ marginTop: "32px", marginBottom: "16px" }}>
               Caveats
             </h3>
 
             <Callout type="warn" icon="&#x26A0;&#xFE0F;">
-              <strong>Caveat 1: 요약 품질은 LLM에 의존합니다.</strong> <code className="text-accent-cyan text-[12px]">client</code>가
+              <strong>Caveat 1: 요약 품질은 LLM에 의존합니다.</strong> <code className="text-cyan-600 text-[12px]">client</code>가
               제공되지 않으면 로컬 추출(extractive)로 fallback합니다. 로컬 추출은 단순한 텍스트 잘라내기이므로
               중요한 맥락이 손실될 수 있습니다. production에서는 반드시 LLM client를 설정하세요.
             </Callout>
 
             <Callout type="warn" icon="&#x26A0;&#xFE0F;">
               <strong>Caveat 2: Cold Storage는 로컬 파일 시스템에 의존합니다.</strong> 콜드 스토리지는
-              <code className="text-accent-cyan text-[12px] mx-1">{`\${SESSIONS_DIR}/\${sessionId}/cold-storage/`}</code>에
+              <code className="text-cyan-600 text-[12px] mx-1">{`\${SESSIONS_DIR}/\${sessionId}/cold-storage/`}</code>에
               저장됩니다. 이 경로가 접근 불가하거나 디스크 공간이 부족하면, microcompaction이 실패하고
               원본 콘텐츠가 인라인으로 유지됩니다(graceful degradation).
             </Callout>
 
             <Callout type="warn" icon="&#x26A0;&#xFE0F;">
               <strong>Caveat 3: 리하이드레이션 예산은 전체의 5%입니다.</strong> 압축 후 재읽기에 사용되는
-              토큰은 <code className="text-accent-cyan text-[12px]">tokenBudget * 0.05</code>로 제한됩니다.
+              토큰은 <code className="text-cyan-600 text-[12px]">tokenBudget * 0.05</code>로 제한됩니다.
               대용량 파일이 여럿이면 일부만 재읽기됩니다. 각 파일도 4000자로 잘립니다.
             </Callout>
 
             <Callout type="danger" icon="&#x1F6A8;">
               <strong>Caveat 4: prepare()는 입력을 변경하지 않습니다.</strong> 항상 새 배열을 반환합니다(immutability).
               반환값을 사용하지 않고 원본을 계속 쓰면 압축이 적용되지 않습니다.
-              반드시 <code className="text-accent-cyan text-[12px]">messages = await ctx.prepare(messages)</code>처럼 재할당하세요.
+              반드시 <code className="text-cyan-600 text-[12px]">messages = await ctx.prepare(messages)</code>처럼 재할당하세요.
             </Callout>
 
             <Callout type="info" icon="&#x1F4A1;">
@@ -508,16 +508,16 @@ export default function ContextManagerPage() {
             Section 4: 사용법
             ════════════════════════════════════════════ */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-xl font-bold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>&#x1F6E0;&#xFE0F;</span> 사용법
             </h2>
 
             {/* Basic usage */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-6 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               1. 기본 사용 - 컨텍스트 상태 확인
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               Agent Loop가 매 턴마다 수행하는 가장 기본적인 작업입니다.
             </p>
             <CodeBlock>
@@ -545,11 +545,11 @@ if (ctx.needsCompaction(messages)) {
             </CodeBlock>
 
             {/* prepare() - auto compaction */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               2. 자동 압축 트리거 (prepare)
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              LLM에 메시지를 보내기 전에 <code className="text-accent-cyan text-[12px]">prepare()</code>를
+            <p className="text-[13px] text-gray-600 mb-3">
+              LLM에 메시지를 보내기 전에 <code className="text-cyan-600 text-[12px]">prepare()</code>를
               호출하면 Layer 1 ~ Layer 3가 자동으로 실행됩니다.
             </p>
             <CodeBlock>
@@ -573,18 +573,18 @@ async function agentLoop(messages: ChatMessage[]) {
             </CodeBlock>
 
             <Callout type="warn" icon="&#x26A0;&#xFE0F;">
-              <code className="text-accent-cyan text-[12px]">prepare()</code>의 반환값을 무시하면
+              <code className="text-cyan-600 text-[12px]">prepare()</code>의 반환값을 무시하면
               압축이 전혀 적용되지 않습니다.
-              <code className="text-accent-cyan text-[12px] ml-1">messages = await ctx.prepare(messages)</code>처럼
+              <code className="text-cyan-600 text-[12px] ml-1">messages = await ctx.prepare(messages)</code>처럼
               반드시 재할당하세요.
             </Callout>
 
             {/* manual compact */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               3. 수동 압축 (/compact 명령)
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
-              사용자가 <code className="text-accent-cyan text-[12px]">/compact</code> 명령을 실행하면
+            <p className="text-[13px] text-gray-600 mb-3">
+              사용자가 <code className="text-cyan-600 text-[12px]">/compact</code> 명령을 실행하면
               특정 주제에 집중하여 압축할 수 있습니다.
             </p>
             <CodeBlock>
@@ -600,17 +600,17 @@ console.log(\`요약:\\n\${result.summary}\`);`}
             </CodeBlock>
 
             <Callout type="tip" icon="&#x1F4A1;">
-              <code className="text-accent-cyan text-[12px]">focusTopic</code>을 지정하면
+              <code className="text-cyan-600 text-[12px]">focusTopic</code>을 지정하면
               LLM 요약 시 해당 주제에 특별히 주의를 기울입니다. 예를 들어
-              <code className="text-accent-cyan text-[12px] ml-1">/compact &quot;인증 시스템&quot;</code>을 하면
+              <code className="text-cyan-600 text-[12px] ml-1">/compact &quot;인증 시스템&quot;</code>을 하면
               인증 관련 결정사항과 코드 변경이 요약에 더 잘 보존됩니다.
             </Callout>
 
             {/* Rehydration */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               4. 리하이드레이션 전략 설정
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               압축 후 어떤 파일을 다시 읽을지 결정하는 3가지 전략이 있습니다.
             </p>
             <CodeBlock>
@@ -631,7 +631,7 @@ const ctx3 = new ContextManager({
             </CodeBlock>
 
             <Callout type="warn" icon="&#x26A0;&#xFE0F;">
-              리하이드레이션은 <code className="text-accent-cyan text-[12px]">trackFileAccess()</code>로
+              리하이드레이션은 <code className="text-cyan-600 text-[12px]">trackFileAccess()</code>로
               추적된 파일만 대상으로 합니다. 이 메서드를 호출하지 않으면 리하이드레이션이 아무 파일도
               읽지 않습니다. Agent Loop에서 도구가 파일을 읽거나 쓸 때마다 호출해야 합니다.
             </Callout>
@@ -642,7 +642,7 @@ const ctx3 = new ContextManager({
             </Callout>
 
             {/* Metrics */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               5. 메트릭 모니터링
             </h3>
             <CodeBlock>
@@ -660,28 +660,28 @@ ctx.dispose();`}
             <DeepDive title="왜 83.5%인가?">
               <div className="space-y-3">
                 <p>
-                  컨텍스트 압축 임계값 <strong className="text-text-primary">83.5%</strong>는
+                  컨텍스트 압축 임계값 <strong className="text-gray-900">83.5%</strong>는
                   여러 실험과 설계 고려를 통해 결정된 값입니다.
                 </p>
                 <p>
-                  <strong className="text-accent-cyan">너무 높으면 (예: 95%)</strong>: 압축이 트리거될 때
+                  <strong className="text-cyan-600">너무 높으면 (예: 95%)</strong>: 압축이 트리거될 때
                   이미 컨텍스트가 거의 가득 찬 상태입니다. 요약을 생성하기 위한 LLM 호출 자체가
                   컨텍스트 초과를 일으킬 수 있고, 요약 품질도 낮아집니다. 이전 버전에서 실제로
                   이 문제가 발생했습니다 (원래 95%에서 하향 조정).
                 </p>
                 <p>
-                  <strong className="text-accent-cyan">너무 낮으면 (예: 50%)</strong>: 불필요하게 자주 압축이
+                  <strong className="text-cyan-600">너무 낮으면 (예: 50%)</strong>: 불필요하게 자주 압축이
                   실행됩니다. 매번 LLM 요약 호출 비용이 발생하고, 너무 이른 시점에 대화 맥락이
                   손실되어 LLM의 작업 품질이 떨어집니다.
                 </p>
                 <p>
-                  <strong className="text-accent-purple">83.5%의 의미</strong>: 응답 예약분(responseReserveRatio)을
+                  <strong className="text-violet-600">83.5%의 의미</strong>: 응답 예약분(responseReserveRatio)을
                   고려하면, 실효 budget의 83.5%는 전체 윈도우의 약 70-75% 정도입니다.
                   이는 LLM이 충분한 맥락을 유지하면서도 요약 + 리하이드레이션에 필요한 여유 공간(약 15-20%)을
                   확보하는 sweet spot입니다.
                 </p>
                 <p>
-                  <strong className="text-accent-orange">모델별 차등 적용</strong>: 소형 모델(medium: 75%, low: 65%)은
+                  <strong className="text-amber-600">모델별 차등 적용</strong>: 소형 모델(medium: 75%, low: 65%)은
                   컨텍스트 윈도우가 작으므로 더 일찍 압축해야 합니다. 보존하는 턴 수도 줄여(4턴, 3턴)
                   각 압축에서 더 공격적으로 공간을 확보합니다.
                 </p>
@@ -694,8 +694,8 @@ ctx.dispose();`}
             Section 5: 내부 구현
             ════════════════════════════════════════════ */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-xl font-bold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>&#x2699;&#xFE0F;</span> 내부 구현
             </h2>
 
@@ -703,61 +703,61 @@ ctx.dispose();`}
               title="3-Layer 파이프라인 상세 플로우"
               titleColor="purple"
               chart={`flowchart TD
-    START["prepare(messages)"] --> MC["Layer 1: microcompact()"]
-    MC --> MC_CHECK{"tool 메시지 >\nHOT_TAIL_SIZE(5)?"}
-    MC_CHECK -->|"No"| MC_SKIP["원본 유지"]
-    MC_CHECK -->|"Yes"| MC_SCORE["hotTailPriority()\\n스코어링"]
-    MC_SCORE --> MC_SPLIT["상위 5개: Hot Tail\\n나머지: Cold Candidate"]
-    MC_SPLIT --> MC_FILTER{"eligible tool?\\n>= 200 tokens?"}
-    MC_FILTER -->|"No"| MC_KEEP["인라인 유지"]
-    MC_FILTER -->|"Yes"| MC_COLD["writeColdStorage()\\nSHA-256 해시 저장"]
-    MC_COLD --> MC_REF["참조 메시지로 교체"]
+    START["prepare(messages)<br/><small>메인 진입점 호출</small>"] --> MC["Layer 1: microcompact()<br/><small>대용량 출력 디스크 이동</small>"]
+    MC --> MC_CHECK{"tool 메시지 ><br/>HOT_TAIL_SIZE(5)?"}
+    MC_CHECK -->|"No"| MC_SKIP["원본 유지<br/><small>압축 불필요</small>"]
+    MC_CHECK -->|"Yes"| MC_SCORE["hotTailPriority()<br/><small>도구 결과 중요도 점수화</small>"]
+    MC_SCORE --> MC_SPLIT["Hot Tail 분리<br/><small>상위 5개 인라인 유지</small>"]
+    MC_SPLIT --> MC_FILTER{"eligible tool?<br/>≥ 200 tokens?"}
+    MC_FILTER -->|"No"| MC_KEEP["인라인 유지<br/><small>소형 출력 보존</small>"]
+    MC_FILTER -->|"Yes"| MC_COLD["writeColdStorage()<br/><small>SHA-256 해시로 저장</small>"]
+    MC_COLD --> MC_REF["참조 메시지로 교체<br/><small>디스크 경로만 남김</small>"]
 
     MC_SKIP --> L2_CHECK
     MC_KEEP --> L2_CHECK
     MC_REF --> L2_CHECK
 
-    L2_CHECK{"needsCompaction()?\\nusageRatio >= 83.5%?"}
+    L2_CHECK{"needsCompaction()?<br/>usageRatio ≥ 83.5%?"}
     L2_CHECK -->|"No"| GC_CHECK
-    L2_CHECK -->|"Yes"| L2["Layer 2: compact()"]
-    L2 --> L2_RELOAD["reloadSystemPrompt()\\nDBCODE.md 재로딩"]
-    L2_RELOAD --> L2_TURNS["identifyTurns()\\n턴 분리"]
-    L2_TURNS --> L2_SPLIT["middle turns → 요약\\nrecent turns → 보존"]
-    L2_SPLIT --> L2_SUMMARY["summarizeWithFallback()\\nLLM 요약 or 로컬 추출"]
-    L2_SUMMARY --> L3["Layer 3: rehydrate()"]
-    L3 --> L3_SELECT["selectRehydrationFiles()\\nrecency/frequency/mixed"]
-    L3_SELECT --> L3_READ["readFile() x N\\n5% budget 제한"]
+    L2_CHECK -->|"Yes"| L2["Layer 2: compact()<br/><small>대화 구조화 요약</small>"]
+    L2 --> L2_RELOAD["reloadSystemPrompt()<br/><small>DBCODE.md 최신 로딩</small>"]
+    L2_RELOAD --> L2_TURNS["identifyTurns()<br/><small>대화를 턴 단위 분리</small>"]
+    L2_TURNS --> L2_SPLIT["턴 분류<br/><small>오래된 턴 요약, 최근 보존</small>"]
+    L2_SPLIT --> L2_SUMMARY["summarizeWithFallback()<br/><small>LLM 요약 또는 로컬 추출</small>"]
+    L2_SUMMARY --> L3["Layer 3: rehydrate()<br/><small>중요 파일 재읽기</small>"]
+    L3 --> L3_SELECT["selectRehydrationFiles()<br/><small>전략별 파일 선택</small>"]
+    L3_SELECT --> L3_READ["readFile() x N<br/><small>5% 예산 내 파일 읽기</small>"]
     L3_READ --> GC_CHECK
 
-    GC_CHECK{"GC 주기\\n도달?"}
-    GC_CHECK -->|"No"| DONE["최적화된 messages 반환"]
-    GC_CHECK -->|"Yes"| GC["cleanupColdStorage()\\n백그라운드 실행"]
+    GC_CHECK{"GC 주기<br/>도달?"}
+    GC_CHECK -->|"No"| DONE["최적화된 messages 반환<br/><small>LLM에 전달 준비 완료</small>"]
+    GC_CHECK -->|"Yes"| GC["cleanupColdStorage()<br/><small>만료 파일 백그라운드 정리</small>"]
     GC --> DONE
 
-    style START fill:#1e293b,stroke:#3b82f6,color:#f1f5f9
-    style MC fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
-    style L2 fill:#2a1e4a,stroke:#ec4899,color:#f1f5f9
-    style L3 fill:#2a1e4a,stroke:#06b6d4,color:#f1f5f9
-    style GC fill:#1e293b,stroke:#f59e0b,color:#f1f5f9
-    style DONE fill:#1a3a2a,stroke:#10b981,color:#f1f5f9
-    style MC_SCORE fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    style MC_COLD fill:#1e293b,stroke:#8b5cf6,color:#f1f5f9
-    style L2_RELOAD fill:#1e293b,stroke:#ec4899,color:#f1f5f9
-    style L2_SUMMARY fill:#1e293b,stroke:#ec4899,color:#f1f5f9
-    style L3_SELECT fill:#1e293b,stroke:#06b6d4,color:#f1f5f9`}
+    style START fill:#f1f5f9,stroke:#3b82f6,color:#1e293b
+    style MC fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+    style L2 fill:#ede9fe,stroke:#ec4899,color:#1e293b
+    style L3 fill:#ede9fe,stroke:#06b6d4,color:#1e293b
+    style GC fill:#f1f5f9,stroke:#f59e0b,color:#1e293b
+    style DONE fill:#dcfce7,stroke:#10b981,color:#1e293b
+    style MC_SCORE fill:#f1f5f9,stroke:#8b5cf6,color:#1e293b
+    style MC_COLD fill:#f1f5f9,stroke:#8b5cf6,color:#1e293b
+    style L2_RELOAD fill:#f1f5f9,stroke:#ec4899,color:#1e293b
+    style L2_SUMMARY fill:#f1f5f9,stroke:#ec4899,color:#1e293b
+    style L3_SELECT fill:#f1f5f9,stroke:#06b6d4,color:#1e293b`}
             />
 
             {/* State variables table */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-4">
+            <h3 className="text-[15px] font-bold text-gray-900 mt-8 mb-4">
               내부 상태 변수
             </h3>
-            <div className="bg-bg-card border border-border rounded-xl overflow-hidden my-4">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden my-4">
               <table className="w-full border-collapse text-[13px]">
                 <thead>
                   <tr>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">변수</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">타입</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">용도</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">변수</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">타입</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">용도</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -772,10 +772,10 @@ ctx.dispose();`}
                     { name: "lastCompactionAt", type: "string | null", desc: "마지막 압축 시각 (ISO 8601 형식)" },
                     { name: "lastGcCompactionCount", type: "number", desc: "마지막 GC 실행 시점의 compactionCount. 적응적 GC 간격 계산용" },
                   ].map((row, i) => (
-                    <tr key={i} className="hover:bg-[rgba(59,130,246,0.03)] border-b border-[rgba(255,255,255,0.03)]">
-                      <td className="p-3 px-4 font-mono text-accent-cyan font-semibold text-[12px]">{row.name}</td>
-                      <td className="p-3 px-4 font-mono text-accent-purple text-[11px]">{row.type}</td>
-                      <td className="p-3 px-4 text-text-secondary">{row.desc}</td>
+                    <tr key={i} className="hover:bg-blue-50 border-b border-gray-200">
+                      <td className="p-3 px-4 font-mono text-cyan-600 font-semibold text-[12px]">{row.name}</td>
+                      <td className="p-3 px-4 font-mono text-violet-600 text-[11px]">{row.type}</td>
+                      <td className="p-3 px-4 text-gray-600">{row.desc}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -783,20 +783,20 @@ ctx.dispose();`}
             </div>
 
             {/* Hot Tail Priority */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               Hot Tail 우선순위 스코어링
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               Microcompaction에서 어떤 도구 결과를 인라인으로 유지할지 결정하는 우선순위 시스템입니다.
               점수가 높을수록 인라인 유지 우선순위가 높습니다.
             </p>
-            <div className="bg-bg-card border border-border rounded-xl overflow-hidden my-4">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden my-4">
               <table className="w-full border-collapse text-[13px]">
                 <thead>
                   <tr>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">점수</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">조건</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">이유</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">점수</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">조건</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">이유</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -806,10 +806,10 @@ ctx.dispose();`}
                     { score: "60", cond: "자주 재접근된 콜드 참조 (>2회)", reason: "반복 접근은 중요도가 높다는 신호" },
                     { score: "40", cond: "기타 도구 결과 (reads, searches)", reason: "기본 우선순위" },
                   ].map((row, i) => (
-                    <tr key={i} className="hover:bg-[rgba(59,130,246,0.03)] border-b border-[rgba(255,255,255,0.03)]">
-                      <td className="p-3 px-4 font-mono text-accent-orange font-bold">{row.score}</td>
-                      <td className="p-3 px-4 text-text-primary">{row.cond}</td>
-                      <td className="p-3 px-4 text-text-secondary">{row.reason}</td>
+                    <tr key={i} className="hover:bg-blue-50 border-b border-gray-200">
+                      <td className="p-3 px-4 font-mono text-amber-600 font-bold">{row.score}</td>
+                      <td className="p-3 px-4 text-gray-900">{row.cond}</td>
+                      <td className="p-3 px-4 text-gray-600">{row.reason}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -817,10 +817,10 @@ ctx.dispose();`}
             </div>
 
             {/* Key code excerpt */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               핵심 코드: prepare() 진입점
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               Agent Loop가 호출하는 메인 진입점입니다. 3개 Layer와 GC를 순서대로 조율합니다.
             </p>
             <CodeBlock>
@@ -861,19 +861,19 @@ async prepare(
             </CodeBlock>
 
             {/* Adaptive GC */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               적응적 GC 간격
             </h3>
-            <p className="text-[13px] text-text-secondary mb-3">
+            <p className="text-[13px] text-gray-600 mb-3">
               컨텍스트 사용량과 콜드 스토리지 크기에 따라 GC 주기를 자동 조절합니다.
             </p>
-            <div className="bg-bg-card border border-border rounded-xl overflow-hidden my-4">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden my-4">
               <table className="w-full border-collapse text-[13px]">
                 <thead>
                   <tr>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">조건</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">GC 간격</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">의미</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">조건</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">GC 간격</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">의미</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -882,10 +882,10 @@ async prepare(
                     { cond: "usage 50-80% OR coldStorage > 50개", interval: "5", meaning: "5회 압축마다 GC (중간)" },
                     { cond: "그 외", interval: "15", meaning: "15회 압축마다 GC (여유)" },
                   ].map((row, i) => (
-                    <tr key={i} className="hover:bg-[rgba(59,130,246,0.03)] border-b border-[rgba(255,255,255,0.03)]">
-                      <td className="p-3 px-4 text-text-primary">{row.cond}</td>
-                      <td className="p-3 px-4 font-mono text-accent-orange font-bold">{row.interval}</td>
-                      <td className="p-3 px-4 text-text-secondary">{row.meaning}</td>
+                    <tr key={i} className="hover:bg-blue-50 border-b border-gray-200">
+                      <td className="p-3 px-4 text-gray-900">{row.cond}</td>
+                      <td className="p-3 px-4 font-mono text-amber-600 font-bold">{row.interval}</td>
+                      <td className="p-3 px-4 text-gray-600">{row.meaning}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -893,16 +893,16 @@ async prepare(
             </div>
 
             {/* Constants */}
-            <h3 className="text-[15px] font-bold text-text-primary mt-8 mb-3">
+            <h3 className="text-[15px] font-bold text-gray-900" style={{ marginTop: "32px", marginBottom: "16px" }}>
               모듈 상수
             </h3>
-            <div className="bg-bg-card border border-border rounded-xl overflow-hidden my-4">
+            <div className="bg-white border border-gray-200 rounded-xl overflow-hidden my-4">
               <table className="w-full border-collapse text-[13px]">
                 <thead>
                   <tr>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">상수</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">값</th>
-                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">설명</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">상수</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">값</th>
+                    <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-400 bg-gray-50 border-b border-gray-200">설명</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -914,10 +914,10 @@ async prepare(
                     { name: "COLD_STORAGE_TTL_MS", val: "86,400,000 (24h)", desc: "콜드 스토리지 파일 기본 만료 시간" },
                     { name: "WRITE_TOOLS", val: "file_edit, file_write", desc: "Hot Tail에서 높은 우선순위를 받는 쓰기 도구" },
                   ].map((row, i) => (
-                    <tr key={i} className="hover:bg-[rgba(59,130,246,0.03)] border-b border-[rgba(255,255,255,0.03)]">
-                      <td className="p-3 px-4 font-mono text-accent-cyan font-semibold text-[12px]">{row.name}</td>
-                      <td className="p-3 px-4 font-mono text-accent-orange text-[12px]">{row.val}</td>
-                      <td className="p-3 px-4 text-text-secondary">{row.desc}</td>
+                    <tr key={i} className="hover:bg-blue-50 border-b border-gray-200">
+                      <td className="p-3 px-4 font-mono text-cyan-600 font-semibold text-[12px]">{row.name}</td>
+                      <td className="p-3 px-4 font-mono text-amber-600 text-[12px]">{row.val}</td>
+                      <td className="p-3 px-4 text-gray-600">{row.desc}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -930,8 +930,8 @@ async prepare(
             Section 6: 트러블슈팅
             ════════════════════════════════════════════ */}
         <RevealOnScroll>
-          <section className="mb-14">
-            <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-xl font-bold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>&#x1F527;</span> 트러블슈팅
             </h2>
 
@@ -939,19 +939,19 @@ async prepare(
               {/* FAQ 1 */}
               <DeepDive title="컨텍스트 오버플로우 (Context Overflow)가 발생합니다">
                 <div className="space-y-2">
-                  <p><strong className="text-text-primary">증상</strong>: LLM API가 &quot;context length exceeded&quot; 에러를 반환합니다.</p>
-                  <p><strong className="text-text-primary">원인</strong>:</p>
+                  <p><strong className="text-gray-900">증상</strong>: LLM API가 &quot;context length exceeded&quot; 에러를 반환합니다.</p>
+                  <p><strong className="text-gray-900">원인</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li><code className="text-accent-cyan text-[12px]">prepare()</code>를 호출하지 않고 원본 메시지를 LLM에 전달한 경우</li>
-                    <li><code className="text-accent-cyan text-[12px]">prepare()</code>의 반환값을 사용하지 않는 경우</li>
-                    <li><code className="text-accent-cyan text-[12px]">maxContextTokens</code> 설정이 실제 모델 한도보다 높게 설정된 경우</li>
+                    <li><code className="text-cyan-600 text-[12px]">prepare()</code>를 호출하지 않고 원본 메시지를 LLM에 전달한 경우</li>
+                    <li><code className="text-cyan-600 text-[12px]">prepare()</code>의 반환값을 사용하지 않는 경우</li>
+                    <li><code className="text-cyan-600 text-[12px]">maxContextTokens</code> 설정이 실제 모델 한도보다 높게 설정된 경우</li>
                     <li>단일 메시지가 전체 budget의 83.5%를 초과하는 경우 (압축해도 줄일 수 없음)</li>
                   </ul>
-                  <p><strong className="text-text-primary">해결</strong>:</p>
+                  <p><strong className="text-gray-900">해결</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li><code className="text-accent-cyan text-[12px]">messages = await ctx.prepare(messages)</code>로 반환값을 재할당하세요</li>
-                    <li><code className="text-accent-cyan text-[12px]">getUsage()</code>로 현재 사용량을 확인하세요</li>
-                    <li><code className="text-accent-cyan text-[12px]">maxContextTokens</code>를 모델의 실제 한도에 맞추세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">messages = await ctx.prepare(messages)</code>로 반환값을 재할당하세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">getUsage()</code>로 현재 사용량을 확인하세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">maxContextTokens</code>를 모델의 실제 한도에 맞추세요</li>
                   </ul>
                 </div>
               </DeepDive>
@@ -959,14 +959,14 @@ async prepare(
               {/* FAQ 2 */}
               <DeepDive title="자동 압축이 트리거되지 않습니다">
                 <div className="space-y-2">
-                  <p><strong className="text-text-primary">증상</strong>: 대화가 길어져도 압축이 실행되지 않습니다.</p>
-                  <p><strong className="text-text-primary">원인</strong>:</p>
+                  <p><strong className="text-gray-900">증상</strong>: 대화가 길어져도 압축이 실행되지 않습니다.</p>
+                  <p><strong className="text-gray-900">원인</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li><code className="text-accent-cyan text-[12px]">compactionThreshold</code>가 1.0 이상으로 설정된 경우 (사실상 비활성화)</li>
-                    <li><code className="text-accent-cyan text-[12px]">maxContextTokens</code>가 실제보다 매우 크게 설정되어 usageRatio가 항상 낮은 경우</li>
+                    <li><code className="text-cyan-600 text-[12px]">compactionThreshold</code>가 1.0 이상으로 설정된 경우 (사실상 비활성화)</li>
+                    <li><code className="text-cyan-600 text-[12px]">maxContextTokens</code>가 실제보다 매우 크게 설정되어 usageRatio가 항상 낮은 경우</li>
                     <li>Microcompaction이 도구 출력을 효율적으로 정리하여 임계값에 도달하지 않는 경우 (정상 동작)</li>
                   </ul>
-                  <p><strong className="text-text-primary">확인 방법</strong>:</p>
+                  <p><strong className="text-gray-900">확인 방법</strong>:</p>
                   <CodeBlock>
 {`const usage = ctx.getUsage(messages);
 console.log(\`사용률: \${(usage.usageRatio * 100).toFixed(1)}%\`);
@@ -979,18 +979,18 @@ console.log(\`임계값: \${(ctx['compactionThreshold'] * 100).toFixed(1)}%\`);
               {/* FAQ 3 */}
               <DeepDive title="콜드 스토리지 디스크 공간 문제">
                 <div className="space-y-2">
-                  <p><strong className="text-text-primary">증상</strong>: 콜드 스토리지 디렉토리가 비정상적으로 커집니다.</p>
-                  <p><strong className="text-text-primary">원인</strong>:</p>
+                  <p><strong className="text-gray-900">증상</strong>: 콜드 스토리지 디렉토리가 비정상적으로 커집니다.</p>
+                  <p><strong className="text-gray-900">원인</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
                     <li>GC가 실행되기 전에 세션이 자주 종료되는 경우</li>
-                    <li><code className="text-accent-cyan text-[12px]">coldStorageTtlMs</code>가 너무 길게 설정된 경우</li>
+                    <li><code className="text-cyan-600 text-[12px]">coldStorageTtlMs</code>가 너무 길게 설정된 경우</li>
                     <li>대용량 도구 출력이 매우 빈번한 워크플로우</li>
                   </ul>
-                  <p><strong className="text-text-primary">해결</strong>:</p>
+                  <p><strong className="text-gray-900">해결</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li><code className="text-accent-cyan text-[12px]">await ctx.cleanupColdStorage()</code>를 수동으로 호출하세요</li>
-                    <li><code className="text-accent-cyan text-[12px]">coldStorageTtlMs</code>를 줄이세요 (예: 4시간 = 14,400,000ms)</li>
-                    <li>세션 종료 시 <code className="text-accent-cyan text-[12px]">ctx.dispose()</code>를 호출하고, 콜드 스토리지 디렉토리를 정리하세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">await ctx.cleanupColdStorage()</code>를 수동으로 호출하세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">coldStorageTtlMs</code>를 줄이세요 (예: 4시간 = 14,400,000ms)</li>
+                    <li>세션 종료 시 <code className="text-cyan-600 text-[12px]">ctx.dispose()</code>를 호출하고, 콜드 스토리지 디렉토리를 정리하세요</li>
                   </ul>
                 </div>
               </DeepDive>
@@ -998,19 +998,19 @@ console.log(\`임계값: \${(ctx['compactionThreshold'] * 100).toFixed(1)}%\`);
               {/* FAQ 4 */}
               <DeepDive title="압축 후 LLM이 이전 맥락을 잊어버립니다">
                 <div className="space-y-2">
-                  <p><strong className="text-text-primary">증상</strong>: 압축 후 LLM이 이전에 논의한 내용을 기억하지 못합니다.</p>
-                  <p><strong className="text-text-primary">원인</strong>:</p>
+                  <p><strong className="text-gray-900">증상</strong>: 압축 후 LLM이 이전에 논의한 내용을 기억하지 못합니다.</p>
+                  <p><strong className="text-gray-900">원인</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li><code className="text-accent-cyan text-[12px]">client</code>가 설정되지 않아 로컬 추출(extractive) 요약이 사용된 경우 - 로컬 추출은 단순 잘라내기이므로 중요 맥락 손실 가능</li>
-                    <li><code className="text-accent-cyan text-[12px]">preserveRecentTurns</code>가 너무 작은 경우 (직전 맥락 부족)</li>
+                    <li><code className="text-cyan-600 text-[12px]">client</code>가 설정되지 않아 로컬 추출(extractive) 요약이 사용된 경우 - 로컬 추출은 단순 잘라내기이므로 중요 맥락 손실 가능</li>
+                    <li><code className="text-cyan-600 text-[12px]">preserveRecentTurns</code>가 너무 작은 경우 (직전 맥락 부족)</li>
                     <li>리하이드레이션 파일이 현재 작업과 관련 없는 파일인 경우</li>
                   </ul>
-                  <p><strong className="text-text-primary">해결</strong>:</p>
+                  <p><strong className="text-gray-900">해결</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li>반드시 <code className="text-accent-cyan text-[12px]">client</code>(LLM provider)를 설정하여 LLM 기반 요약을 활성화하세요</li>
-                    <li><code className="text-accent-cyan text-[12px]">preserveRecentTurns</code>를 5 이상으로 유지하세요</li>
-                    <li><code className="text-accent-cyan text-[12px]">rehydrationStrategy: &quot;mixed&quot;</code>를 사용하여 최근 + 빈번 파일을 모두 재읽기하세요</li>
-                    <li><code className="text-accent-cyan text-[12px]">/compact &quot;주제&quot;</code>로 중요한 주제를 명시하여 수동 압축하세요</li>
+                    <li>반드시 <code className="text-cyan-600 text-[12px]">client</code>(LLM provider)를 설정하여 LLM 기반 요약을 활성화하세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">preserveRecentTurns</code>를 5 이상으로 유지하세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">rehydrationStrategy: &quot;mixed&quot;</code>를 사용하여 최근 + 빈번 파일을 모두 재읽기하세요</li>
+                    <li><code className="text-cyan-600 text-[12px]">/compact &quot;주제&quot;</code>로 중요한 주제를 명시하여 수동 압축하세요</li>
                   </ul>
                 </div>
               </DeepDive>
@@ -1018,16 +1018,16 @@ console.log(\`임계값: \${(ctx['compactionThreshold'] * 100).toFixed(1)}%\`);
               {/* FAQ 5 */}
               <DeepDive title="리하이드레이션이 작동하지 않습니다">
                 <div className="space-y-2">
-                  <p><strong className="text-text-primary">증상</strong>: 압축 후 파일 재읽기(rehydration) 시스템 메시지가 추가되지 않습니다.</p>
-                  <p><strong className="text-text-primary">원인</strong>:</p>
+                  <p><strong className="text-gray-900">증상</strong>: 압축 후 파일 재읽기(rehydration) 시스템 메시지가 추가되지 않습니다.</p>
+                  <p><strong className="text-gray-900">원인</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li><code className="text-accent-cyan text-[12px]">trackFileAccess()</code>가 호출되지 않아 추적된 파일이 없는 경우</li>
+                    <li><code className="text-cyan-600 text-[12px]">trackFileAccess()</code>가 호출되지 않아 추적된 파일이 없는 경우</li>
                     <li>추적된 모든 파일이 삭제/이동되어 readFile이 실패하는 경우 (조용히 건너뜀)</li>
                     <li>리하이드레이션 budget(5%)이 이미 소진된 경우</li>
                   </ul>
-                  <p><strong className="text-text-primary">확인 방법</strong>:</p>
+                  <p><strong className="text-gray-900">확인 방법</strong>:</p>
                   <ul className="list-disc list-inside pl-2 space-y-1">
-                    <li>도구가 파일에 접근할 때마다 <code className="text-accent-cyan text-[12px]">ctx.trackFileAccess(filePath)</code>를 호출하는지 확인하세요</li>
+                    <li>도구가 파일에 접근할 때마다 <code className="text-cyan-600 text-[12px]">ctx.trackFileAccess(filePath)</code>를 호출하는지 확인하세요</li>
                     <li>압축 후 메시지 배열의 마지막 system 메시지에 &quot;[Post-compaction rehydration]&quot; 마커가 있는지 확인하세요</li>
                     <li>추적된 파일의 존재 여부를 확인하세요</li>
                   </ul>
@@ -1041,8 +1041,8 @@ console.log(\`임계값: \${(ctx['compactionThreshold'] * 100).toFixed(1)}%\`);
             Section 7: 관련 문서
             ════════════════════════════════════════════ */}
         <RevealOnScroll>
-          <section className="mb-8">
-            <h2 className="text-xl font-bold mb-5 flex items-center gap-2">
+          <section style={{ marginBottom: "64px" }}>
+            <h2 className="text-xl font-bold flex items-center gap-2" style={{ marginBottom: "24px", marginTop: "0" }}>
               <span>&#x1F517;</span> 관련 문서
             </h2>
 

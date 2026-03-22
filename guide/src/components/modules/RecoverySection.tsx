@@ -7,59 +7,64 @@ import { CodeBlock } from "../CodeBlock";
 import { ImplDirection } from "../ImplDirection";
 import { RevealOnScroll } from "../RevealOnScroll";
 
-const circuitBreakerChart = `stateDiagram-v2
-    [*] --> CLOSED: 초기 상태
-    CLOSED --> CLOSED: recordIteration() 정상
+const circuitBreakerChart = `graph TD
+    START(("시작")) --> CLOSED["CLOSED (정상)<br/><small>recordIteration() 반복 실행 중</small>"]
 
-    CLOSED --> OPEN_NO_CHANGE: 5회 연속 무변경
-    CLOSED --> OPEN_SAME_ERROR: 5회 동일 에러
-    CLOSED --> OPEN_MAX_ITER: 50회 반복 도달
+    CLOSED -->|"5회 연속 무변경"| OPEN1["OPEN: 파일 미수정 + LLM 무출력<br/><small>파일 변경 없이 도구만 반복 호출</small>"]
+    CLOSED -->|"5회 동일 에러"| OPEN2["OPEN: 같은 에러 메시지 반복<br/><small>동일한 에러가 5회 연속 발생</small>"]
+    CLOSED -->|"50회 반복 도달"| OPEN3["OPEN: 최대 반복 초과<br/><small>maxIterations 한계에 도달</small>"]
 
-    state OPEN {
-        OPEN_NO_CHANGE: 파일 미수정 + LLM 무출력
-        OPEN_SAME_ERROR: 같은 에러 메시지 반복
-        OPEN_MAX_ITER: 최대 반복 초과
-    }
+    OPEN1 --> RECOVERY["RECOVERY<br/><small>Recovery Executor 호출</small>"]
+    OPEN2 --> RECOVERY
+    OPEN3 --> RECOVERY
 
-    OPEN --> RECOVERY: Recovery Executor 호출
-    RECOVERY --> CLOSED: reset() 복구 성공
-    RECOVERY --> ABORT: 복구 실패 중단`;
+    RECOVERY -->|"reset() 복구 성공"| CLOSED
+    RECOVERY -->|"복구 실패"| ABORT["ABORT<br/><small>루프 중단</small>"]
 
-const recoveryChart = `graph LR
-    ERROR["에러 발생"] --> CLASSIFY{"에러 분류"}
-    CLASSIFY -->|"request too large"| COMPACT["Compact 전략"]
-    CLASSIFY -->|"ETIMEDOUT / 502"| RETRY["Retry 전략"]
-    CLASSIFY -->|"parse error"| FALLBACK["Fallback 전략"]
-    CLASSIFY -->|"ELOCK"| RETRY_LOCK["Lock Retry"]
-    COMPACT --> C_ACT["메시지 압축 재시도 1회"]
-    RETRY --> R_ACT["지수 백오프 최대 3회"]
-    FALLBACK --> F_ACT["text-parsing 전환 1회"]
-    RETRY_LOCK --> RL_ACT["1s 대기 최대 3회"]
-    C_ACT --> RESULT{"결과"}
+    style CLOSED fill:#dcfce7,stroke:#10b981,color:#065f46,stroke-width:2px
+    style OPEN1 fill:#fef3c7,stroke:#f59e0b,color:#92400e
+    style OPEN2 fill:#fef3c7,stroke:#f59e0b,color:#92400e
+    style OPEN3 fill:#fef3c7,stroke:#f59e0b,color:#92400e
+    style RECOVERY fill:#dbeafe,stroke:#3b82f6,color:#1e40af
+    style ABORT fill:#fee2e2,stroke:#ef4444,color:#991b1b`;
+
+const recoveryChart = `graph TD
+    ERROR["ERROR<br/><small>도구 실행 또는 LLM 호출에서 에러 감지</small>"] --> CLASSIFY{"CLASSIFY<br/><small>RecoveryStrategy 매핑으로 유형 판별</small>"}
+    CLASSIFY -->|"request too large"| COMPACT["COMPACT<br/><small>컨텍스트 토큰 초과 에러</small>"]
+    CLASSIFY -->|"ETIMEDOUT / 502"| RETRY["RETRY<br/><small>일시적 네트워크/API 에러</small>"]
+    CLASSIFY -->|"parse error"| FALLBACK["FALLBACK<br/><small>모델 능력 부족 에러</small>"]
+    CLASSIFY -->|"ELOCK"| RETRY_LOCK["RETRY_LOCK<br/><small>파일 잠금 충돌</small>"]
+    COMPACT --> C_ACT["메시지 압축 재시도 1회<br/><small>압축 후 재시도</small>"]
+    RETRY --> R_ACT["지수 백오프 최대 3회<br/><small>지수 백오프 후 재시도</small>"]
+    FALLBACK --> F_ACT["text-parsing 전환 1회<br/><small>대체 모델로 전환</small>"]
+    RETRY_LOCK --> RL_ACT["1s 대기 최대 3회<br/><small>대기 후 재시도</small>"]
+    C_ACT --> RESULT{"RESULT<br/><small>복구 시도 결과 판정</small>"}
     R_ACT --> RESULT
     F_ACT --> RESULT
     RL_ACT --> RESULT
-    RESULT -->|"성공"| OK["루프 계속"]
-    RESULT -->|"실패"| ABORT_R["루프 중단"]
-    style ERROR fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9
-    style OK fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
-    style ABORT_R fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9`;
+    RESULT -->|"성공"| OK["OK<br/><small>복구 성공 → 에이전트 루프 재개</small>"]
+    RESULT -->|"실패"| ABORT_R["ABORT<br/><small>복구 실패 → 사용자에게 에러 보고</small>"]
+    style ERROR fill:#fee2e2,stroke:#ef4444,color:#1e293b
+    style OK fill:#dcfce7,stroke:#10b981,color:#1e293b
+    style ABORT_R fill:#fee2e2,stroke:#ef4444,color:#1e293b`;
 
 export function RecoverySection() {
   return (
-    <section id="recovery" className="py-20">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
+    <section id="recovery" className="py-16 bg-violet-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+      <div className="center-container">
         <RevealOnScroll>
-          <SectionHeader
-            label="MODULE 07"
-            labelColor="red"
-            title="Recovery & Circuit Breaker"
-            description="에러 발생 시 자동 복구하고, 무한 루프를 감지하여 차단하는 안전장치입니다."
-          />
+          <div style={{ marginBottom: "48px" }}>
+            <SectionHeader
+              label="MODULE 07"
+              labelColor="red"
+              title="Recovery & Circuit Breaker"
+              description="에러 발생 시 자동 복구하고, 무한 루프를 감지하여 차단하는 안전장치입니다."
+            />
+          </div>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <div className="flex gap-2 flex-wrap mb-5">
+          <div className="flex gap-2 flex-wrap mb-6">
             <FilePath path="src/core/circuit-breaker.ts" />
             <FilePath path="src/core/recovery-executor.ts" />
           </div>
@@ -74,7 +79,7 @@ export function RecoverySection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mb-4">Circuit Breaker 내부 상태</h3>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>Circuit Breaker 내부 상태</h3>
           <CodeBlock>
             <span className="kw">class</span> <span className="type">CircuitBreaker</span> {"{"}{"\n"}
             {"  "}<span className="cm">{"// 카운터"}</span>{"\n"}

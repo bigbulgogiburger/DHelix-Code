@@ -7,26 +7,26 @@ import { ImplDirection } from "../ImplDirection";
 import { RevealOnScroll } from "../RevealOnScroll";
 
 const configMergeChart = `graph BT
-    D["defaults.ts 하드코딩 기본값"] --> MERGE["Deep Merge"]
-    U["~/.dbcode/settings.json 사용자 전역"] --> MERGE
-    P[".dbcode/settings.json 프로젝트 설정"] --> MERGE
-    E["환경변수 LOCAL_API_BASE_URL 등"] --> MERGE
-    C["CLI Flags --model --verbose 최우선"] --> MERGE
-    MERGE --> FINAL["최종 Config"]
-    style MERGE fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
-    style C fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
-    style FINAL fill:#1e3a2a,stroke:#10b981,color:#f1f5f9`;
+    D["defaults.ts 하드코딩 기본값<br/><small>하드코딩 기본값 안전망</small>"] --> MERGE["Deep Merge<br/><small>5개 레이어를 깊은 병합</small>"]
+    U["~/.dbcode/settings.json 사용자 전역<br/><small>사용자 전역 설정</small>"] --> MERGE
+    P[".dbcode/settings.json 프로젝트 설정<br/><small>프로젝트별 팀 공유 설정</small>"] --> MERGE
+    E["환경변수 LOCAL_API_BASE_URL 등<br/><small>DBCODE_* OPENAI_* 등</small>"] --> MERGE
+    C["CLI Flags --model --verbose 최우선<br/><small>--model --verbose 등 일회성</small>"] --> MERGE
+    MERGE --> FINAL["최종 Config<br/><small>Zod 스키마 검증된 최종 설정</small>"]
+    style MERGE fill:#dcfce7,stroke:#10b981,color:#1e293b
+    style C fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
+    style FINAL fill:#dcfce7,stroke:#10b981,color:#1e293b`;
 
 const dbcodeLoadChart = `graph LR
-    G["1. ~/.dbcode/DBCODE.md 전역"] --> GR["2. ~/.dbcode/rules/*.md 전역 규칙"]
-    GR --> PD["3. 상위 디렉토리 ../DBCODE.md 체인"]
-    PD --> P["4. ./DBCODE.md 프로젝트"]
-    P --> PR["5. .dbcode/rules/*.md 프로젝트 규칙"]
-    PR --> L["6. .dbcode/DBCODE.local.md 로컬"]
-    L --> CONCAT["순서대로 연결"]
-    CONCAT --> PROMPT["system-prompt-builder.ts에 주입"]
-    style CONCAT fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
-    style PROMPT fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9`;
+    G["1. ~/.dbcode/DBCODE.md 전역<br/><small>~/.dbcode/DBCODE.md</small>"] --> GR["2. ~/.dbcode/rules/*.md 전역 규칙<br/><small>~/.dbcode/rules/*.md 경로 조건부</small>"]
+    GR --> PD["3. 상위 디렉토리 ../DBCODE.md 체인<br/><small>부모 디렉토리 DBCODE.md 모노레포</small>"]
+    PD --> P["4. ./DBCODE.md 프로젝트<br/><small>{root}/DBCODE.md</small>"]
+    P --> PR["5. .dbcode/rules/*.md 프로젝트 규칙<br/><small>.dbcode/rules/*.md 경로 조건부</small>"]
+    PR --> L["6. .dbcode/DBCODE.local.md 로컬<br/><small>DBCODE.local.md 개인 gitignore</small>"]
+    L --> CONCAT["순서대로 연결<br/><small>'\\n\\n---\\n\\n' 구분자로 합침</small>"]
+    CONCAT --> PROMPT["system-prompt-builder.ts에 주입<br/><small>buildSystemPrompt()에서 사용</small>"]
+    style CONCAT fill:#dbeafe,stroke:#3b82f6,color:#1e293b
+    style PROMPT fill:#ede9fe,stroke:#8b5cf6,color:#1e293b`;
 
 const configPaths = [
   { use: "프로젝트 설정", path: ".dbcode/settings.json", git: "✅", desc: "프로젝트 전용 설정 (팀 공유)" },
@@ -41,19 +41,21 @@ const configPaths = [
 
 export function ConfigSection() {
   return (
-    <section id="config" className="py-20 bg-bg-secondary">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-8">
+    <section id="config" className="py-16 bg-amber-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+      <div className="center-container">
         <RevealOnScroll>
-          <SectionHeader
-            label="MODULE 08"
-            labelColor="green"
-            title="Config & Instructions — 설정 계층"
-            description="5-Layer 설정 병합 + 6단계 DBCODE.md 로딩으로 유연한 설정 관리를 구현합니다."
-          />
+          <div style={{ marginBottom: "48px" }}>
+            <SectionHeader
+              label="MODULE 08"
+              labelColor="green"
+              title="Config & Instructions — 설정 계층"
+              description="5-Layer 설정 병합 + 6단계 DBCODE.md 로딩으로 유연한 설정 관리를 구현합니다."
+            />
+          </div>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <div className="flex gap-2 flex-wrap mb-5">
+          <div className="flex gap-2 flex-wrap mb-6">
             <FilePath path="src/config/loader.ts" />
             <FilePath path="src/config/defaults.ts" />
             <FilePath path="src/instructions/loader.ts" />
@@ -69,23 +71,23 @@ export function ConfigSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-bold mb-4">주요 설정/데이터 경로 정리</h3>
-          <div className="bg-bg-card border border-border rounded-2xl overflow-hidden overflow-x-auto">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>주요 설정/데이터 경로 정리</h3>
+          <div className="border border-[#e2e8f0] rounded-lg overflow-hidden overflow-x-auto bg-white" style={{ marginBottom: "24px" }}>
             <table className="w-full border-collapse min-w-[600px]">
               <thead>
                 <tr>
                   {["구분", "경로", "Git", "설명"].map((h) => (
-                    <th key={h} className="p-3 px-5 text-left text-[11px] font-bold uppercase tracking-wider text-text-muted bg-[rgba(255,255,255,0.02)] border-b border-border">{h}</th>
+                    <th key={h} className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody className="text-[13px]">
+              <tbody className="text-sm">
                 {configPaths.map((row, i) => (
-                  <tr key={i} className="hover:bg-[rgba(59,130,246,0.03)] border-b border-[rgba(255,255,255,0.03)]">
-                    <td className="p-3 px-5">{row.use}</td>
-                    <td className="p-3 px-5 font-mono text-accent-cyan font-semibold text-xs">{row.path}</td>
-                    <td className="p-3 px-5">{row.git}</td>
-                    <td className="p-3 px-5">{row.desc}</td>
+                  <tr key={i} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                    <td className="p-3 px-4 text-sm">{row.use}</td>
+                    <td className="p-3 px-4 text-sm font-mono text-cyan-600 font-semibold text-xs">{row.path}</td>
+                    <td className="p-3 px-4 text-sm">{row.git}</td>
+                    <td className="p-3 px-4 text-sm">{row.desc}</td>
                   </tr>
                 ))}
               </tbody>

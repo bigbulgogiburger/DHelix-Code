@@ -6,27 +6,28 @@ interface SectionHeaderProps {
 }
 
 const colorMap: Record<string, string> = {
-  blue: "text-accent-blue bg-[rgba(59,130,246,0.1)]",
-  purple: "text-accent-purple bg-[rgba(139,92,246,0.1)]",
-  green: "text-accent-green bg-[rgba(16,185,129,0.1)]",
-  orange: "text-accent-orange bg-[rgba(245,158,11,0.1)]",
-  cyan: "text-accent-cyan bg-[rgba(6,182,212,0.1)]",
-  pink: "text-accent-pink bg-[rgba(236,72,153,0.1)]",
-  red: "text-accent-red bg-[rgba(239,68,68,0.1)]",
+  blue: "bg-blue-100 text-blue-700",
+  purple: "bg-violet-100 text-violet-700",
+  green: "bg-emerald-100 text-emerald-700",
+  orange: "bg-amber-100 text-amber-700",
+  cyan: "bg-cyan-100 text-cyan-700",
+  pink: "bg-pink-100 text-pink-700",
+  red: "bg-red-100 text-red-700",
 };
 
 export function SectionHeader({ label, labelColor, title, description }: SectionHeaderProps) {
   return (
-    <div className="text-center mb-14">
+    <div className="text-center mb-14" style={{ textAlign: "center", marginBottom: "48px" }}>
       <span
         className={`inline-block text-[11px] font-bold uppercase tracking-[2px] px-3.5 py-1.5 rounded-md mb-3.5 ${colorMap[labelColor]}`}
+        style={{ padding: "4px 12px", marginBottom: "12px", display: "inline-block" }}
       >
         {label}
       </span>
-      <h2 className="text-[clamp(26px,3.2vw,38px)] font-extrabold tracking-tight mb-3">
+      <h2 className="text-[clamp(26px,3.2vw,38px)] font-extrabold tracking-tight mb-3 text-gray-900" style={{ marginBottom: "12px" }}>
         {title}
       </h2>
-      <p className="text-[15px] text-text-secondary max-w-[620px] mx-auto">{description}</p>
+      <p className="text-[15px] text-gray-600 max-w-[620px]" style={{ maxWidth: "600px", marginLeft: "auto", marginRight: "auto" }}>{description}</p>
     </div>
   );
 }

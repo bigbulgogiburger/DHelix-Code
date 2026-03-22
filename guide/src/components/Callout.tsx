@@ -5,17 +5,23 @@ interface CalloutProps {
 }
 
 const typeStyles: Record<string, string> = {
-  info: "bg-[rgba(59,130,246,0.08)] border-l-[3px] border-l-accent-blue",
-  warn: "bg-[rgba(245,158,11,0.08)] border-l-[3px] border-l-accent-orange",
-  tip: "bg-[rgba(16,185,129,0.08)] border-l-[3px] border-l-accent-green",
-  danger: "bg-[rgba(239,68,68,0.08)] border-l-[3px] border-l-accent-red",
+  info: "bg-blue-50 border-l-4 border-l-blue-500",
+  warn: "bg-amber-50 border-l-4 border-l-amber-500",
+  tip: "bg-emerald-50 border-l-4 border-l-emerald-500",
+  danger: "bg-red-50 border-l-4 border-l-red-500",
 };
 
 export function Callout({ type, icon, children }: CalloutProps) {
+  const isAlertRole = type === "warn" || type === "danger";
+
   return (
-    <div className={`flex gap-3.5 p-[18px] rounded-[10px] my-3.5 text-[13px] ${typeStyles[type]}`}>
-      <span className="text-base shrink-0">{icon}</span>
-      <div>{children}</div>
+    <div
+      className={`flex gap-3 p-4 my-5 rounded-r-lg text-sm text-gray-700 ${typeStyles[type]}`}
+      style={{ padding: "16px", margin: "20px 0" }}
+      {...(isAlertRole ? { role: "alert" } : {})}
+    >
+      <span className="text-lg shrink-0" style={{ width: "1.5rem", textAlign: "center" }}>{icon}</span>
+      <div className="flex-1">{children}</div>
     </div>
   );
 }
