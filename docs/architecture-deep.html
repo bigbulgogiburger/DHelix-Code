@@ -1,0 +1,1449 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dbcode — Module Deep Dive</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: #1a2035;
+    --bg-card-hover: #1e2642;
+    --border: #2a3454;
+    --border-glow: #3b82f6;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #3b82f6;
+    --accent-cyan: #06b6d4;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+    --accent-orange: #f59e0b;
+    --accent-pink: #ec4899;
+    --accent-red: #ef4444;
+    --gradient-blue: linear-gradient(135deg, #3b82f6, #06b6d4);
+    --gradient-purple: linear-gradient(135deg, #8b5cf6, #ec4899);
+    --gradient-green: linear-gradient(135deg, #10b981, #06b6d4);
+    --gradient-orange: linear-gradient(135deg, #f59e0b, #ef4444);
+    --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.15);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; scrollbar-width: thin; scrollbar-color: var(--border) var(--bg-primary); }
+  body {
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ─── Navigation ─── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10, 14, 26, 0.88);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    transition: box-shadow 0.3s;
+  }
+  nav.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.3); }
+  .nav-inner {
+    max-width: 1400px; margin: 0 auto; padding: 0 32px;
+    display: flex; align-items: center; justify-content: space-between; height: 64px;
+  }
+  .nav-logo { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
+  .nav-logo span { background: var(--gradient-purple); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav-links { display: flex; gap: 4px; flex-wrap: wrap; }
+  .nav-links a {
+    color: var(--text-secondary); text-decoration: none;
+    padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 500; transition: all 0.2s;
+  }
+  .nav-links a:hover, .nav-links a.active { color: var(--text-primary); background: rgba(139,92,246,0.12); }
+  .nav-back {
+    color: var(--text-muted); text-decoration: none; font-size: 13px;
+    display: flex; align-items: center; gap: 6px; transition: color 0.2s;
+  }
+  .nav-back:hover { color: var(--accent-blue); }
+
+  /* ─── Hero ─── */
+  .hero {
+    padding: 130px 32px 70px; text-align: center; position: relative; overflow: hidden;
+  }
+  .hero::before {
+    content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(139,92,246,0.06) 0%, transparent 50%);
+    animation: heroGlow 10s ease-in-out infinite alternate;
+  }
+  @keyframes heroGlow { 0% { transform: translate(0,0); } 100% { transform: translate(-3%,3%); } }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 16px; background: rgba(139,92,246,0.1);
+    border: 1px solid rgba(139,92,246,0.2); border-radius: 100px;
+    font-size: 13px; color: var(--accent-purple); font-weight: 600; margin-bottom: 24px; position: relative;
+  }
+  .hero h1 {
+    font-size: clamp(32px, 4.5vw, 56px); font-weight: 900; letter-spacing: -2px;
+    line-height: 1.15; margin-bottom: 20px; position: relative;
+  }
+  .hero h1 .gradient { background: var(--gradient-purple); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p { font-size: 17px; color: var(--text-secondary); max-width: 680px; margin: 0 auto; position: relative; }
+
+  /* ─── Container / Section ─── */
+  .container { max-width: 1400px; margin: 0 auto; padding: 0 32px; }
+  section { padding: 80px 0; }
+  .section-header { text-align: center; margin-bottom: 56px; }
+  .section-label {
+    display: inline-block; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 2px;
+    padding: 5px 14px; border-radius: 6px; margin-bottom: 14px;
+  }
+  .section-label.blue { color: var(--accent-blue); background: rgba(59,130,246,0.1); }
+  .section-label.purple { color: var(--accent-purple); background: rgba(139,92,246,0.1); }
+  .section-label.green { color: var(--accent-green); background: rgba(16,185,129,0.1); }
+  .section-label.orange { color: var(--accent-orange); background: rgba(245,158,11,0.1); }
+  .section-label.cyan { color: var(--accent-cyan); background: rgba(6,182,212,0.1); }
+  .section-label.pink { color: var(--accent-pink); background: rgba(236,72,153,0.1); }
+  .section-label.red { color: var(--accent-red); background: rgba(239,68,68,0.1); }
+  .section-title { font-size: clamp(26px, 3.2vw, 38px); font-weight: 800; letter-spacing: -1px; margin-bottom: 12px; }
+  .section-desc { font-size: 15px; color: var(--text-secondary); max-width: 620px; margin: 0 auto; }
+
+  /* ─── Diagram ─── */
+  .diagram-wrapper {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 36px; margin-bottom: 32px; overflow-x: auto;
+  }
+  .diagram-wrapper .mermaid { display: flex; justify-content: center; }
+  .diagram-title {
+    font-size: 15px; font-weight: 700; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .diagram-title::before {
+    content: ''; width: 4px; height: 18px; border-radius: 2px;
+  }
+  .diagram-title.blue::before { background: var(--gradient-blue); }
+  .diagram-title.purple::before { background: var(--gradient-purple); }
+  .diagram-title.green::before { background: var(--gradient-green); }
+  .diagram-title.orange::before { background: var(--gradient-orange); }
+  .diagram-title.pink::before { background: linear-gradient(135deg, #ec4899, #8b5cf6); }
+  .diagram-title.cyan::before { background: linear-gradient(135deg, #06b6d4, #3b82f6); }
+  .diagram-title.red::before { background: linear-gradient(135deg, #ef4444, #f59e0b); }
+
+  /* ─── Code Block ─── */
+  .code-block {
+    background: #0d1117; border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 20px; overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 12.5px; line-height: 1.8; color: #e6edf3; margin: 14px 0;
+  }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .type { color: #79c0ff; }
+  .code-block .fn { color: #d2a8ff; }
+  .code-block .cm { color: #8b949e; }
+  .code-block .prop { color: #7ee787; }
+  .code-block .num { color: #ffa657; }
+
+  /* ─── Card ─── */
+  .card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 24px; transition: all 0.3s; position: relative; overflow: hidden;
+  }
+  .card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    opacity: 0; transition: opacity 0.3s;
+  }
+  .card:hover { border-color: rgba(59,130,246,0.3); transform: translateY(-2px); box-shadow: var(--shadow-glow); }
+  .card:hover::before { opacity: 1; }
+  .card.purple::before { background: var(--gradient-purple); }
+  .card.blue::before { background: var(--gradient-blue); }
+  .card.green::before { background: var(--gradient-green); }
+  .card.orange::before { background: var(--gradient-orange); }
+
+  /* ─── Callout ─── */
+  .callout {
+    display: flex; gap: 14px; padding: 18px; border-radius: var(--radius-sm);
+    margin: 14px 0; font-size: 13px;
+  }
+  .callout.info { background: rgba(59,130,246,0.08); border-left: 3px solid var(--accent-blue); }
+  .callout.warn { background: rgba(245,158,11,0.08); border-left: 3px solid var(--accent-orange); }
+  .callout.tip { background: rgba(16,185,129,0.08); border-left: 3px solid var(--accent-green); }
+  .callout.danger { background: rgba(239,68,68,0.08); border-left: 3px solid var(--accent-red); }
+  .callout .callout-icon { font-size: 16px; flex-shrink: 0; }
+
+  /* ─── File Path Tag ─── */
+  .file-path {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;
+    color: var(--accent-cyan); background: rgba(6,182,212,0.08);
+    padding: 3px 10px; border-radius: 5px; margin: 4px 0;
+  }
+
+  /* ─── Flow Steps ─── */
+  .flow-steps {
+    display: flex; flex-direction: column; gap: 14px;
+    position: relative; padding-left: 32px;
+  }
+  .flow-steps::before {
+    content: ''; position: absolute; left: 11px; top: 24px; bottom: 24px; width: 2px;
+    background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), var(--accent-green));
+    border-radius: 2px;
+  }
+  .flow-step {
+    position: relative; padding: 18px; background: var(--bg-card);
+    border: 1px solid var(--border); border-radius: var(--radius-sm); transition: all 0.2s;
+  }
+  .flow-step:hover { border-color: rgba(59,130,246,0.3); }
+  .flow-step::before {
+    content: attr(data-step); position: absolute; left: -32px; top: 18px;
+    width: 22px; height: 22px; border-radius: 50%; background: var(--accent-blue);
+    color: white; font-size: 10px; font-weight: 800;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .flow-step h4 { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .flow-step p { font-size: 12.5px; color: var(--text-secondary); }
+
+  /* ─── Grid Helpers ─── */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 16px; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px; }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+
+  /* ─── Impl Direction ─── */
+  .impl-dir {
+    background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(59,130,246,0.06));
+    border: 1px solid rgba(139,92,246,0.15); border-radius: var(--radius);
+    padding: 24px; margin-top: 24px;
+  }
+  .impl-dir h4 {
+    font-size: 15px; font-weight: 700; margin-bottom: 12px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .impl-dir ul { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .impl-dir li {
+    font-size: 13px; color: var(--text-secondary); padding-left: 20px; position: relative;
+  }
+  .impl-dir li::before {
+    content: '→'; position: absolute; left: 0; color: var(--accent-purple); font-weight: 700;
+  }
+
+  /* ─── Table ─── */
+  .table-wrap {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    padding: 12px 18px; text-align: left; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted);
+    background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--border);
+  }
+  td { padding: 10px 18px; font-size: 13px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+  tr:hover td { background: rgba(59,130,246,0.03); }
+  .mono { font-family: 'SF Mono', 'Fira Code', monospace; color: var(--accent-cyan); font-weight: 600; }
+
+  /* ─── Decision Tree Visual ─── */
+  .decision-tree {
+    display: flex; flex-direction: column; gap: 8px; padding: 20px;
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+  }
+  .dt-row {
+    display: flex; align-items: center; gap: 12px; padding: 10px 16px;
+    border-radius: 8px; font-size: 13px; transition: background 0.2s;
+  }
+  .dt-row:hover { background: rgba(255,255,255,0.02); }
+  .dt-priority {
+    width: 28px; height: 28px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; font-size: 11px;
+    font-weight: 800; flex-shrink: 0;
+  }
+  .dt-priority.deny { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+  .dt-priority.allow { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+  .dt-priority.check { background: rgba(245,158,11,0.15); color: var(--accent-orange); }
+  .dt-label { font-weight: 600; flex: 1; }
+  .dt-result { font-size: 11px; padding: 3px 10px; border-radius: 4px; font-weight: 700; }
+  .dt-result.deny { color: var(--accent-red); background: rgba(239,68,68,0.1); }
+  .dt-result.allow { color: var(--accent-green); background: rgba(16,185,129,0.1); }
+  .dt-result.ask { color: var(--accent-orange); background: rgba(245,158,11,0.1); }
+
+  /* ─── Footer ─── */
+  footer {
+    padding: 48px 0; border-top: 1px solid var(--border);
+    text-align: center; color: var(--text-muted); font-size: 13px;
+  }
+  footer a { color: var(--accent-blue); text-decoration: none; }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .container { padding: 0 16px; }
+    section { padding: 48px 0; }
+    .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+  }
+
+  /* ─── Reveal Animation ─── */
+  .reveal { opacity: 0; transform: translateY(24px); transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  .mermaid svg { max-width: 100%; height: auto; }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav id="nav">
+  <div class="nav-inner">
+    <div class="nav-logo"><span>dbcode</span> Deep Dive</div>
+    <div class="nav-links">
+      <a href="#agent-loop">Agent Loop</a>
+      <a href="#context">Context</a>
+      <a href="#llm">LLM</a>
+      <a href="#tools">Tools</a>
+      <a href="#permissions">Permissions</a>
+      <a href="#mcp">MCP</a>
+      <a href="#recovery">Recovery</a>
+      <a href="#config">Config</a>
+      <a href="#subagent">Subagent</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="hero-badge">Module Deep Dive &mdash; TypeScript Source Analysis</div>
+  <h1>각 모듈의 <span class="gradient">내부 구조</span>를<br>코드 레벨에서 이해하기</h1>
+  <p>architecture.html이 "무엇이 있는지" 보여줬다면, 이 문서는 "어떻게 동작하는지"를 TS 코드와 함께 보여줍니다. 각 모듈의 상태 흐름, 핵심 인터페이스, 구현 방향을 담았습니다.</p>
+</header>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 1. AGENT LOOP -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="agent-loop">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label purple">MODULE 01</div>
+      <h2 class="section-title">Agent Loop — ReAct 상태머신</h2>
+      <p class="section-desc">dbcode의 심장. 사용자 입력을 받아 LLM 호출 → 도구 실행 → 결과 피드백을 반복하는 핵심 루프입니다.</p>
+    </div>
+
+    <div class="file-path reveal">📄 src/core/agent-loop.ts</div>
+
+    <!-- State Machine Diagram -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title purple">Agent Loop 내부 상태머신</div>
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> INIT: 사용자 입력 수신
+    INIT --> CONTEXT_PREPARE: 메시지 + 시스템 프롬프트 조립
+    CONTEXT_PREPARE --> CHECK_COMPACT: 컨텍스트 사용률 확인
+    CHECK_COMPACT --> AUTO_COMPACT: ≥ 83.5%
+    CHECK_COMPACT --> INPUT_GUARD: &lt; 83.5%
+    AUTO_COMPACT --> INPUT_GUARD: 압축 완료
+    INPUT_GUARD --> LLM_CALL: 보안 통과
+    INPUT_GUARD --> BLOCKED: 인젝션 감지
+    LLM_CALL --> OUTPUT_PARSE: 스트리밍 완료
+    OUTPUT_PARSE --> NO_TOOLS: tool_calls 없음
+    OUTPUT_PARSE --> VALIDATE_TOOLS: tool_calls 있음
+    NO_TOOLS --> [*]: 응답 반환
+    VALIDATE_TOOLS --> PERMISSION_CHECK: Zod 스키마 통과
+    VALIDATE_TOOLS --> TOOL_CORRECT: 스키마 실패 (Low Tier)
+    TOOL_CORRECT --> PERMISSION_CHECK: 자동 교정 완료
+    PERMISSION_CHECK --> CHECKPOINT: 승인됨
+    PERMISSION_CHECK --> DENIED: 거부됨
+    DENIED --> LLM_CALL: 거부 사유 피드백
+    CHECKPOINT --> TOOL_GROUP: 스냅샷 저장
+    TOOL_GROUP --> PARALLEL_EXEC: 읽기 전용 그룹
+    TOOL_GROUP --> SERIAL_EXEC: 쓰기 포함 그룹
+    PARALLEL_EXEC --> OBS_MASK: 실행 완료
+    SERIAL_EXEC --> OBS_MASK: 실행 완료
+    OBS_MASK --> CIRCUIT_CHECK: 마스킹 적용
+    CIRCUIT_CHECK --> LLM_CALL: OK (closed)
+    CIRCUIT_CHECK --> RECOVERY: Trip (open)
+    RECOVERY --> LLM_CALL: compact / retry
+    RECOVERY --> STRATEGY_SWITCH: fallback
+    STRATEGY_SWITCH --> LLM_CALL: text-parsing 전환
+    BLOCKED --> [*]: 에러 반환
+      </div>
+    </div>
+
+    <!-- Key Interfaces -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">핵심 인터페이스</h3>
+    <div class="grid-2 reveal">
+      <div>
+        <div class="code-block"><span class="cm">// Agent Loop 설정</span>
+<span class="kw">interface</span> <span class="type">AgentLoopConfig</span> {
+  <span class="prop">client</span>: <span class="type">LLMProvider</span>;          <span class="cm">// LLM 클라이언트</span>
+  <span class="prop">model</span>: <span class="type">string</span>;                <span class="cm">// 모델명</span>
+  <span class="prop">toolRegistry</span>: <span class="type">ToolRegistry</span>;  <span class="cm">// 도구 저장소</span>
+  <span class="prop">strategy</span>: <span class="type">ToolCallStrategy</span>;   <span class="cm">// native | text-parsing</span>
+  <span class="prop">maxIterations</span>: <span class="type">number</span>;       <span class="cm">// 기본 50</span>
+  <span class="prop">signal</span>: <span class="type">AbortSignal</span>;          <span class="cm">// 취소 신호</span>
+  <span class="prop">checkPermission</span>: <span class="type">PermCheckFn</span>; <span class="cm">// 권한 콜백</span>
+  <span class="prop">useStreaming</span>: <span class="type">boolean</span>;        <span class="cm">// SSE 여부</span>
+  <span class="prop">dualModelRouter</span>?: <span class="type">DualModelRouter</span>;
+  <span class="prop">checkpointManager</span>?: <span class="type">CheckpointManager</span>;
+  <span class="prop">enableGuardrails</span>: <span class="type">boolean</span>;   <span class="cm">// 보안 필터</span>
+}</div>
+      </div>
+      <div>
+        <div class="code-block"><span class="cm">// 실행 결과</span>
+<span class="kw">interface</span> <span class="type">AgentLoopResult</span> {
+  <span class="prop">messages</span>: <span class="type">ChatMessage</span>[];     <span class="cm">// 전체 대화 히스토리</span>
+  <span class="prop">iterations</span>: <span class="type">number</span>;          <span class="cm">// 반복 횟수</span>
+  <span class="prop">aborted</span>: <span class="type">boolean</span>;            <span class="cm">// 사용자 취소 여부</span>
+  <span class="prop">usage</span>: <span class="type">AggregatedUsage</span>;      <span class="cm">// 토큰 통계</span>
+}
+
+<span class="kw">interface</span> <span class="type">AggregatedUsage</span> {
+  <span class="prop">inputTokens</span>: <span class="type">number</span>;
+  <span class="prop">outputTokens</span>: <span class="type">number</span>;
+  <span class="prop">totalTokens</span>: <span class="type">number</span>;
+  <span class="prop">toolCalls</span>: <span class="type">number</span>;           <span class="cm">// 도구 호출 총 횟수</span>
+  <span class="prop">retries</span>: <span class="type">number</span>;             <span class="cm">// 재시도 횟수</span>
+}
+
+<span class="cm">// LLM 에러 분류</span>
+<span class="kw">function</span> <span class="fn">classifyLLMError</span>(<span class="prop">err</span>)
+  → <span class="str">"transient"</span> | <span class="str">"overload"</span> | <span class="str">"permanent"</span></div>
+      </div>
+    </div>
+
+    <!-- Implementation Direction -->
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>새 도구 추가 시</strong>: ToolRegistry에 등록만 하면 자동으로 Agent Loop가 인식. 루프 코드 수정 불필요</li>
+        <li><strong>새 LLM 제공자</strong>: LLMProvider 인터페이스만 구현하면 client 교체로 연동 가능</li>
+        <li><strong>Guardrail 추가</strong>: enableGuardrails=true일 때 INPUT_GUARD/OUTPUT_PARSE 단계에 필터 체인 추가</li>
+        <li><strong>반복 제한 조정</strong>: maxIterations로 제어. 복잡한 작업은 높이고, 서브에이전트는 낮추는 전략</li>
+        <li><strong>Dual Model 확장</strong>: 현재 plan/execute/review 3단계 → 향후 debug, test 등 추가 가능</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 2. CONTEXT MANAGER -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="context" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label cyan">MODULE 02</div>
+      <h2 class="section-title">Context Manager — 3-Layer 압축</h2>
+      <p class="section-desc">제한된 컨텍스트 윈도우 안에서 최대한 많은 정보를 유지하는 토큰 관리 엔진입니다.</p>
+    </div>
+
+    <div class="file-path reveal">📄 src/core/context-manager.ts</div>
+
+    <!-- 3-Layer Diagram -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title cyan">3-Layer 압축 파이프라인</div>
+      <div class="mermaid">
+graph TB
+    subgraph L1["🔬 Layer 1: Microcompaction (연속)"]
+        direction LR
+        TOOL_OUT["도구 결과<br/>200+ tokens"] --> SIZE_CHECK{"크기 &gt; 200 토큰?"}
+        SIZE_CHECK -->|"Yes"| COLD["💾 Cold Storage<br/>디스크 저장"]
+        SIZE_CHECK -->|"No"| KEEP["✅ 인라인 유지"]
+        COLD --> REF["ColdStorageRef<br/>참조만 남김"]
+        RECENT["최근 5개 결과는<br/>항상 인라인"]
+    end
+
+    subgraph L2["📦 Layer 2: Auto-compaction (83.5% 트리거)"]
+        direction LR
+        USAGE["컨텍스트 사용률<br/>≥ 83.5%"] --> PRESERVE["보존 영역<br/>system + 최근 N턴"]
+        USAGE --> COMPRESS["압축 영역<br/>오래된 메시지"]
+        COMPRESS --> SUMMARY["LLM 요약<br/>핵심 정보 추출"]
+        SUMMARY --> MERGED["요약 + 보존 = 새 컨텍스트"]
+    end
+
+    subgraph L3["♻️ Layer 3: Rehydration (압축 후)"]
+        direction LR
+        COMPACT_DONE["압축 완료"] --> STRATEGY{"리하이드 전략"}
+        STRATEGY -->|"recency"| RECENT_F["최근 접근<br/>파일 5개 재읽기"]
+        STRATEGY -->|"frequency"| FREQ_F["자주 접근<br/>파일 5개 재읽기"]
+        STRATEGY -->|"mixed"| MIX_F["복합 우선순위<br/>파일 5개 재읽기"]
+    end
+
+    L1 --> L2
+    L2 --> L3
+
+    style L1 fill:#0d2137,stroke:#06b6d4,color:#f1f5f9
+    style L2 fill:#1a1a3e,stroke:#8b5cf6,color:#f1f5f9
+    style L3 fill:#0d2a1a,stroke:#10b981,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Cold Storage Detail -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">Cold Storage 내부 구조</h3>
+    <div class="grid-2 reveal">
+      <div class="code-block"><span class="cm">// Cold Storage 참조</span>
+<span class="kw">interface</span> <span class="type">ColdStorageRef</span> {
+  <span class="prop">id</span>: <span class="type">string</span>;           <span class="cm">// 고유 식별자</span>
+  <span class="prop">toolName</span>: <span class="type">string</span>;     <span class="cm">// 원본 도구명</span>
+  <span class="prop">filePath</span>: <span class="type">string</span>;     <span class="cm">// 디스크 경로</span>
+  <span class="prop">tokenCount</span>: <span class="type">number</span>;   <span class="cm">// 원본 토큰 수</span>
+  <span class="prop">summary</span>: <span class="type">string</span>;      <span class="cm">// 1줄 요약</span>
+  <span class="prop">createdAt</span>: <span class="type">number</span>;    <span class="cm">// 타임스탬프</span>
+}
+
+<span class="cm">// 디스크 경로: ~/.dbcode/projects/{hash}/cold-storage/</span>
+<span class="cm">// TTL: 24시간 후 자동 정리</span></div>
+
+      <div class="code-block"><span class="cm">// 컨텍스트 사용량</span>
+<span class="kw">interface</span> <span class="type">ContextUsage</span> {
+  <span class="prop">currentTokens</span>: <span class="type">number</span>;  <span class="cm">// 현재 사용 토큰</span>
+  <span class="prop">maxTokens</span>: <span class="type">number</span>;      <span class="cm">// 모델별 한계</span>
+  <span class="prop">usagePercent</span>: <span class="type">number</span>;   <span class="cm">// 사용률 (%)</span>
+  <span class="prop">coldRefCount</span>: <span class="type">number</span>;   <span class="cm">// Cold 참조 수</span>
+  <span class="prop">totalSaved</span>: <span class="type">number</span>;     <span class="cm">// 절약한 총 토큰</span>
+}
+
+<span class="cm">// 모델별 보존 턴 수</span>
+<span class="cm">// HIGH tier: 최근 5턴 보존</span>
+<span class="cm">// MEDIUM:    최근 4턴 보존</span>
+<span class="cm">// LOW:       최근 3턴 보존</span></div>
+    </div>
+
+    <!-- State Tracking -->
+    <div class="callout tip reveal">
+      <div class="callout-icon">🔑</div>
+      <div><strong>핵심 상태 변수:</strong>
+        <code>coldRefs: Map&lt;string, ColdStorageRef&gt;</code> (디스크 참조),
+        <code>recentFiles: string[]</code> (접근 이력),
+        <code>fileAccessFrequency: Map&lt;string, number&gt;</code> (빈도 추적),
+        <code>compactionCount: number</code> (압축 횟수),
+        <code>totalTokensSaved: number</code> (절약 누적)
+      </div>
+    </div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>압축 임계값 조정</strong>: getContextConfig()에서 모델 티어별 threshold 수정 (현재 83.5%)</li>
+        <li><strong>리하이드 전략 추가</strong>: 현재 recency/frequency/mixed → "importance" 기반 전략 추가 가능</li>
+        <li><strong>Cold Storage 포맷</strong>: 현재 JSON 텍스트 → 압축 바이너리로 디스크 효율 개선 가능</li>
+        <li><strong>압축 품질 개선</strong>: LLM 요약 시 "코드 변경사항 우선" 같은 도메인 힌트 활용</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 3. LLM CLIENT + DUAL MODEL ROUTER -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="llm">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label blue">MODULE 03</div>
+      <h2 class="section-title">LLM Client + Dual-Model Router</h2>
+      <p class="section-desc">OpenAI 호환 API 클라이언트와 작업 단계별 모델 자동 전환 라우터입니다.</p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;" class="reveal">
+      <div class="file-path">📄 src/llm/client.ts</div>
+      <div class="file-path">📄 src/llm/dual-model-router.ts</div>
+      <div class="file-path">📄 src/llm/model-capabilities.ts</div>
+    </div>
+
+    <!-- LLM Request Flow -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title blue">LLM 요청 처리 파이프라인</div>
+      <div class="mermaid">
+graph LR
+    REQ["📨 요청 생성"] --> DETECT{"모델 감지"}
+    DETECT -->|"Codex 모델"| RESP_API["Responses API<br/>toResponsesInput()"]
+    DETECT -->|"일반 모델"| CHAT_API["Chat Completions<br/>toOpenAIMessages()"]
+
+    RESP_API --> TRANSFORM["메시지 변환<br/>system → developer (o1/o3)"]
+    CHAT_API --> TRANSFORM
+
+    TRANSFORM --> TOOLS_FMT["도구 포맷팅<br/>toOpenAITools()"]
+    TOOLS_FMT --> URL_NORM["URL 정규화<br/>/chat/completions 제거"]
+    URL_NORM --> HTTP["🌐 HTTP 요청<br/>timeout: 120s"]
+
+    HTTP --> STREAM{"스트리밍?"}
+    STREAM -->|"Yes"| SSE["SSE 파싱<br/>chunk → delta 조립"]
+    STREAM -->|"No"| BATCH["일괄 응답<br/>JSON 파싱"]
+
+    SSE --> RETRY_CHECK{"에러?"}
+    BATCH --> RETRY_CHECK
+
+    RETRY_CHECK -->|"500/502/503"| RETRY["♻️ 재시도<br/>1s → 2s → 4s<br/>최대 3회"]
+    RETRY_CHECK -->|"429"| FAIL["❌ 즉시 실패<br/>서버 이미 제한 중"]
+    RETRY_CHECK -->|"성공"| DONE["✅ 응답 반환"]
+    RETRY --> HTTP
+
+    style REQ fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+    style DONE fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style FAIL fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Dual Model Router -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title purple">Dual-Model Router — 단계별 모델 전환</div>
+      <div class="mermaid">
+graph TD
+    MSG["💬 사용자 메시지"] --> DETECT["detectPhase()"]
+    DETECT --> KW_CHECK{"키워드 감지"}
+
+    KW_CHECK -->|"plan, 설계, design<br/>architecture, RFC"| PLAN["📋 Plan Phase"]
+    KW_CHECK -->|"review, 리뷰<br/>analyze, 분석"| REVIEW["🔍 Review Phase"]
+    KW_CHECK -->|"기타 (코드 작성 등)"| EXECUTE["⚡ Execute Phase"]
+
+    PLAN --> ARCH["🧠 Architect Model<br/>고추론, 고비용<br/>ex) claude-opus"]
+    REVIEW --> ARCH
+    EXECUTE --> EDIT["✏️ Editor Model<br/>빠른 응답, 저비용<br/>ex) claude-sonnet"]
+
+    ARCH --> CLIENT_A["getClientForPhase()<br/>→ { client, model, role: 'architect' }"]
+    EDIT --> CLIENT_E["getClientForPhase()<br/>→ { client, model, role: 'editor' }"]
+
+    style PLAN fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style REVIEW fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style EXECUTE fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Config Priority -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">모델 설정 우선순위</h3>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th>우선순위</th><th>설정 소스</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td style="font-weight:800;color:var(--accent-red);">1 (최고)</td><td class="mono">LOCAL_API_BASE_URL + LOCAL_MODEL</td><td>환경변수로 지정한 로컬 모델. 무조건 최우선</td></tr>
+          <tr><td style="font-weight:800;color:var(--accent-orange);">2</td><td class="mono">CLI --model 플래그</td><td>실행 시 명시적 지정</td></tr>
+          <tr><td style="font-weight:800;color:var(--accent-orange);">3</td><td class="mono">/model 슬래시 명령</td><td>세션 중 모델 변경</td></tr>
+          <tr><td style="font-weight:800;color:var(--accent-blue);">4</td><td class="mono">settings.json → model</td><td>프로젝트/사용자 설정</td></tr>
+          <tr><td style="font-weight:800;color:var(--text-muted);">5</td><td class="mono">defaults.ts</td><td>하드코딩 기본값</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>새 LLM 제공자 추가</strong>: LLMProvider 인터페이스 구현 → model-capabilities.ts에 capabilities 등록</li>
+        <li><strong>Dual Model 확장</strong>: TaskPhase에 "debug" | "test" 추가 → 디버깅 전문 모델 라우팅</li>
+        <li><strong>스트리밍 최적화</strong>: 현재 SSE → WebSocket 지원 추가로 양방향 통신 가능</li>
+        <li><strong>비용 최적화</strong>: 간단한 질문은 자동으로 저비용 모델 → 복잡한 작업만 고비용 모델</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 4. TOOL SYSTEM -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="tools" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label green">MODULE 04</div>
+      <h2 class="section-title">Tool System — 등록 → 실행 파이프라인</h2>
+      <p class="section-desc">16개 빌트인 도구 + MCP 외부 도구를 등록하고, 검증하고, 실행하는 전체 파이프라인입니다.</p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;" class="reveal">
+      <div class="file-path">📄 src/tools/registry.ts</div>
+      <div class="file-path">📄 src/tools/executor.ts</div>
+      <div class="file-path">📄 src/tools/adaptive-schema.ts</div>
+      <div class="file-path">📄 src/tools/types.ts</div>
+    </div>
+
+    <!-- Tool Pipeline -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title green">도구 등록 → 실행 전체 파이프라인</div>
+      <div class="mermaid">
+graph TD
+    subgraph REG["📋 Registration Phase"]
+        direction LR
+        BUILTIN["16 Built-in<br/>file_read, bash_exec..."] --> REGISTRY["ToolRegistry<br/>Map&lt;string, ToolDef&gt;"]
+        MCP_TOOLS["MCP Tools<br/>mcp__*__* 패턴"] -->|"Deferred"| REGISTRY
+        HOT["Hot Tools 지정<br/>6개 핵심 도구"] --> REGISTRY
+    end
+
+    subgraph SCHEMA["📐 Schema Phase"]
+        direction LR
+        TIER{"모델 능력 티어"} -->|"HIGH"| FULL["Full Schema<br/>모든 파라미터 + 설명"]
+        TIER -->|"MEDIUM"| REDUCED["Reduced Schema<br/>필수 파라미터만"]
+        TIER -->|"LOW"| MINIMAL["Minimal Schema<br/>이름 + few-shot 예시"]
+    end
+
+    subgraph EXEC["⚡ Execution Phase"]
+        direction TB
+        CALL["LLM → tool_call"] --> CORRECT["tool-call-corrector<br/>Low Tier 자동 교정"]
+        CORRECT --> ZOD["Zod 스키마 검증<br/>parseToolArguments()"]
+        ZOD --> ABORT["AbortController<br/>timeout + 사용자 취소"]
+        ABORT --> RUN["tool.execute()<br/>실제 실행"]
+        RUN --> RETRY_T{"일시적 에러?"}
+        RETRY_T -->|"Yes"| BACKOFF["지수 백오프<br/>1s → 2s 재시도"]
+        RETRY_T -->|"No"| RESULT["ToolResult<br/>output + isError"]
+        BACKOFF --> RUN
+    end
+
+    REG --> SCHEMA
+    SCHEMA --> EXEC
+
+    style REG fill:#0d2a1a,stroke:#10b981,color:#f1f5f9
+    style SCHEMA fill:#1a1a3e,stroke:#8b5cf6,color:#f1f5f9
+    style EXEC fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- ToolDefinition Interface -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">핵심 인터페이스: ToolDefinition</h3>
+    <div class="grid-2 reveal">
+      <div class="code-block"><span class="cm">// 도구 정의 — 새 도구 추가의 기본 단위</span>
+<span class="kw">interface</span> <span class="type">ToolDefinition</span>&lt;<span class="type">TParams</span> = <span class="type">unknown</span>&gt; {
+  <span class="kw">readonly</span> <span class="prop">name</span>: <span class="type">string</span>;
+  <span class="kw">readonly</span> <span class="prop">description</span>: <span class="type">string</span>;
+  <span class="kw">readonly</span> <span class="prop">parameterSchema</span>: <span class="type">z.ZodSchema</span>&lt;<span class="type">TParams</span>&gt;;
+  <span class="kw">readonly</span> <span class="prop">permissionLevel</span>:
+    <span class="str">"safe"</span> | <span class="str">"confirm"</span> | <span class="str">"dangerous"</span>;
+  <span class="kw">readonly</span> <span class="prop">isHot</span>?: <span class="type">boolean</span>;
+  <span class="kw">readonly</span> <span class="fn">execute</span>: (
+    <span class="prop">params</span>: <span class="type">TParams</span>,
+    <span class="prop">context</span>: <span class="type">ToolContext</span>
+  ) => <span class="type">Promise</span>&lt;<span class="type">ToolResult</span>&gt;;
+}</div>
+      <div class="code-block"><span class="cm">// 도구 실행 컨텍스트</span>
+<span class="kw">interface</span> <span class="type">ToolContext</span> {
+  <span class="prop">workingDirectory</span>: <span class="type">string</span>;     <span class="cm">// CWD</span>
+  <span class="prop">abortSignal</span>: <span class="type">AbortSignal</span>;      <span class="cm">// 취소 신호</span>
+  <span class="prop">timeoutMs</span>: <span class="type">number</span>;            <span class="cm">// 120,000</span>
+  <span class="prop">platform</span>: <span class="str">"darwin"</span> | <span class="str">"linux"</span> | <span class="str">"win32"</span>;
+  <span class="prop">events</span>?: <span class="type">AppEventEmitter</span>;      <span class="cm">// 진행 이벤트</span>
+  <span class="prop">toolCallId</span>?: <span class="type">string</span>;          <span class="cm">// 호출 식별자</span>
+  <span class="prop">activeClient</span>?: <span class="type">LLMProvider</span>;   <span class="cm">// 현재 LLM</span>
+  <span class="prop">activeModel</span>?: <span class="type">string</span>;         <span class="cm">// 현재 모델</span>
+}
+
+<span class="cm">// 도구 실행 결과</span>
+<span class="kw">interface</span> <span class="type">ToolResult</span> {
+  <span class="prop">output</span>: <span class="type">string</span>;               <span class="cm">// 결과 텍스트</span>
+  <span class="prop">isError</span>: <span class="type">boolean</span>;             <span class="cm">// 에러 여부</span>
+}</div>
+    </div>
+
+    <!-- Hot vs Deferred -->
+    <h3 style="font-size:18px;font-weight:700;margin:24px 0 16px;" class="reveal">Hot Tools vs Deferred Tools</h3>
+    <div class="grid-2 reveal">
+      <div class="card green">
+        <h4 style="font-size:15px;margin-bottom:10px;color:var(--accent-green);">🔥 Hot Tools (6개) — 항상 로딩</h4>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">매 LLM 요청마다 스키마가 포함되는 핵심 도구. 빠른 응답을 위해 Eager Loading.</p>
+        <div style="display:flex;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.1);border-radius:5px;font-family:monospace;color:var(--accent-green);">file_read</span>
+          <span style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.1);border-radius:5px;font-family:monospace;color:var(--accent-green);">file_write</span>
+          <span style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.1);border-radius:5px;font-family:monospace;color:var(--accent-green);">file_edit</span>
+          <span style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.1);border-radius:5px;font-family:monospace;color:var(--accent-green);">bash_exec</span>
+          <span style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.1);border-radius:5px;font-family:monospace;color:var(--accent-green);">glob_search</span>
+          <span style="font-size:11px;padding:4px 10px;background:rgba(16,185,129,0.1);border-radius:5px;font-family:monospace;color:var(--accent-green);">grep_search</span>
+        </div>
+      </div>
+      <div class="card purple">
+        <h4 style="font-size:15px;margin-bottom:10px;color:var(--accent-purple);">💤 Deferred Tools (MCP) — 필요 시 로딩</h4>
+        <p style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">MCP 서버의 도구들. 시스템 프롬프트에 이름만 노출하고, LLM이 요청하면 스키마를 로딩.</p>
+        <div style="font-size:12px;color:var(--text-muted);font-family:monospace;">
+          mcp__playwright__click<br>
+          mcp__serena__find_symbol<br>
+          mcp__chrome-devtools__navigate_page<br>
+          ... (수백 개 가능)
+        </div>
+      </div>
+    </div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>새 도구 추가</strong>: src/tools/definitions/에 파일 생성 → ToolDefinition 구현 → registry에 registerAll()</li>
+        <li><strong>Adaptive Schema 커스텀</strong>: 모델별 few-shot 예시를 adaptive-schema.ts에서 조정</li>
+        <li><strong>Tool Grouping 최적화</strong>: 현재 읽기/쓰기 분류 → 파일 경로 충돌 분석으로 세분화 가능</li>
+        <li><strong>도구 메트릭 수집</strong>: 실행 시간, 성공률, 토큰 비용 등 수집하여 도구 추천에 활용</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 5. PERMISSION SYSTEM -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="permissions">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label orange">MODULE 05</div>
+      <h2 class="section-title">Permission Manager — 5단계 결정 트리</h2>
+      <p class="section-desc">도구 실행 전 반드시 거치는 권한 시스템. "deny 우선" 원칙으로 안전성을 보장합니다.</p>
+    </div>
+
+    <div class="file-path reveal">📄 src/permissions/manager.ts</div>
+
+    <!-- Decision Tree Diagram -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title orange">권한 확인 결정 트리 (deny-first)</div>
+      <div class="mermaid">
+graph TD
+    START["🔧 도구 호출 요청<br/>checkPermission(tool, args)"] --> DENY_RULES{"1. Permanent Deny?<br/>settings.json deny 목록"}
+    DENY_RULES -->|"매칭"| DENIED["🚫 DENY<br/>즉시 거부"]
+    DENY_RULES -->|"미매칭"| SESSION{"2. Session Approved?<br/>이번 세션 승인 이력"}
+    SESSION -->|"있음"| ALLOWED["✅ ALLOW"]
+    SESSION -->|"없음"| ALLOW_RULES{"3. Permanent Allow?<br/>settings.json allow 목록"}
+    ALLOW_RULES -->|"매칭"| ALLOWED
+    ALLOW_RULES -->|"미매칭"| EXPLICIT{"4. Explicit Rules?<br/>코드 등록 규칙"}
+    EXPLICIT -->|"있음"| RULE_EVAL["규칙 로직 평가"]
+    EXPLICIT -->|"없음"| MODE{"5. Permission Mode?"}
+    RULE_EVAL -->|"허용"| ALLOWED
+    RULE_EVAL -->|"거부"| DENIED
+
+    MODE -->|"bypassPermissions"| ALLOWED
+    MODE -->|"dontAsk"| ONCE["1회 확인 후<br/>세션 기억"]
+    MODE -->|"acceptEdits"| EDIT_CHECK{"파일 수정<br/>도구?"}
+    MODE -->|"plan"| READ_CHECK{"읽기 전용<br/>도구?"}
+    MODE -->|"default"| ASK["👤 사용자에게<br/>매번 확인"]
+
+    EDIT_CHECK -->|"Yes"| ALLOWED
+    EDIT_CHECK -->|"No"| ASK
+    READ_CHECK -->|"Yes"| ALLOWED
+    READ_CHECK -->|"No"| ASK
+    ONCE --> ALLOWED
+    ASK --> USER_DECIDE{"사용자 응답"}
+    USER_DECIDE -->|"허용"| RECORD["세션에 기록<br/>→ ALLOW"]
+    USER_DECIDE -->|"거부"| DENIED
+
+    style START fill:#3a2e1e,stroke:#f59e0b,color:#f1f5f9
+    style DENIED fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9
+    style ALLOWED fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style ASK fill:#1a2035,stroke:#3b82f6,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- 5 Permission Modes Visual -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">5가지 권한 모드</h3>
+    <div class="grid-3 reveal">
+      <div class="card orange" style="border-left:3px solid var(--accent-orange);">
+        <h4 style="font-size:14px;margin-bottom:6px;">default</h4>
+        <p style="font-size:12px;color:var(--text-secondary);">매번 사용자에게 확인을 요청합니다. 가장 안전한 모드.</p>
+      </div>
+      <div class="card blue" style="border-left:3px solid var(--accent-blue);">
+        <h4 style="font-size:14px;margin-bottom:6px;">acceptEdits</h4>
+        <p style="font-size:12px;color:var(--text-secondary);">파일 읽기/쓰기/수정을 자동 승인. bash 명령은 여전히 확인 필요.</p>
+      </div>
+      <div class="card purple" style="border-left:3px solid var(--accent-purple);">
+        <h4 style="font-size:14px;margin-bottom:6px;">plan</h4>
+        <p style="font-size:12px;color:var(--text-secondary);">읽기 전용 도구만 자동 승인. 쓰기 작업은 모두 확인 필요.</p>
+      </div>
+      <div class="card green" style="border-left:3px solid var(--accent-green);">
+        <h4 style="font-size:14px;margin-bottom:6px;">dontAsk</h4>
+        <p style="font-size:12px;color:var(--text-secondary);">도구당 1회만 확인 후 세션 동안 기억합니다.</p>
+      </div>
+      <div class="card" style="border-left:3px solid var(--accent-red);">
+        <h4 style="font-size:14px;margin-bottom:6px;color:var(--accent-red);">bypassPermissions</h4>
+        <p style="font-size:12px;color:var(--text-secondary);">모든 도구를 무조건 허용. ⚠️ 개발/테스트 전용, 프로덕션에서 사용 금지.</p>
+      </div>
+    </div>
+
+    <!-- Pattern Matching -->
+    <div class="callout info reveal">
+      <div class="callout-icon">🎯</div>
+      <div><strong>규칙 패턴 매칭:</strong> <code>ToolName(arg1: value1, arg2: *)</code> 형식으로 glob 패턴 지원.
+        예: <code>bash_exec(command: npm *)</code>는 npm으로 시작하는 모든 명령을 매칭합니다.
+        ParsedPermissionPattern으로 파싱 후 빠른 매칭.
+      </div>
+    </div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>감사 로그 활용</strong>: audit-log.ts의 JSONL 데이터로 도구 사용 패턴 분석 대시보드 구현 가능</li>
+        <li><strong>팀 권한 정책</strong>: 프로젝트 .dbcode/settings.json으로 팀 공통 deny/allow 규칙 공유</li>
+        <li><strong>동적 권한 학습</strong>: 사용자 승인 패턴 분석 → 자동 규칙 제안 기능</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 6. MCP SYSTEM -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="mcp" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label pink">MODULE 06</div>
+      <h2 class="section-title">MCP System — 외부 도구 연동 파이프라인</h2>
+      <p class="section-desc">Model Context Protocol로 외부 서버의 도구/리소스/프롬프트를 표준화하여 연동합니다.</p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;" class="reveal">
+      <div class="file-path">📄 src/mcp/manager.ts</div>
+      <div class="file-path">📄 src/mcp/client.ts</div>
+      <div class="file-path">📄 src/mcp/tool-bridge.ts</div>
+      <div class="file-path">📄 src/mcp/scope-manager.ts</div>
+    </div>
+
+    <!-- MCP Lifecycle -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title pink">MCP 서버 수명주기</div>
+      <div class="mermaid">
+sequenceDiagram
+    participant APP as App (Bootstrap)
+    participant MGR as MCPManager
+    participant SCOPE as ScopeManager
+    participant CLIENT as MCPClient
+    participant SERVER as External Server
+    participant BRIDGE as ToolBridge
+    participant REG as ToolRegistry
+
+    APP->>MGR: connectAll()
+    MGR->>SCOPE: loadScopedConfigs()
+    SCOPE-->>MGR: { local > project > user } 병합 결과
+
+    loop 각 서버 (병렬 — Promise.allSettled)
+        MGR->>CLIENT: connect(name, config)
+        CLIENT->>SERVER: JSON-RPC: initialize
+        SERVER-->>CLIENT: capabilities
+        CLIENT->>SERVER: JSON-RPC: tools/list
+        SERVER-->>CLIENT: Tool[] 목록
+        CLIENT->>BRIDGE: registerTools(serverName, tools)
+        BRIDGE->>REG: register(mcp__{server}__{tool})
+    end
+
+    MGR-->>APP: ConnectAllResult<br/>{ connected[], failed[] }
+
+    Note over REG: LLM이 mcp__* 도구 호출 시<br/>Bridge가 JSON-RPC로 서버에 전달
+      </div>
+    </div>
+
+    <!-- Scope Priority -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">3-Scope 설정 우선순위</h3>
+    <div class="grid-3 reveal">
+      <div class="card" style="border-top:3px solid var(--accent-red);">
+        <h4 style="font-size:14px;margin-bottom:8px;">🔒 Local (최우선)</h4>
+        <div class="file-path" style="margin-bottom:8px;">.dbcode/mcp-local.json</div>
+        <p style="font-size:12px;color:var(--text-secondary);">개인 전용 설정. .gitignore에 포함. API 키가 들어간 서버 설정에 사용.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--accent-blue);">
+        <h4 style="font-size:14px;margin-bottom:8px;">👥 Project</h4>
+        <div class="file-path" style="margin-bottom:8px;">.dbcode/mcp.json</div>
+        <p style="font-size:12px;color:var(--text-secondary);">팀 공유 설정. Git에 커밋. 팀원 모두 같은 MCP 서버를 사용하도록.</p>
+      </div>
+      <div class="card" style="border-top:3px solid var(--accent-green);">
+        <h4 style="font-size:14px;margin-bottom:8px;">🌐 User (전역)</h4>
+        <div class="file-path" style="margin-bottom:8px;">~/.dbcode/mcp-servers.json</div>
+        <p style="font-size:12px;color:var(--text-secondary);">모든 프로젝트에 적용되는 전역 MCP 서버 설정.</p>
+      </div>
+    </div>
+
+    <!-- Transport Types -->
+    <h3 style="font-size:18px;font-weight:700;margin:24px 0 16px;" class="reveal">Transport Layer 종류</h3>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th>Transport</th><th>프로토콜</th><th>사용 사례</th><th>특징</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">stdio</td><td>stdin/stdout</td><td>로컬 CLI 도구 (playwright, serena)</td><td>가장 일반적. 프로세스 직접 스폰</td></tr>
+          <tr><td class="mono">http</td><td>HTTP POST</td><td>원격 API 서버</td><td>요청/응답 1:1 매핑</td></tr>
+          <tr><td class="mono">sse</td><td>Server-Sent Events</td><td>실시간 스트리밍 서버</td><td>서버→클라이언트 단방향 스트림</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>새 Transport 추가</strong>: WebSocket 지원으로 양방향 실시간 통신 (게임 AI, 페어 프로그래밍 등)</li>
+        <li><strong>도구 필터링 강화</strong>: MCPToolFilter에 include/exclude 규칙으로 노출 도구 제어</li>
+        <li><strong>MCP 서버 헬스 체크</strong>: 주기적 ping으로 서버 상태 모니터링 + 자동 재연결</li>
+        <li><strong>리소스 프로토콜</strong>: 도구 외에 resources/list, prompts/list 활용으로 동적 컨텍스트 주입</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 7. RECOVERY & CIRCUIT BREAKER -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="recovery">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label red">MODULE 07</div>
+      <h2 class="section-title">Recovery & Circuit Breaker</h2>
+      <p class="section-desc">에러 발생 시 자동 복구하고, 무한 루프를 감지하여 차단하는 안전장치입니다.</p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;" class="reveal">
+      <div class="file-path">📄 src/core/circuit-breaker.ts</div>
+      <div class="file-path">📄 src/core/recovery-executor.ts</div>
+    </div>
+
+    <!-- Circuit Breaker State -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title red">Circuit Breaker 상태 전이</div>
+      <div class="mermaid">
+stateDiagram-v2
+    [*] --> CLOSED: 초기 상태
+    CLOSED --> CLOSED: recordIteration() — 정상
+
+    CLOSED --> OPEN_NO_CHANGE: 5회 연속 무변경
+    CLOSED --> OPEN_SAME_ERROR: 5회 동일 에러
+    CLOSED --> OPEN_MAX_ITER: 50회 반복 도달
+
+    state OPEN {
+        OPEN_NO_CHANGE: 파일 미수정 + LLM 무출력
+        OPEN_SAME_ERROR: 같은 에러 메시지 반복
+        OPEN_MAX_ITER: 최대 반복 초과
+    }
+
+    OPEN --> RECOVERY: Recovery Executor 호출
+    RECOVERY --> CLOSED: reset() — 복구 성공
+    RECOVERY --> ABORT: 복구 실패 → 중단
+
+    note right of CLOSED
+        shouldContinue() === true
+        매 반복마다 확인
+    end note
+
+    note right of OPEN
+        shouldContinue() === false
+        openReason에 사유 기록
+    end note
+      </div>
+    </div>
+
+    <!-- Recovery Strategies -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title orange">에러 유형별 복구 전략 라우팅</div>
+      <div class="mermaid">
+graph LR
+    ERROR["🚨 에러 발생"] --> CLASSIFY{"에러 분류"}
+
+    CLASSIFY -->|"request too large<br/>context_length_exceeded"| COMPACT["📦 Compact 전략"]
+    CLASSIFY -->|"ETIMEDOUT<br/>timeout / 502"| RETRY["♻️ Retry 전략"]
+    CLASSIFY -->|"parse error<br/>invalid JSON"| FALLBACK["🔄 Fallback 전략"]
+    CLASSIFY -->|"ELOCK<br/>resource locked"| RETRY_LOCK["🔓 Lock Retry"]
+
+    COMPACT --> C_ACT["메시지 압축<br/>system + 최근 3턴 + 요약<br/>→ 재시도 1회"]
+    RETRY --> R_ACT["지수 백오프<br/>1s → 2s → 4s<br/>→ 최대 3회"]
+    FALLBACK --> F_ACT["toolCallStrategy 전환<br/>native → text-parsing<br/>→ 재시도 1회"]
+    RETRY_LOCK --> RL_ACT["1s 대기 후 재시도<br/>→ 최대 3회"]
+
+    C_ACT --> RESULT{"결과"}
+    R_ACT --> RESULT
+    F_ACT --> RESULT
+    RL_ACT --> RESULT
+
+    RESULT -->|"성공"| OK["✅ 루프 계속"]
+    RESULT -->|"실패"| ABORT_R["❌ 루프 중단"]
+
+    style ERROR fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9
+    style OK fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style ABORT_R fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- State Variables -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">Circuit Breaker 내부 상태</h3>
+    <div class="code-block reveal"><span class="kw">class</span> <span class="type">CircuitBreaker</span> {
+  <span class="cm">// 카운터</span>
+  <span class="kw">private</span> <span class="prop">iterationCount</span> = <span class="num">0</span>;
+  <span class="kw">private</span> <span class="prop">consecutiveNoChangeCount</span> = <span class="num">0</span>;    <span class="cm">// → 5에 도달하면 trip</span>
+  <span class="kw">private</span> <span class="prop">consecutiveSameErrorCount</span> = <span class="num">0</span>;   <span class="cm">// → 5에 도달하면 trip</span>
+  <span class="kw">private</span> <span class="prop">lastError</span>?: <span class="type">string</span>;                <span class="cm">// 이전 에러 메시지 (비교용)</span>
+
+  <span class="cm">// 상태</span>
+  <span class="kw">private</span> <span class="prop">currentState</span>: <span class="str">"closed"</span> | <span class="str">"open"</span> = <span class="str">"closed"</span>;
+  <span class="kw">private</span> <span class="prop">openReason</span>?: <span class="type">string</span>;              <span class="cm">// trip 사유</span>
+
+  <span class="cm">// 공개 메서드</span>
+  <span class="fn">recordIteration</span>(<span class="prop">result</span>: <span class="type">IterationResult</span>): <span class="kw">void</span>   <span class="cm">// 매 반복 후 호출</span>
+  <span class="fn">shouldContinue</span>(): <span class="type">boolean</span>                        <span class="cm">// 루프 계속 여부</span>
+  <span class="fn">getStatus</span>(): <span class="type">CircuitBreakerStatus</span>                  <span class="cm">// 상태 스냅샷</span>
+  <span class="fn">reset</span>(): <span class="kw">void</span>                                       <span class="cm">// 초기화 (복구 후)</span>
+}</div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>시맨틱 진행 분석</strong>: 단순 변경 유무 → "의미 있는 진행" 분석으로 더 정교한 트립 조건</li>
+        <li><strong>Half-Open 상태</strong>: 현재 closed/open 2상태 → half-open 추가로 점진적 복구 시도</li>
+        <li><strong>복구 전략 우선순위</strong>: 에러 히스토리 기반으로 가장 효과적인 전략을 먼저 시도</li>
+        <li><strong>사용자 알림 개선</strong>: trip 시 "왜 멈췄는지" + "어떤 복구를 시도했는지" 상세 피드백</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 8. CONFIG SYSTEM -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="config" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label green">MODULE 08</div>
+      <h2 class="section-title">Config & Instructions — 설정 계층</h2>
+      <p class="section-desc">5-Layer 설정 병합 + 6단계 DBCODE.md 로딩으로 유연한 설정 관리를 구현합니다.</p>
+    </div>
+
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;" class="reveal">
+      <div class="file-path">📄 src/config/loader.ts</div>
+      <div class="file-path">📄 src/config/defaults.ts</div>
+      <div class="file-path">📄 src/instructions/loader.ts</div>
+    </div>
+
+    <!-- Config Merge Diagram -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title green">5-Layer 설정 병합 과정</div>
+      <div class="mermaid">
+graph BT
+    subgraph SOURCES["설정 소스 (아래 → 위 우선순위)"]
+        D["🏗️ defaults.ts<br/>하드코딩 기본값<br/>timeout: 120s, model: 'gpt-4o'"]
+        U["👤 ~/.dbcode/settings.json<br/>사용자 전역 설정<br/>theme, 기본 모델, 키바인딩"]
+        P["📁 .dbcode/settings.json<br/>프로젝트 설정<br/>permissions, MCP 서버"]
+        E["🌍 환경변수<br/>LOCAL_API_BASE_URL<br/>LOCAL_MODEL, API keys"]
+        C["⌨️ CLI Flags<br/>--model, --print<br/>--verbose (최우선)"]
+    end
+
+    D --> MERGE["📦 Deep Merge<br/>Object.assign 순차 적용"]
+    U --> MERGE
+    P --> MERGE
+    E --> MERGE
+    C --> MERGE
+
+    MERGE --> FINAL["✅ 최종 Config<br/>모든 레이어 병합 완료"]
+
+    style MERGE fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style C fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style FINAL fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- DBCODE.md Loading -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title blue">DBCODE.md 6단계 로딩 체인</div>
+      <div class="mermaid">
+graph LR
+    G["1. ~/.dbcode/DBCODE.md<br/>전역 지시사항"] --> GR["2. ~/.dbcode/rules/*.md<br/>전역 규칙"]
+    GR --> PD["3. 상위 디렉토리들<br/>../DBCODE.md 체인"]
+    PD --> P["4. ./DBCODE.md<br/>프로젝트 지시사항"]
+    P --> PR["5. .dbcode/rules/*.md<br/>프로젝트 규칙"]
+    PR --> L["6. .dbcode/DBCODE.local.md<br/>로컬 (gitignored)"]
+
+    G --> CONCAT["📋 순서대로 연결"]
+    GR --> CONCAT
+    PD --> CONCAT
+    P --> CONCAT
+    PR --> CONCAT
+    L --> CONCAT
+
+    CONCAT --> PROMPT["system-prompt-builder.ts<br/>시스템 프롬프트에 주입"]
+
+    style CONCAT fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+    style PROMPT fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Key Config Paths -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">주요 설정/데이터 경로 정리</h3>
+    <div class="table-wrap reveal">
+      <table>
+        <thead><tr><th>구분</th><th>경로</th><th>Git</th><th>설명</th></tr></thead>
+        <tbody>
+          <tr><td>프로젝트 설정</td><td class="mono">.dbcode/settings.json</td><td>✅</td><td>프로젝트 전용 설정 (팀 공유)</td></tr>
+          <tr><td>사용자 전역</td><td class="mono">~/.dbcode/settings.json</td><td>—</td><td>모든 프로젝트에 적용</td></tr>
+          <tr><td>프로젝트 규칙</td><td class="mono">.dbcode/rules/*.md</td><td>✅</td><td>경로 조건부 규칙 (glob 기반)</td></tr>
+          <tr><td>전역 규칙</td><td class="mono">~/.dbcode/rules/*.md</td><td>—</td><td>모든 프로젝트에 적용</td></tr>
+          <tr><td>로컬 지시사항</td><td class="mono">.dbcode/DBCODE.local.md</td><td>❌</td><td>개인 지시사항 (gitignored)</td></tr>
+          <tr><td>프로젝트 메모리</td><td class="mono">~/.dbcode/projects/{hash}/memory/</td><td>—</td><td>프로젝트별 AI 메모리</td></tr>
+          <tr><td>Cold Storage</td><td class="mono">~/.dbcode/projects/{hash}/cold-storage/</td><td>—</td><td>압축된 컨텍스트 (24h TTL)</td></tr>
+          <tr><td>감사 로그</td><td class="mono">.dbcode/audit.jsonl</td><td>❌</td><td>권한 감사 기록</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>설정 검증</strong>: Zod 스키마로 settings.json 유효성 검사 + 의미 있는 에러 메시지</li>
+        <li><strong>규칙 조건부 적용</strong>: glob 패턴으로 특정 경로에만 규칙 적용 (예: src/tests/ 에서만 TDD 규칙)</li>
+        <li><strong>환경변수 확장</strong>: 현재 LOCAL_* → 더 많은 환경변수 지원 (PROXY, CACHE 등)</li>
+        <li><strong>/doctor 진단</strong>: 설정 충돌, 누락 API 키, 잘못된 경로 등 12가지 헬스 체크</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- 9. SUBAGENT & TEAM SYSTEM -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="subagent">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label purple">MODULE 09</div>
+      <h2 class="section-title">Subagent & Team — 작업 분산 시스템</h2>
+      <p class="section-desc">복잡한 작업을 하위 에이전트에게 위임하고, 팀 단위로 병렬 실행하는 오케스트레이션입니다.</p>
+    </div>
+
+    <div class="file-path reveal">📄 src/core/subagent-spawner.ts</div>
+
+    <!-- Subagent Architecture -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title purple">서브에이전트 스폰 & 실행 흐름</div>
+      <div class="mermaid">
+graph TD
+    MAIN["🧠 Main Agent<br/>사용자와 대화 중"] -->|"agent 도구 호출"| SPAWNER["🏭 Subagent Spawner"]
+
+    SPAWNER --> TYPE{"에이전트 타입"}
+    TYPE -->|"explore"| EXPLORE["🔍 Explore Agent"]
+    TYPE -->|"plan"| PLAN["📋 Plan Agent"]
+    TYPE -->|"general"| GENERAL["⚡ General Agent"]
+    TYPE -->|"custom"| CUSTOM["🔧 Custom Agent"]
+
+    EXPLORE --> TOOLS_RO["읽기 전용 도구<br/>file_read, glob, grep"]
+    PLAN --> TOOLS_RO
+    GENERAL --> TOOLS_ALL["전체 도구<br/>file_write, bash 포함"]
+    CUSTOM --> TOOLS_CUSTOM["에이전트 정의에<br/>따라 결정"]
+
+    subgraph ISOLATION["🔒 격리 옵션"]
+        direction LR
+        SAME["Same FS<br/>같은 파일 시스템"]
+        WORKTREE["Git Worktree<br/>독립 브랜치에서 작업"]
+    end
+
+    TOOLS_ALL --> ISOLATION
+    TOOLS_RO --> SAME
+    TOOLS_CUSTOM --> ISOLATION
+
+    subgraph EXEC["실행"]
+        direction TB
+        NEW_LOOP["독립 Agent Loop 생성<br/>자체 컨텍스트 윈도우"]
+        NEW_LOOP --> RESULT["결과 반환<br/>→ 메인 에이전트에 삽입"]
+    end
+
+    SAME --> NEW_LOOP
+    WORKTREE --> NEW_LOOP
+
+    style MAIN fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style SPAWNER fill:#1a2035,stroke:#64748b,color:#f1f5f9
+    style ISOLATION fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+    style EXEC fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Team System -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title green">Team 시스템 — 병렬 워커 오케스트레이션</div>
+      <div class="mermaid">
+graph TD
+    USER["👤 사용자: /team 명령"] --> TM["🏢 Team Manager<br/>작업 분해 & 할당"]
+    TM --> ANALYZE["📊 파일 충돌 분석<br/>어떤 워커가 어떤 파일 수정?"]
+    ANALYZE --> SPLIT["✂️ 태스크 분배<br/>충돌 없는 그룹으로 분리"]
+
+    SPLIT --> W1["👷 Worker 1<br/>Worktree A"]
+    SPLIT --> W2["👷 Worker 2<br/>Worktree B"]
+    SPLIT --> W3["👷 Worker 3<br/>Worktree C"]
+
+    W1 & W2 & W3 --> SHARED["📋 Shared State<br/>태스크 진행률 공유"]
+
+    W1 --> R1["✅ 결과 1"]
+    W2 --> R2["✅ 결과 2"]
+    W3 --> R3["✅ 결과 3"]
+
+    R1 & R2 & R3 --> MERGE_R["🔀 결과 병합<br/>Git merge / 수동 리뷰"]
+    MERGE_R --> DONE["📦 최종 결과<br/>메인 브랜치에 통합"]
+
+    style TM fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style SHARED fill:#3a2e1e,stroke:#f59e0b,color:#f1f5f9
+    style DONE fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Key Points -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">핵심 설계 원칙</h3>
+    <div class="grid-2 reveal">
+      <div class="callout warn">
+        <div class="callout-icon">⚠️</div>
+        <div><strong>컨텍스트 격리:</strong> 서브에이전트는 메인 에이전트의 컨텍스트 윈도우를 공유하지 않습니다. 완전히 독립적인 Agent Loop를 생성합니다. 필요한 컨텍스트는 프롬프트로 전달해야 합니다.</div>
+      </div>
+      <div class="callout info">
+        <div class="callout-icon">💡</div>
+        <div><strong>Worktree 격리:</strong> Git Worktree를 사용하면 서브에이전트가 독립 브랜치에서 작업합니다. 파일 충돌 없이 병렬 수정이 가능하며, 작업 완료 후 메인에 merge합니다.</div>
+      </div>
+    </div>
+
+    <!-- Custom Agents -->
+    <div class="callout tip reveal">
+      <div class="callout-icon">🔧</div>
+      <div><strong>Custom Agent 정의:</strong> <code>.dbcode/agents/*.md</code> 파일에 마크다운으로 에이전트를 정의합니다.
+        프론트매터로 이름, 도구 제한, 모델 지정 가능. 예: <code>security-reviewer.md</code>에 보안 전문 에이전트 정의.</div>
+    </div>
+
+    <div class="impl-dir reveal">
+      <h4>🧭 구현 방향 & 확장 포인트</h4>
+      <ul>
+        <li><strong>에이전트 간 통신</strong>: 현재 결과 반환만 가능 → 메시지 패싱으로 실시간 협업</li>
+        <li><strong>워커 수 자동 조정</strong>: CPU 코어 수, 작업 복잡도 기반 자동 워커 수 결정</li>
+        <li><strong>에이전트 마켓플레이스</strong>: 커뮤니티에서 에이전트 정의 공유/다운로드</li>
+        <li><strong>태스크 우선순위</strong>: 의존 관계 분석 → 크리티컬 패스 우선 실행</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<!-- FULL DATA FLOW SUMMARY -->
+<!-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ -->
+<section id="dataflow" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label blue">SUMMARY</div>
+      <h2 class="section-title">전체 데이터 흐름 요약</h2>
+      <p class="section-desc">사용자 입력부터 최종 응답까지, 모든 모듈이 어떻게 협력하는지 한눈에 봅니다.</p>
+    </div>
+
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title blue">End-to-End 데이터 흐름</div>
+      <div class="mermaid">
+graph TD
+    USER["👤 User Input"] --> SYS_PROMPT["System Prompt Builder<br/>DBCODE.md + Skills + Config 조립"]
+    SYS_PROMPT --> CTX_MGR["Context Manager<br/>토큰 카운팅 + 압축 체크"]
+    CTX_MGR --> GUARD_IN["Input Guardrails<br/>인젝션 감지 + 비밀 스캔"]
+    GUARD_IN --> DUAL["Dual-Model Router<br/>plan → architect / execute → editor"]
+    DUAL --> LLM["LLM Client<br/>OpenAI SDK + 스트리밍 + 재시도"]
+    LLM --> PARSE["응답 파싱<br/>tool_calls 추출"]
+    PARSE --> PERM["Permission Manager<br/>5단계 결정 트리"]
+    PERM -->|"승인"| CKPT["Checkpoint Manager<br/>파일 상태 스냅샷"]
+    PERM -->|"거부"| FEEDBACK["거부 사유 피드백 → LLM"]
+    CKPT --> GROUP["Tool Grouping<br/>읽기=병렬 / 쓰기=순차"]
+    GROUP --> EXEC["Tool Executor<br/>Zod 검증 + AbortSignal + 재시도"]
+    EXEC --> OBS["Observation Masking<br/>재생성 가능 출력 마스킹"]
+    OBS --> COLD["Cold Storage<br/>대형 결과 디스크 저장"]
+    COLD --> CB["Circuit Breaker<br/>무변경/에러 반복 감지"]
+    CB -->|"OK"| CTX_MGR
+    CB -->|"Trip"| RECOVER["Recovery Executor<br/>compact / retry / fallback"]
+    RECOVER -->|"성공"| CTX_MGR
+    RECOVER -->|"실패"| DONE["❌ 루프 종료"]
+    PARSE -->|"도구 없음"| RESPONSE["✅ 최종 응답<br/>→ Ink UI 렌더링"]
+    FEEDBACK --> LLM
+
+    style USER fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+    style LLM fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style EXEC fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style PERM fill:#3a2e1e,stroke:#f59e0b,color:#f1f5f9
+    style RESPONSE fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style DONE fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Architecture Decisions Summary -->
+    <h3 style="font-size:18px;font-weight:700;margin-bottom:16px;" class="reveal">핵심 아키텍처 결정 10가지</h3>
+    <div class="grid-2 reveal">
+      <div class="flow-steps" style="padding-left:28px;">
+        <div class="flow-step" data-step="1">
+          <h4>단방향 레이어 의존성</h4>
+          <p>CLI → Core → Infra → Leaf. 절대 역방향 import 금지. madge --circular로 검증.</p>
+        </div>
+        <div class="flow-step" data-step="2">
+          <h4>AbortSignal 패턴</h4>
+          <p>모든 장시간 작업은 AbortController로 취소 가능. Esc 키 → 즉시 중단.</p>
+        </div>
+        <div class="flow-step" data-step="3">
+          <h4>Immutable State</h4>
+          <p>readonly 프로퍼티 + spread copy. 상태 변경 추적이 쉽고 버그 발생률 감소.</p>
+        </div>
+        <div class="flow-step" data-step="4">
+          <h4>3-Layer 토큰 관리</h4>
+          <p>Microcompaction → Auto-compaction → Rehydration으로 컨텍스트 한계를 효율적으로 관리.</p>
+        </div>
+        <div class="flow-step" data-step="5">
+          <h4>Dual Model 패턴</h4>
+          <p>Architect(추론) vs Editor(실행) 분리로 비용 최적화 + 품질 향상 동시 달성.</p>
+        </div>
+      </div>
+      <div class="flow-steps" style="padding-left:28px;">
+        <div class="flow-step" data-step="6">
+          <h4>Deferred Tool Loading</h4>
+          <p>MCP 도구 스키마를 On-demand 로딩. 수백 개 도구에도 토큰 소모 최소화.</p>
+        </div>
+        <div class="flow-step" data-step="7">
+          <h4>Deny-First 권한</h4>
+          <p>deny 규칙 최우선. 보안 사고 방지를 기본 원칙으로 설계.</p>
+        </div>
+        <div class="flow-step" data-step="8">
+          <h4>에러 유형별 복구</h4>
+          <p>에러를 분류하고 각 유형에 최적화된 전략을 자동 실행.</p>
+        </div>
+        <div class="flow-step" data-step="9">
+          <h4>Circuit Breaker</h4>
+          <p>무한 루프 방지. 무변경/에러 반복 감지 → 자동 중단 + 복구 시도.</p>
+        </div>
+        <div class="flow-step" data-step="10">
+          <h4>Graceful Degradation</h4>
+          <p>잘못된 설정이나 패턴은 조용히 건너뜀. 하나의 문제가 전체를 멈추지 않도록.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p style="margin-bottom:8px;"><strong style="color:var(--text-primary);">dbcode</strong> Module Deep Dive Documentation</p>
+    <p>Built with HTML, CSS, JavaScript &amp; Mermaid.js &mdash; <a href="./architecture.html">← Overview로 돌아가기</a></p>
+  </div>
+</footer>
+
+<script>
+  // ── Mermaid Init ──
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#1a2035',
+      primaryColor: '#3b82f6',
+      primaryTextColor: '#f1f5f9',
+      primaryBorderColor: '#3b82f6',
+      lineColor: '#64748b',
+      secondaryColor: '#8b5cf6',
+      tertiaryColor: '#1e3a2a',
+      fontFamily: 'Pretendard Variable, system-ui, sans-serif',
+      fontSize: '12px',
+    },
+    flowchart: { curve: 'basis', padding: 14, htmlLabels: true },
+    sequence: { mirrorActors: false, messageMargin: 30, boxMargin: 8 },
+    stateDiagram: { labelHeight: 18 }
+  });
+
+  // ── Nav scroll shadow ──
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // ── Active nav link ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+      const top = section.offsetTop - 100;
+      if (window.scrollY >= top) current = section.getAttribute('id');
+    });
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+  });
+
+  // ── Scroll Reveal ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) entry.target.classList.add('visible');
+    });
+  }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

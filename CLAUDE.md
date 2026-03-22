@@ -116,37 +116,30 @@ When compacting, always preserve:
 
 ## E2E 멀티턴 테스트 가이드
 
-> 상세 내용: `.claude/docs/reference/e2e-test-guide.md`
+> 상세: `.claude/docs/reference/e2e-test-guide.md` — QA 에이전트 원칙, NEXUS.md 패턴, 채점 기준
 
-**핵심 원칙**: QA 에이전트는 절대 코드를 직접 작성하지 않음. dbcode CLI가 파일 생성/수정/실행을 담당.
+## 개발가이드 페이지
 
-**NEXUS.md 패턴**: headless 컨텍스트 제약 우회법. QA가 `NEXUS.md`에 프로젝트 사실을 기록 → 각 turn에서 dbcode에게 "NEXUS.md를 읽고 답하라" 지시 → 파일 기반 "메모리" 구현. TC-25 컨텍스트 유지 테스트 5/10 → **10/10** 달성.
+모듈별 다이어그램 + 코드 설명 + 구현 방향을 시각적으로 정리한 웹 문서입니다.
 
-## Recent Fixes (2026-03-18~19)
-
-| #   | 수정 내용                                             | 파일                                       |
-| --- | ----------------------------------------------------- | ------------------------------------------ |
-| 1   | `LOCAL_API_BASE_URL` / `LOCAL_MODEL` 최우선순위 적용  | `src/constants.ts`, `src/config/loader.ts` |
-| 2   | URL 정규화 — `/chat/completions` 엔드포인트 자동 제거 | `src/llm/client.ts`                        |
-| 3   | API 타임아웃 60s → 120s 연장                          | `src/config/defaults.ts`                   |
-| 4   | MiniMax-M2.5 모델 capabilities 등록 (`/^minimax/i`)   | `src/llm/model-capabilities.ts`            |
-| 5   | tsc/eslint/grep 등 항상 안전 명시                     | `src/core/system-prompt-builder.ts`        |
-
-> QA 결과: L1 129/150 (86%) · L2 122/150 (81.3%) · L3 81/100 (81%) = **332/400 (83.0%) Grade A**
-> 상세: `.claude/docs/L1_L2_L3_qa-test.md`
+| 페이지             | 설명                                    | 경로 / 실행                                |
+| ------------------ | --------------------------------------- | ------------------------------------------ |
+| Architecture 개요  | 4-Layer, Agent Loop, MCP 등 전체 구조   | `docs/architecture.html` (브라우저로 열기)  |
+| Module Deep Dive   | 9개 모듈 내부 상태머신 + TS 인터페이스  | `docs/architecture-deep.html`              |
+| Deep Dive (Next.js)| 위와 동일 내용의 React/Next.js 버전     | `cd guide && npm run dev`                  |
 
 ## Reference Docs
 
 작업 맥락에 따라 아래 문서를 참조하세요:
 
-| 문서                  | 참조 시점                             | 경로                                             |
-| --------------------- | ------------------------------------- | ------------------------------------------------ |
-| Directory Structure   | 파일 위치 파악, 새 모듈 배치          | `.claude/docs/reference/directory-structure.md`  |
-| Architecture Deep     | Agent loop, 컨텍스트, 서브에이전트    | `.claude/docs/reference/architecture-deep.md`    |
-| Interfaces & Tools    | Tool 추가/수정, LLM 연동, MCP 브리지  | `.claude/docs/reference/interfaces-and-tools.md` |
-| Config & Instructions | DBCODE.md, 설정 계층, MCP 스코프 설정 | `.claude/docs/reference/config-system.md`        |
-| Skills & Commands     | 스킬 개발, 42개 슬래시 명령           | `.claude/docs/reference/skills-and-commands.md`  |
-| Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션       | `.claude/docs/reference/coding-conventions.md`   |
-| MCP System            | MCP 서버 연동, 스코프, 도구 브리지    | `.claude/docs/reference/mcp-system.md`           |
-| Subagents & Teams     | 서브에이전트 생성, 팀 오케스트레이션  | `.claude/docs/reference/subagents-and-teams.md`  |
-| E2E Test Guide        | headless QA, NEXUS.md 패턴, 채점      | `.claude/docs/reference/e2e-test-guide.md`       |
+| 문서                | 참조 시점                            | 경로                                             |
+| ------------------- | ------------------------------------ | ------------------------------------------------ |
+| Directory Structure | 파일 위치 파악, 새 모듈 배치         | `.claude/docs/reference/directory-structure.md`  |
+| Architecture Deep   | Agent loop, 컨텍스트, 서브에이전트   | `.claude/docs/reference/architecture-deep.md`    |
+| Interfaces & Tools  | Tool 추가/수정, LLM 연동, MCP 브리지 | `.claude/docs/reference/interfaces-and-tools.md` |
+| Config & Instructions| DBCODE.md, 설정 계층, MCP 스코프    | `.claude/docs/reference/config-system.md`        |
+| Skills & Commands   | 스킬 개발, 42개 슬래시 명령          | `.claude/docs/reference/skills-and-commands.md`  |
+| Coding Conventions  | TS 설정, 이벤트 패턴, 팀 컨벤션      | `.claude/docs/reference/coding-conventions.md`   |
+| MCP System          | MCP 서버 연동, 스코프, 도구 브리지   | `.claude/docs/reference/mcp-system.md`           |
+| Subagents & Teams   | 서브에이전트 생성, 팀 오케스트레이션 | `.claude/docs/reference/subagents-and-teams.md`  |
+| E2E Test Guide      | headless QA, NEXUS.md 패턴, 채점     | `.claude/docs/reference/e2e-test-guide.md`       |

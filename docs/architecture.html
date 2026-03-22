@@ -1,0 +1,1821 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dbcode Architecture Documentation</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<style>
+  @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css');
+
+  :root {
+    --bg-primary: #0a0e1a;
+    --bg-secondary: #111827;
+    --bg-card: #1a2035;
+    --bg-card-hover: #1e2642;
+    --border: #2a3454;
+    --border-glow: #3b82f6;
+    --text-primary: #f1f5f9;
+    --text-secondary: #94a3b8;
+    --text-muted: #64748b;
+    --accent-blue: #3b82f6;
+    --accent-cyan: #06b6d4;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+    --accent-orange: #f59e0b;
+    --accent-pink: #ec4899;
+    --accent-red: #ef4444;
+    --gradient-blue: linear-gradient(135deg, #3b82f6, #06b6d4);
+    --gradient-purple: linear-gradient(135deg, #8b5cf6, #ec4899);
+    --gradient-green: linear-gradient(135deg, #10b981, #06b6d4);
+    --gradient-orange: linear-gradient(135deg, #f59e0b, #ef4444);
+    --shadow-glow: 0 0 30px rgba(59, 130, 246, 0.15);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html {
+    scroll-behavior: smooth;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--bg-primary);
+  }
+
+  body {
+    font-family: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg-primary); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* ─── Navigation ─── */
+  nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    background: rgba(10, 14, 26, 0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    transition: box-shadow 0.3s;
+  }
+  nav.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.3); }
+  .nav-inner {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+  .nav-logo {
+    font-size: 20px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .nav-logo span { background: var(--gradient-blue); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .nav-links { display: flex; gap: 6px; }
+  .nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s;
+  }
+  .nav-links a:hover,
+  .nav-links a.active { color: var(--text-primary); background: rgba(59,130,246,0.1); }
+
+  /* ─── Hero ─── */
+  .hero {
+    padding: 140px 32px 80px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle at 50% 50%, rgba(59,130,246,0.08) 0%, transparent 50%);
+    animation: heroGlow 8s ease-in-out infinite alternate;
+  }
+  @keyframes heroGlow {
+    0% { transform: translate(0, 0); }
+    100% { transform: translate(-5%, 5%); }
+  }
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 16px;
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 100px;
+    font-size: 13px;
+    color: var(--accent-blue);
+    font-weight: 600;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .hero h1 {
+    font-size: clamp(36px, 5vw, 64px);
+    font-weight: 900;
+    letter-spacing: -2px;
+    line-height: 1.1;
+    margin-bottom: 20px;
+    position: relative;
+  }
+  .hero h1 .gradient { background: var(--gradient-blue); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .hero p {
+    font-size: 18px;
+    color: var(--text-secondary);
+    max-width: 640px;
+    margin: 0 auto 40px;
+    position: relative;
+  }
+  .hero-stats {
+    display: flex;
+    justify-content: center;
+    gap: 48px;
+    position: relative;
+  }
+  .hero-stat { text-align: center; }
+  .hero-stat .num {
+    font-size: 32px;
+    font-weight: 800;
+    background: var(--gradient-blue);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .hero-stat .label { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+  /* ─── Container ─── */
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 0 32px;
+  }
+
+  /* ─── Section ─── */
+  section {
+    padding: 80px 0;
+  }
+  .section-header {
+    text-align: center;
+    margin-bottom: 56px;
+  }
+  .section-label {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+  .section-label.blue { color: var(--accent-blue); background: rgba(59,130,246,0.1); }
+  .section-label.purple { color: var(--accent-purple); background: rgba(139,92,246,0.1); }
+  .section-label.green { color: var(--accent-green); background: rgba(16,185,129,0.1); }
+  .section-label.orange { color: var(--accent-orange); background: rgba(245,158,11,0.1); }
+  .section-label.cyan { color: var(--accent-cyan); background: rgba(6,182,212,0.1); }
+  .section-label.pink { color: var(--accent-pink); background: rgba(236,72,153,0.1); }
+  .section-title {
+    font-size: clamp(28px, 3.5vw, 40px);
+    font-weight: 800;
+    letter-spacing: -1px;
+    margin-bottom: 12px;
+  }
+  .section-desc {
+    font-size: 16px;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+
+  /* ─── Cards ─── */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--gradient-blue);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .card:hover {
+    border-color: rgba(59,130,246,0.3);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-glow);
+  }
+  .card:hover::before { opacity: 1; }
+
+  /* ─── Architecture Layer Cards ─── */
+  .arch-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .layer-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: all 0.3s;
+  }
+  .layer-card:hover { border-color: rgba(59,130,246,0.3); box-shadow: var(--shadow-glow); }
+  .layer-header {
+    padding: 24px 28px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .layer-header:hover { background: rgba(255,255,255,0.02); }
+  .layer-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .layer-icon.l1 { background: rgba(59,130,246,0.15); }
+  .layer-icon.l2 { background: rgba(139,92,246,0.15); }
+  .layer-icon.l3 { background: rgba(16,185,129,0.15); }
+  .layer-icon.l4 { background: rgba(245,158,11,0.15); }
+  .layer-info { flex: 1; }
+  .layer-info h3 { font-size: 18px; font-weight: 700; margin-bottom: 2px; }
+  .layer-info p { font-size: 13px; color: var(--text-secondary); }
+  .layer-badge {
+    font-size: 11px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-weight: 600;
+  }
+  .layer-badge.l1 { color: var(--accent-blue); background: rgba(59,130,246,0.1); }
+  .layer-badge.l2 { color: var(--accent-purple); background: rgba(139,92,246,0.1); }
+  .layer-badge.l3 { color: var(--accent-green); background: rgba(16,185,129,0.1); }
+  .layer-badge.l4 { color: var(--accent-orange); background: rgba(245,158,11,0.1); }
+  .layer-toggle {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    background: rgba(255,255,255,0.05);
+    transition: transform 0.3s;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+  .layer-card.open .layer-toggle { transform: rotate(180deg); }
+  .layer-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+  .layer-card.open .layer-body { max-height: 2000px; }
+  .layer-content { padding: 0 28px 28px; }
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+  }
+  .module-item {
+    padding: 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+  }
+  .module-item:hover { background: rgba(255,255,255,0.04); border-color: rgba(59,130,246,0.2); }
+  .module-item .name {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--accent-cyan);
+    margin-bottom: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .module-item .path {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 6px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .module-item .desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ─── Diagram Container ─── */
+  .diagram-wrapper {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 40px;
+    margin-bottom: 40px;
+    overflow-x: auto;
+  }
+  .diagram-wrapper .mermaid {
+    display: flex;
+    justify-content: center;
+  }
+  .diagram-title {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .diagram-title::before {
+    content: '';
+    width: 4px;
+    height: 20px;
+    background: var(--gradient-blue);
+    border-radius: 2px;
+  }
+
+  /* ─── Tools Grid ─── */
+  .tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 16px;
+  }
+  .tool-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .tool-card:hover {
+    border-color: rgba(59,130,246,0.3);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+  }
+  .tool-card .tool-name {
+    font-size: 14px;
+    font-weight: 700;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .tool-card .tool-perm {
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+  .perm-safe { color: var(--accent-green); background: rgba(16,185,129,0.1); }
+  .perm-confirm { color: var(--accent-orange); background: rgba(245,158,11,0.1); }
+  .tool-card .tool-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+  .tool-card .tool-hot {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    box-shadow: 0 0 8px var(--accent-blue);
+  }
+
+  /* ─── Dependency Flow ─── */
+  .dep-rule {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .dep-flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 24px 0;
+  }
+  .dep-node {
+    padding: 14px 24px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 14px;
+    border: 2px solid;
+    position: relative;
+  }
+  .dep-node.l1 { color: var(--accent-blue); border-color: var(--accent-blue); background: rgba(59,130,246,0.08); }
+  .dep-node.l2 { color: var(--accent-purple); border-color: var(--accent-purple); background: rgba(139,92,246,0.08); }
+  .dep-node.l3 { color: var(--accent-green); border-color: var(--accent-green); background: rgba(16,185,129,0.08); }
+  .dep-node.l4 { color: var(--accent-orange); border-color: var(--accent-orange); background: rgba(245,158,11,0.08); }
+  .dep-arrow {
+    color: var(--text-muted);
+    font-size: 20px;
+    animation: arrowPulse 2s ease-in-out infinite;
+  }
+  @keyframes arrowPulse {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+  }
+
+  /* ─── Commands Table ─── */
+  .cmd-table-wrap {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .cmd-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .cmd-table th {
+    padding: 14px 20px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    background: rgba(255,255,255,0.02);
+    border-bottom: 1px solid var(--border);
+  }
+  .cmd-table td {
+    padding: 12px 20px;
+    font-size: 13px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .cmd-table tr:hover td { background: rgba(59,130,246,0.03); }
+  .cmd-table .cmd-name {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--accent-cyan);
+    font-weight: 600;
+  }
+  .cmd-cat {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-weight: 600;
+  }
+
+  /* ─── Tab System ─── */
+  .tabs { display: flex; gap: 4px; margin-bottom: 24px; flex-wrap: wrap; }
+  .tab-btn {
+    padding: 10px 20px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,0.04); color: var(--text-primary); }
+  .tab-btn.active {
+    background: rgba(59,130,246,0.1);
+    border-color: rgba(59,130,246,0.3);
+    color: var(--accent-blue);
+  }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ─── Code Block ─── */
+  .code-block {
+    background: #0d1117;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 20px;
+    overflow-x: auto;
+    font-family: 'SF Mono', 'Fira Code', Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.8;
+    color: #e6edf3;
+    margin: 16px 0;
+  }
+  .code-block .kw { color: #ff7b72; }
+  .code-block .str { color: #a5d6ff; }
+  .code-block .type { color: #79c0ff; }
+  .code-block .fn { color: #d2a8ff; }
+  .code-block .cm { color: #8b949e; }
+  .code-block .prop { color: #7ee787; }
+
+  /* ─── Flow Steps ─── */
+  .flow-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    position: relative;
+    padding-left: 32px;
+  }
+  .flow-steps::before {
+    content: '';
+    position: absolute;
+    left: 11px;
+    top: 24px;
+    bottom: 24px;
+    width: 2px;
+    background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), var(--accent-green));
+    border-radius: 2px;
+  }
+  .flow-step {
+    position: relative;
+    padding: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+  }
+  .flow-step:hover { border-color: rgba(59,130,246,0.3); }
+  .flow-step::before {
+    content: attr(data-step);
+    position: absolute;
+    left: -32px;
+    top: 20px;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: var(--accent-blue);
+    color: white;
+    font-size: 11px;
+    font-weight: 800;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .flow-step h4 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .flow-step p { font-size: 13px; color: var(--text-secondary); }
+
+  /* ─── Info Callout ─── */
+  .callout {
+    display: flex;
+    gap: 16px;
+    padding: 20px;
+    border-radius: var(--radius-sm);
+    margin: 16px 0;
+    font-size: 14px;
+  }
+  .callout.info { background: rgba(59,130,246,0.08); border-left: 3px solid var(--accent-blue); }
+  .callout.warn { background: rgba(245,158,11,0.08); border-left: 3px solid var(--accent-orange); }
+  .callout .callout-icon { font-size: 18px; flex-shrink: 0; }
+
+  /* ─── Security Grid ─── */
+  .sec-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+  }
+  .sec-item {
+    padding: 20px;
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all 0.2s;
+  }
+  .sec-item:hover { border-color: rgba(239,68,68,0.3); }
+  .sec-item .sec-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .sec-item .sec-file { font-size: 11px; color: var(--text-muted); font-family: monospace; margin-bottom: 8px; }
+  .sec-item .sec-desc { font-size: 13px; color: var(--text-secondary); }
+
+  /* ─── Footer ─── */
+  footer {
+    padding: 48px 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 13px;
+  }
+  footer a { color: var(--accent-blue); text-decoration: none; }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 768px) {
+    .nav-links { display: none; }
+    .hero-stats { gap: 24px; flex-wrap: wrap; }
+    .dep-flow { flex-direction: column; }
+    .dep-arrow { transform: rotate(90deg); }
+    .container { padding: 0 16px; }
+    section { padding: 48px 0; }
+  }
+
+  /* ─── Animation Observer ─── */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* ─── Mermaid Override ─── */
+  .mermaid svg { max-width: 100%; height: auto; }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav id="nav">
+  <div class="nav-inner">
+    <div class="nav-logo"><span>dbcode</span> Architecture</div>
+    <div class="nav-links">
+      <a href="#overview">Overview</a>
+      <a href="#architecture">Architecture</a>
+      <a href="#agent-loop">Agent Loop</a>
+      <a href="#dependencies">Dependencies</a>
+      <a href="#tools">Tools</a>
+      <a href="#mcp">MCP</a>
+      <a href="#security">Security</a>
+      <a href="#commands">Commands</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero" id="overview">
+  <div class="hero-badge">v0.1 &mdash; CLI AI Coding Assistant</div>
+  <h1>
+    <span class="gradient">dbcode</span><br>
+    Architecture Guide
+  </h1>
+  <p>로컬/외부 LLM과 연동하는 CLI AI 코딩 어시스턴트의 내부 구조를 주니어 개발자도 이해할 수 있도록 시각적으로 정리한 문서입니다.</p>
+  <div class="hero-stats">
+    <div class="hero-stat"><div class="num">4</div><div class="label">Layers</div></div>
+    <div class="hero-stat"><div class="num">16</div><div class="label">Built-in Tools</div></div>
+    <div class="hero-stat"><div class="num">42</div><div class="label">Slash Commands</div></div>
+    <div class="hero-stat"><div class="num">22</div><div class="label">UI Components</div></div>
+    <div class="hero-stat"><div class="num">8</div><div class="label">React Hooks</div></div>
+  </div>
+</header>
+
+<!-- Tech Stack -->
+<section>
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label blue">TECH STACK</div>
+      <h2 class="section-title">기술 스택</h2>
+      <p class="section-desc">dbcode를 구성하는 핵심 기술들</p>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap:16px;" class="reveal">
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:28px;margin-bottom:8px;">🟢</div>
+        <div style="font-weight:700;margin-bottom:4px;">Node.js 20+</div>
+        <div style="font-size:12px;color:var(--text-muted);">런타임</div>
+      </div>
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:28px;margin-bottom:8px;">🔷</div>
+        <div style="font-weight:700;margin-bottom:4px;">TypeScript 5.x</div>
+        <div style="font-size:12px;color:var(--text-muted);">타입 시스템</div>
+      </div>
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:28px;margin-bottom:8px;">⚛️</div>
+        <div style="font-weight:700;margin-bottom:4px;">Ink 5.x (React)</div>
+        <div style="font-size:12px;color:var(--text-muted);">터미널 UI</div>
+      </div>
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:28px;margin-bottom:8px;">📦</div>
+        <div style="font-weight:700;margin-bottom:4px;">ESM Only</div>
+        <div style="font-size:12px;color:var(--text-muted);">모듈 시스템</div>
+      </div>
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:28px;margin-bottom:8px;">🧪</div>
+        <div style="font-weight:700;margin-bottom:4px;">Vitest</div>
+        <div style="font-size:12px;color:var(--text-muted);">테스팅</div>
+      </div>
+      <div class="card" style="text-align:center;padding:24px;">
+        <div style="font-size:28px;margin-bottom:8px;">📋</div>
+        <div style="font-weight:700;margin-bottom:4px;">tsup</div>
+        <div style="font-size:12px;color:var(--text-muted);">번들러</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4-Layer Architecture -->
+<section id="architecture" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label purple">ARCHITECTURE</div>
+      <h2 class="section-title">4-Layer Architecture</h2>
+      <p class="section-desc">dbcode는 4개의 레이어로 구성되며, 의존성은 항상 위에서 아래로만 흐릅니다.</p>
+    </div>
+
+    <!-- Dependency Rule -->
+    <div class="dep-rule reveal">
+      <div style="font-size:13px;color:var(--text-muted);margin-bottom:16px;font-weight:600;">DEPENDENCY RULE: 항상 위 → 아래 방향만 허용 (순환 의존성 금지)</div>
+      <div class="dep-flow">
+        <div class="dep-node l1">Layer 1: CLI</div>
+        <div class="dep-arrow">→</div>
+        <div class="dep-node l2">Layer 2: Core</div>
+        <div class="dep-arrow">→</div>
+        <div class="dep-node l3">Layer 3: Infra</div>
+        <div class="dep-arrow">→</div>
+        <div class="dep-node l4">Layer 4: Leaf</div>
+      </div>
+      <div class="callout info" style="text-align:left;max-width:700px;margin:16px auto 0;">
+        <div class="callout-icon">💡</div>
+        <div><strong>주니어 개발자 팁:</strong> Layer 1(CLI)은 Layer 2~4를 import할 수 있지만, Layer 4(Utils)는 절대로 Layer 1~3을 import하면 안 됩니다. 이 규칙이 코드를 깔끔하게 유지하는 핵심입니다.</div>
+      </div>
+    </div>
+
+    <!-- Architecture Diagram -->
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title">전체 아키텍처 다이어그램</div>
+      <div class="mermaid">
+graph TD
+    subgraph L1["🖥️ Layer 1: CLI (Ink/React)"]
+        APP["App.tsx<br/>Root Component"]
+        COMP["22 Components<br/>ActivityFeed, TurnBlock, ToolCallBlock..."]
+        HOOKS["8 Hooks<br/>useAgentLoop, useConversation..."]
+        HEADLESS["headless.ts<br/>--print 모드"]
+    end
+    subgraph L2["⚙️ Layer 2: Core (Zero UI imports)"]
+        AGENT["Agent Loop<br/>ReAct + Circuit Breaker"]
+        CTX["Context Manager<br/>3-Layer Compaction"]
+        RECOVER["Recovery Executor<br/>에러 유형별 복구"]
+        PROMPT["System Prompt Builder<br/>동적 프롬프트 조립"]
+        SUBAG["Subagents<br/>Team + Worktree 격리"]
+    end
+    subgraph L3["🔧 Layer 3: Infrastructure"]
+        LLM["LLM Client<br/>OpenAI SDK + Dual-Model Router"]
+        TOOLS["Tool System<br/>16 Built-in + Adaptive Schema"]
+        GUARD["Guardrails<br/>Injection, Entropy, Secrets, Path"]
+        PERM["Permissions<br/>5 Modes + Audit Log"]
+        MCP_["MCP System<br/>3-Scope Config + Tool Bridge"]
+    end
+    subgraph L4["🍃 Layer 4: Leaf Modules"]
+        UTILS["Utils<br/>Logger, Events, Path, Error"]
+        CONFIG["Config<br/>5-Layer Merge"]
+        SKILLS["Skills<br/>42 Slash Commands"]
+        MEM["Memory<br/>Project-Scoped Persistence"]
+    end
+
+    APP --> AGENT
+    HOOKS --> AGENT
+    AGENT --> LLM
+    AGENT --> TOOLS
+    AGENT --> PERM
+    AGENT --> CTX
+    AGENT --> RECOVER
+    AGENT --> SUBAG
+    SUBAG --> LLM
+    TOOLS --> GUARD
+    TOOLS --> MCP_
+    MCP_ --> UTILS
+    TOOLS --> UTILS
+    LLM --> UTILS
+    CONFIG --> UTILS
+    MEM --> UTILS
+
+    style L1 fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+    style L2 fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style L3 fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style L4 fill:#3a2e1e,stroke:#f59e0b,color:#f1f5f9
+      </div>
+    </div>
+
+    <!-- Layer Accordions -->
+    <div class="arch-grid reveal">
+      <!-- Layer 1 -->
+      <div class="layer-card open">
+        <div class="layer-header" onclick="toggleLayer(this)">
+          <div class="layer-icon l1">🖥️</div>
+          <div class="layer-info">
+            <h3>Layer 1: CLI (Terminal UI)</h3>
+            <p>Ink/React 기반 터미널 UI. 사용자와의 모든 상호작용을 담당합니다.</p>
+          </div>
+          <span class="layer-badge l1">22 Components + 8 Hooks</span>
+          <div class="layer-toggle">▼</div>
+        </div>
+        <div class="layer-body">
+          <div class="layer-content">
+            <div class="callout info">
+              <div class="callout-icon">📌</div>
+              <div><strong>핵심 규칙:</strong> React/Ink import는 이 레이어에서만 허용됩니다. core/ 이하에서 UI를 import하면 아키텍처 위반!</div>
+            </div>
+            <h4 style="margin:20px 0 12px;font-size:15px;">주요 컴포넌트</h4>
+            <div class="module-grid">
+              <div class="module-item">
+                <div class="name">App.tsx</div>
+                <div class="path">src/cli/App.tsx</div>
+                <div class="desc">루트 Ink 컴포넌트. 키보드 단축키, 권한 모드 사이클링, 전체 레이아웃을 관리합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">ActivityFeed</div>
+                <div class="path">src/cli/components/ActivityFeed.tsx</div>
+                <div class="desc">Progressive Static Flushing 패턴. 완료된 항목은 Static으로 이동하여 깜빡임을 방지합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">TurnBlock</div>
+                <div class="path">src/cli/components/TurnBlock.tsx</div>
+                <div class="desc">하나의 대화 턴을 표시. 사용자 메시지 + 어시스턴트 응답 + 도구 호출을 하나로 묶습니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">ToolCallBlock</div>
+                <div class="path">src/cli/components/ToolCallBlock.tsx</div>
+                <div class="desc">도구 실행 상태를 diff 미리보기와 함께 표시합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">StreamingMessage</div>
+                <div class="path">src/cli/components/StreamingMessage.tsx</div>
+                <div class="desc">LLM 응답을 실시간 마크다운 렌더링하여 스트리밍합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">StatusBar</div>
+                <div class="path">src/cli/components/StatusBar.tsx</div>
+                <div class="desc">현재 모델, 토큰 사용량, 비용, 컨텍스트 %, 권한 모드를 표시합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">UserInput</div>
+                <div class="path">src/cli/components/UserInput.tsx</div>
+                <div class="desc">Tab 자동완성, @멘션, 멀티라인 입력을 지원하는 입력 컴포넌트.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">ThinkingBlock</div>
+                <div class="path">src/cli/components/ThinkingBlock.tsx</div>
+                <div class="desc">Extended Thinking 내용을 접을 수 있는 UI로 표시합니다.</div>
+              </div>
+            </div>
+            <h4 style="margin:24px 0 12px;font-size:15px;">React Hooks</h4>
+            <div class="module-grid">
+              <div class="module-item">
+                <div class="name">useAgentLoop</div>
+                <div class="path">src/cli/hooks/useAgentLoop.ts</div>
+                <div class="desc">Agent Loop ↔ React 상태를 연결하는 핵심 브릿지. CheckpointManager도 관리합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">useConversation</div>
+                <div class="path">src/cli/hooks/useConversation.ts</div>
+                <div class="desc">불변(Immutable) 대화 상태 관리. 메시지 추가/삭제를 안전하게 처리합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">useTextBuffering</div>
+                <div class="path">src/cli/hooks/useTextBuffering.ts</div>
+                <div class="desc">100ms 단위로 텍스트를 버퍼링하여 부드러운 스트리밍 효과를 만듭니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">useKeybindings</div>
+                <div class="path">src/cli/hooks/useKeybindings.ts</div>
+                <div class="desc">키보드 단축키를 등록하고 ~/.dbcode/keybindings.json 커스텀 설정을 지원합니다.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 2 -->
+      <div class="layer-card">
+        <div class="layer-header" onclick="toggleLayer(this)">
+          <div class="layer-icon l2">⚙️</div>
+          <div class="layer-info">
+            <h3>Layer 2: Core (Business Logic)</h3>
+            <p>UI 의존성 없는 핵심 비즈니스 로직. Agent Loop, Context Management 등.</p>
+          </div>
+          <span class="layer-badge l2">Zero UI Imports</span>
+          <div class="layer-toggle">▼</div>
+        </div>
+        <div class="layer-body">
+          <div class="layer-content">
+            <div class="module-grid">
+              <div class="module-item">
+                <div class="name">agent-loop.ts</div>
+                <div class="path">src/core/agent-loop.ts</div>
+                <div class="desc">ReAct 패턴 구현. 순환 차단기(Circuit Breaker), 관찰 마스킹, 도구 그루핑, 복구 전략을 포함합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">context-manager.ts</div>
+                <div class="path">src/core/context-manager.ts</div>
+                <div class="desc">3단계 컨텍스트 압축 + Cold Storage. 83.5% 임계값에서 자동 압축 트리거.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">recovery-executor.ts</div>
+                <div class="path">src/core/recovery-executor.ts</div>
+                <div class="desc">에러 유형별 복구 전략 실행. compact, retry, fallback, strategy-switch 지원.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">system-prompt-builder.ts</div>
+                <div class="path">src/core/system-prompt-builder.ts</div>
+                <div class="desc">동적 조건부 시스템 프롬프트 조립. SHA-256 캐시로 불필요한 재빌드 방지.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">circuit-breaker.ts</div>
+                <div class="path">src/core/circuit-breaker.ts</div>
+                <div class="desc">시맨틱 진행 분석 — 3회 연속 무변경, 5회 같은 에러 반복 시 트립.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">checkpoint-manager.ts</div>
+                <div class="path">src/core/checkpoint-manager.ts</div>
+                <div class="desc">파일 쓰기/수정 전 자동 상태 저장. /undo, /rewind 기능의 기반.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">observation-masking.ts</div>
+                <div class="path">src/core/observation-masking.ts</div>
+                <div class="desc">재생성 가능한 도구 출력(file_read, grep, glob)을 마스킹하여 컨텍스트를 절약합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">code-review-agent.ts</div>
+                <div class="path">src/core/code-review-agent.ts</div>
+                <div class="desc">Generator-Critic 패턴 — 코드를 생성한 뒤 자체적으로 리뷰하는 이중 검증 구조.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 3 -->
+      <div class="layer-card">
+        <div class="layer-header" onclick="toggleLayer(this)">
+          <div class="layer-icon l3">🔧</div>
+          <div class="layer-info">
+            <h3>Layer 3: Infrastructure</h3>
+            <p>LLM 클라이언트, 도구 시스템, 권한, 보안 가드레일, MCP 연동.</p>
+          </div>
+          <span class="layer-badge l3">LLM + Tools + Security</span>
+          <div class="layer-toggle">▼</div>
+        </div>
+        <div class="layer-body">
+          <div class="layer-content">
+            <div class="module-grid">
+              <div class="module-item">
+                <div class="name">LLM Client</div>
+                <div class="path">src/llm/client.ts</div>
+                <div class="desc">OpenAI SDK 래퍼. baseURL 변경으로 어떤 LLM API에도 연결 가능. 스트리밍, 토큰 카운팅 지원.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Dual-Model Router</div>
+                <div class="path">src/llm/dual-model-router.ts</div>
+                <div class="desc">대화 흐름 분석 → 계획 단계(Architect)와 실행 단계(Editor) 모델 자동 전환.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Model Capabilities</div>
+                <div class="path">src/llm/model-capabilities.ts</div>
+                <div class="desc">모델별 컨텍스트 제한, 기능 티어(HIGH/MEDIUM/LOW) 정의.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Tool Registry</div>
+                <div class="path">src/tools/registry.ts</div>
+                <div class="desc">도구 등록, Hot Tools 관리, Lazy Loading. 모든 내장 + MCP 도구가 여기 등록됩니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Adaptive Schema</div>
+                <div class="path">src/tools/adaptive-schema.ts</div>
+                <div class="desc">모델 능력 티어에 따라 도구 스키마 상세도 조절. LOW 티어엔 few-shot 예시 제공.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Permission Manager</div>
+                <div class="path">src/permissions/manager.ts</div>
+                <div class="desc">5단계 계층적 결정: deny → session → allow → rules → mode. 감사 로그 포함.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">MCP Manager</div>
+                <div class="path">src/mcp/manager.ts</div>
+                <div class="desc">MCP 서버 수명주기 관리. 3-Scope 설정(local > project > user) 지원.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Tool Bridge</div>
+                <div class="path">src/mcp/tool-bridge.ts</div>
+                <div class="desc">MCP 서버의 도구를 mcp__{server}__{tool} 이름으로 내부 레지스트리에 등록.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layer 4 -->
+      <div class="layer-card">
+        <div class="layer-header" onclick="toggleLayer(this)">
+          <div class="layer-icon l4">🍃</div>
+          <div class="layer-info">
+            <h3>Layer 4: Leaf Modules</h3>
+            <p>유틸리티, 설정, 스킬, 메모리 등 다른 모듈에 의존하지 않는 기반 모듈.</p>
+          </div>
+          <span class="layer-badge l4">Zero Upward Deps</span>
+          <div class="layer-toggle">▼</div>
+        </div>
+        <div class="layer-body">
+          <div class="layer-content">
+            <div class="module-grid">
+              <div class="module-item">
+                <div class="name">Logger</div>
+                <div class="path">src/utils/logger.ts</div>
+                <div class="desc">Pino 기반 로거. 16개 API 키 패턴을 자동으로 마스킹(redaction)합니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Events</div>
+                <div class="path">src/utils/events.ts</div>
+                <div class="desc">mitt 기반 이벤트 시스템. 컴포넌트 간 통신에 사용됩니다.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Config Loader</div>
+                <div class="path">src/config/loader.ts</div>
+                <div class="desc">5단계 설정 병합: CLI flags > 환경변수 > 프로젝트 > 사용자 > 기본값.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Skill Manager</div>
+                <div class="path">src/skills/manager.ts</div>
+                <div class="desc">4개 디렉토리에서 스킬 로딩. user_invocable 스킬은 슬래시 명령어로 자동 변환.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Memory Manager</div>
+                <div class="path">src/memory/manager.ts</div>
+                <div class="desc">프로젝트 범위 메모리 CRUD. 해시 기반 경로로 프로젝트별 격리.</div>
+              </div>
+              <div class="module-item">
+                <div class="name">Instruction Loader</div>
+                <div class="path">src/instructions/loader.ts</div>
+                <div class="desc">6단계 DBCODE.md 로딩: global → global rules → parent dirs → project → project rules → local.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Agent Loop -->
+<section id="agent-loop">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label cyan">CORE ENGINE</div>
+      <h2 class="section-title">Agent Loop (ReAct Pattern)</h2>
+      <p class="section-desc">dbcode의 심장부. 사용자 입력을 받아 LLM과 도구를 오케스트레이션합니다.</p>
+    </div>
+
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title">Agent Loop 실행 흐름</div>
+      <div class="mermaid">
+graph LR
+    A["👤 User Input"] --> B["📋 Context Prepare"]
+    B --> C["🛡️ Input Filter"]
+    C --> D["🤖 LLM Stream"]
+    D --> E["🔍 Output Filter"]
+    E --> F{"🔧 Tool Calls?"}
+    F -->|"없음"| G["✅ Done"]
+    F -->|"있음"| FV["유효성 검증"]
+    FV --> H["🔐 Permission Check"]
+    H --> I["💾 Auto-Checkpoint"]
+    I --> GR["📦 Tool Grouping"]
+    GR --> J["⚡ Parallel Execute"]
+    J --> K["👁️ Observation Masking"]
+    K --> L["📝 Append Results"]
+    L --> CB{"🔄 Circuit Breaker"}
+    CB -->|"OK"| D
+    CB -->|"Trip"| REC["🚑 Recovery"]
+    REC --> D
+
+    style A fill:#1e3a5f,stroke:#3b82f6,color:#f1f5f9
+    style D fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style G fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style REC fill:#3a1e1e,stroke:#ef4444,color:#f1f5f9
+      </div>
+    </div>
+
+    <div class="reveal">
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:20px;">각 단계별 설명</h3>
+      <div class="flow-steps">
+        <div class="flow-step" data-step="1">
+          <h4>Context Prepare</h4>
+          <p>사용자 메시지를 컨텍스트에 추가하고, 시스템 프롬프트를 조립합니다. 컨텍스트 사용률이 83.5%를 넘으면 자동 압축이 트리거됩니다.</p>
+        </div>
+        <div class="flow-step" data-step="2">
+          <h4>Input Filter (Guardrails)</h4>
+          <p>보안 필터를 통과시킵니다: 프롬프트 인젝션 감지, 비밀 키 스캔, 위험 명령 차단 등.</p>
+        </div>
+        <div class="flow-step" data-step="3">
+          <h4>LLM Stream</h4>
+          <p>LLM에 요청을 보내고 SSE(Server-Sent Events)로 응답을 스트리밍합니다. 백프레셔 관리 포함.</p>
+        </div>
+        <div class="flow-step" data-step="4">
+          <h4>Tool Grouping & Parallel Execute</h4>
+          <p>LLM이 요청한 도구 호출을 충돌 분석합니다. 같은 파일 쓰기는 순차 실행, 읽기 전용 도구는 병렬 실행합니다.</p>
+        </div>
+        <div class="flow-step" data-step="5">
+          <h4>Observation Masking</h4>
+          <p>재생성 가능한 도구 출력(file_read, grep 등)을 마스킹하여 컨텍스트 윈도우를 절약합니다.</p>
+        </div>
+        <div class="flow-step" data-step="6">
+          <h4>Circuit Breaker</h4>
+          <p>3회 연속 무변경 또는 5회 같은 에러 반복 시 트립됩니다. Recovery Executor로 위임하여 compact/retry/fallback 전략을 실행합니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recovery Strategies -->
+    <div style="margin-top:40px;" class="reveal">
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:20px;">에러 복구 전략</h3>
+      <div class="cmd-table-wrap">
+        <table class="cmd-table">
+          <thead><tr><th>에러 패턴</th><th>전략</th><th>설명</th><th>재시도</th></tr></thead>
+          <tbody>
+            <tr><td>request too large</td><td><span class="cmd-cat" style="color:var(--accent-purple);background:rgba(139,92,246,0.1);">compact</span></td><td>대화 압축 후 재시도</td><td>1회</td></tr>
+            <tr><td>ETIMEDOUT / timeout</td><td><span class="cmd-cat" style="color:var(--accent-blue);background:rgba(59,130,246,0.1);">retry</span></td><td>지수 백오프로 재시도</td><td>2회</td></tr>
+            <tr><td>parse error / invalid JSON</td><td><span class="cmd-cat" style="color:var(--accent-orange);background:rgba(245,158,11,0.1);">fallback</span></td><td>텍스트 파싱 전략으로 전환</td><td>1회</td></tr>
+            <tr><td>ELOCK / locked</td><td><span class="cmd-cat" style="color:var(--accent-green);background:rgba(16,185,129,0.1);">retry</span></td><td>1초 백오프로 재시도</td><td>3회</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Dependencies -->
+<section id="dependencies" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label green">DEPENDENCIES</div>
+      <h2 class="section-title">모듈 의존성 맵</h2>
+      <p class="section-desc">주요 모듈 간의 데이터 흐름과 의존 관계를 보여줍니다.</p>
+    </div>
+
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title">모듈 간 의존 관계</div>
+      <div class="mermaid">
+graph TD
+    INDEX["index.ts<br/>Bootstrap"] --> APP["App.tsx"]
+    INDEX --> HEADLESS["headless.ts"]
+    INDEX --> CMD_REG["commands/registry.ts"]
+    INDEX --> MCP_MGR["mcp/manager.ts"]
+
+    APP --> HOOK_AL["useAgentLoop"]
+    APP --> HOOK_CV["useConversation"]
+    APP --> HOOK_KB["useKeybindings"]
+
+    HOOK_AL --> AGENT_LOOP["agent-loop.ts"]
+    HOOK_AL --> CKPT["checkpoint-manager.ts"]
+
+    AGENT_LOOP --> LLM_CLIENT["llm/client.ts"]
+    AGENT_LOOP --> TOOL_EXEC["tools/executor.ts"]
+    AGENT_LOOP --> PERM_MGR["permissions/manager.ts"]
+    AGENT_LOOP --> CTX_MGR["context-manager.ts"]
+    AGENT_LOOP --> RECOVERY["recovery-executor.ts"]
+    AGENT_LOOP --> CIRCUIT["circuit-breaker.ts"]
+    AGENT_LOOP --> OBS_MASK["observation-masking.ts"]
+    AGENT_LOOP --> SYS_PROMPT["system-prompt-builder.ts"]
+
+    LLM_CLIENT --> STREAMING["streaming.ts"]
+    LLM_CLIENT --> TOKEN["token-counter.ts"]
+    LLM_CLIENT --> COST["cost-tracker.ts"]
+    LLM_CLIENT --> DUAL["dual-model-router.ts"]
+
+    TOOL_EXEC --> TOOL_REG["tools/registry.ts"]
+    TOOL_EXEC --> TOOL_RETRY["tool-retry.ts"]
+    TOOL_EXEC --> TOOL_CORR["tool-call-corrector.ts"]
+
+    TOOL_REG --> MCP_BRIDGE["mcp/tool-bridge.ts"]
+
+    MCP_MGR --> MCP_SCOPE["mcp/scope-manager.ts"]
+    MCP_MGR --> MCP_CLIENT["mcp/client.ts"]
+    MCP_MGR --> MCP_BRIDGE
+
+    PERM_MGR --> PERM_RULES["permissions/rules.ts"]
+    PERM_MGR --> PERM_MODES["permissions/modes.ts"]
+    PERM_MGR --> AUDIT["permissions/audit-log.ts"]
+
+    SYS_PROMPT --> INSTR["instructions/loader.ts"]
+    SYS_PROMPT --> SKILL_MGR["skills/manager.ts"]
+    SYS_PROMPT --> CONFIG_LOAD["config/loader.ts"]
+
+    style INDEX fill:#1a2035,stroke:#64748b,color:#f1f5f9
+    style AGENT_LOOP fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style LLM_CLIENT fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+    style TOOL_EXEC fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style PERM_MGR fill:#3a2e1e,stroke:#f59e0b,color:#f1f5f9
+    style MCP_MGR fill:#2a1e3a,stroke:#ec4899,color:#f1f5f9
+      </div>
+    </div>
+
+    <div class="callout info reveal">
+      <div class="callout-icon">💡</div>
+      <div>
+        <strong>주니어 개발자 팁:</strong> 새로운 기능을 추가할 때는 먼저 이 의존성 맵에서 해당 모듈의 위치를 확인하세요.
+        상위 레이어에 의존하는 코드를 하위 레이어에 추가하면 순환 의존성이 발생합니다.
+        <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">madge --circular src/</code> 명령어로 검증할 수 있습니다.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Tools -->
+<section id="tools">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label orange">TOOL SYSTEM</div>
+      <h2 class="section-title">16 Built-in Tools</h2>
+      <p class="section-desc">AI가 코딩 작업을 수행하기 위해 사용하는 도구들. 각 도구는 권한 레벨이 지정되어 있습니다.</p>
+    </div>
+
+    <div class="callout info reveal" style="max-width:800px;margin:0 auto 32px;">
+      <div class="callout-icon">🔵</div>
+      <div><strong>Hot Tools</strong> (파란 점 표시)는 항상 LLM 스키마에 포함되는 핵심 도구입니다. 나머지는 필요할 때 Lazy Loading됩니다.</div>
+    </div>
+
+    <div class="tools-grid reveal">
+      <div class="tool-card">
+        <div class="tool-hot" title="Hot Tool"></div>
+        <div class="tool-name">file_read <span class="tool-perm perm-safe">safe</span></div>
+        <div class="tool-desc">파일 읽기. 줄 번호, offset/limit, 이미지/PDF 지원. 안전하므로 자동 실행됩니다.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-hot" title="Hot Tool"></div>
+        <div class="tool-name">file_write <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">파일 생성/덮어쓰기. 기존 파일은 반드시 먼저 읽어야 합니다.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-hot" title="Hot Tool"></div>
+        <div class="tool-name">file_edit <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">Search/Replace로 파일 수정. 고유성 검증 + diff 미리보기 제공.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-hot" title="Hot Tool"></div>
+        <div class="tool-name">bash_exec <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">셸 명령 실행. 120초 타임아웃. 백그라운드 실행 지원.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-hot" title="Hot Tool"></div>
+        <div class="tool-name">glob_search <span class="tool-perm perm-safe">safe</span></div>
+        <div class="tool-desc">파일 패턴 매칭. 수정 시간 기준 정렬. **/*.ts 같은 glob 패턴 사용.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-hot" title="Hot Tool"></div>
+        <div class="tool-name">grep_search <span class="tool-perm perm-safe">safe</span></div>
+        <div class="tool-desc">정규식 기반 내용 검색. ripgrep 래퍼로 빠른 코드 검색 지원.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">bash_output <span class="tool-perm perm-safe">safe</span></div>
+        <div class="tool-desc">백그라운드 bash 프로세스의 출력을 읽어옵니다.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">kill_shell <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">실행 중인 백그라운드 셸 프로세스를 종료합니다.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">list_dir <span class="tool-perm perm-safe">safe</span></div>
+        <div class="tool-desc">디렉토리 목록 조회. 메타데이터 포함.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">web_fetch <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">HTTP 요청. 15분 캐시, 콘텐츠 자동 추출.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">web_search <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">웹 검색. Brave Search + DuckDuckGo 폴백.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">notebook_edit <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">Jupyter 노트북 셀 편집.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">mkdir <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">디렉토리 재귀 생성.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">ask_user <span class="tool-perm perm-safe">safe</span></div>
+        <div class="tool-desc">사용자에게 질문. 선택지 제공 가능.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">agent <span class="tool-perm perm-confirm">confirm</span></div>
+        <div class="tool-desc">서브에이전트 생성 (explore/plan/general). 팩토리 패턴.</div>
+      </div>
+      <div class="tool-card">
+        <div class="tool-name">todo_write <span class="tool-perm perm-safe">safe</span></div>
+        <div class="tool-desc">태스크 추적. pending/in_progress/completed 상태 관리.</div>
+      </div>
+    </div>
+
+    <!-- Tool Call Strategy -->
+    <div style="margin-top:48px;" class="reveal">
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:20px;">도구 호출 전략 (Tool-Call Strategy)</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">
+        <div class="card">
+          <h4 style="font-size:15px;margin-bottom:8px;color:var(--accent-blue);">Native Function Calling</h4>
+          <p style="font-size:13px;color:var(--text-secondary);">GPT-4o, Claude 등 함수 호출을 네이티브로 지원하는 모델용. 가장 정확하고 효율적입니다.</p>
+        </div>
+        <div class="card">
+          <h4 style="font-size:15px;margin-bottom:8px;color:var(--accent-purple);">Text Parsing</h4>
+          <p style="font-size:13px;color:var(--text-secondary);">XML 태그 기반 폴백. 함수 호출을 지원하지 않는 모델에서 사용합니다.</p>
+        </div>
+        <div class="card">
+          <h4 style="font-size:15px;margin-bottom:8px;color:var(--accent-green);">Two-Stage</h4>
+          <p style="font-size:13px;color:var(--text-secondary);">복잡한 워크플로우용. 먼저 계획을 세우고, 그 다음 실행하는 2단계 접근.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Adaptive Schema -->
+    <div style="margin-top:48px;" class="reveal">
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:20px;">Adaptive Schema (모델 능력 기반)</h3>
+      <div class="cmd-table-wrap">
+        <table class="cmd-table">
+          <thead><tr><th>능력 티어</th><th>스키마 상세도</th><th>로딩 방식</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td><span style="color:var(--accent-green);font-weight:700;">HIGH</span></td><td>Full</td><td>Eager</td><td>모든 파라미터, 설명, 예시 포함</td></tr>
+            <tr><td><span style="color:var(--accent-orange);font-weight:700;">MEDIUM</span></td><td>Reduced</td><td>Lazy</td><td>필수 파라미터만, 최소 설명</td></tr>
+            <tr><td><span style="color:var(--accent-red);font-weight:700;">LOW</span></td><td>Minimal</td><td>On-demand</td><td>이름 + 필수 파라미터 + few-shot 예시</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Key Interface -->
+    <div style="margin-top:48px;" class="reveal">
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:20px;">핵심 인터페이스: ToolDefinition</h3>
+      <div class="code-block"><span class="cm">// src/tools/types.ts</span>
+<span class="kw">interface</span> <span class="type">ToolDefinition</span>&lt;<span class="type">TParams</span> = <span class="type">unknown</span>&gt; {
+  <span class="kw">readonly</span> <span class="prop">name</span>: <span class="type">string</span>;
+  <span class="kw">readonly</span> <span class="prop">description</span>: <span class="type">string</span>;
+  <span class="kw">readonly</span> <span class="prop">parameterSchema</span>: <span class="type">z.ZodSchema</span>&lt;<span class="type">TParams</span>&gt;;
+  <span class="kw">readonly</span> <span class="prop">permissionLevel</span>: <span class="str">"safe"</span> | <span class="str">"confirm"</span> | <span class="str">"dangerous"</span>;
+  <span class="kw">readonly</span> <span class="fn">execute</span>: (<span class="prop">params</span>: <span class="type">TParams</span>, <span class="prop">context</span>: <span class="type">ToolContext</span>) =&gt; <span class="type">Promise</span>&lt;<span class="type">ToolResult</span>&gt;;
+}</div>
+    </div>
+  </div>
+</section>
+
+<!-- MCP System -->
+<section id="mcp" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label pink">MCP INTEGRATION</div>
+      <h2 class="section-title">Model Context Protocol</h2>
+      <p class="section-desc">외부 도구와 데이터 소스를 표준 프로토콜(JSON-RPC 2.0)로 연결하는 시스템</p>
+    </div>
+
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title">MCP 아키텍처</div>
+      <div class="mermaid">
+graph TD
+    subgraph Config["📁 3-Scope Configuration"]
+        LOCAL[".dbcode/mcp-local.json<br/>🔒 개인 (gitignored)"]
+        PROJECT[".dbcode/mcp.json<br/>👥 팀 공유 (git)"]
+        USER["~/.dbcode/mcp-servers.json<br/>🌐 글로벌"]
+    end
+    subgraph Manager["🎛️ MCP Manager"]
+        SCOPE["ScopeManager<br/>local > project > user"]
+        MGR["MCPManager<br/>connect / disconnect"]
+        CONN["MCPManagerConnector<br/>tools, resources, prompts"]
+    end
+    subgraph Transport["🔌 Transport Layer"]
+        STDIO["stdio<br/>로컬 CLI 도구"]
+        HTTP["http<br/>원격 API 서버"]
+        SSE["sse<br/>실시간 스트리밍"]
+    end
+    subgraph Bridge["🌉 Tool Bridge"]
+        TB["MCPToolBridge<br/>MCP → ToolRegistry"]
+        TF["MCPToolFilter<br/>include / exclude"]
+        TS["MCPToolSearch<br/>deferred loading"]
+    end
+
+    LOCAL & PROJECT & USER --> SCOPE
+    SCOPE --> MGR
+    MGR --> CONN
+    CONN --> STDIO & HTTP & SSE
+    STDIO & HTTP & SSE --> TB
+    TB --> TF --> TS
+
+    style Config fill:#1a2035,stroke:#ec4899,color:#f1f5f9
+    style Manager fill:#2a1e3a,stroke:#8b5cf6,color:#f1f5f9
+    style Transport fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9
+    style Bridge fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+      </div>
+    </div>
+
+    <div class="reveal">
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:20px;">MCP 도구 등록 과정</h3>
+      <div class="flow-steps">
+        <div class="flow-step" data-step="1">
+          <h4>MCPManager.connectAll()</h4>
+          <p>3개 스코프(local, project, user)의 설정 파일을 읽고 모든 서버에 병렬 연결합니다.</p>
+        </div>
+        <div class="flow-step" data-step="2">
+          <h4>MCPClient.connect()</h4>
+          <p>JSON-RPC로 initialize 핸드셰이크를 수행하고, tools/list를 호출하여 사용 가능한 도구 목록을 가져옵니다.</p>
+        </div>
+        <div class="flow-step" data-step="3">
+          <h4>MCPToolBridge.registerTools()</h4>
+          <p>MCP 도구를 ToolDefinition으로 변환하여 내부 레지스트리에 등록합니다.</p>
+        </div>
+        <div class="flow-step" data-step="4">
+          <h4>mcp__{server}__{tool} 네이밍</h4>
+          <p>예: playwright 서버의 click 도구 → <code style="background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;">mcp__playwright__click</code></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Subagent System -->
+<section id="subagents">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label purple">SUBAGENTS</div>
+      <h2 class="section-title">서브에이전트 & 팀 시스템</h2>
+      <p class="section-desc">복잡한 작업을 하위 에이전트에게 위임하고 팀으로 조율합니다.</p>
+    </div>
+
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title">서브에이전트 아키텍처</div>
+      <div class="mermaid">
+graph TD
+    MAIN["🧠 Main Agent"] -->|"agent tool"| SPAWNER["Subagent Spawner"]
+    SPAWNER --> EXPLORE["🔍 Explore Agent<br/>코드베이스 탐색<br/><i>읽기 전용</i>"]
+    SPAWNER --> PLAN["📋 Plan Agent<br/>구현 계획 수립<br/><i>읽기 전용</i>"]
+    SPAWNER --> GENERAL["⚡ General Agent<br/>범용 작업<br/><i>전체 도구</i>"]
+    SPAWNER --> CUSTOM["🔧 Custom Agent<br/>.dbcode/agents/*.md<br/><i>커스텀 정의</i>"]
+
+    MAIN -->|"/team"| TEAM["🏢 Team Manager"]
+    TEAM --> W1["Worker 1"]
+    TEAM --> W2["Worker 2"]
+    TEAM --> WN["Worker N"]
+
+    W1 & W2 & WN --> TASKS["📋 Shared Task List"]
+    W1 & W2 & WN --> STATE["💾 Shared State"]
+
+    style MAIN fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+    style TEAM fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+      </div>
+    </div>
+
+    <div class="callout warn reveal">
+      <div class="callout-icon">⚠️</div>
+      <div><strong>중요:</strong> 서브에이전트는 메인 에이전트의 컨텍스트 윈도우를 공유하지 않습니다. 완전히 독립적으로 실행되며, Git Worktree 격리를 사용하면 파일 시스템도 독립됩니다.</div>
+    </div>
+  </div>
+</section>
+
+<!-- Security -->
+<section id="security" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label orange">SECURITY</div>
+      <h2 class="section-title">보안 레이어</h2>
+      <p class="section-desc">다층 보안 시스템으로 안전한 AI 코딩을 보장합니다.</p>
+    </div>
+
+    <div class="sec-grid reveal">
+      <div class="sec-item">
+        <div class="sec-name">🔑 Secret Scanner</div>
+        <div class="sec-file">src/guardrails/secret-scanner.ts</div>
+        <div class="sec-desc">정규식 기반 API 키/비밀번호 감지. 코드에 비밀이 노출되는 것을 방지합니다.</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-name">🎲 Entropy Scanner</div>
+        <div class="sec-file">src/guardrails/entropy-scanner.ts</div>
+        <div class="sec-desc">Shannon 엔트로피로 고엔트로피 문자열(랜덤 토큰 등)을 감지합니다.</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-name">🚫 Command Filter</div>
+        <div class="sec-file">src/guardrails/command-filter.ts</div>
+        <div class="sec-desc">rm -rf, dd 같은 위험한 셸 명령을 차단합니다.</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-name">📂 Path Filter</div>
+        <div class="sec-file">src/guardrails/path-filter.ts</div>
+        <div class="sec-desc">경로 탈출 공격 + /etc, ~/.ssh 같은 민감 경로 접근을 차단합니다.</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-name">🛡️ Injection Detector</div>
+        <div class="sec-file">src/guardrails/injection-detector.ts</div>
+        <div class="sec-desc">프롬프트 인젝션 패턴을 감지하여 악의적 입력을 차단합니다.</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-name">📋 Audit Log</div>
+        <div class="sec-file">src/permissions/audit-log.ts</div>
+        <div class="sec-desc">모든 권한 확인을 JSONL 형식으로 기록. 추후 감사 추적 가능.</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-name">🔐 Permission System</div>
+        <div class="sec-file">src/permissions/manager.ts</div>
+        <div class="sec-desc">5단계 모드: default, acceptEdits, plan, dontAsk, bypassPermissions.</div>
+      </div>
+      <div class="sec-item">
+        <div class="sec-name">📝 Logger Redaction</div>
+        <div class="sec-file">src/utils/logger.ts</div>
+        <div class="sec-desc">Pino 로거에서 16개 API 키 패턴을 자동으로 마스킹합니다.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Slash Commands -->
+<section id="commands">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label cyan">COMMANDS</div>
+      <h2 class="section-title">42 Slash Commands</h2>
+      <p class="section-desc">dbcode에서 사용할 수 있는 모든 슬래시 명령어 목록</p>
+    </div>
+
+    <div class="reveal">
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab(event, 'tab-core')">Core</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-model')">Model & Config</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-session')">Session</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-analysis')">Analysis</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-dev')">Development</button>
+        <button class="tab-btn" onclick="switchTab(event, 'tab-ext')">External</button>
+      </div>
+
+      <div id="tab-core" class="tab-panel active">
+        <div class="cmd-table-wrap">
+          <table class="cmd-table">
+            <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td class="cmd-name">/help</td><td>도움말 표시</td></tr>
+              <tr><td class="cmd-name">/clear</td><td>대화 초기화</td></tr>
+              <tr><td class="cmd-name">/compact</td><td>컨텍스트 수동 압축 (대화가 길어질 때 사용)</td></tr>
+              <tr><td class="cmd-name">/status</td><td>현재 세션 상태 조회</td></tr>
+              <tr><td class="cmd-name">/doctor</td><td>설정 진단 — 12가지 health check 실행</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-model" class="tab-panel">
+        <div class="cmd-table-wrap">
+          <table class="cmd-table">
+            <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td class="cmd-name">/model</td><td>LLM 모델 변경</td></tr>
+              <tr><td class="cmd-name">/config</td><td>설정 조회/변경</td></tr>
+              <tr><td class="cmd-name">/effort</td><td>응답 품질 수준 조정</td></tr>
+              <tr><td class="cmd-name">/fast</td><td>빠른 모드 토글</td></tr>
+              <tr><td class="cmd-name">/tone</td><td>대화 어조 변경</td></tr>
+              <tr><td class="cmd-name">/output-style</td><td>출력 스타일 변경</td></tr>
+              <tr><td class="cmd-name">/keybindings</td><td>키보드 단축키 관리</td></tr>
+              <tr><td class="cmd-name">/dual-model</td><td>Architect/Editor 듀얼 모델 패턴</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-session" class="tab-panel">
+        <div class="cmd-table-wrap">
+          <table class="cmd-table">
+            <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td class="cmd-name">/resume</td><td>이전 세션 복원</td></tr>
+              <tr><td class="cmd-name">/rewind</td><td>체크포인트로 되돌리기</td></tr>
+              <tr><td class="cmd-name">/fork</td><td>현재 세션 분기 (실험용)</td></tr>
+              <tr><td class="cmd-name">/undo</td><td>파일 변경 되돌리기</td></tr>
+              <tr><td class="cmd-name">/rename</td><td>세션 이름 변경</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-analysis" class="tab-panel">
+        <div class="cmd-table-wrap">
+          <table class="cmd-table">
+            <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td class="cmd-name">/cost</td><td>API 비용 확인</td></tr>
+              <tr><td class="cmd-name">/context</td><td>컨텍스트 사용량 조회</td></tr>
+              <tr><td class="cmd-name">/stats</td><td>세션 통계</td></tr>
+              <tr><td class="cmd-name">/analytics</td><td>상세 분석 대시보드 (토큰, 도구 빈도, 비용)</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-dev" class="tab-panel">
+        <div class="cmd-table-wrap">
+          <table class="cmd-table">
+            <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td class="cmd-name">/commit</td><td>Git 커밋 생성</td></tr>
+              <tr><td class="cmd-name">/review</td><td>코드 리뷰 실행</td></tr>
+              <tr><td class="cmd-name">/debug</td><td>디버깅 모드</td></tr>
+              <tr><td class="cmd-name">/diff</td><td>변경사항 비교</td></tr>
+              <tr><td class="cmd-name">/batch</td><td>배치 작업 실행</td></tr>
+              <tr><td class="cmd-name">/simplify</td><td>코드 단순화 리뷰</td></tr>
+              <tr><td class="cmd-name">/plan</td><td>Plan 모드 (실행 전 확인)</td></tr>
+              <tr><td class="cmd-name">/init</td><td>프로젝트에 DBCODE.md 생성</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="tab-ext" class="tab-panel">
+        <div class="cmd-table-wrap">
+          <table class="cmd-table">
+            <thead><tr><th>명령어</th><th>설명</th></tr></thead>
+            <tbody>
+              <tr><td class="cmd-name">/mcp</td><td>MCP 서버 관리 (list/add/remove, 3-scope)</td></tr>
+              <tr><td class="cmd-name">/voice</td><td>음성 입력 토글</td></tr>
+              <tr><td class="cmd-name">/memory</td><td>프로젝트 메모리 관리</td></tr>
+              <tr><td class="cmd-name">/export</td><td>대화 내보내기</td></tr>
+              <tr><td class="cmd-name">/copy</td><td>대화 클립보드에 복사</td></tr>
+              <tr><td class="cmd-name">/update</td><td>업데이트 확인</td></tr>
+              <tr><td class="cmd-name">/bug</td><td>버그 리포트</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Config System -->
+<section id="config" style="background:var(--bg-secondary);">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label green">CONFIGURATION</div>
+      <h2 class="section-title">5-Layer Config System</h2>
+      <p class="section-desc">설정은 5단계 우선순위로 병합됩니다. 상위 레벨이 하위를 덮어씁니다.</p>
+    </div>
+
+    <div class="diagram-wrapper reveal">
+      <div class="diagram-title">설정 병합 우선순위</div>
+      <div class="mermaid">
+graph BT
+    A["🏗️ defaults.ts<br/>기본값"] --> MERGE["📦 Merged Config"]
+    B["👤 ~/.dbcode/settings.json<br/>사용자 전역 설정"] --> MERGE
+    C["📁 .dbcode/settings.json<br/>프로젝트 설정"] --> MERGE
+    D["🌍 Environment Variables<br/>환경변수"] --> MERGE
+    E["⌨️ CLI Flags<br/>명령줄 플래그 (최우선)"] --> MERGE
+
+    style MERGE fill:#1e3a2a,stroke:#10b981,color:#f1f5f9
+    style E fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9
+      </div>
+    </div>
+
+    <div class="reveal">
+      <h3 style="font-size:20px;font-weight:700;margin-bottom:20px;">주요 설정 경로</h3>
+      <div class="cmd-table-wrap">
+        <table class="cmd-table">
+          <thead><tr><th>용도</th><th>경로</th><th>설명</th></tr></thead>
+          <tbody>
+            <tr><td>프로젝트 설정</td><td class="cmd-name">.dbcode/settings.json</td><td>이 프로젝트에만 적용되는 설정</td></tr>
+            <tr><td>사용자 전역</td><td class="cmd-name">~/.dbcode/settings.json</td><td>모든 프로젝트에 적용</td></tr>
+            <tr><td>프로젝트 규칙</td><td class="cmd-name">.dbcode/rules/*.md</td><td>경로 조건부 규칙 (glob 기반)</td></tr>
+            <tr><td>전역 규칙</td><td class="cmd-name">~/.dbcode/rules/*.md</td><td>모든 프로젝트에 적용되는 규칙</td></tr>
+            <tr><td>키바인딩</td><td class="cmd-name">~/.dbcode/keybindings.json</td><td>키보드 단축키 커스터마이징</td></tr>
+            <tr><td>프로젝트 메모리</td><td class="cmd-name">~/.dbcode/projects/{hash}/memory/</td><td>프로젝트별 AI 메모리</td></tr>
+            <tr><td>Cold Storage</td><td class="cmd-name">~/.dbcode/projects/{hash}/cold-storage/</td><td>압축된 컨텍스트 (24h TTL)</td></tr>
+            <tr><td>감사 로그</td><td class="cmd-name">.dbcode/audit.jsonl</td><td>권한 감사 로그</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Quick Reference -->
+<section id="quickref">
+  <div class="container">
+    <div class="section-header reveal">
+      <div class="section-label blue">QUICK REFERENCE</div>
+      <h2 class="section-title">개발 시 알아두면 좋은 것들</h2>
+    </div>
+
+    <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap:20px;" class="reveal">
+      <div class="card">
+        <h4 style="font-size:15px;margin-bottom:12px;">코딩 컨벤션</h4>
+        <ul style="font-size:13px;color:var(--text-secondary);list-style:none;display:flex;flex-direction:column;gap:8px;">
+          <li>✅ Named exports만 사용 (default export 금지)</li>
+          <li>✅ Immutable state (readonly, spread copy)</li>
+          <li>✅ ESM imports (.js 확장자 필수)</li>
+          <li>✅ any 대신 unknown + type guards</li>
+          <li>✅ 모든 비동기 — sync fs 금지</li>
+          <li>✅ AbortController로 취소 처리</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 style="font-size:15px;margin-bottom:12px;">키보드 단축키</h4>
+        <ul style="font-size:13px;color:var(--text-secondary);list-style:none;display:flex;flex-direction:column;gap:8px;">
+          <li><kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-size:12px;">Esc</kbd> Agent Loop 취소</li>
+          <li><kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-size:12px;">Ctrl+O</kbd> Verbose 토글</li>
+          <li><kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-size:12px;">Shift+Tab</kbd> 권한 모드 순환</li>
+          <li><kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-size:12px;">Alt+T</kbd> Thinking 토글</li>
+          <li><kbd style="background:rgba(255,255,255,0.08);padding:2px 8px;border-radius:4px;font-size:12px;">Ctrl+D</kbd> 종료</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h4 style="font-size:15px;margin-bottom:12px;">NPM 명령어</h4>
+        <ul style="font-size:13px;color:var(--text-secondary);list-style:none;display:flex;flex-direction:column;gap:8px;">
+          <li><code style="color:var(--accent-cyan);">npm run dev</code> — tsup --watch</li>
+          <li><code style="color:var(--accent-cyan);">npm run build</code> — tsup (ESM)</li>
+          <li><code style="color:var(--accent-cyan);">npm test</code> — vitest run</li>
+          <li><code style="color:var(--accent-cyan);">npm run typecheck</code> — tsc --noEmit</li>
+          <li><code style="color:var(--accent-cyan);">npm run lint</code> — eslint src/</li>
+          <li><code style="color:var(--accent-cyan);">npm run check</code> — 전체 검증</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <p style="margin-bottom:8px;"><strong style="color:var(--text-primary);">dbcode</strong> Architecture Documentation</p>
+    <p>Built with HTML, CSS, JavaScript &amp; Mermaid.js &mdash; Last updated: 2026-03-21</p>
+  </div>
+</footer>
+
+<script>
+  // ── Mermaid Init ──
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'dark',
+    themeVariables: {
+      darkMode: true,
+      background: '#1a2035',
+      primaryColor: '#3b82f6',
+      primaryTextColor: '#f1f5f9',
+      primaryBorderColor: '#3b82f6',
+      lineColor: '#64748b',
+      secondaryColor: '#8b5cf6',
+      tertiaryColor: '#1e3a2a',
+      fontFamily: 'Pretendard Variable, system-ui, sans-serif',
+      fontSize: '13px',
+    },
+    flowchart: {
+      curve: 'basis',
+      padding: 16,
+      htmlLabels: true,
+    }
+  });
+
+  // ── Nav scroll shadow ──
+  window.addEventListener('scroll', () => {
+    document.getElementById('nav').classList.toggle('scrolled', window.scrollY > 10);
+  });
+
+  // ── Layer Accordion ──
+  function toggleLayer(header) {
+    const card = header.closest('.layer-card');
+    card.classList.toggle('open');
+  }
+
+  // ── Tab Switching ──
+  function switchTab(e, tabId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    e.target.classList.add('active');
+    document.getElementById(tabId).classList.add('active');
+  }
+
+  // ── Scroll Reveal ──
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  // ── Active nav link ──
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-links a');
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+      const top = section.offsetTop - 100;
+      if (window.scrollY >= top) current = section.getAttribute('id');
+    });
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+  });
+</script>
+</body>
+</html>
