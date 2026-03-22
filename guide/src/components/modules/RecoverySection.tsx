@@ -50,7 +50,11 @@ const recoveryChart = `graph TD
 
 export function RecoverySection() {
   return (
-    <section id="recovery" className="py-16 bg-violet-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="recovery"
+      className="py-16 bg-violet-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <div style={{ marginBottom: "48px" }}>
@@ -71,41 +75,90 @@ export function RecoverySection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={circuitBreakerChart} title="Circuit Breaker 상태 전이" titleColor="red" />
+          <MermaidDiagram
+            chart={circuitBreakerChart}
+            title="Circuit Breaker 상태 전이"
+            titleColor="red"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={recoveryChart} title="에러 유형별 복구 전략 라우팅" titleColor="orange" />
+          <MermaidDiagram
+            chart={recoveryChart}
+            title="에러 유형별 복구 전략 라우팅"
+            titleColor="orange"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>Circuit Breaker 내부 상태</h3>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            Circuit Breaker 내부 상태
+          </h3>
           <CodeBlock>
-            <span className="kw">class</span> <span className="type">CircuitBreaker</span> {"{"}{"\n"}
-            {"  "}<span className="cm">{"// 카운터"}</span>{"\n"}
-            {"  "}<span className="kw">private</span> <span className="prop">iterationCount</span> = <span className="num">0</span>;{"\n"}
-            {"  "}<span className="kw">private</span> <span className="prop">consecutiveNoChangeCount</span> = <span className="num">0</span>;    <span className="cm">{"// → 5에 도달하면 trip"}</span>{"\n"}
-            {"  "}<span className="kw">private</span> <span className="prop">consecutiveSameErrorCount</span> = <span className="num">0</span>;   <span className="cm">{"// → 5에 도달하면 trip"}</span>{"\n"}
-            {"  "}<span className="kw">private</span> <span className="prop">lastError</span>?: <span className="type">string</span>;{"\n\n"}
-            {"  "}<span className="cm">{"// 상태"}</span>{"\n"}
-            {"  "}<span className="kw">private</span> <span className="prop">currentState</span>: <span className="str">{'"closed"'}</span> | <span className="str">{'"open"'}</span> = <span className="str">{'"closed"'}</span>;{"\n"}
-            {"  "}<span className="kw">private</span> <span className="prop">openReason</span>?: <span className="type">string</span>;{"\n\n"}
-            {"  "}<span className="cm">{"// 공개 메서드"}</span>{"\n"}
-            {"  "}<span className="fn">recordIteration</span>(<span className="prop">result</span>: <span className="type">IterationResult</span>): <span className="kw">void</span>{"\n"}
-            {"  "}<span className="fn">shouldContinue</span>(): <span className="type">boolean</span>{"\n"}
-            {"  "}<span className="fn">getStatus</span>(): <span className="type">CircuitBreakerStatus</span>{"\n"}
-            {"  "}<span className="fn">reset</span>(): <span className="kw">void</span>{"\n"}
+            <span className="kw">class</span> <span className="type">CircuitBreaker</span> {"{"}
+            {"\n"}
+            {"  "}
+            <span className="cm">{"// 카운터"}</span>
+            {"\n"}
+            {"  "}
+            <span className="kw">private</span> <span className="prop">iterationCount</span> ={" "}
+            <span className="num">0</span>;{"\n"}
+            {"  "}
+            <span className="kw">private</span>{" "}
+            <span className="prop">consecutiveNoChangeCount</span> = <span className="num">0</span>;{" "}
+            <span className="cm">{"// → 5에 도달하면 trip"}</span>
+            {"\n"}
+            {"  "}
+            <span className="kw">private</span>{" "}
+            <span className="prop">consecutiveSameErrorCount</span> = <span className="num">0</span>
+            ; <span className="cm">{"// → 5에 도달하면 trip"}</span>
+            {"\n"}
+            {"  "}
+            <span className="kw">private</span> <span className="prop">lastError</span>?:{" "}
+            <span className="type">string</span>;{"\n\n"}
+            {"  "}
+            <span className="cm">{"// 상태"}</span>
+            {"\n"}
+            {"  "}
+            <span className="kw">private</span> <span className="prop">currentState</span>:{" "}
+            <span className="str">{'"closed"'}</span> | <span className="str">{'"open"'}</span> ={" "}
+            <span className="str">{'"closed"'}</span>;{"\n"}
+            {"  "}
+            <span className="kw">private</span> <span className="prop">openReason</span>?:{" "}
+            <span className="type">string</span>;{"\n\n"}
+            {"  "}
+            <span className="cm">{"// 공개 메서드"}</span>
+            {"\n"}
+            {"  "}
+            <span className="fn">recordIteration</span>(<span className="prop">result</span>:{" "}
+            <span className="type">IterationResult</span>): <span className="kw">void</span>
+            {"\n"}
+            {"  "}
+            <span className="fn">shouldContinue</span>(): <span className="type">boolean</span>
+            {"\n"}
+            {"  "}
+            <span className="fn">getStatus</span>():{" "}
+            <span className="type">CircuitBreakerStatus</span>
+            {"\n"}
+            {"  "}
+            <span className="fn">reset</span>(): <span className="kw">void</span>
+            {"\n"}
             {"}"}
           </CodeBlock>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <ImplDirection items={[
-            "<strong>시맨틱 진행 분석</strong>: 단순 변경 유무 → '의미 있는 진행' 분석으로 더 정교한 트립 조건",
-            "<strong>Half-Open 상태</strong>: 현재 closed/open 2상태 → half-open 추가로 점진적 복구 시도",
-            "<strong>복구 전략 우선순위</strong>: 에러 히스토리 기반으로 가장 효과적인 전략을 먼저 시도",
-            "<strong>사용자 알림 개선</strong>: trip 시 '왜 멈췄는지' + '어떤 복구를 시도했는지' 상세 피드백",
-          ]} />
+          <ImplDirection
+            items={[
+              "<strong>시맨틱 진행 분석</strong>: 단순 변경 유무 → '의미 있는 진행' 분석으로 더 정교한 트립 조건",
+              "<strong>Half-Open 상태</strong>: 현재 closed/open 2상태 → half-open 추가로 점진적 복구 시도",
+              "<strong>복구 전략 우선순위</strong>: 에러 히스토리 기반으로 가장 효과적인 전략을 먼저 시도",
+              "<strong>사용자 알림 개선</strong>: trip 시 '왜 멈췄는지' + '어떤 복구를 시도했는지' 상세 피드백",
+            ]}
+          />
         </RevealOnScroll>
       </div>
     </section>

@@ -38,7 +38,11 @@ const compactionChart = `graph TB
 
 export function ContextSection() {
   return (
-    <section id="context" className="py-16 bg-violet-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="context"
+      className="py-16 bg-violet-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <SectionHeader
@@ -49,38 +53,91 @@ export function ContextSection() {
           />
         </RevealOnScroll>
 
-        <RevealOnScroll><FilePath path="src/core/context-manager.ts" /></RevealOnScroll>
-
         <RevealOnScroll>
-          <MermaidDiagram chart={compactionChart} title="3-Layer 압축 파이프라인" titleColor="cyan" />
+          <FilePath path="src/core/context-manager.ts" />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>Cold Storage 내부 구조</h3>
+          <MermaidDiagram
+            chart={compactionChart}
+            title="3-Layer 압축 파이프라인"
+            titleColor="cyan"
+          />
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            Cold Storage 내부 구조
+          </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ gap: "20px" }}>
             <CodeBlock>
-              <span className="cm">{"// Cold Storage 참조"}</span>{"\n"}
-              <span className="kw">interface</span> <span className="type">ColdStorageRef</span> {"{"}{"\n"}
-              {"  "}<span className="prop">id</span>: <span className="type">string</span>;           <span className="cm">{"// 고유 식별자"}</span>{"\n"}
-              {"  "}<span className="prop">toolName</span>: <span className="type">string</span>;     <span className="cm">{"// 원본 도구명"}</span>{"\n"}
-              {"  "}<span className="prop">filePath</span>: <span className="type">string</span>;     <span className="cm">{"// 디스크 경로"}</span>{"\n"}
-              {"  "}<span className="prop">tokenCount</span>: <span className="type">number</span>;   <span className="cm">{"// 원본 토큰 수"}</span>{"\n"}
-              {"  "}<span className="prop">summary</span>: <span className="type">string</span>;      <span className="cm">{"// 1줄 요약"}</span>{"\n"}
-              {"  "}<span className="prop">createdAt</span>: <span className="type">number</span>;    <span className="cm">{"// 타임스탬프"}</span>{"\n"}
-              {"}"}{"\n\n"}
-              <span className="cm">{"// 디스크: ~/.dbcode/projects/{hash}/cold-storage/"}</span>{"\n"}
+              <span className="cm">{"// Cold Storage 참조"}</span>
+              {"\n"}
+              <span className="kw">interface</span> <span className="type">ColdStorageRef</span>{" "}
+              {"{"}
+              {"\n"}
+              {"  "}
+              <span className="prop">id</span>: <span className="type">string</span>;{" "}
+              <span className="cm">{"// 고유 식별자"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">toolName</span>: <span className="type">string</span>;{" "}
+              <span className="cm">{"// 원본 도구명"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">filePath</span>: <span className="type">string</span>;{" "}
+              <span className="cm">{"// 디스크 경로"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">tokenCount</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 원본 토큰 수"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">summary</span>: <span className="type">string</span>;{" "}
+              <span className="cm">{"// 1줄 요약"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">createdAt</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 타임스탬프"}</span>
+              {"\n"}
+              {"}"}
+              {"\n\n"}
+              <span className="cm">{"// 디스크: ~/.dbcode/projects/{hash}/cold-storage/"}</span>
+              {"\n"}
               <span className="cm">{"// TTL: 24시간 후 자동 정리"}</span>
             </CodeBlock>
             <CodeBlock>
-              <span className="cm">{"// 컨텍스트 사용량"}</span>{"\n"}
-              <span className="kw">interface</span> <span className="type">ContextUsage</span> {"{"}{"\n"}
-              {"  "}<span className="prop">currentTokens</span>: <span className="type">number</span>;  <span className="cm">{"// 현재 사용 토큰"}</span>{"\n"}
-              {"  "}<span className="prop">maxTokens</span>: <span className="type">number</span>;      <span className="cm">{"// 모델별 한계"}</span>{"\n"}
-              {"  "}<span className="prop">usagePercent</span>: <span className="type">number</span>;   <span className="cm">{"// 사용률 (%)"}</span>{"\n"}
-              {"  "}<span className="prop">coldRefCount</span>: <span className="type">number</span>;   <span className="cm">{"// Cold 참조 수"}</span>{"\n"}
-              {"  "}<span className="prop">totalSaved</span>: <span className="type">number</span>;     <span className="cm">{"// 절약한 총 토큰"}</span>{"\n"}
-              {"}"}{"\n\n"}
-              <span className="cm">{"// 모델별 보존 턴 수"}</span>{"\n"}
+              <span className="cm">{"// 컨텍스트 사용량"}</span>
+              {"\n"}
+              <span className="kw">interface</span> <span className="type">ContextUsage</span> {"{"}
+              {"\n"}
+              {"  "}
+              <span className="prop">currentTokens</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 현재 사용 토큰"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">maxTokens</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 모델별 한계"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">usagePercent</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 사용률 (%)"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">coldRefCount</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// Cold 참조 수"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">totalSaved</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 절약한 총 토큰"}</span>
+              {"\n"}
+              {"}"}
+              {"\n\n"}
+              <span className="cm">{"// 모델별 보존 턴 수"}</span>
+              {"\n"}
               <span className="cm">{"// HIGH: 5턴 / MEDIUM: 4턴 / LOW: 3턴"}</span>
             </CodeBlock>
           </div>
@@ -89,21 +146,37 @@ export function ContextSection() {
         <RevealOnScroll>
           <Callout type="tip" icon="🔑">
             <strong>핵심 상태 변수:</strong>{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">coldRefs: Map</code>,{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">recentFiles: string[]</code>,{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">fileAccessFrequency: Map</code>,{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">compactionCount</code>,{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">totalTokensSaved</code>
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              coldRefs: Map
+            </code>
+            ,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              recentFiles: string[]
+            </code>
+            ,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              fileAccessFrequency: Map
+            </code>
+            ,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              compactionCount
+            </code>
+            ,{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              totalTokensSaved
+            </code>
           </Callout>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <ImplDirection items={[
-            "<strong>압축 임계값 조정</strong>: getContextConfig()에서 모델 티어별 threshold 수정 (현재 83.5%)",
-            "<strong>리하이드 전략 추가</strong>: 현재 recency/frequency/mixed → 'importance' 기반 전략 추가 가능",
-            "<strong>Cold Storage 포맷</strong>: 현재 JSON 텍스트 → 압축 바이너리로 디스크 효율 개선 가능",
-            "<strong>압축 품질 개선</strong>: LLM 요약 시 '코드 변경사항 우선' 같은 도메인 힌트 활용",
-          ]} />
+          <ImplDirection
+            items={[
+              "<strong>압축 임계값 조정</strong>: getContextConfig()에서 모델 티어별 threshold 수정 (현재 83.5%)",
+              "<strong>리하이드 전략 추가</strong>: 현재 recency/frequency/mixed → 'importance' 기반 전략 추가 가능",
+              "<strong>Cold Storage 포맷</strong>: 현재 JSON 텍스트 → 압축 바이너리로 디스크 효율 개선 가능",
+              "<strong>압축 품질 개선</strong>: LLM 요약 시 '코드 변경사항 우선' 같은 도메인 힌트 활용",
+            ]}
+          />
         </RevealOnScroll>
       </div>
     </section>

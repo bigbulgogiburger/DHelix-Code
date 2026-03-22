@@ -122,11 +122,11 @@ When compacting, always preserve:
 
 모듈별 다이어그램 + 코드 설명 + 구현 방향을 시각적으로 정리한 웹 문서입니다.
 
-| 페이지             | 설명                                    | 경로 / 실행                                |
-| ------------------ | --------------------------------------- | ------------------------------------------ |
-| Architecture 개요  | 4-Layer, Agent Loop, MCP 등 전체 구조   | `docs/architecture.html` (브라우저로 열기)  |
-| Module Deep Dive   | 9개 모듈 내부 상태머신 + TS 인터페이스  | `docs/architecture-deep.html`              |
-| Deep Dive (Next.js)| 위와 동일 내용의 React/Next.js 버전     | `cd guide && npm run dev`                  |
+| 페이지              | 설명                                   | 경로 / 실행                                |
+| ------------------- | -------------------------------------- | ------------------------------------------ |
+| Architecture 개요   | 4-Layer, Agent Loop, MCP 등 전체 구조  | `docs/architecture.html` (브라우저로 열기) |
+| Module Deep Dive    | 9개 모듈 내부 상태머신 + TS 인터페이스 | `docs/architecture-deep.html`              |
+| Deep Dive (Next.js) | 위와 동일 내용의 React/Next.js 버전    | `cd guide && npm run dev`                  |
 
 > `guide/` 디렉토리에 별도 `CLAUDE.md`가 있습니다. guide 작업 시 디자인 시스템(Ethereal Glass), Tailwind v4 함정, 컴포넌트 규칙 등을 참조하세요.
 
@@ -134,14 +134,14 @@ When compacting, always preserve:
 
 작업 맥락에 따라 아래 문서를 참조하세요:
 
-| 문서                | 참조 시점                            | 경로                                             |
-| ------------------- | ------------------------------------ | ------------------------------------------------ |
-| Directory Structure | 파일 위치 파악, 새 모듈 배치         | `.claude/docs/reference/directory-structure.md`  |
-| Architecture Deep   | Agent loop, 컨텍스트, 서브에이전트   | `.claude/docs/reference/architecture-deep.md`    |
-| Interfaces & Tools  | Tool 추가/수정, LLM 연동, MCP 브리지 | `.claude/docs/reference/interfaces-and-tools.md` |
-| Config & Instructions| DBCODE.md, 설정 계층, MCP 스코프    | `.claude/docs/reference/config-system.md`        |
-| Skills & Commands   | 스킬 개발, 42개 슬래시 명령          | `.claude/docs/reference/skills-and-commands.md`  |
-| Coding Conventions  | TS 설정, 이벤트 패턴, 팀 컨벤션      | `.claude/docs/reference/coding-conventions.md`   |
-| MCP System          | MCP 서버 연동, 스코프, 도구 브리지   | `.claude/docs/reference/mcp-system.md`           |
-| Subagents & Teams   | 서브에이전트 생성, 팀 오케스트레이션 | `.claude/docs/reference/subagents-and-teams.md`  |
-| E2E Test Guide      | headless QA, NEXUS.md 패턴, 채점     | `.claude/docs/reference/e2e-test-guide.md`       |
+| 문서                  | 참조 시점                            | 경로                                             |
+| --------------------- | ------------------------------------ | ------------------------------------------------ |
+| Directory Structure   | 파일 위치 파악, 새 모듈 배치         | `.claude/docs/reference/directory-structure.md`  |
+| Architecture Deep     | Agent loop, 컨텍스트, 서브에이전트   | `.claude/docs/reference/architecture-deep.md`    |
+| Interfaces & Tools    | Tool 추가/수정, LLM 연동, MCP 브리지 | `.claude/docs/reference/interfaces-and-tools.md` |
+| Config & Instructions | DBCODE.md, 설정 계층, MCP 스코프     | `.claude/docs/reference/config-system.md`        |
+| Skills & Commands     | 스킬 개발, 42개 슬래시 명령          | `.claude/docs/reference/skills-and-commands.md`  |
+| Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션      | `.claude/docs/reference/coding-conventions.md`   |
+| MCP System            | MCP 서버 연동, 스코프, 도구 브리지   | `.claude/docs/reference/mcp-system.md`           |
+| Subagents & Teams     | 서브에이전트 생성, 팀 오케스트레이션 | `.claude/docs/reference/subagents-and-teams.md`  |
+| E2E Test Guide        | headless QA, NEXUS.md 패턴, 채점     | `.claude/docs/reference/e2e-test-guide.md`       |

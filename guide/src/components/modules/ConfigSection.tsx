@@ -29,19 +29,48 @@ const dbcodeLoadChart = `graph LR
     style PROMPT fill:#ede9fe,stroke:#8b5cf6,color:#1e293b`;
 
 const configPaths = [
-  { use: "프로젝트 설정", path: ".dbcode/settings.json", git: "✅", desc: "프로젝트 전용 설정 (팀 공유)" },
+  {
+    use: "프로젝트 설정",
+    path: ".dbcode/settings.json",
+    git: "✅",
+    desc: "프로젝트 전용 설정 (팀 공유)",
+  },
   { use: "사용자 전역", path: "~/.dbcode/settings.json", git: "—", desc: "모든 프로젝트에 적용" },
-  { use: "프로젝트 규칙", path: ".dbcode/rules/*.md", git: "✅", desc: "경로 조건부 규칙 (glob 기반)" },
+  {
+    use: "프로젝트 규칙",
+    path: ".dbcode/rules/*.md",
+    git: "✅",
+    desc: "경로 조건부 규칙 (glob 기반)",
+  },
   { use: "전역 규칙", path: "~/.dbcode/rules/*.md", git: "—", desc: "모든 프로젝트에 적용" },
-  { use: "로컬 지시사항", path: ".dbcode/DBCODE.local.md", git: "❌", desc: "개인 지시사항 (gitignored)" },
-  { use: "프로젝트 메모리", path: "~/.dbcode/projects/{hash}/memory/", git: "—", desc: "프로젝트별 AI 메모리" },
-  { use: "Cold Storage", path: "~/.dbcode/projects/{hash}/cold-storage/", git: "—", desc: "압축된 컨텍스트 (24h TTL)" },
+  {
+    use: "로컬 지시사항",
+    path: ".dbcode/DBCODE.local.md",
+    git: "❌",
+    desc: "개인 지시사항 (gitignored)",
+  },
+  {
+    use: "프로젝트 메모리",
+    path: "~/.dbcode/projects/{hash}/memory/",
+    git: "—",
+    desc: "프로젝트별 AI 메모리",
+  },
+  {
+    use: "Cold Storage",
+    path: "~/.dbcode/projects/{hash}/cold-storage/",
+    git: "—",
+    desc: "압축된 컨텍스트 (24h TTL)",
+  },
   { use: "감사 로그", path: ".dbcode/audit.jsonl", git: "❌", desc: "권한 감사 기록" },
 ];
 
 export function ConfigSection() {
   return (
-    <section id="config" className="py-16 bg-amber-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="config"
+      className="py-16 bg-amber-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <div style={{ marginBottom: "48px" }}>
@@ -63,29 +92,55 @@ export function ConfigSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={configMergeChart} title="5-Layer 설정 병합 과정" titleColor="green" />
+          <MermaidDiagram
+            chart={configMergeChart}
+            title="5-Layer 설정 병합 과정"
+            titleColor="green"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={dbcodeLoadChart} title="DBCODE.md 6단계 로딩 체인" titleColor="blue" />
+          <MermaidDiagram
+            chart={dbcodeLoadChart}
+            title="DBCODE.md 6단계 로딩 체인"
+            titleColor="blue"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>주요 설정/데이터 경로 정리</h3>
-          <div className="border border-[#e2e8f0] rounded-lg overflow-hidden overflow-x-auto bg-white" style={{ marginBottom: "24px" }}>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            주요 설정/데이터 경로 정리
+          </h3>
+          <div
+            className="border border-[#e2e8f0] rounded-lg overflow-hidden overflow-x-auto bg-white"
+            style={{ marginBottom: "24px" }}
+          >
             <table className="w-full border-collapse min-w-[600px]">
               <thead>
                 <tr>
                   {["구분", "경로", "Git", "설명"].map((h) => (
-                    <th key={h} className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">{h}</th>
+                    <th
+                      key={h}
+                      className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200"
+                    >
+                      {h}
+                    </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {configPaths.map((row, i) => (
-                  <tr key={i} className="hover:bg-gray-50 border-b border-gray-100 transition-colors">
+                  <tr
+                    key={i}
+                    className="hover:bg-gray-50 border-b border-gray-100 transition-colors"
+                  >
                     <td className="p-3 px-4 text-sm">{row.use}</td>
-                    <td className="p-3 px-4 text-sm font-mono text-cyan-600 font-semibold text-xs">{row.path}</td>
+                    <td className="p-3 px-4 text-sm font-mono text-cyan-600 font-semibold text-xs">
+                      {row.path}
+                    </td>
                     <td className="p-3 px-4 text-sm">{row.git}</td>
                     <td className="p-3 px-4 text-sm">{row.desc}</td>
                   </tr>
@@ -96,12 +151,14 @@ export function ConfigSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <ImplDirection items={[
-            "<strong>설정 검증</strong>: Zod 스키마로 settings.json 유효성 검사 + 의미 있는 에러 메시지",
-            "<strong>규칙 조건부 적용</strong>: glob 패턴으로 특정 경로에만 규칙 적용",
-            "<strong>환경변수 확장</strong>: 현재 LOCAL_* → 더 많은 환경변수 지원 (PROXY, CACHE 등)",
-            "<strong>/doctor 진단</strong>: 설정 충돌, 누락 API 키 등 12가지 헬스 체크",
-          ]} />
+          <ImplDirection
+            items={[
+              "<strong>설정 검증</strong>: Zod 스키마로 settings.json 유효성 검사 + 의미 있는 에러 메시지",
+              "<strong>규칙 조건부 적용</strong>: glob 패턴으로 특정 경로에만 규칙 적용",
+              "<strong>환경변수 확장</strong>: 현재 LOCAL_* → 더 많은 환경변수 지원 (PROXY, CACHE 등)",
+              "<strong>/doctor 진단</strong>: 설정 충돌, 누락 API 키 등 12가지 헬스 체크",
+            ]}
+          />
         </RevealOnScroll>
       </div>
     </section>

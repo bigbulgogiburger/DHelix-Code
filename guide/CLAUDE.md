@@ -44,15 +44,15 @@ src/
 
 ### 색상 팔레트 (globals.css :root)
 
-| 용도 | 변수 | 값 |
-|------|------|-----|
-| 배경 | `--bg-primary` | `#0c1222` (깊은 네이비) |
-| 카드 | `--bg-card` | `rgba(255,255,255,0.04)` (글래스) |
-| 텍스트 | `--text-primary` | `#f0f4fc` |
-| 보조 텍스트 | `--text-secondary` | `#a8b8d8` |
-| Accent Blue | `--accent-blue` | `#4d8df5` |
-| Accent Cyan | `--accent-cyan` | `#22c5dc` |
-| Accent Purple | `--accent-purple` | `#9d7af5` |
+| 용도          | 변수               | 값                                |
+| ------------- | ------------------ | --------------------------------- |
+| 배경          | `--bg-primary`     | `#0c1222` (깊은 네이비)           |
+| 카드          | `--bg-card`        | `rgba(255,255,255,0.04)` (글래스) |
+| 텍스트        | `--text-primary`   | `#f0f4fc`                         |
+| 보조 텍스트   | `--text-secondary` | `#a8b8d8`                         |
+| Accent Blue   | `--accent-blue`    | `#4d8df5`                         |
+| Accent Cyan   | `--accent-cyan`    | `#22c5dc`                         |
+| Accent Purple | `--accent-purple`  | `#9d7af5`                         |
 
 ### 글래스 카드 (`.glass-card` CSS 클래스)
 
@@ -110,7 +110,7 @@ backdrop-blur-xl + border-white/6 + inset shadow + hover lift
 - 컨테이너: `glass-card` + `p-8 sm:p-12` + `min-h-[280px]`
 - 노드 강조: `fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9` (보라)
 
-### Deep Dive 모듈 섹션 (modules/*.tsx)
+### Deep Dive 모듈 섹션 (modules/\*.tsx)
 
 - 컨테이너: `center-wide`
 - 섹션 패딩: `py-24`
@@ -120,8 +120,8 @@ backdrop-blur-xl + border-white/6 + inset shadow + hover lift
 
 상세 계획: `SOURCE_REFERENCE_PLAN.md`
 
-| 완료 (10) | 예정 (11) |
-|-----------|-----------|
-| agent-loop, context-manager, circuit-breaker, recovery-executor | system-prompt-builder, checkpoint-manager, observation-masking |
-| token-counter, model-capabilities, secret-scanner | llm-client, dual-model-router, tool-executor, mcp-manager |
-| tool-registry, permission-manager, config-loader | skill-manager, instruction-loader, use-agent-loop, activity-feed |
+| 완료 (10)                                                       | 예정 (11)                                                        |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| agent-loop, context-manager, circuit-breaker, recovery-executor | system-prompt-builder, checkpoint-manager, observation-masking   |
+| token-counter, model-capabilities, secret-scanner               | llm-client, dual-model-router, tool-executor, mcp-manager        |
+| tool-registry, permission-manager, config-loader                | skill-manager, instruction-loader, use-agent-loop, activity-feed |

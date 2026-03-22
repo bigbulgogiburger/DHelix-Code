@@ -41,7 +41,11 @@ const stateMachineChart = `graph TD
 
 export function AgentLoopSection() {
   return (
-    <section id="agent-loop" className="py-16 bg-violet-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="agent-loop"
+      className="py-16 bg-violet-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <SectionHeader
@@ -57,41 +61,111 @@ export function AgentLoopSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={stateMachineChart} title="Agent Loop 내부 상태머신" titleColor="purple" />
+          <MermaidDiagram
+            chart={stateMachineChart}
+            title="Agent Loop 내부 상태머신"
+            titleColor="purple"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>핵심 인터페이스</h3>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            핵심 인터페이스
+          </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ gap: "20px" }}>
             <CodeBlock>
-              <span className="cm">{"// Agent Loop 설정"}</span>{"\n"}
-              <span className="kw">interface</span> <span className="type">AgentLoopConfig</span> {"{"}{"\n"}
-              {"  "}<span className="prop">client</span>: <span className="type">LLMProvider</span>;          <span className="cm">{"// LLM 클라이언트"}</span>{"\n"}
-              {"  "}<span className="prop">model</span>: <span className="type">string</span>;                <span className="cm">{"// 모델명"}</span>{"\n"}
-              {"  "}<span className="prop">toolRegistry</span>: <span className="type">ToolRegistry</span>;  <span className="cm">{"// 도구 저장소"}</span>{"\n"}
-              {"  "}<span className="prop">strategy</span>: <span className="type">ToolCallStrategy</span>;   <span className="cm">{"// native | text-parsing"}</span>{"\n"}
-              {"  "}<span className="prop">maxIterations</span>: <span className="type">number</span>;       <span className="cm">{"// 기본 50"}</span>{"\n"}
-              {"  "}<span className="prop">signal</span>: <span className="type">AbortSignal</span>;          <span className="cm">{"// 취소 신호"}</span>{"\n"}
-              {"  "}<span className="prop">checkPermission</span>: <span className="type">PermCheckFn</span>; <span className="cm">{"// 권한 콜백"}</span>{"\n"}
-              {"  "}<span className="prop">useStreaming</span>: <span className="type">boolean</span>;        <span className="cm">{"// SSE 여부"}</span>{"\n"}
-              {"  "}<span className="prop">dualModelRouter</span>?: <span className="type">DualModelRouter</span>;{"\n"}
-              {"  "}<span className="prop">enableGuardrails</span>: <span className="type">boolean</span>;   <span className="cm">{"// 보안 필터"}</span>{"\n"}
+              <span className="cm">{"// Agent Loop 설정"}</span>
+              {"\n"}
+              <span className="kw">interface</span> <span className="type">AgentLoopConfig</span>{" "}
+              {"{"}
+              {"\n"}
+              {"  "}
+              <span className="prop">client</span>: <span className="type">LLMProvider</span>;{" "}
+              <span className="cm">{"// LLM 클라이언트"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">model</span>: <span className="type">string</span>;{" "}
+              <span className="cm">{"// 모델명"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">toolRegistry</span>: <span className="type">ToolRegistry</span>
+              ; <span className="cm">{"// 도구 저장소"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">strategy</span>: <span className="type">ToolCallStrategy</span>
+              ; <span className="cm">{"// native | text-parsing"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">maxIterations</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 기본 50"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">signal</span>: <span className="type">AbortSignal</span>;{" "}
+              <span className="cm">{"// 취소 신호"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">checkPermission</span>:{" "}
+              <span className="type">PermCheckFn</span>;{" "}
+              <span className="cm">{"// 권한 콜백"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">useStreaming</span>: <span className="type">boolean</span>;{" "}
+              <span className="cm">{"// SSE 여부"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">dualModelRouter</span>?:{" "}
+              <span className="type">DualModelRouter</span>;{"\n"}
+              {"  "}
+              <span className="prop">enableGuardrails</span>: <span className="type">boolean</span>;{" "}
+              <span className="cm">{"// 보안 필터"}</span>
+              {"\n"}
               {"}"}
             </CodeBlock>
             <CodeBlock>
-              <span className="cm">{"// 실행 결과"}</span>{"\n"}
-              <span className="kw">interface</span> <span className="type">AgentLoopResult</span> {"{"}{"\n"}
-              {"  "}<span className="prop">messages</span>: <span className="type">ChatMessage</span>[];     <span className="cm">{"// 전체 대화 히스토리"}</span>{"\n"}
-              {"  "}<span className="prop">iterations</span>: <span className="type">number</span>;          <span className="cm">{"// 반복 횟수"}</span>{"\n"}
-              {"  "}<span className="prop">aborted</span>: <span className="type">boolean</span>;            <span className="cm">{"// 사용자 취소 여부"}</span>{"\n"}
-              {"  "}<span className="prop">usage</span>: <span className="type">AggregatedUsage</span>;      <span className="cm">{"// 토큰 통계"}</span>{"\n"}
-              {"}"}{"\n\n"}
-              <span className="kw">interface</span> <span className="type">AggregatedUsage</span> {"{"}{"\n"}
-              {"  "}<span className="prop">inputTokens</span>: <span className="type">number</span>;{"\n"}
-              {"  "}<span className="prop">outputTokens</span>: <span className="type">number</span>;{"\n"}
-              {"  "}<span className="prop">totalTokens</span>: <span className="type">number</span>;{"\n"}
-              {"  "}<span className="prop">toolCalls</span>: <span className="type">number</span>;           <span className="cm">{"// 도구 호출 총 횟수"}</span>{"\n"}
-              {"  "}<span className="prop">retries</span>: <span className="type">number</span>;             <span className="cm">{"// 재시도 횟수"}</span>{"\n"}
+              <span className="cm">{"// 실행 결과"}</span>
+              {"\n"}
+              <span className="kw">interface</span> <span className="type">AgentLoopResult</span>{" "}
+              {"{"}
+              {"\n"}
+              {"  "}
+              <span className="prop">messages</span>: <span className="type">ChatMessage</span>[];{" "}
+              <span className="cm">{"// 전체 대화 히스토리"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">iterations</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 반복 횟수"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">aborted</span>: <span className="type">boolean</span>;{" "}
+              <span className="cm">{"// 사용자 취소 여부"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">usage</span>: <span className="type">AggregatedUsage</span>;{" "}
+              <span className="cm">{"// 토큰 통계"}</span>
+              {"\n"}
+              {"}"}
+              {"\n\n"}
+              <span className="kw">interface</span> <span className="type">AggregatedUsage</span>{" "}
+              {"{"}
+              {"\n"}
+              {"  "}
+              <span className="prop">inputTokens</span>: <span className="type">number</span>;{"\n"}
+              {"  "}
+              <span className="prop">outputTokens</span>: <span className="type">number</span>;
+              {"\n"}
+              {"  "}
+              <span className="prop">totalTokens</span>: <span className="type">number</span>;{"\n"}
+              {"  "}
+              <span className="prop">toolCalls</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 도구 호출 총 횟수"}</span>
+              {"\n"}
+              {"  "}
+              <span className="prop">retries</span>: <span className="type">number</span>;{" "}
+              <span className="cm">{"// 재시도 횟수"}</span>
+              {"\n"}
               {"}"}
             </CodeBlock>
           </div>

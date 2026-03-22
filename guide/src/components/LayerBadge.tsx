@@ -20,7 +20,10 @@ const layerConfig: Record<string, { label: string; color: string }> = {
 export function LayerBadge({ layer }: { layer: "core" | "infra" | "leaf" | "cli" }) {
   const cfg = layerConfig[layer];
   return (
-    <span className={`text-xs font-semibold rounded-md ${cfg.color}`} style={{ padding: "5px 14px", display: "inline-block" }}>
+    <span
+      className={`text-xs font-semibold rounded-md ${cfg.color}`}
+      style={{ padding: "5px 14px", display: "inline-block" }}
+    >
       {cfg.label}
     </span>
   );

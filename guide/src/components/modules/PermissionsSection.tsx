@@ -36,16 +36,40 @@ const decisionTreeChart = `graph TD
     style ASK fill:#e0e7ff,stroke:#3b82f6,color:#1e293b`;
 
 const modes = [
-  { name: "default", desc: "매번 사용자에게 확인을 요청합니다. 가장 안전한 모드.", color: "border-l-amber-600" },
-  { name: "acceptEdits", desc: "파일 읽기/쓰기/수정을 자동 승인. bash 명령은 여전히 확인 필요.", color: "border-l-blue-600" },
-  { name: "plan", desc: "읽기 전용 도구만 자동 승인. 쓰기 작업은 모두 확인 필요.", color: "border-l-violet-600" },
-  { name: "dontAsk", desc: "도구당 1회만 확인 후 세션 동안 기억합니다.", color: "border-l-emerald-600" },
-  { name: "bypassPermissions", desc: "모든 도구를 무조건 허용. 개발/테스트 전용.", color: "border-l-red-600" },
+  {
+    name: "default",
+    desc: "매번 사용자에게 확인을 요청합니다. 가장 안전한 모드.",
+    color: "border-l-amber-600",
+  },
+  {
+    name: "acceptEdits",
+    desc: "파일 읽기/쓰기/수정을 자동 승인. bash 명령은 여전히 확인 필요.",
+    color: "border-l-blue-600",
+  },
+  {
+    name: "plan",
+    desc: "읽기 전용 도구만 자동 승인. 쓰기 작업은 모두 확인 필요.",
+    color: "border-l-violet-600",
+  },
+  {
+    name: "dontAsk",
+    desc: "도구당 1회만 확인 후 세션 동안 기억합니다.",
+    color: "border-l-emerald-600",
+  },
+  {
+    name: "bypassPermissions",
+    desc: "모든 도구를 무조건 허용. 개발/테스트 전용.",
+    color: "border-l-red-600",
+  },
 ];
 
 export function PermissionsSection() {
   return (
-    <section id="permissions" className="py-16 bg-blue-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="permissions"
+      className="py-16 bg-blue-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <SectionHeader
@@ -56,17 +80,35 @@ export function PermissionsSection() {
           />
         </RevealOnScroll>
 
-        <RevealOnScroll><FilePath path="src/permissions/manager.ts" /></RevealOnScroll>
-
         <RevealOnScroll>
-          <MermaidDiagram chart={decisionTreeChart} title="권한 확인 결정 트리 (deny-first)" titleColor="orange" />
+          <FilePath path="src/permissions/manager.ts" />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>5가지 권한 모드</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5" style={{ gap: "20px" }}>
+          <MermaidDiagram
+            chart={decisionTreeChart}
+            title="권한 확인 결정 트리 (deny-first)"
+            titleColor="orange"
+          />
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            5가지 권한 모드
+          </h3>
+          <div
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5"
+            style={{ gap: "20px" }}
+          >
             {modes.map((m) => (
-              <div key={m.name} className={`border border-[#e2e8f0] rounded-lg p-5 bg-white hover:bg-gray-50 hover:border-gray-300 border-l-[3px] ${m.color}`} style={{ padding: "20px" }}>
+              <div
+                key={m.name}
+                className={`border border-[#e2e8f0] rounded-lg p-5 bg-white hover:bg-gray-50 hover:border-gray-300 border-l-[3px] ${m.color}`}
+                style={{ padding: "20px" }}
+              >
                 <h4 className="text-sm font-bold mb-1.5">{m.name}</h4>
                 <p className="text-xs text-gray-600">{m.desc}</p>
               </div>
@@ -77,17 +119,25 @@ export function PermissionsSection() {
         <RevealOnScroll>
           <Callout type="info" icon="🎯">
             <strong>규칙 패턴 매칭:</strong>{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">{"ToolName(arg1: value1, arg2: *)"}</code> 형식으로 glob 패턴 지원.
-            예: <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">{"bash_exec(command: npm *)"}</code>는 npm으로 시작하는 모든 명령을 매칭.
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              {"ToolName(arg1: value1, arg2: *)"}
+            </code>{" "}
+            형식으로 glob 패턴 지원. 예:{" "}
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              {"bash_exec(command: npm *)"}
+            </code>
+            는 npm으로 시작하는 모든 명령을 매칭.
           </Callout>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <ImplDirection items={[
-            "<strong>감사 로그 활용</strong>: audit-log.ts의 JSONL 데이터로 도구 사용 패턴 분석 대시보드 구현 가능",
-            "<strong>팀 권한 정책</strong>: 프로젝트 .dbcode/settings.json으로 팀 공통 deny/allow 규칙 공유",
-            "<strong>동적 권한 학습</strong>: 사용자 승인 패턴 분석 → 자동 규칙 제안 기능",
-          ]} />
+          <ImplDirection
+            items={[
+              "<strong>감사 로그 활용</strong>: audit-log.ts의 JSONL 데이터로 도구 사용 패턴 분석 대시보드 구현 가능",
+              "<strong>팀 권한 정책</strong>: 프로젝트 .dbcode/settings.json으로 팀 공통 deny/allow 규칙 공유",
+              "<strong>동적 권한 학습</strong>: 사용자 승인 패턴 분석 → 자동 규칙 제안 기능",
+            ]}
+          />
         </RevealOnScroll>
       </div>
     </section>

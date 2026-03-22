@@ -24,7 +24,9 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col" style={{ background: "#ffffff" }}>
-        <a href="#main-content" className="skip-link">콘텐츠로 건너뛰기</a>
+        <a href="#main-content" className="skip-link">
+          콘텐츠로 건너뛰기
+        </a>
         <ScrollProgress />
         <Navigation />
         <BackToTop />

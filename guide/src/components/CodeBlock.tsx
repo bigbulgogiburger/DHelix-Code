@@ -11,10 +11,7 @@ export function CodeBlock({ children, language }: CodeBlockProps) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = useCallback(async () => {
-    const text =
-      typeof children === "string"
-        ? children
-        : extractTextFromNode(children);
+    const text = typeof children === "string" ? children : extractTextFromNode(children);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);

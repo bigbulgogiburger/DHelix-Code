@@ -20,7 +20,9 @@ export function Callout({ type, icon, children }: CalloutProps) {
       style={{ padding: "16px", margin: "20px 0" }}
       {...(isAlertRole ? { role: "alert" } : {})}
     >
-      <span className="text-lg shrink-0" style={{ width: "1.5rem", textAlign: "center" }}>{icon}</span>
+      <span className="text-lg shrink-0" style={{ width: "1.5rem", textAlign: "center" }}>
+        {icon}
+      </span>
       <div className="flex-1">{children}</div>
     </div>
   );

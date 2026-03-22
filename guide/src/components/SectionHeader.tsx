@@ -24,10 +24,18 @@ export function SectionHeader({ label, labelColor, title, description }: Section
       >
         {label}
       </span>
-      <h2 className="text-[clamp(26px,3.2vw,38px)] font-extrabold tracking-tight mb-3 text-gray-900" style={{ marginBottom: "12px" }}>
+      <h2
+        className="text-[clamp(26px,3.2vw,38px)] font-extrabold tracking-tight mb-3 text-gray-900"
+        style={{ marginBottom: "12px" }}
+      >
         {title}
       </h2>
-      <p className="text-[15px] text-gray-600 max-w-[620px]" style={{ maxWidth: "600px", marginLeft: "auto", marginRight: "auto" }}>{description}</p>
+      <p
+        className="text-[15px] text-gray-600 max-w-[620px]"
+        style={{ maxWidth: "600px", marginLeft: "auto", marginRight: "auto" }}
+      >
+        {description}
+      </p>
     </div>
   );
 }

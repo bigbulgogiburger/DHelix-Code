@@ -15,7 +15,10 @@ const relationLabel: Record<string, { icon: string; text: string; color: string 
 
 export function SeeAlso({ items }: { items: SeeAlsoItem[] }) {
   return (
-    <div className="flex flex-col gap-2" style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+    <div
+      className="flex flex-col gap-2"
+      style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+    >
       {items.map((item, i) => {
         const rel = relationLabel[item.relation];
         return (
@@ -33,7 +36,9 @@ export function SeeAlso({ items }: { items: SeeAlsoItem[] }) {
               </div>
               <p className="text-xs text-gray-500 mt-0.5">{item.desc}</p>
             </div>
-            <span className="text-gray-400 text-sm group-hover:text-gray-600 group-hover:translate-x-1 transition-all duration-200">&rarr;</span>
+            <span className="text-gray-400 text-sm group-hover:text-gray-600 group-hover:translate-x-1 transition-all duration-200">
+              &rarr;
+            </span>
           </Link>
         );
       })}

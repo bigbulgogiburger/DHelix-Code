@@ -106,30 +106,69 @@ Tailwind v4의 `@theme inline` 블록에 spacing 값을 명시적으로 등록.
 /* ─── Spacing Utilities (Tailwind v4 fallback) ─── */
 
 /* 섹션 간 패딩 */
-.section-padding { padding-top: 64px; padding-bottom: 64px; }
-.section-padding-sm { padding-top: 40px; padding-bottom: 40px; }
-.section-padding-lg { padding-top: 96px; padding-bottom: 96px; }
+.section-padding {
+  padding-top: 64px;
+  padding-bottom: 64px;
+}
+.section-padding-sm {
+  padding-top: 40px;
+  padding-bottom: 40px;
+}
+.section-padding-lg {
+  padding-top: 96px;
+  padding-bottom: 96px;
+}
 
 /* 컨텐츠 내부 간격 */
-.content-gap { display: flex; flex-direction: column; gap: 24px; }
-.content-gap-sm { display: flex; flex-direction: column; gap: 16px; }
-.content-gap-lg { display: flex; flex-direction: column; gap: 32px; }
+.content-gap {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+.content-gap-sm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.content-gap-lg {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
 
 /* 카드 패딩 */
-.card-padding { padding: 20px; }
-.card-padding-lg { padding: 24px; }
+.card-padding {
+  padding: 20px;
+}
+.card-padding-lg {
+  padding: 24px;
+}
 
 /* 섹션 헤더 (h2) 아래 간격 */
-.section-title { margin-bottom: 24px; }
+.section-title {
+  margin-bottom: 24px;
+}
 
 /* 요소 간 간격 */
-.mb-element { margin-bottom: 16px; }
-.mb-section { margin-bottom: 48px; }
-.mb-subsection { margin-bottom: 32px; }
+.mb-element {
+  margin-bottom: 16px;
+}
+.mb-section {
+  margin-bottom: 48px;
+}
+.mb-subsection {
+  margin-bottom: 32px;
+}
 
 /* 페이지 wrapper */
-.page-padding { padding-top: 40px; padding-bottom: 80px; }
-.hero-padding { padding-top: 80px; padding-bottom: 64px; }
+.page-padding {
+  padding-top: 40px;
+  padding-bottom: 80px;
+}
+.hero-padding {
+  padding-top: 80px;
+  padding-bottom: 64px;
+}
 ```
 
 ---
@@ -138,62 +177,62 @@ Tailwind v4의 `@theme inline` 블록에 spacing 값을 명시적으로 등록.
 
 ### 4-1. 페이지 레벨
 
-| 요소 | 현재 | 목표 | 근거 |
-|------|------|------|------|
-| 히어로 pt | 0px | 80px | Spring.io 히어로 상단 여백 |
-| 히어로 pb | 0px | 64px | 히어로와 본문 사이 충분한 분리 |
-| Deep Dive 섹션 py | 0px | 64px | 섹션 간 시각적 분리 |
-| Doc 페이지 pt | 0px | 40px | 콘텐츠 시작 전 여백 |
-| Doc 페이지 pb | 0px | 80px | 페이지 끝 여유 |
-| Footer py | 0px | 48px | 푸터 내부 여백 |
+| 요소              | 현재 | 목표 | 근거                           |
+| ----------------- | ---- | ---- | ------------------------------ |
+| 히어로 pt         | 0px  | 80px | Spring.io 히어로 상단 여백     |
+| 히어로 pb         | 0px  | 64px | 히어로와 본문 사이 충분한 분리 |
+| Deep Dive 섹션 py | 0px  | 64px | 섹션 간 시각적 분리            |
+| Doc 페이지 pt     | 0px  | 40px | 콘텐츠 시작 전 여백            |
+| Doc 페이지 pb     | 0px  | 80px | 페이지 끝 여유                 |
+| Footer py         | 0px  | 48px | 푸터 내부 여백                 |
 
 ### 4-2. 섹션 내부
 
-| 요소 | 현재 | 목표 | 근거 |
-|------|------|------|------|
-| h2 mb | 0px | 24px | 제목과 콘텐츠 사이 |
-| h3 mb | 0px | 16px | 소제목과 콘텐츠 사이 |
-| h2 mt (섹션 내 두번째 h2+) | 0px | 48px | 섹션 내 구분 |
-| p mb | 0px | 16px | 문단 간 간격 |
-| ul/ol mb | 0px | 16px | 리스트 아래 간격 |
+| 요소                       | 현재 | 목표 | 근거                 |
+| -------------------------- | ---- | ---- | -------------------- |
+| h2 mb                      | 0px  | 24px | 제목과 콘텐츠 사이   |
+| h3 mb                      | 0px  | 16px | 소제목과 콘텐츠 사이 |
+| h2 mt (섹션 내 두번째 h2+) | 0px  | 48px | 섹션 내 구분         |
+| p mb                       | 0px  | 16px | 문단 간 간격         |
+| ul/ol mb                   | 0px  | 16px | 리스트 아래 간격     |
 
 ### 4-3. 컴포넌트 내부
 
-| 컴포넌트 | 요소 | 현재 | 목표 | 근거 |
-|---------|------|------|------|------|
-| CodeBlock | padding | 0px | 20px (p-5) | 코드 주변 여백 |
-| CodeBlock | margin-y | 0px | 24px | 본문과 분리 |
-| Callout | padding | 0px | 16px (p-4) | 콜아웃 내부 여백 |
-| Callout | margin-y | 0px | 20px | 본문과 분리 |
-| ParamTable | cell padding | 0px | 12px 16px | 셀 내부 여백 |
-| ParamTable | margin-y | 0px | 24px | 테이블 전후 간격 |
-| MermaidDiagram | padding | 0px | 24px | 다이어그램 여백 |
-| MermaidDiagram | margin-b | 0px | 32px | 아래 콘텐츠와 분리 |
-| DeepDive | button py | 0px | 16px | 클릭 영역 |
-| DeepDive | content p | 0px | 20px | 내용 여백 |
-| SeeAlso card | padding | 0px | 16px | 카드 내부 여백 |
-| SeeAlso | gap | 0px | 12px | 카드 간 간격 |
-| ImplDirection | padding | 0px | 24px | 블록 내부 여백 |
-| FilePath | padding | 0px | 4px 12px | 태그 내부 |
-| LayerBadge | padding | 0px | 2px 10px | 배지 내부 |
+| 컴포넌트       | 요소         | 현재 | 목표       | 근거               |
+| -------------- | ------------ | ---- | ---------- | ------------------ |
+| CodeBlock      | padding      | 0px  | 20px (p-5) | 코드 주변 여백     |
+| CodeBlock      | margin-y     | 0px  | 24px       | 본문과 분리        |
+| Callout        | padding      | 0px  | 16px (p-4) | 콜아웃 내부 여백   |
+| Callout        | margin-y     | 0px  | 20px       | 본문과 분리        |
+| ParamTable     | cell padding | 0px  | 12px 16px  | 셀 내부 여백       |
+| ParamTable     | margin-y     | 0px  | 24px       | 테이블 전후 간격   |
+| MermaidDiagram | padding      | 0px  | 24px       | 다이어그램 여백    |
+| MermaidDiagram | margin-b     | 0px  | 32px       | 아래 콘텐츠와 분리 |
+| DeepDive       | button py    | 0px  | 16px       | 클릭 영역          |
+| DeepDive       | content p    | 0px  | 20px       | 내용 여백          |
+| SeeAlso card   | padding      | 0px  | 16px       | 카드 내부 여백     |
+| SeeAlso        | gap          | 0px  | 12px       | 카드 간 간격       |
+| ImplDirection  | padding      | 0px  | 24px       | 블록 내부 여백     |
+| FilePath       | padding      | 0px  | 4px 12px   | 태그 내부          |
+| LayerBadge     | padding      | 0px  | 2px 10px   | 배지 내부          |
 
 ### 4-4. 카드/그리드
 
-| 요소 | 현재 | 목표 | 근거 |
-|------|------|------|------|
-| 모듈 카드 padding | 0px | 20px | 카드 내부 여백 |
-| 카드 간 gap | 12px (작동) | 12px | 유지 |
-| Layer 그룹 간 gap | 40px (작동) | 40px | 유지 |
-| 그리드 카드 gap | 0px | 20px | 카드 사이 간격 |
+| 요소              | 현재        | 목표 | 근거           |
+| ----------------- | ----------- | ---- | -------------- |
+| 모듈 카드 padding | 0px         | 20px | 카드 내부 여백 |
+| 카드 간 gap       | 12px (작동) | 12px | 유지           |
+| Layer 그룹 간 gap | 40px (작동) | 40px | 유지           |
+| 그리드 카드 gap   | 0px         | 20px | 카드 사이 간격 |
 
 ### 4-5. 네비게이션 & 사이드바
 
-| 요소 | 현재 | 목표 | 근거 |
-|------|------|------|------|
-| 사이드바 내부 py | 24px (작동) | 24px | 유지 |
-| 사이드바 항목 py | 0px | 8px | 클릭 영역 |
-| 사이드바 항목 px | 0px | 16px | 좌우 여백 |
-| 네비 높이 | 60px (작동) | 60px | 유지 |
+| 요소             | 현재        | 목표 | 근거      |
+| ---------------- | ----------- | ---- | --------- |
+| 사이드바 내부 py | 24px (작동) | 24px | 유지      |
+| 사이드바 항목 py | 0px         | 8px  | 클릭 영역 |
+| 사이드바 항목 px | 0px         | 16px | 좌우 여백 |
+| 네비 높이        | 60px (작동) | 60px | 유지      |
 
 ---
 
@@ -209,29 +248,29 @@ Tailwind v4의 `@theme inline` 블록에 spacing 값을 명시적으로 등록.
 
 Tailwind spacing이 작동하지 않을 경우를 대비해 인라인 style로 spacing 보장.
 
-| 파일 | 추가할 인라인 style |
-|------|-------------------|
-| CodeBlock.tsx | `style={{ padding: "20px", margin: "24px 0" }}` |
-| Callout.tsx | `style={{ padding: "16px", margin: "20px 0" }}` |
-| MermaidDiagram.tsx | `style={{ padding: "24px", marginBottom: "32px" }}` |
-| DeepDive.tsx | button: `style={{ padding: "16px 20px" }}`, content: `style={{ padding: "12px 20px 20px" }}` |
-| ParamTable.tsx | container: `style={{ margin: "24px 0" }}`, cells: `style={{ padding: "12px 16px" }}` |
-| FilePath.tsx | `style={{ padding: "4px 12px" }}` |
-| SeeAlso.tsx | cards: `style={{ padding: "16px" }}`, container: `style={{ gap: "12px" }}` (flex gap은 작동할 수 있음) |
+| 파일               | 추가할 인라인 style                                                                                    |
+| ------------------ | ------------------------------------------------------------------------------------------------------ |
+| CodeBlock.tsx      | `style={{ padding: "20px", margin: "24px 0" }}`                                                        |
+| Callout.tsx        | `style={{ padding: "16px", margin: "20px 0" }}`                                                        |
+| MermaidDiagram.tsx | `style={{ padding: "24px", marginBottom: "32px" }}`                                                    |
+| DeepDive.tsx       | button: `style={{ padding: "16px 20px" }}`, content: `style={{ padding: "12px 20px 20px" }}`           |
+| ParamTable.tsx     | container: `style={{ margin: "24px 0" }}`, cells: `style={{ padding: "12px 16px" }}`                   |
+| FilePath.tsx       | `style={{ padding: "4px 12px" }}`                                                                      |
+| SeeAlso.tsx        | cards: `style={{ padding: "16px" }}`, container: `style={{ gap: "12px" }}` (flex gap은 작동할 수 있음) |
 
 ### 우선순위 P2: 페이지 파일 (인라인 style 보강)
 
-| 파일 | 수정 내용 |
-|------|----------|
-| page.tsx (메인) | hero `style={{ paddingTop: "80px", paddingBottom: "64px" }}` |
-| docs/page.tsx | wrapper `style={{ paddingTop: "40px", paddingBottom: "80px" }}` |
-| docs/*/page.tsx (10개) | wrapper `style={{ paddingTop: "40px", paddingBottom: "80px" }}` |
+| 파일                    | 수정 내용                                                       |
+| ----------------------- | --------------------------------------------------------------- |
+| page.tsx (메인)         | hero `style={{ paddingTop: "80px", paddingBottom: "64px" }}`    |
+| docs/page.tsx           | wrapper `style={{ paddingTop: "40px", paddingBottom: "80px" }}` |
+| docs/\*/page.tsx (10개) | wrapper `style={{ paddingTop: "40px", paddingBottom: "80px" }}` |
 
 ### 우선순위 P3: 모듈 섹션 10개
 
-| 파일 | 수정 내용 |
-|------|----------|
-| modules/*.tsx (10개) | section `style={{ paddingTop: "64px", paddingBottom: "64px" }}` |
+| 파일                  | 수정 내용                                                       |
+| --------------------- | --------------------------------------------------------------- |
+| modules/\*.tsx (10개) | section `style={{ paddingTop: "64px", paddingBottom: "64px" }}` |
 
 ---
 
@@ -267,6 +306,7 @@ Tailwind spacing이 작동하지 않을 경우를 대비해 인라인 style로 s
 ## 7. 기대 효과
 
 ### Before (현재)
+
 ```
 ┌─ nav ─────────────────────────────────┐
 ├───────────────────────────────────────┤
@@ -276,6 +316,7 @@ Tailwind spacing이 작동하지 않을 경우를 대비해 인라인 style로 s
 ```
 
 ### After (목표)
+
 ```
 ┌─ nav ─────────────────────────────────┐
 │                                       │
@@ -342,55 +383,55 @@ Tailwind spacing이 작동하지 않을 경우를 대비해 인라인 style로 s
 
 #### 텍스트 색상 (3단계만)
 
-| 용도 | Tailwind 클래스 | Hex | 사용처 |
-|------|----------------|-----|--------|
-| 제목/강조 | `text-gray-900` | #0f172a | h1, h2, h3, strong |
-| 본문 | `text-gray-700` | #334155 | p, li, td |
-| 보조/설명 | `text-gray-500` | #64748b | caption, 날짜, 메타 |
-| 비활성 | `text-gray-400` | #9ca3af | planned 상태, placeholder |
+| 용도      | Tailwind 클래스 | Hex     | 사용처                    |
+| --------- | --------------- | ------- | ------------------------- |
+| 제목/강조 | `text-gray-900` | #0f172a | h1, h2, h3, strong        |
+| 본문      | `text-gray-700` | #334155 | p, li, td                 |
+| 보조/설명 | `text-gray-500` | #64748b | caption, 날짜, 메타       |
+| 비활성    | `text-gray-400` | #9ca3af | planned 상태, placeholder |
 
 #### 배경 색상 (4단계만)
 
-| 용도 | Tailwind 클래스 | Hex | 사용처 |
-|------|----------------|-----|--------|
-| 기본 | `bg-white` | #ffffff | 페이지 배경, 카드 |
-| 대체 | `bg-gray-50` | #f9fafb | 교대 섹션, 사이드바, DeepDive 내용 |
-| 코드 | `bg-slate-800` | #1e293b | 코드 블록 (유일한 다크) |
-| 테이블 헤더 | `bg-gray-50` | #f9fafb | 테이블 th |
+| 용도        | Tailwind 클래스 | Hex     | 사용처                             |
+| ----------- | --------------- | ------- | ---------------------------------- |
+| 기본        | `bg-white`      | #ffffff | 페이지 배경, 카드                  |
+| 대체        | `bg-gray-50`    | #f9fafb | 교대 섹션, 사이드바, DeepDive 내용 |
+| 코드        | `bg-slate-800`  | #1e293b | 코드 블록 (유일한 다크)            |
+| 테이블 헤더 | `bg-gray-50`    | #f9fafb | 테이블 th                          |
 
 #### 보더 색상 (2단계만)
 
-| 용도 | Tailwind 클래스 | Hex | 사용처 |
-|------|----------------|-----|--------|
-| 기본 | `border-gray-200` | #e5e7eb | 카드, 테이블, nav |
-| hover | `border-gray-300` | #d1d5db | 카드 hover |
+| 용도  | Tailwind 클래스   | Hex     | 사용처            |
+| ----- | ----------------- | ------- | ----------------- |
+| 기본  | `border-gray-200` | #e5e7eb | 카드, 테이블, nav |
+| hover | `border-gray-300` | #d1d5db | 카드 hover        |
 
 #### Accent 색상 (역할별 1개씩)
 
-| 역할 | Tailwind 클래스 | 사용처 |
-|------|----------------|--------|
-| 브랜드/링크 | `text-indigo-600` / `bg-indigo-50` | 링크, 활성 탭, 모듈명, FilePath |
-| Layer 1 CLI | `text-blue-600` / `bg-blue-100` | LayerBadge, border-left |
-| Layer 2 Core | `text-violet-600` / `bg-violet-100` | LayerBadge, border-left |
-| Layer 3 Infra | `text-emerald-600` / `bg-emerald-100` | LayerBadge, border-left |
-| Layer 4 Leaf | `text-amber-600` / `bg-amber-100` | LayerBadge, border-left |
-| 성공/Ready | `text-emerald-600` / `bg-emerald-100` | 상태 배지 |
-| 경고/Pitfall | `text-amber-700` / `bg-amber-50` | Callout warn |
-| 에러/위험 | `text-red-700` / `bg-red-50` | Callout danger |
-| 정보 | `text-blue-700` / `bg-blue-50` | Callout info |
-| 팁 | `text-emerald-700` / `bg-emerald-50` | Callout tip |
+| 역할          | Tailwind 클래스                       | 사용처                          |
+| ------------- | ------------------------------------- | ------------------------------- |
+| 브랜드/링크   | `text-indigo-600` / `bg-indigo-50`    | 링크, 활성 탭, 모듈명, FilePath |
+| Layer 1 CLI   | `text-blue-600` / `bg-blue-100`       | LayerBadge, border-left         |
+| Layer 2 Core  | `text-violet-600` / `bg-violet-100`   | LayerBadge, border-left         |
+| Layer 3 Infra | `text-emerald-600` / `bg-emerald-100` | LayerBadge, border-left         |
+| Layer 4 Leaf  | `text-amber-600` / `bg-amber-100`     | LayerBadge, border-left         |
+| 성공/Ready    | `text-emerald-600` / `bg-emerald-100` | 상태 배지                       |
+| 경고/Pitfall  | `text-amber-700` / `bg-amber-50`      | Callout warn                    |
+| 에러/위험     | `text-red-700` / `bg-red-50`          | Callout danger                  |
+| 정보          | `text-blue-700` / `bg-blue-50`        | Callout info                    |
+| 팁            | `text-emerald-700` / `bg-emerald-50`  | Callout tip                     |
 
 #### 코드 구문 강조 (다크 배경 전용 — 변경 불필요)
 
-| 요소 | CSS 클래스 | 색상 |
-|------|-----------|------|
-| 키워드 | `.kw` | #ff7b72 |
-| 문자열 | `.str` | #a5d6ff |
-| 타입 | `.type` | #79c0ff |
-| 함수 | `.fn` | #d2a8ff |
-| 주석 | `.cm` | #8b949e |
-| 프로퍼티 | `.prop` | #7ee787 |
-| 숫자 | `.num` | #ffa657 |
+| 요소     | CSS 클래스 | 색상    |
+| -------- | ---------- | ------- |
+| 키워드   | `.kw`      | #ff7b72 |
+| 문자열   | `.str`     | #a5d6ff |
+| 타입     | `.type`    | #79c0ff |
+| 함수     | `.fn`      | #d2a8ff |
+| 주석     | `.cm`      | #8b949e |
+| 프로퍼티 | `.prop`    | #7ee787 |
+| 숫자     | `.num`     | #ffa657 |
 
 ### 8-3. 제거해야 할 색상 패턴
 
@@ -453,10 +494,10 @@ doc 페이지 10개에서 일괄 제거/교체할 패턴:
 ```tsx
 // 모든 doc 페이지 상단을 통일
 interface DocPageHeaderProps {
-  filePath: string;         // "src/core/agent-loop.ts"
-  title: string;            // "Agent Loop"
+  filePath: string; // "src/core/agent-loop.ts"
+  title: string; // "Agent Loop"
   layer: "core" | "infra" | "leaf" | "cli";
-  description: string;      // 한 줄 설명
+  description: string; // 한 줄 설명
 }
 
 // 렌더링:
@@ -471,9 +512,9 @@ interface DocPageHeaderProps {
 ```tsx
 // 모든 섹션의 h2 + 내용을 통일
 interface DocSectionProps {
-  id: string;               // "reference", "usage" 등
-  icon: string;             // "📖", "🚀" 등
-  title: string;            // "레퍼런스"
+  id: string; // "reference", "usage" 등
+  icon: string; // "📖", "🚀" 등
+  title: string; // "레퍼런스"
   children: React.ReactNode;
 }
 
@@ -486,7 +527,7 @@ interface DocSectionProps {
 ```tsx
 // FAQ/트러블슈팅 항목을 통일
 interface TroubleshootItemProps {
-  question: string;         // "루프가 무한 반복해요"
+  question: string; // "루프가 무한 반복해요"
   children: React.ReactNode; // 답변 내용
 }
 
@@ -502,9 +543,10 @@ interface TroubleshootItemProps {
 ```tsx
 // 핵심 코드 발췌 + 라인별 설명을 통일
 interface CodeExcerptProps {
-  title?: string;           // "recordIteration() 핵심 로직"
-  code: React.ReactNode;    // CodeBlock 내용
-  explanations?: Array<{    // 라인별 설명
+  title?: string; // "recordIteration() 핵심 로직"
+  code: React.ReactNode; // CodeBlock 내용
+  explanations?: Array<{
+    // 라인별 설명
     line: string;
     desc: string;
   }>;
@@ -526,14 +568,14 @@ interface StateVar {
 
 ### 9-3. 기존 컴포넌트 개선
 
-| 컴포넌트 | 개선 내용 |
-|---------|----------|
-| **Callout** | `style` prop 추가 — 커스텀 spacing 가능하게 |
-| **CodeBlock** | `title` prop 추가 — 코드 블록 상단에 파일명 표시 |
-| **MermaidDiagram** | `size` prop 추가 — "sm", "md", "lg" 크기 제어 |
-| **ParamTable** | `compact` prop 추가 — 좁은 공간용 간결한 테이블 |
-| **DeepDive** | `defaultOpen` prop 추가 — 기본 열림 상태 제어 |
-| **SeeAlso** | 간격 인라인 style 보장 |
+| 컴포넌트           | 개선 내용                                        |
+| ------------------ | ------------------------------------------------ |
+| **Callout**        | `style` prop 추가 — 커스텀 spacing 가능하게      |
+| **CodeBlock**      | `title` prop 추가 — 코드 블록 상단에 파일명 표시 |
+| **MermaidDiagram** | `size` prop 추가 — "sm", "md", "lg" 크기 제어    |
+| **ParamTable**     | `compact` prop 추가 — 좁은 공간용 간결한 테이블  |
+| **DeepDive**       | `defaultOpen` prop 추가 — 기본 열림 상태 제어    |
+| **SeeAlso**        | 간격 인라인 style 보장                           |
 
 ### 9-4. 컴포넌트 spacing 표준
 
@@ -582,12 +624,14 @@ interface StateVar {
 ## 10. 진행 순서
 
 ### Phase 1: 기반 수정 (globals.css)
+
 1. `@theme inline`에 spacing 토큰 등록
 2. 기본 요소 spacing 규칙 추가 (h1~h4, p, ul, table의 margin/padding)
 3. spacing CSS 유틸리티 클래스 추가
 4. 인라인 hex 색상 → CSS 변수 또는 Tailwind 클래스 매핑
 
 ### Phase 2: 새 컴포넌트 생성
+
 5. `DocPageHeader.tsx` — 페이지 헤더 통일
 6. `DocSection.tsx` — 섹션 h2 + spacing 통일
 7. `TroubleshootItem.tsx` — FAQ 항목 통일
@@ -595,20 +639,24 @@ interface StateVar {
 9. `StateTable.tsx` — 상태 변수 테이블
 
 ### Phase 3: 기존 컴포넌트 spacing 보강 (인라인 style)
+
 10. CodeBlock, Callout, MermaidDiagram — 내부 padding + 외부 margin
 11. ParamTable, DeepDive, FilePath — 동일
 12. SeeAlso, ImplDirection, LayerBadge — 동일
 
 ### Phase 4: 페이지 레벨 spacing
+
 13. `page.tsx` (메인) — hero padding + 섹션 간격
 14. `docs/page.tsx` — wrapper padding
 15. 모듈 섹션 10개 — section padding
 
 ### Phase 5: 컬러 톤 정리
+
 16. Doc 페이지 10개 — rgba/gradient/인라인 hex 일괄 제거
-17. accent-* CSS 변수 참조 → Tailwind 표준 클래스
+17. accent-\* CSS 변수 참조 → Tailwind 표준 클래스
 
 ### Phase 6: 검증
+
 18. 빌드 확인
 19. E2E 스크린샷 (메인/docs/개별문서 3종)
 20. 컬러 일관성 grep 확인 (rgba, gradient, #hex 잔재 0건)

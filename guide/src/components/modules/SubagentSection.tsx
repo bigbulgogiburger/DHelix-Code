@@ -56,7 +56,11 @@ const teamChart = `graph TD
 
 export function SubagentSection() {
   return (
-    <section id="subagent" className="py-16 bg-violet-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="subagent"
+      className="py-16 bg-violet-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <div style={{ marginBottom: "48px" }}>
@@ -69,24 +73,41 @@ export function SubagentSection() {
           </div>
         </RevealOnScroll>
 
-        <RevealOnScroll><FilePath path="src/core/subagent-spawner.ts" /></RevealOnScroll>
-
         <RevealOnScroll>
-          <MermaidDiagram chart={subagentChart} title="서브에이전트 스폰 & 실행 흐름" titleColor="purple" />
+          <FilePath path="src/core/subagent-spawner.ts" />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={teamChart} title="Team 시스템 — 병렬 워커 오케스트레이션" titleColor="green" />
+          <MermaidDiagram
+            chart={subagentChart}
+            title="서브에이전트 스폰 & 실행 흐름"
+            titleColor="purple"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>핵심 설계 원칙</h3>
+          <MermaidDiagram
+            chart={teamChart}
+            title="Team 시스템 — 병렬 워커 오케스트레이션"
+            titleColor="green"
+          />
+        </RevealOnScroll>
+
+        <RevealOnScroll>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            핵심 설계 원칙
+          </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-5" style={{ gap: "20px" }}>
             <Callout type="warn" icon="⚠️">
-              <strong>컨텍스트 격리:</strong> 서브에이전트는 메인 에이전트의 컨텍스트 윈도우를 공유하지 않습니다. 완전히 독립적인 Agent Loop를 생성합니다.
+              <strong>컨텍스트 격리:</strong> 서브에이전트는 메인 에이전트의 컨텍스트 윈도우를
+              공유하지 않습니다. 완전히 독립적인 Agent Loop를 생성합니다.
             </Callout>
             <Callout type="info" icon="💡">
-              <strong>Worktree 격리:</strong> Git Worktree를 사용하면 서브에이전트가 독립 브랜치에서 작업합니다. 파일 충돌 없이 병렬 수정이 가능합니다.
+              <strong>Worktree 격리:</strong> Git Worktree를 사용하면 서브에이전트가 독립 브랜치에서
+              작업합니다. 파일 충돌 없이 병렬 수정이 가능합니다.
             </Callout>
           </div>
         </RevealOnScroll>
@@ -94,18 +115,22 @@ export function SubagentSection() {
         <RevealOnScroll>
           <Callout type="tip" icon="🔧">
             <strong>Custom Agent 정의:</strong>{" "}
-            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">.dbcode/agents/*.md</code> 파일에 마크다운으로 에이전트를 정의합니다.
-            프론트매터로 이름, 도구 제한, 모델 지정 가능.
+            <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
+              .dbcode/agents/*.md
+            </code>{" "}
+            파일에 마크다운으로 에이전트를 정의합니다. 프론트매터로 이름, 도구 제한, 모델 지정 가능.
           </Callout>
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <ImplDirection items={[
-            "<strong>에이전트 간 통신</strong>: 현재 결과 반환만 가능 → 메시지 패싱으로 실시간 협업",
-            "<strong>워커 수 자동 조정</strong>: CPU 코어 수, 작업 복잡도 기반 자동 워커 수 결정",
-            "<strong>에이전트 마켓플레이스</strong>: 커뮤니티에서 에이전트 정의 공유/다운로드",
-            "<strong>태스크 우선순위</strong>: 의존 관계 분석 → 크리티컬 패스 우선 실행",
-          ]} />
+          <ImplDirection
+            items={[
+              "<strong>에이전트 간 통신</strong>: 현재 결과 반환만 가능 → 메시지 패싱으로 실시간 협업",
+              "<strong>워커 수 자동 조정</strong>: CPU 코어 수, 작업 복잡도 기반 자동 워커 수 결정",
+              "<strong>에이전트 마켓플레이스</strong>: 커뮤니티에서 에이전트 정의 공유/다운로드",
+              "<strong>태스크 우선순위</strong>: 의존 관계 분석 → 크리티컬 패스 우선 실행",
+            ]}
+          />
         </RevealOnScroll>
       </div>
     </section>

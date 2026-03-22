@@ -47,7 +47,11 @@ const decisions = [
 
 export function DataFlowSection() {
   return (
-    <section id="dataflow" className="py-16 bg-amber-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="dataflow"
+      className="py-16 bg-amber-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <div style={{ marginBottom: "48px" }}>
@@ -65,13 +69,22 @@ export function DataFlowSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>핵심 아키텍처 결정 10가지</h3>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            핵심 아키텍처 결정 10가지
+          </h3>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6" style={{ gap: "20px" }}>
             {[0, 1].map((col) => (
               <div key={col} className="flex flex-col gap-4 relative pl-7">
                 <div className="absolute left-[11px] top-6 bottom-6 w-0.5 rounded-full bg-gradient-to-b from-blue-600 via-violet-600 to-emerald-600" />
                 {decisions.slice(col * 5, col * 5 + 5).map(([title, desc], i) => (
-                  <div key={i} className="relative border border-[#e2e8f0] rounded-lg p-5 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all" style={{ padding: "20px" }}>
+                  <div
+                    key={i}
+                    className="relative border border-[#e2e8f0] rounded-lg p-5 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all"
+                    style={{ padding: "20px" }}
+                  >
                     <div className="absolute -left-7 top-5 w-[22px] h-[22px] rounded-full bg-blue-600 text-white text-[10px] font-extrabold flex items-center justify-center shadow-[0_0_12px_rgba(37,99,235,0.3)]">
                       {col * 5 + i + 1}
                     </div>

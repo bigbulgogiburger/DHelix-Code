@@ -12,7 +12,10 @@ export function DocPageHeader({ filePath, title, layer, description }: DocPageHe
   return (
     <header style={{ marginBottom: "48px", paddingTop: "40px" }}>
       <FilePath path={filePath} />
-      <h1 className="text-3xl font-bold text-gray-900" style={{ marginTop: "16px", marginBottom: "12px" }}>
+      <h1
+        className="text-3xl font-bold text-gray-900"
+        style={{ marginTop: "16px", marginBottom: "12px" }}
+      >
         {title}
       </h1>
       <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "16px" }}>

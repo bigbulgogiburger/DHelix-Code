@@ -71,7 +71,9 @@ export function MermaidDiagram({ chart, title, titleColor = "blue" }: MermaidDia
       }
     }
     render();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [chart]);
 
   return (

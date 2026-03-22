@@ -30,13 +30,13 @@
 
 ### 1. system-prompt-builder
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/core/system-prompt-builder.ts` (약 1,035줄) |
-| **레이어** | Layer 2: Core |
+| 항목           | 내용                                                                               |
+| -------------- | ---------------------------------------------------------------------------------- |
+| **파일**       | `src/core/system-prompt-builder.ts` (약 1,035줄)                                   |
+| **레이어**     | Layer 2: Core                                                                      |
 | **한 줄 설명** | 동적 시스템 프롬프트 조립 — 모듈식 섹션 + 우선순위 기반 토큰 예산 관리 + 캐시 힌트 |
-| **복잡도** | ★★★★★ (높음 — 가장 많은 export와 내부 함수) |
-| **예상 분량** | 페이지 길이 상위 — 레퍼런스 섹션이 특히 클 것 |
+| **복잡도**     | ★★★★★ (높음 — 가장 많은 export와 내부 함수)                                        |
+| **예상 분량**  | 페이지 길이 상위 — 레퍼런스 섹션이 특히 클 것                                      |
 
 #### 문서화할 Export 목록
 
@@ -104,32 +104,32 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "시스템 프롬프트가 너무 길어요" | 총 토큰 예산 초과 → 낮은 우선순위 섹션 탈락 | TIER_BUDGETS 확인, 섹션 우선순위 조정 |
-| "프로젝트 지시사항이 반영되지 않아요" | DBCODE.md 경로가 detectProjectType()에서 인식 안 됨 | 프로젝트 루트에 DBCODE.md 배치 확인 |
-| "서브에이전트가 다른 프롬프트를 받아요" | SessionState.isSubagent로 분기되어 다른 섹션 포함 | isSubagent + subagentType 조합 확인 |
+| 문제                                    | 원인                                                | 해결                                  |
+| --------------------------------------- | --------------------------------------------------- | ------------------------------------- |
+| "시스템 프롬프트가 너무 길어요"         | 총 토큰 예산 초과 → 낮은 우선순위 섹션 탈락         | TIER_BUDGETS 확인, 섹션 우선순위 조정 |
+| "프로젝트 지시사항이 반영되지 않아요"   | DBCODE.md 경로가 detectProjectType()에서 인식 안 됨 | 프로젝트 루트에 DBCODE.md 배치 확인   |
+| "서브에이전트가 다른 프롬프트를 받아요" | SessionState.isSubagent로 분기되어 다른 섹션 포함   | isSubagent + subagentType 조합 확인   |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| agent-loop | parent | 시스템 프롬프트를 소비하는 메인 루프 |
-| token-counter | sibling | 토큰 예산 계산에 사용 |
-| model-capabilities | sibling | 모델 능력 티어로 예산 결정 |
-| context-manager | sibling | 프롬프트 빌드 시 호출 |
-| config-loader | child | 프로젝트 설정 경로 제공 |
+| 모듈               | 관계    | 설명                                 |
+| ------------------ | ------- | ------------------------------------ |
+| agent-loop         | parent  | 시스템 프롬프트를 소비하는 메인 루프 |
+| token-counter      | sibling | 토큰 예산 계산에 사용                |
+| model-capabilities | sibling | 모델 능력 티어로 예산 결정           |
+| context-manager    | sibling | 프롬프트 빌드 시 호출                |
+| config-loader      | child   | 프로젝트 설정 경로 제공              |
 
 ---
 
 ### 2. checkpoint-manager
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/core/checkpoint-manager.ts` (약 377줄) |
-| **레이어** | Layer 2: Core |
+| 항목           | 내용                                                                              |
+| -------------- | --------------------------------------------------------------------------------- |
+| **파일**       | `src/core/checkpoint-manager.ts` (약 377줄)                                       |
+| **레이어**     | Layer 2: Core                                                                     |
 | **한 줄 설명** | 파일 변경 전 자동 상태 스냅샷 — SHA-256 해시 기반 변경 감지 + /undo, /rewind 지원 |
-| **복잡도** | ★★★☆☆ (중간) |
+| **복잡도**     | ★★★☆☆ (중간)                                                                      |
 
 #### 문서화할 Export 목록
 
@@ -184,7 +184,7 @@ Import 되는 곳:
 #### 핵심 알고리즘 설명 포인트
 
 1. **SHA-256 해시 비교**: 파일 내용 변경 감지 (바이트 단위 정확)
-2. **안전한 파일명 변환**: `/` → `__` (src/index.ts → src__index.ts)
+2. **안전한 파일명 변환**: `/` → `__` (src/index.ts → src\_\_index.ts)
 3. **증분 ID**: cp-001, cp-002... 순차적 3자리 패딩
 4. **복원 시 부분 실패 허용**: restoredFiles + skippedFiles 분리
 
@@ -196,30 +196,30 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "/undo가 동작하지 않아요" | 해당 세션에 체크포인트가 없음 | 파일 수정 도구 실행 시 자동 생성 확인 |
-| "복원 후 일부 파일이 누락돼요" | trackedFiles 목록에 포함되지 않은 파일 | agent-loop의 자동 추적 파일 목록 확인 |
-| "diffFromCheckpoint가 모두 'unchanged'로 나와요" | 같은 내용으로 덮어쓴 경우 (해시 동일) | 실제 diff 도구로 이중 확인 |
+| 문제                                             | 원인                                   | 해결                                  |
+| ------------------------------------------------ | -------------------------------------- | ------------------------------------- |
+| "/undo가 동작하지 않아요"                        | 해당 세션에 체크포인트가 없음          | 파일 수정 도구 실행 시 자동 생성 확인 |
+| "복원 후 일부 파일이 누락돼요"                   | trackedFiles 목록에 포함되지 않은 파일 | agent-loop의 자동 추적 파일 목록 확인 |
+| "diffFromCheckpoint가 모두 'unchanged'로 나와요" | 같은 내용으로 덮어쓴 경우 (해시 동일)  | 실제 diff 도구로 이중 확인            |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| agent-loop | parent | 도구 실행 전 자동 체크포인트 생성 |
+| 모듈              | 관계    | 설명                              |
+| ----------------- | ------- | --------------------------------- |
+| agent-loop        | parent  | 도구 실행 전 자동 체크포인트 생성 |
 | recovery-executor | sibling | 에러 복구 시 체크포인트 활용 가능 |
-| context-manager | sibling | 같은 Core 레이어 |
+| context-manager   | sibling | 같은 Core 레이어                  |
 
 ---
 
 ### 3. observation-masking
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/core/observation-masking.ts` (약 256줄) |
-| **레이어** | Layer 2: Core |
+| 항목           | 내용                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------- |
+| **파일**       | `src/core/observation-masking.ts` (약 256줄)                                             |
+| **레이어**     | Layer 2: Core                                                                            |
 | **한 줄 설명** | 재생성 가능한 도구 출력 마스킹 — 읽기 전용 도구 결과를 플레이스홀더로 대체하여 토큰 절약 |
-| **복잡도** | ★★☆☆☆ (낮음 — 순수 함수형, 상태 없음) |
+| **복잡도**     | ★★☆☆☆ (낮음 — 순수 함수형, 상태 없음)                                                    |
 
 #### 문서화할 Export 목록
 
@@ -260,18 +260,18 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "마스킹 후 LLM이 파일 내용을 모른다고 해요" | keepRecentN보다 오래된 file_read가 마스킹됨 | keepRecentN 값 증가 또는 파일 재읽기 유도 |
-| "bash 출력이 마스킹되지 않아요" | MUTATION_BASH_PATTERNS에 해당하는 명령어 | 의도된 동작 — 변경 명령어 결과는 보존 필수 |
+| 문제                                        | 원인                                        | 해결                                       |
+| ------------------------------------------- | ------------------------------------------- | ------------------------------------------ |
+| "마스킹 후 LLM이 파일 내용을 모른다고 해요" | keepRecentN보다 오래된 file_read가 마스킹됨 | keepRecentN 값 증가 또는 파일 재읽기 유도  |
+| "bash 출력이 마스킹되지 않아요"             | MUTATION_BASH_PATTERNS에 해당하는 명령어    | 의도된 동작 — 변경 명령어 결과는 보존 필수 |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| agent-loop | parent | 마스킹 적용 후 LLM에 전달 |
+| 모듈            | 관계    | 설명                            |
+| --------------- | ------- | ------------------------------- |
+| agent-loop      | parent  | 마스킹 적용 후 LLM에 전달       |
 | context-manager | sibling | 마스킹은 압축 전 토큰 절약 단계 |
-| token-counter | child | 토큰 수 추정에 간접 관련 |
+| token-counter   | child   | 토큰 수 추정에 간접 관련        |
 
 ---
 
@@ -279,12 +279,12 @@ Import 되는 곳:
 
 ### 4. llm-client
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/llm/client.ts` (대규모) |
-| **레이어** | Layer 3: Infrastructure |
+| 항목           | 내용                                                                                  |
+| -------------- | ------------------------------------------------------------------------------------- |
+| **파일**       | `src/llm/client.ts` (대규모)                                                          |
+| **레이어**     | Layer 3: Infrastructure                                                               |
 | **한 줄 설명** | OpenAI 호환 LLM API 클라이언트 — 스트리밍, 자동 재시도, Responses API 분기, 에러 분류 |
-| **복잡도** | ★★★★★ (높음 — 가장 많은 외부 API 연동) |
+| **복잡도**     | ★★★★★ (높음 — 가장 많은 외부 API 연동)                                                |
 
 #### 문서화할 Export 목록
 
@@ -307,14 +307,14 @@ Import 되는 곳:
 
 #### 핵심 상수
 
-| 이름 | 값 | 용도 |
-|------|-----|------|
-| `MAX_RETRIES_TRANSIENT` | 3 | 500/502/503 에러 재시도 횟수 |
-| `MAX_RETRIES_RATE_LIMIT` | 0 | 429 에러는 재시도 안 함 |
-| `BASE_RETRY_DELAY_MS` | 1,000ms | 기본 재시도 대기 시간 |
-| `BASE_RATE_LIMIT_DELAY_MS` | 5,000ms | 레이트 리밋 대기 시간 |
-| `MAX_RATE_LIMIT_DELAY_MS` | 60,000ms | 최대 대기 시간 |
-| 기본 timeout | 120,000ms | 요청 타임아웃 |
+| 이름                       | 값        | 용도                         |
+| -------------------------- | --------- | ---------------------------- |
+| `MAX_RETRIES_TRANSIENT`    | 3         | 500/502/503 에러 재시도 횟수 |
+| `MAX_RETRIES_RATE_LIMIT`   | 0         | 429 에러는 재시도 안 함      |
+| `BASE_RETRY_DELAY_MS`      | 1,000ms   | 기본 재시도 대기 시간        |
+| `BASE_RATE_LIMIT_DELAY_MS` | 5,000ms   | 레이트 리밋 대기 시간        |
+| `MAX_RATE_LIMIT_DELAY_MS`  | 60,000ms  | 최대 대기 시간               |
+| 기본 timeout               | 120,000ms | 요청 타임아웃                |
 
 #### 의존성 관계
 
@@ -335,14 +335,14 @@ Import 되는 곳:
 #### Mermaid 다이어그램 계획
 
 1. **아키텍처 위치** — Agent Loop → LLM Client → OpenAI API / Azure / Ollama
-2. **요청 흐름** — chat() → _chatOnce() → Responses API 분기 → 결과 변환 (sequenceDiagram)
+2. **요청 흐름** — chat() → \_chatOnce() → Responses API 분기 → 결과 변환 (sequenceDiagram)
 3. **에러 분류 트리** — Auth / Permission / RateLimit / Timeout / Connection → LLMError
 4. **재시도 로직** — Transient(3회) vs RateLimit(0회) + 지수 백오프
 
 #### 핵심 알고리즘 설명 포인트
 
 1. **Responses API 분기**: Codex 모델 → OpenAI Responses API 사용 (별도 input/tool 포맷)
-2. **지수 백오프 재시도**: delay = BASE * 2^attempt (최대 60초)
+2. **지수 백오프 재시도**: delay = BASE \* 2^attempt (최대 60초)
 3. **스트리밍 도구 호출 누적**: Map<index, toolCall>로 청크별 누적 후 완성
 4. **에러 분류**: OpenAI SDK 에러 → 사용자 친화적 LLMError 변환
 5. **Azure 호환**: baseURL 정규화 + API 버전 자동 추가
@@ -355,32 +355,32 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "AuthenticationError가 발생해요" | API 키 누락 또는 만료 | 환경변수 또는 config의 apiKey 확인 |
-| "타임아웃이 자주 발생해요" | 큰 프롬프트 + 느린 네트워크 | timeout 값 증가, 프롬프트 크기 줄이기 |
-| "Codex 모델이 동작하지 않아요" | Responses API 포맷 불일치 | isResponsesApiModel() 감지 확인 |
-| "스트리밍 중 도구 호출이 잘려요" | 네트워크 중단으로 불완전한 청크 | 자동 재시도로 복구됨 |
+| 문제                             | 원인                            | 해결                                  |
+| -------------------------------- | ------------------------------- | ------------------------------------- |
+| "AuthenticationError가 발생해요" | API 키 누락 또는 만료           | 환경변수 또는 config의 apiKey 확인    |
+| "타임아웃이 자주 발생해요"       | 큰 프롬프트 + 느린 네트워크     | timeout 값 증가, 프롬프트 크기 줄이기 |
+| "Codex 모델이 동작하지 않아요"   | Responses API 포맷 불일치       | isResponsesApiModel() 감지 확인       |
+| "스트리밍 중 도구 호출이 잘려요" | 네트워크 중단으로 불완전한 청크 | 자동 재시도로 복구됨                  |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| agent-loop | parent | LLM 클라이언트를 호출하는 메인 루프 |
-| dual-model-router | sibling | 모델별 클라이언트 선택 |
-| model-capabilities | child | 모델 능력 확인하여 파라미터 분기 |
-| token-counter | child | 토큰 계산 위임 |
+| 모듈               | 관계    | 설명                                |
+| ------------------ | ------- | ----------------------------------- |
+| agent-loop         | parent  | LLM 클라이언트를 호출하는 메인 루프 |
+| dual-model-router  | sibling | 모델별 클라이언트 선택              |
+| model-capabilities | child   | 모델 능력 확인하여 파라미터 분기    |
+| token-counter      | child   | 토큰 계산 위임                      |
 
 ---
 
 ### 5. dual-model-router
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/llm/dual-model-router.ts` (소규모) |
-| **레이어** | Layer 3: Infrastructure |
+| 항목           | 내용                                                                                                     |
+| -------------- | -------------------------------------------------------------------------------------------------------- |
+| **파일**       | `src/llm/dual-model-router.ts` (소규모)                                                                  |
+| **레이어**     | Layer 3: Infrastructure                                                                                  |
 | **한 줄 설명** | Architect/Editor 모델 자동 전환 라우터 — 작업 페이즈(plan/execute/review)에 따라 고성능/저비용 모델 분기 |
-| **복잡도** | ★★☆☆☆ (낮음 — 간결한 라우팅 로직) |
+| **복잡도**     | ★★☆☆☆ (낮음 — 간결한 라우팅 로직)                                                                        |
 
 #### 문서화할 Export 목록
 
@@ -438,29 +438,29 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "비싼 모델이 계속 사용돼요" | 메시지에 plan 키워드가 반복 포함 | setPhase("execute")로 수동 전환 |
-| "코드 품질이 낮아졌어요" | Editor 모델의 능력 한계 | routingStrategy를 "manual"로 변경 |
+| 문제                        | 원인                             | 해결                              |
+| --------------------------- | -------------------------------- | --------------------------------- |
+| "비싼 모델이 계속 사용돼요" | 메시지에 plan 키워드가 반복 포함 | setPhase("execute")로 수동 전환   |
+| "코드 품질이 낮아졌어요"    | Editor 모델의 능력 한계          | routingStrategy를 "manual"로 변경 |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| agent-loop | parent | 라우터로 모델 선택 |
-| llm-client | sibling | 선택된 모델의 클라이언트 |
-| model-capabilities | sibling | 모델별 능력 정보 |
+| 모듈               | 관계    | 설명                     |
+| ------------------ | ------- | ------------------------ |
+| agent-loop         | parent  | 라우터로 모델 선택       |
+| llm-client         | sibling | 선택된 모델의 클라이언트 |
+| model-capabilities | sibling | 모델별 능력 정보         |
 
 ---
 
 ### 6. tool-executor
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/tools/executor.ts` (대규모) |
-| **레이어** | Layer 3: Infrastructure |
+| 항목           | 내용                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| **파일**       | `src/tools/executor.ts` (대규모)                                                            |
+| **레이어**     | Layer 3: Infrastructure                                                                     |
 | **한 줄 설명** | 도구 실행 파이프라인 — Zod 검증, 인자 자동 교정, 타임아웃, 재시도, 백그라운드 프로세스 관리 |
-| **복잡도** | ★★★★☆ (높음) |
+| **복잡도**     | ★★★★☆ (높음)                                                                                |
 
 #### 문서화할 Export 목록
 
@@ -494,10 +494,10 @@ Import 되는 곳:
 
 #### 핵심 상수
 
-| 이름 | 값 | 용도 |
-|------|-----|------|
-| `MAX_TOOL_RETRIES` | 1 | 일시적 에러 재시도 횟수 |
-| Transient 에러 코드 | ECONNRESET, ETIMEDOUT, ENOTFOUND, EPIPE, EAI_AGAIN | 재시도 대상 에러 |
+| 이름                | 값                                                 | 용도                    |
+| ------------------- | -------------------------------------------------- | ----------------------- |
+| `MAX_TOOL_RETRIES`  | 1                                                  | 일시적 에러 재시도 횟수 |
+| Transient 에러 코드 | ECONNRESET, ETIMEDOUT, ENOTFOUND, EPIPE, EAI_AGAIN | 재시도 대상 에러        |
 
 #### 의존성 관계
 
@@ -537,30 +537,30 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "도구가 타임아웃으로 실패해요" | 실행 시간이 TOOL_TIMEOUTS 초과 | timeout 설정 확인, 장시간 작업은 백그라운드 실행 |
-| "Zod 검증 에러가 발생해요" | LLM이 잘못된 타입의 인자 전달 | tool-call-corrector가 자동 수정 시도, 스키마 확인 |
-| "백그라운드 프로세스가 종료되지 않아요" | 자식 프로세스가 signal 무시 | kill()에 SIGKILL 전달 |
+| 문제                                    | 원인                           | 해결                                              |
+| --------------------------------------- | ------------------------------ | ------------------------------------------------- |
+| "도구가 타임아웃으로 실패해요"          | 실행 시간이 TOOL_TIMEOUTS 초과 | timeout 설정 확인, 장시간 작업은 백그라운드 실행  |
+| "Zod 검증 에러가 발생해요"              | LLM이 잘못된 타입의 인자 전달  | tool-call-corrector가 자동 수정 시도, 스키마 확인 |
+| "백그라운드 프로세스가 종료되지 않아요" | 자식 프로세스가 signal 무시    | kill()에 SIGKILL 전달                             |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| agent-loop | parent | 도구 실행 요청 |
-| tool-registry | sibling | 도구 정의 조회 |
+| 모듈               | 관계    | 설명              |
+| ------------------ | ------- | ----------------- |
+| agent-loop         | parent  | 도구 실행 요청    |
+| tool-registry      | sibling | 도구 정의 조회    |
 | permission-manager | sibling | 실행 전 권한 확인 |
 
 ---
 
 ### 7. mcp-manager
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/mcp/manager.ts` |
-| **레이어** | Layer 3: Infrastructure |
+| 항목           | 내용                                                                                        |
+| -------------- | ------------------------------------------------------------------------------------------- |
+| **파일**       | `src/mcp/manager.ts`                                                                        |
+| **레이어**     | Layer 3: Infrastructure                                                                     |
 | **한 줄 설명** | MCP 서버 수명주기 관리 — 3-Scope 설정(local>project>user), 병렬 연결, 도구 브리지 자동 등록 |
-| **복잡도** | ★★★☆☆ (중간) |
+| **복잡도**     | ★★★☆☆ (중간)                                                                                |
 
 #### 문서화할 Export 목록
 
@@ -627,19 +627,19 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
+| 문제                       | 원인                          | 해결                                          |
+| -------------------------- | ----------------------------- | --------------------------------------------- |
 | "MCP 서버 연결이 실패해요" | 서버 프로세스가 시작되지 않음 | command/args 경로 확인, 서버 단독 실행 테스트 |
-| "MCP 도구가 목록에 없어요" | bridge.registerTools() 실패 | getRegisteredTools()로 등록 상태 확인 |
-| "mcp.json 파싱 에러" | JSON 문법 오류 | 에러 메시지의 path 확인 후 JSON 검증 |
+| "MCP 도구가 목록에 없어요" | bridge.registerTools() 실패   | getRegisteredTools()로 등록 상태 확인         |
+| "mcp.json 파싱 에러"       | JSON 문법 오류                | 에러 메시지의 path 확인 후 JSON 검증          |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| tool-registry | sibling | MCP 도구를 등록하는 대상 |
-| config-loader | child | 설정 경로 체계 참고 |
-| agent-loop | parent | MCP 도구를 사용하는 메인 루프 |
+| 모듈          | 관계    | 설명                          |
+| ------------- | ------- | ----------------------------- |
+| tool-registry | sibling | MCP 도구를 등록하는 대상      |
+| config-loader | child   | 설정 경로 체계 참고           |
+| agent-loop    | parent  | MCP 도구를 사용하는 메인 루프 |
 
 ---
 
@@ -647,12 +647,12 @@ Import 되는 곳:
 
 ### 8. skill-manager
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/skills/manager.ts` |
-| **레이어** | Layer 4: Leaf |
+| 항목           | 내용                                                                               |
+| -------------- | ---------------------------------------------------------------------------------- |
+| **파일**       | `src/skills/manager.ts`                                                            |
+| **레이어**     | Layer 4: Leaf                                                                      |
 | **한 줄 설명** | 4개 디렉토리에서 스킬 로딩 — 우선순위 병합 + 시스템 프롬프트 섹션 생성 + 실행 위임 |
-| **복잡도** | ★★★☆☆ (중간) |
+| **복잡도**     | ★★★☆☆ (중간)                                                                       |
 
 #### 문서화할 Export 목록
 
@@ -709,22 +709,22 @@ Import 되는 곳:
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| config-loader | sibling | 같은 Leaf 레이어, 유사한 계층적 로딩 패턴 |
-| instruction-loader | sibling | 유사한 다중 경로 로딩 |
-| system-prompt-builder | parent | 스킬 섹션을 프롬프트에 포함 |
+| 모듈                  | 관계    | 설명                                      |
+| --------------------- | ------- | ----------------------------------------- |
+| config-loader         | sibling | 같은 Leaf 레이어, 유사한 계층적 로딩 패턴 |
+| instruction-loader    | sibling | 유사한 다중 경로 로딩                     |
+| system-prompt-builder | parent  | 스킬 섹션을 프롬프트에 포함               |
 
 ---
 
 ### 9. instruction-loader
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/instructions/loader.ts` |
-| **레이어** | Layer 4: Leaf |
+| 항목           | 내용                                                                                          |
+| -------------- | --------------------------------------------------------------------------------------------- |
+| **파일**       | `src/instructions/loader.ts`                                                                  |
+| **레이어**     | Layer 4: Leaf                                                                                 |
 | **한 줄 설명** | 6단계 DBCODE.md 로딩 체인 — global → rules → parents → project → path-rules → local 계층 병합 |
-| **복잡도** | ★★★★☆ (높음 — 6단계 계층 + 패턴 매칭 + @import 처리) |
+| **복잡도**     | ★★★★☆ (높음 — 6단계 계층 + 패턴 매칭 + @import 처리)                                          |
 
 #### 문서화할 Export 목록
 
@@ -785,31 +785,31 @@ Import 되는 곳:
 #### 핵심 알고리즘 설명 포인트
 
 1. **프로젝트 루트 탐색**: cwd부터 위로 순회하며 DBCODE.md 또는 .dbcode/ 디렉토리 탐색
-2. **Frontmatter 패턴**: rules/*.md의 `paths:` 필드로 적용 경로 조건 지정
+2. **Frontmatter 패턴**: rules/\*.md의 `paths:` 필드로 적용 경로 조건 지정
 3. **@import 지시어**: parseInstructions()에서 외부 파일 인라인 포함
 4. **LazyInstructionLoader**: 파일별 온디맨드 로딩 + 디렉토리별 캐시
 
 #### Pitfall 후보
 
 - "DBCODE.local.md는 gitignore에 추가해야 합니다. 개인 설정이 팀원에게 공유되면 안 됩니다."
-- "rules/*.md의 paths 패턴이 현재 작업 디렉토리와 일치하지 않으면 해당 규칙은 무시됩니다."
+- "rules/\*.md의 paths 패턴이 현재 작업 디렉토리와 일치하지 않으면 해당 규칙은 무시됩니다."
 - "모노레포에서 부모 DBCODE.md가 있으면 자동으로 포함됩니다. 의도치 않은 상속에 주의하세요."
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "DBCODE.md 내용이 프롬프트에 안 나와요" | 프로젝트 루트 탐지 실패 | findProjectRoot()가 올바른 경로 반환하는지 확인 |
-| "규칙 파일이 적용되지 않아요" | paths 패턴 불일치 | frontmatter의 `paths:` 필드와 cwd 확인 |
-| "LazyInstructionLoader 캐시가 오래됐어요" | 캐시 무효화 안 됨 | invalidate(dirPath) 또는 clearCache() 호출 |
+| 문제                                      | 원인                    | 해결                                            |
+| ----------------------------------------- | ----------------------- | ----------------------------------------------- |
+| "DBCODE.md 내용이 프롬프트에 안 나와요"   | 프로젝트 루트 탐지 실패 | findProjectRoot()가 올바른 경로 반환하는지 확인 |
+| "규칙 파일이 적용되지 않아요"             | paths 패턴 불일치       | frontmatter의 `paths:` 필드와 cwd 확인          |
+| "LazyInstructionLoader 캐시가 오래됐어요" | 캐시 무효화 안 됨       | invalidate(dirPath) 또는 clearCache() 호출      |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| config-loader | sibling | 유사한 계층적 설정 로딩 패턴 |
-| skill-manager | sibling | 같은 Leaf 레이어, 다중 경로 로딩 |
-| system-prompt-builder | parent | 로딩된 인스트럭션을 프롬프트에 포함 |
+| 모듈                  | 관계    | 설명                                |
+| --------------------- | ------- | ----------------------------------- |
+| config-loader         | sibling | 유사한 계층적 설정 로딩 패턴        |
+| skill-manager         | sibling | 같은 Leaf 레이어, 다중 경로 로딩    |
+| system-prompt-builder | parent  | 로딩된 인스트럭션을 프롬프트에 포함 |
 
 ---
 
@@ -817,12 +817,12 @@ Import 되는 곳:
 
 ### 10. use-agent-loop
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/cli/hooks/useAgentLoop.ts` (대규모) |
-| **레이어** | Layer 1: CLI |
+| 항목           | 내용                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------- |
+| **파일**       | `src/cli/hooks/useAgentLoop.ts` (대규모)                                                                  |
+| **레이어**     | Layer 1: CLI                                                                                              |
 | **한 줄 설명** | Agent Loop ↔ React 상태 연결 핵심 브릿지 — 사용자 입력 → LLM → 도구 실행 → 대화 저장 전체 오케스트레이션 |
-| **복잡도** | ★★★★★ (최고 — 가장 많은 상태 변수와 이벤트 핸들링) |
+| **복잡도**     | ★★★★★ (최고 — 가장 많은 상태 변수와 이벤트 핸들링)                                                        |
 
 #### 문서화할 Export 목록
 
@@ -838,26 +838,26 @@ Import 되는 곳:
 
 #### 반환값 (AgentLoopState)
 
-| 프로퍼티 | 타입 | 용도 |
-|---------|------|------|
-| `isProcessing` | boolean | 에이전트 루프 실행 중 여부 |
-| `streamingText` | string | 누적된 LLM 응답 텍스트 |
-| `isStreamingFinal` | boolean | 최종 응답 스트리밍 중 (스피너 숨김) |
-| `agentPhase` | "idle" \| "llm-thinking" \| "llm-streaming" \| "tools-running" \| "tools-done" | 현재 단계 |
-| `completedTurns` | TurnActivity[] | 완료된 대화 턴 |
-| `currentTurn` | TurnActivity? | 진행 중인 턴 |
-| `liveTurn` | TurnActivity? | 라이브 턴 |
-| `handleSubmit` | (input: string) → Promise<void> | 사용자 입력 처리 |
-| `error` | string? | 에러 메시지 |
-| `commandOutput` | string? | 슬래시 명령 출력 |
-| `tokenCount` | number | 누적 토큰 수 |
-| `activeModel` | string | 현재 활성 모델 |
-| `events` | EventEmitter | 이벤트 버스 |
-| `inputTokens` / `outputTokens` / `totalCost` | number | 토큰 및 비용 통계 |
-| `interactiveSelect` | InteractiveSelect? | 인터랙티브 선택 UI 데이터 |
-| `retryInfo` | RetryInfo? | 재시도 카운트다운 정보 |
-| `pendingAskUser` | AskUserData? | ask_user 도구 대기 상태 |
-| `messageQueueRef` | { current: string[] } | 처리 대기 메시지 큐 |
+| 프로퍼티                                     | 타입                                                                           | 용도                                |
+| -------------------------------------------- | ------------------------------------------------------------------------------ | ----------------------------------- |
+| `isProcessing`                               | boolean                                                                        | 에이전트 루프 실행 중 여부          |
+| `streamingText`                              | string                                                                         | 누적된 LLM 응답 텍스트              |
+| `isStreamingFinal`                           | boolean                                                                        | 최종 응답 스트리밍 중 (스피너 숨김) |
+| `agentPhase`                                 | "idle" \| "llm-thinking" \| "llm-streaming" \| "tools-running" \| "tools-done" | 현재 단계                           |
+| `completedTurns`                             | TurnActivity[]                                                                 | 완료된 대화 턴                      |
+| `currentTurn`                                | TurnActivity?                                                                  | 진행 중인 턴                        |
+| `liveTurn`                                   | TurnActivity?                                                                  | 라이브 턴                           |
+| `handleSubmit`                               | (input: string) → Promise<void>                                                | 사용자 입력 처리                    |
+| `error`                                      | string?                                                                        | 에러 메시지                         |
+| `commandOutput`                              | string?                                                                        | 슬래시 명령 출력                    |
+| `tokenCount`                                 | number                                                                         | 누적 토큰 수                        |
+| `activeModel`                                | string                                                                         | 현재 활성 모델                      |
+| `events`                                     | EventEmitter                                                                   | 이벤트 버스                         |
+| `inputTokens` / `outputTokens` / `totalCost` | number                                                                         | 토큰 및 비용 통계                   |
+| `interactiveSelect`                          | InteractiveSelect?                                                             | 인터랙티브 선택 UI 데이터           |
+| `retryInfo`                                  | RetryInfo?                                                                     | 재시도 카운트다운 정보              |
+| `pendingAskUser`                             | AskUserData?                                                                   | ask_user 도구 대기 상태             |
+| `messageQueueRef`                            | { current: string[] }                                                          | 처리 대기 메시지 큐                 |
 
 #### 의존성 관계 (매우 많음)
 
@@ -903,31 +903,31 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "Escape를 눌러도 중단되지 않아요" | AbortController가 도구 실행에 전파되지 않음 | AbortSignal 체인 확인 |
-| "토큰 비용이 0으로 표시돼요" | 모델 가격 정보 누락 | model-capabilities에 가격 정보 확인 |
-| "메시지가 순서대로 처리되지 않아요" | 큐 처리 로직 오류 | messageQueueRef.current 확인 |
+| 문제                                | 원인                                        | 해결                                |
+| ----------------------------------- | ------------------------------------------- | ----------------------------------- |
+| "Escape를 눌러도 중단되지 않아요"   | AbortController가 도구 실행에 전파되지 않음 | AbortSignal 체인 확인               |
+| "토큰 비용이 0으로 표시돼요"        | 모델 가격 정보 누락                         | model-capabilities에 가격 정보 확인 |
+| "메시지가 순서대로 처리되지 않아요" | 큐 처리 로직 오류                           | messageQueueRef.current 확인        |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| agent-loop | child | 핵심 실행 로직 위임 |
-| system-prompt-builder | child | 프롬프트 빌드 호출 |
-| context-manager | child | 컨텍스트 관리 위임 |
-| activity-feed | sibling | 턴 데이터를 표시하는 UI 컴포넌트 |
+| 모듈                  | 관계    | 설명                             |
+| --------------------- | ------- | -------------------------------- |
+| agent-loop            | child   | 핵심 실행 로직 위임              |
+| system-prompt-builder | child   | 프롬프트 빌드 호출               |
+| context-manager       | child   | 컨텍스트 관리 위임               |
+| activity-feed         | sibling | 턴 데이터를 표시하는 UI 컴포넌트 |
 
 ---
 
 ### 11. activity-feed
 
-| 항목 | 내용 |
-|------|------|
-| **파일** | `src/cli/components/ActivityFeed.tsx` |
-| **레이어** | Layer 1: CLI |
+| 항목           | 내용                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------------------------- |
+| **파일**       | `src/cli/components/ActivityFeed.tsx`                                                                     |
+| **레이어**     | Layer 1: CLI                                                                                              |
 | **한 줄 설명** | Progressive Static Flushing — 완료된 항목은 Static으로 전환하여 재렌더링 방지, 진행 중 항목만 동적 렌더링 |
-| **복잡도** | ★★★★☆ (높음 — Ink의 Static + WeakSet 기반 최적화) |
+| **복잡도**     | ★★★★☆ (높음 — Ink의 Static + WeakSet 기반 최적화)                                                         |
 
 #### 문서화할 Export 목록
 
@@ -948,13 +948,13 @@ Import 되는 곳:
 
 #### 핵심 상태 변수
 
-| 변수 | 타입 | 용도 |
-|------|------|------|
-| `nextIdRef` | { current: number } | Static 항목의 단조 증가 ID |
-| `flushedSetRef` | { current: WeakSet } | 이미 Static으로 플러시된 항목 추적 (GC 친화) |
-| `processedTurnCountRef` | { current: number } | 처리 완료된 턴 수 |
-| `staticItems` | FlushedItem[] | Static 렌더링 항목 (추가만 가능, 삭제 불가) |
-| `liveEntries` | ActivityEntry[] | 진행 중 항목 (동적 렌더링) |
+| 변수                    | 타입                 | 용도                                         |
+| ----------------------- | -------------------- | -------------------------------------------- |
+| `nextIdRef`             | { current: number }  | Static 항목의 단조 증가 ID                   |
+| `flushedSetRef`         | { current: WeakSet } | 이미 Static으로 플러시된 항목 추적 (GC 친화) |
+| `processedTurnCountRef` | { current: number }  | 처리 완료된 턴 수                            |
+| `staticItems`           | FlushedItem[]        | Static 렌더링 항목 (추가만 가능, 삭제 불가)  |
+| `liveEntries`           | ActivityEntry[]      | 진행 중 항목 (동적 렌더링)                   |
 
 #### 의존성 관계
 
@@ -989,17 +989,17 @@ Import 되는 곳:
 
 #### 트러블슈팅 후보
 
-| 문제 | 원인 | 해결 |
-|------|------|------|
-| "같은 항목이 두 번 표시돼요" | WeakSet이 초기화됨 | flushedSetRef 참조 안정성 확인 |
-| "실시간 스트리밍이 안 보여요" | liveEntries 필터링 오류 | currentTurn 데이터 확인 |
+| 문제                          | 원인                    | 해결                           |
+| ----------------------------- | ----------------------- | ------------------------------ |
+| "같은 항목이 두 번 표시돼요"  | WeakSet이 초기화됨      | flushedSetRef 참조 안정성 확인 |
+| "실시간 스트리밍이 안 보여요" | liveEntries 필터링 오류 | currentTurn 데이터 확인        |
 
 #### SeeAlso 계획
 
-| 모듈 | 관계 | 설명 |
-|------|------|------|
-| use-agent-loop | sibling | 턴 데이터 제공자 |
-| agent-loop | parent (간접) | 활동 데이터의 원천 |
+| 모듈            | 관계           | 설명                        |
+| --------------- | -------------- | --------------------------- |
+| use-agent-loop  | sibling        | 턴 데이터 제공자            |
+| agent-loop      | parent (간접)  | 활동 데이터의 원천          |
 | circuit-breaker | sibling (간접) | 무한 루프 감지 시 활동 표시 |
 
 ---
@@ -1008,38 +1008,38 @@ Import 되는 곳:
 
 ### 추천 작업 순서
 
-| 순서 | 모듈 | 난이도 | 이유 |
-|------|------|--------|------|
-| 1 | observation-masking | ★★ | 가장 작고 독립적. 기존 문서와 유사한 패턴 |
-| 2 | dual-model-router | ★★ | 간결한 로직. 빠르게 완성 가능 |
-| 3 | checkpoint-manager | ★★★ | 중간 크기. 명확한 API |
-| 4 | skill-manager | ★★★ | config-loader와 유사한 패턴 |
-| 5 | mcp-manager | ★★★ | 중간 복잡도. 외부 연동 설명 필요 |
-| 6 | instruction-loader | ★★★★ | 6단계 계층 설명 필요 |
-| 7 | tool-executor | ★★★★ | 큰 파일. BackgroundProcessManager 포함 |
-| 8 | llm-client | ★★★★★ | 가장 복잡. 외부 API 연동 + 에러 분류 |
-| 9 | system-prompt-builder | ★★★★★ | 가장 큰 파일. 수많은 내부 함수 |
-| 10 | activity-feed | ★★★★ | Ink 특화 패턴. Progressive Static Flushing |
-| 11 | use-agent-loop | ★★★★★ | 가장 많은 의존성. 전체 오케스트레이션 |
+| 순서 | 모듈                  | 난이도 | 이유                                       |
+| ---- | --------------------- | ------ | ------------------------------------------ |
+| 1    | observation-masking   | ★★     | 가장 작고 독립적. 기존 문서와 유사한 패턴  |
+| 2    | dual-model-router     | ★★     | 간결한 로직. 빠르게 완성 가능              |
+| 3    | checkpoint-manager    | ★★★    | 중간 크기. 명확한 API                      |
+| 4    | skill-manager         | ★★★    | config-loader와 유사한 패턴                |
+| 5    | mcp-manager           | ★★★    | 중간 복잡도. 외부 연동 설명 필요           |
+| 6    | instruction-loader    | ★★★★   | 6단계 계층 설명 필요                       |
+| 7    | tool-executor         | ★★★★   | 큰 파일. BackgroundProcessManager 포함     |
+| 8    | llm-client            | ★★★★★  | 가장 복잡. 외부 API 연동 + 에러 분류       |
+| 9    | system-prompt-builder | ★★★★★  | 가장 큰 파일. 수많은 내부 함수             |
+| 10   | activity-feed         | ★★★★   | Ink 특화 패턴. Progressive Static Flushing |
+| 11   | use-agent-loop        | ★★★★★  | 가장 많은 의존성. 전체 오케스트레이션      |
 
 ### 작업량 예측
 
-| 그룹 | 모듈 수 | 예상 난이도 |
-|------|---------|-----------|
-| 빠른 완성 (★★) | 2개 (observation-masking, dual-model-router) | 기존 문서와 구조 동일, 빠르게 완성 |
-| 중간 (★★★) | 3개 (checkpoint, skill, mcp) | 표준 문서 구조, 적당한 분량 |
-| 고난이도 (★★★★~★★★★★) | 6개 (instruction, executor, client, prompt-builder, activity-feed, useAgentLoop) | 대규모 파일 또는 복잡한 알고리즘 |
+| 그룹                  | 모듈 수                                                                          | 예상 난이도                        |
+| --------------------- | -------------------------------------------------------------------------------- | ---------------------------------- |
+| 빠른 완성 (★★)        | 2개 (observation-masking, dual-model-router)                                     | 기존 문서와 구조 동일, 빠르게 완성 |
+| 중간 (★★★)            | 3개 (checkpoint, skill, mcp)                                                     | 표준 문서 구조, 적당한 분량        |
+| 고난이도 (★★★★~★★★★★) | 6개 (instruction, executor, client, prompt-builder, activity-feed, useAgentLoop) | 대규모 파일 또는 복잡한 알고리즘   |
 
 ### 기존 완료 문서 참고용 패턴
 
-| 기존 문서 | 참고할 패턴 |
-|----------|-----------|
-| agent-loop | 대규모 모듈 문서 구조, 상태머신 다이어그램 |
-| context-manager | 임계값/상수 설명 방식, Deep Dive 활용 |
-| circuit-breaker | 간결한 모듈 문서, 상태 다이어그램 |
-| config-loader | 계층적 로딩 설명 (instruction-loader, skill-manager 참고용) |
-| tool-registry | 도구 시스템 설명 (tool-executor 참고용) |
-| permission-manager | 의사결정 트리 다이어그램 |
+| 기존 문서          | 참고할 패턴                                                 |
+| ------------------ | ----------------------------------------------------------- |
+| agent-loop         | 대규모 모듈 문서 구조, 상태머신 다이어그램                  |
+| context-manager    | 임계값/상수 설명 방식, Deep Dive 활용                       |
+| circuit-breaker    | 간결한 모듈 문서, 상태 다이어그램                           |
+| config-loader      | 계층적 로딩 설명 (instruction-loader, skill-manager 참고용) |
+| tool-registry      | 도구 시스템 설명 (tool-executor 참고용)                     |
+| permission-manager | 의사결정 트리 다이어그램                                    |
 
 ---
 

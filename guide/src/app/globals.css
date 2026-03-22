@@ -48,8 +48,8 @@
   --text-muted: #94a3b8;
   --accent: #818cf8;
   --accent-hover: #6366f1;
-  --accent-light: rgba(99,102,241,0.1);
-  --sidebar-active-bg: rgba(99,102,241,0.1);
+  --accent-light: rgba(99, 102, 241, 0.1);
+  --sidebar-active-bg: rgba(99, 102, 241, 0.1);
   --sidebar-active-border: #818cf8;
 }
 
@@ -74,28 +74,65 @@
   --color-accent-orange: var(--accent-orange);
   --color-accent-pink: var(--accent-pink);
   --color-accent-red: var(--accent-red);
-  --font-sans: 'Pretendard Variable', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-  --font-mono: 'Geist Mono', 'SF Mono', 'Fira Code', Consolas, monospace;
+  --font-sans: "Pretendard Variable", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "SF Mono", "Fira Code", Consolas, monospace;
 
   /* Spacing tokens — Tailwind v4 spacing 유틸리티 활성화 */
   --spacing: 4px;
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
 
 /* ─── Base Element Spacing ─── */
-h1 { margin-bottom: 16px; }
-h2 { margin-top: 48px; margin-bottom: 24px; }
-h3 { margin-top: 32px; margin-bottom: 16px; }
-h4 { margin-top: 24px; margin-bottom: 12px; }
-h2:first-child, h3:first-child, h4:first-child { margin-top: 0; }
-p { margin-bottom: 16px; }
-p:last-child { margin-bottom: 0; }
-ul, ol { margin-bottom: 16px; padding-left: 24px; }
-li { margin-bottom: 4px; }
-table { margin-bottom: 24px; }
-pre { margin-bottom: 16px; }
-hr { margin: 32px 0; border: none; border-top: 1px solid var(--border); }
+h1 {
+  margin-bottom: 16px;
+}
+h2 {
+  margin-top: 48px;
+  margin-bottom: 24px;
+}
+h3 {
+  margin-top: 32px;
+  margin-bottom: 16px;
+}
+h4 {
+  margin-top: 24px;
+  margin-bottom: 12px;
+}
+h2:first-child,
+h3:first-child,
+h4:first-child {
+  margin-top: 0;
+}
+p {
+  margin-bottom: 16px;
+}
+p:last-child {
+  margin-bottom: 0;
+}
+ul,
+ol {
+  margin-bottom: 16px;
+  padding-left: 24px;
+}
+li {
+  margin-bottom: 4px;
+}
+table {
+  margin-bottom: 24px;
+}
+pre {
+  margin-bottom: 16px;
+}
+hr {
+  margin: 32px 0;
+  border: none;
+  border-top: 1px solid var(--border);
+}
 
 html {
   scroll-behavior: smooth;
@@ -115,18 +152,29 @@ body {
   font-size: 16px;
 }
 
-::-webkit-scrollbar { width: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
 
 /* ─── Typography ─── */
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   text-wrap: balance;
   letter-spacing: -0.02em;
   color: var(--text-primary);
 }
 
-p, li {
+p,
+li {
   text-wrap: pretty;
   color: var(--text-secondary);
 }
@@ -175,13 +223,27 @@ a:hover {
 }
 
 /* ─── Code block syntax (dark background) ─── */
-.code-block .kw { color: #ff7b72; }
-.code-block .str { color: #a5d6ff; }
-.code-block .type { color: #79c0ff; }
-.code-block .fn { color: #d2a8ff; }
-.code-block .cm { color: #8b949e; }
-.code-block .prop { color: #7ee787; }
-.code-block .num { color: #ffa657; }
+.code-block .kw {
+  color: #ff7b72;
+}
+.code-block .str {
+  color: #a5d6ff;
+}
+.code-block .type {
+  color: #79c0ff;
+}
+.code-block .fn {
+  color: #d2a8ff;
+}
+.code-block .cm {
+  color: #8b949e;
+}
+.code-block .prop {
+  color: #7ee787;
+}
+.code-block .num {
+  color: #ffa657;
+}
 
 /* ─── Reveal animation ─── */
 @media (prefers-reduced-motion: no-preference) {
@@ -196,7 +258,10 @@ a:hover {
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .reveal { opacity: 1; transform: none; }
+  .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* ─── Layout: Sidebar + Content ─── */
@@ -280,7 +345,18 @@ button:focus-visible {
 
 /* ─── Print styles ─── */
 @media print {
-  nav, .sidebar, .back-to-top, .scroll-progress { display: none !important; }
-  .center-narrow { max-width: 100% !important; padding: 0 !important; }
-  a[href]::after { content: " (" attr(href) ")"; font-size: 0.8em; }
+  nav,
+  .sidebar,
+  .back-to-top,
+  .scroll-progress {
+    display: none !important;
+  }
+  .center-narrow {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+  a[href]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+  }
 }

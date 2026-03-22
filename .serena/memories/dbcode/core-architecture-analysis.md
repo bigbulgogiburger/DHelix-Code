@@ -5,18 +5,18 @@
 
 ## 10 Core Components (Production Readiness)
 
-| Component | Status | Readiness | Key Gap |
-|-----------|--------|-----------|---------|
-| Agent Loop (600 LOC) | ✓ | 85% | Needs error context in LLM |
-| Context Manager (450 LOC) | ✓ | 88% | **Compaction blocks agent loop** |
-| Session Manager (400 LOC) | ✓ | 82% | **No cleanup—accumulates forever** |
-| Checkpoint Manager (350 LOC) | ✓ | 87% | No compression (should gzip) |
-| System Prompt Builder (300 LOC) | ✓ | 93% | Rebuilt every iteration (minor) |
-| Tool System (2500 LOC, 14 tools) | ✓ | 87% | **Result truncation loses context** |
-| Subagents (800 LOC) | ⚠️ | 78% | **History in-memory only** |
-| MCP Integration (400 LOC) | ⚠️ | 65% | **Only stdio transport** |
-| Streaming (250 LOC) | ✓ | 84% | No backoff on reconnect |
-| Guardrails (300 LOC) | ⚠️ | 58% | **Missing injection detection** |
+| Component                        | Status | Readiness | Key Gap                             |
+| -------------------------------- | ------ | --------- | ----------------------------------- |
+| Agent Loop (600 LOC)             | ✓      | 85%       | Needs error context in LLM          |
+| Context Manager (450 LOC)        | ✓      | 88%       | **Compaction blocks agent loop**    |
+| Session Manager (400 LOC)        | ✓      | 82%       | **No cleanup—accumulates forever**  |
+| Checkpoint Manager (350 LOC)     | ✓      | 87%       | No compression (should gzip)        |
+| System Prompt Builder (300 LOC)  | ✓      | 93%       | Rebuilt every iteration (minor)     |
+| Tool System (2500 LOC, 14 tools) | ✓      | 87%       | **Result truncation loses context** |
+| Subagents (800 LOC)              | ⚠️     | 78%       | **History in-memory only**          |
+| MCP Integration (400 LOC)        | ⚠️     | 65%       | **Only stdio transport**            |
+| Streaming (250 LOC)              | ✓      | 84%       | No backoff on reconnect             |
+| Guardrails (300 LOC)             | ⚠️     | 58%       | **Missing injection detection**     |
 
 ## Top Production Gaps (Ranked by Impact)
 
@@ -52,6 +52,7 @@
 ## Key Implementation Details
 
 **Agent Loop (runAgentLoop):**
+
 - Max iterations: 50
 - Retry strategy: classify-retry-fallback (transient/overload/permanent)
 - Tool grouping: read-only parallel, file writes sequential by path
@@ -61,6 +62,7 @@
 - Result truncation: Token-aware with binary search
 
 **Context Manager (3-layer):**
+
 - Layer 1: Cold storage (file_read, bash_exec, grep_search, glob_search outputs)
 - Layer 2: LLM-based summarization at 83.5% threshold
 - Layer 3: Rehydration of 5 most recent file results
@@ -68,6 +70,7 @@
 - **Gap:** Blocking (should be background async)
 
 **Session Manager:**
+
 - Format: JSONL append-only (durable)
 - Structure: ~/.dbcode/sessions/{sessionId}/messages.jsonl
 - Atomic: write-temp + rename
@@ -75,6 +78,7 @@
 - **Gap:** No cleanup policy
 
 **Tool System (14 tools):**
+
 - Timeouts: bash=2min, default=30s
 - Validation: Zod schema at boundaries
 - Guardrails: Input (command filter, secret scan) + output (truncate, redact)

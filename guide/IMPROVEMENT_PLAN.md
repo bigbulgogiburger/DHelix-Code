@@ -34,8 +34,10 @@
 
 ```tsx
 // CodeBlock.tsx에 추가
-<button onClick={() => navigator.clipboard.writeText(code)}
-        className="absolute top-3 right-3 text-xs text-gray-400 hover:text-white">
+<button
+  onClick={() => navigator.clipboard.writeText(code)}
+  className="absolute top-3 right-3 text-xs text-gray-400 hover:text-white"
+>
   {copied ? "Copied!" : "Copy"}
 </button>
 ```
@@ -103,13 +105,14 @@
 
 **구현 방안**:
 
-| 옵션 | 장점 | 단점 | 추천 |
-|------|------|------|------|
-| **Fuse.js** (클라이언트) | 무료, 설치 쉬움, 오프라인 | 빌드 시 인덱스 생성 필요 | ★★★★ |
-| **Algolia DocSearch** | 무료(OSS), 초고속, AI 검색 | 외부 의존성 | ★★★★★ |
-| **MiniSearch** | 경량, 타입스크립트 | 기능 제한 | ★★★ |
+| 옵션                     | 장점                       | 단점                     | 추천  |
+| ------------------------ | -------------------------- | ------------------------ | ----- |
+| **Fuse.js** (클라이언트) | 무료, 설치 쉬움, 오프라인  | 빌드 시 인덱스 생성 필요 | ★★★★  |
+| **Algolia DocSearch**    | 무료(OSS), 초고속, AI 검색 | 외부 의존성              | ★★★★★ |
+| **MiniSearch**           | 경량, 타입스크립트         | 기능 제한                | ★★★   |
 
 **UI 패턴**:
+
 - Navigation 바에 검색 입력 + "⌘K" 힌트
 - 모달 오버레이에 실시간 검색 결과
 - 결과에 breadcrumb 컨텍스트 표시 (e.g., "Layer 2 > Core > agent-loop")
@@ -121,6 +124,7 @@
 **벤치마크**: Next.js, Tailwind 모두 우측 TOC 제공
 
 **구현**:
+
 - 데스크톱 1200px 이상: 우측에 고정 TOC 표시
 - h2/h3 자동 추출 + IntersectionObserver로 현재 섹션 하이라이트
 - 태블릿/모바일: 숨김
@@ -134,6 +138,7 @@
 
 **현재**: 하드코딩된 모듈 목록, 200+ 페이지 시 관리 불가
 **개선**:
+
 - 사이드바 데이터를 JSON으로 분리
 - 하위 그룹 추가 (LLM, Tools, Permissions 등)
 - 사이드바 내 필터/검색 기능
@@ -155,11 +160,11 @@
 **현재**: 수동 CSS 클래스 7개 (kw, str, type, fn, cm, prop, num)
 **개선**: Shiki 또는 Prism.js로 교체
 
-| 옵션 | 장점 | 단점 | 추천 |
-|------|------|------|------|
-| **Shiki** | VS Code 테마 호환, 빌드 타임 하이라이팅 | 번들 크기 | ★★★★★ |
-| **Prism.js** | 경량, 플러그인 풍부 | 설정 필요 | ★★★★ |
-| **현재 유지** | 변경 없음 | 7개 토큰만 지원 | ★★ |
+| 옵션          | 장점                                    | 단점            | 추천  |
+| ------------- | --------------------------------------- | --------------- | ----- |
+| **Shiki**     | VS Code 테마 호환, 빌드 타임 하이라이팅 | 번들 크기       | ★★★★★ |
+| **Prism.js**  | 경량, 플러그인 풍부                     | 설정 필요       | ★★★★  |
+| **현재 유지** | 변경 없음                               | 7개 토큰만 지원 | ★★    |
 
 ### 3-2. 라인 넘버 표시
 
@@ -210,19 +215,23 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 ### 5-1. 시맨틱 HTML 보강
 
-| 컴포넌트 | 현재 | 개선 |
-|---------|------|------|
-| Sidebar 토글 | `<button>` (aria 없음) | `aria-expanded`, `aria-controls` 추가 |
-| DeepDive | `<button>` | `aria-expanded`, `aria-controls` 추가 |
-| MermaidDiagram | SVG (접근성 없음) | `role="img"`, `aria-label` 추가 |
-| Navigation 탭 | `<Link>` | `role="tablist"`, `aria-selected` 추가 |
+| 컴포넌트       | 현재                   | 개선                                   |
+| -------------- | ---------------------- | -------------------------------------- |
+| Sidebar 토글   | `<button>` (aria 없음) | `aria-expanded`, `aria-controls` 추가  |
+| DeepDive       | `<button>`             | `aria-expanded`, `aria-controls` 추가  |
+| MermaidDiagram | SVG (접근성 없음)      | `role="img"`, `aria-label` 추가        |
+| Navigation 탭  | `<Link>`               | `role="tablist"`, `aria-selected` 추가 |
 
 ### 5-2. Mermaid 다이어그램 접근성
 
 **현재**: 스크린 리더에서 다이어그램 내용을 읽을 수 없음
 **개선**:
+
 ```tsx
-<div role="img" aria-label="Agent Loop 내부 상태머신 — INIT에서 시작하여 LLM_CALL, TOOL_EXEC를 거쳐 OUTPUT으로 종료">
+<div
+  role="img"
+  aria-label="Agent Loop 내부 상태머신 — INIT에서 시작하여 LLM_CALL, TOOL_EXEC를 거쳐 OUTPUT으로 종료"
+>
   <div ref={containerRef} />
 </div>
 ```
@@ -244,6 +253,7 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 **현재**: 다이어그램이 클라이언트에서 렌더링되면서 레이아웃 시프트 발생
 **개선**:
+
 - 컨테이너에 `min-height` 설정 (스켈레톤 로더)
 - 또는 빌드 타임에 SVG 사전 생성 (remark-mermaid 플러그인)
 
@@ -251,12 +261,14 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 **현재**: 모바일에서 큰 다이어그램이 잘림
 **개선**:
+
 ```tsx
 <div className="overflow-x-auto">
-  <div style={{ minWidth: 'fit-content' }} ref={containerRef} />
+  <div style={{ minWidth: "fit-content" }} ref={containerRef} />
 </div>
 ```
-+ 모바일에서 핀치 줌 지원
+
+- 모바일에서 핀치 줌 지원
 
 ### 6-3. 노드 수 가이드라인
 
@@ -268,6 +280,7 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 **현재**: 정적 SVG
 **장기 개선**: React Flow 또는 D3.js로 클릭 가능한 아키텍처 뷰
+
 - 노드 클릭 → 해당 문서 페이지로 이동
 - 호버 → 모듈 요약 팝오버
 
@@ -348,6 +361,7 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 **현재**: 모든 섹션이 동일한 흰 배경
 **개선**: 레이어별 미세 배경색 차이
+
 - Core: 연보라 배경
 - Infra: 연파랑 배경
 - Leaf: 연주황 배경
@@ -361,6 +375,7 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 **현재**: 정적 Mermaid 다이어그램
 **장기**: React Flow 기반 클릭 가능한 아키텍처 맵
+
 - 각 노드 클릭 → 해당 모듈 Deep Dive 섹션으로 스크롤
 - 호버 → 모듈 요약 + 의존성 하이라이트
 
@@ -384,6 +399,7 @@ Dark:  background #0f172a, primaryColor #1e293b
 **장기**: MDX로 마이그레이션 → 마크다운 기반 문서 작성
 
 **장점**:
+
 - 비개발자도 문서 수정 가능
 - 빌드 타임 콘텐츠 검증
 - 자동 TOC 생성
@@ -393,6 +409,7 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 **벤치마크**: Algolia DocSearch v4의 "Ask AI" 기능
 **구현**: 검색 모달에 "AI에게 물어보기" 탭 추가
+
 - 사용자의 자연어 질문 → 관련 문서 섹션 자동 추출
 
 ### Phase C: 버전 관리
@@ -447,13 +464,13 @@ Dark:  background #0f172a, primaryColor #1e293b
 
 ## 참고 자료
 
-| 자료 | URL | 핵심 인사이트 |
-|------|-----|-------------|
-| React.dev | react.dev | Interactive Sandpack, Learn/Reference 분리 |
-| Stripe Docs | docs.stripe.com | Markdoc 빌드타임 검증, 언어 탭 |
-| Tailwind Docs | tailwindcss.com/docs | 300+ 페이지 flat sidebar, auto-scroll |
-| Next.js Docs | nextjs.org/docs | 3-column layout, feedback widget |
-| Spring Boot | spring.io/projects | 버전 관리, 크로스 프로젝트 링크 |
-| Algolia DocSearch | docsearch.algolia.com | Cmd+K 검색 + AI Ask |
-| WCAG 2.2 | w3.org/WAI | 대비율 4.5:1, 타겟 크기 24x24 |
-| Mermaid Best Practices | mermaid.js.org | 7-12 노드/다이어그램, ELK 렌더러 |
+| 자료                   | URL                   | 핵심 인사이트                              |
+| ---------------------- | --------------------- | ------------------------------------------ |
+| React.dev              | react.dev             | Interactive Sandpack, Learn/Reference 분리 |
+| Stripe Docs            | docs.stripe.com       | Markdoc 빌드타임 검증, 언어 탭             |
+| Tailwind Docs          | tailwindcss.com/docs  | 300+ 페이지 flat sidebar, auto-scroll      |
+| Next.js Docs           | nextjs.org/docs       | 3-column layout, feedback widget           |
+| Spring Boot            | spring.io/projects    | 버전 관리, 크로스 프로젝트 링크            |
+| Algolia DocSearch      | docsearch.algolia.com | Cmd+K 검색 + AI Ask                        |
+| WCAG 2.2               | w3.org/WAI            | 대비율 4.5:1, 타겟 크기 24x24              |
+| Mermaid Best Practices | mermaid.js.org        | 7-12 노드/다이어그램, ELK 렌더러           |

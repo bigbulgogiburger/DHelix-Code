@@ -43,7 +43,11 @@ const dualModelChart = `graph TD
 
 export function LLMSection() {
   return (
-    <section id="llm" className="py-16 bg-blue-50/50" style={{ paddingTop: "64px", paddingBottom: "64px" }}>
+    <section
+      id="llm"
+      className="py-16 bg-blue-50/50"
+      style={{ paddingTop: "64px", paddingBottom: "64px" }}
+    >
       <div className="center-container">
         <RevealOnScroll>
           <SectionHeader
@@ -63,35 +67,79 @@ export function LLMSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={llmPipelineChart} title="LLM 요청 처리 파이프라인" titleColor="blue" />
+          <MermaidDiagram
+            chart={llmPipelineChart}
+            title="LLM 요청 처리 파이프라인"
+            titleColor="blue"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <MermaidDiagram chart={dualModelChart} title="Dual-Model Router — 단계별 모델 전환" titleColor="purple" />
+          <MermaidDiagram
+            chart={dualModelChart}
+            title="Dual-Model Router — 단계별 모델 전환"
+            titleColor="purple"
+          />
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4" style={{ marginTop: "32px", marginBottom: "16px" }}>모델 설정 우선순위</h3>
-          <div className="border border-[#e2e8f0] rounded-lg overflow-hidden bg-white" style={{ marginBottom: "24px" }}>
+          <h3
+            className="text-lg font-semibold text-gray-900 mb-4"
+            style={{ marginTop: "32px", marginBottom: "16px" }}
+          >
+            모델 설정 우선순위
+          </h3>
+          <div
+            className="border border-[#e2e8f0] rounded-lg overflow-hidden bg-white"
+            style={{ marginBottom: "24px" }}
+          >
             <table className="w-full border-collapse">
               <thead>
                 <tr>
-                  <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">우선순위</th>
-                  <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">설정 소스</th>
-                  <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">설명</th>
+                  <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">
+                    우선순위
+                  </th>
+                  <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">
+                    설정 소스
+                  </th>
+                  <th className="p-3 px-4 text-left text-[11px] font-bold uppercase tracking-wider text-gray-500 bg-gray-50 border-b border-gray-200">
+                    설명
+                  </th>
                 </tr>
               </thead>
               <tbody className="text-sm">
                 {[
-                  { p: "1 (최고)", color: "text-red-600", src: "LOCAL_API_BASE_URL + LOCAL_MODEL", desc: "환경변수 로컬 모델. 무조건 최우선" },
-                  { p: "2", color: "text-amber-600", src: "CLI --model 플래그", desc: "실행 시 명시적 지정" },
-                  { p: "3", color: "text-amber-600", src: "/model 슬래시 명령", desc: "세션 중 모델 변경" },
-                  { p: "4", color: "text-blue-600", src: "settings.json → model", desc: "프로젝트/사용자 설정" },
+                  {
+                    p: "1 (최고)",
+                    color: "text-red-600",
+                    src: "LOCAL_API_BASE_URL + LOCAL_MODEL",
+                    desc: "환경변수 로컬 모델. 무조건 최우선",
+                  },
+                  {
+                    p: "2",
+                    color: "text-amber-600",
+                    src: "CLI --model 플래그",
+                    desc: "실행 시 명시적 지정",
+                  },
+                  {
+                    p: "3",
+                    color: "text-amber-600",
+                    src: "/model 슬래시 명령",
+                    desc: "세션 중 모델 변경",
+                  },
+                  {
+                    p: "4",
+                    color: "text-blue-600",
+                    src: "settings.json → model",
+                    desc: "프로젝트/사용자 설정",
+                  },
                   { p: "5", color: "text-gray-400", src: "defaults.ts", desc: "하드코딩 기본값" },
                 ].map((row, i) => (
                   <tr key={i} className="hover:bg-gray-50 border-b border-gray-100">
                     <td className={`p-3 px-4 text-sm font-extrabold ${row.color}`}>{row.p}</td>
-                    <td className="p-3 px-4 text-sm font-mono text-cyan-600 font-semibold">{row.src}</td>
+                    <td className="p-3 px-4 text-sm font-mono text-cyan-600 font-semibold">
+                      {row.src}
+                    </td>
                     <td className="p-3 px-4 text-sm">{row.desc}</td>
                   </tr>
                 ))}
@@ -101,12 +149,14 @@ export function LLMSection() {
         </RevealOnScroll>
 
         <RevealOnScroll>
-          <ImplDirection items={[
-            "<strong>새 LLM 제공자 추가</strong>: LLMProvider 인터페이스 구현 → model-capabilities.ts에 capabilities 등록",
-            "<strong>Dual Model 확장</strong>: TaskPhase에 'debug' | 'test' 추가 → 디버깅 전문 모델 라우팅",
-            "<strong>스트리밍 최적화</strong>: 현재 SSE → WebSocket 지원 추가로 양방향 통신 가능",
-            "<strong>비용 최적화</strong>: 간단한 질문은 자동으로 저비용 모델 → 복잡한 작업만 고비용 모델",
-          ]} />
+          <ImplDirection
+            items={[
+              "<strong>새 LLM 제공자 추가</strong>: LLMProvider 인터페이스 구현 → model-capabilities.ts에 capabilities 등록",
+              "<strong>Dual Model 확장</strong>: TaskPhase에 'debug' | 'test' 추가 → 디버깅 전문 모델 라우팅",
+              "<strong>스트리밍 최적화</strong>: 현재 SSE → WebSocket 지원 추가로 양방향 통신 가능",
+              "<strong>비용 최적화</strong>: 간단한 질문은 자동으로 저비용 모델 → 복잡한 작업만 고비용 모델",
+            ]}
+          />
         </RevealOnScroll>
       </div>
     </section>

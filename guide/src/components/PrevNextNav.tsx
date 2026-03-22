@@ -208,8 +208,7 @@ export function PrevNextNav() {
   if (currentIndex === -1) return null;
 
   const prev = currentIndex > 0 ? docOrder[currentIndex - 1] : null;
-  const next =
-    currentIndex < docOrder.length - 1 ? docOrder[currentIndex + 1] : null;
+  const next = currentIndex < docOrder.length - 1 ? docOrder[currentIndex + 1] : null;
 
   return (
     <nav
