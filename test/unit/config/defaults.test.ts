@@ -9,7 +9,7 @@ describe("DEFAULT_CONFIG", () => {
     expect(DEFAULT_CONFIG.llm.temperature).toBe(0.0);
     expect(DEFAULT_CONFIG.llm.maxTokens).toBe(32768);
     expect(DEFAULT_CONFIG.llm.contextWindow).toBe(1_000_000);
-    expect(DEFAULT_CONFIG.llm.timeout).toBe(60_000);
+    expect(DEFAULT_CONFIG.llm.timeout).toBe(120_000);
   });
 
   it("should have permission mode", () => {

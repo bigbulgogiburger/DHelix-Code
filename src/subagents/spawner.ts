@@ -34,8 +34,9 @@ import { mkdir, writeFile, readFile, readdir, stat } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { type LLMProvider, type ChatMessage } from "../llm/provider.js";
-import { type ToolCallStrategy } from "../llm/tool-call-strategy.js";
+import { type ToolCallStrategy, selectStrategy } from "../llm/tool-call-strategy.js";
 import { ToolRegistry } from "../tools/registry.js";
+import { createAgentTool } from "../tools/definitions/agent.js";
 import { runAgentLoop, type AgentLoopResult } from "../core/agent-loop.js";
 import { buildSystemPrompt, type SessionState } from "../core/system-prompt-builder.js";
 import { createEventEmitter, type AppEventEmitter } from "../utils/events.js";
@@ -62,6 +63,9 @@ const AGENT_HISTORY_DIR = join(homedir(), ".dbcode", "agent-history");
 
 /** 디스크에 유지할 최대 히스토리 파일 수 — 초과 시 오래된 것부터 삭제 */
 const MAX_PERSISTED_HISTORIES = 20;
+
+/** Maximum nesting depth for subagents to prevent infinite recursion */
+const MAX_NESTING_DEPTH = 3;
 
 /**
  * 서브에이전트 실행 에러 클래스
@@ -137,6 +141,30 @@ export interface SubagentConfig {
   readonly skills?: readonly string[];
   /** 영속적 메모리의 저장 범위 */
   readonly memory?: AgentMemoryScope;
+  /** 응답 언어 로케일 (예: "ko", "en", "ja") — 서브에이전트 프롬프트에 전달 */
+  readonly locale?: string;
+  /** 프로젝트 지시사항 (DBCODE.md 내용) — 서브에이전트가 프로젝트 컨벤션을 따르도록 */
+  readonly projectInstructions?: string;
+  /** 응답 톤/스타일 (예: "normal", "cute", "senior") */
+  readonly tone?: string;
+  /** 자동 메모리 콘텐츠 (MEMORY.md 내용) */
+  readonly autoMemoryContent?: string;
+  /** 저장소 맵 콘텐츠 (코드베이스 구조 정보) */
+  readonly repoMapContent?: string;
+  /** 헤드리스 모드 여부 */
+  readonly isHeadless?: boolean;
+  /** Extended thinking 설정 (Claude 모델 전용) — 서브에이전트의 확장 사고 활성화 */
+  readonly thinking?: import("../llm/provider.js").ThinkingConfig;
+  /** Current nesting depth (0 for top-level subagent, incremented for each level) */
+  readonly depth?: number;
+  /** 도구 실행 전 권한 확인 콜백 — 서브에이전트에서도 동일한 권한 검사를 적용 */
+  readonly checkPermission?: (
+    call: import("../tools/types.js").ExtractedToolCall,
+  ) => Promise<import("../core/agent-loop.js").PermissionResult>;
+  /** 파일 변경 시 자동 체크포인트 매니저 — 서브에이전트 파일 변경도 추적 */
+  readonly checkpointManager?: import("../core/checkpoint-manager.js").CheckpointManager;
+  /** 세션 ID (체크포인트 메타데이터용) */
+  readonly sessionId?: string;
 }
 
 /**
@@ -159,6 +187,8 @@ export interface SubagentResult {
   readonly workingDirectory?: string;
   /** 실행 중 사용된 공유 상태 인스턴스 */
   readonly sharedState?: SharedAgentState;
+  /** 서브에이전트의 토큰 사용량 통계 */
+  readonly usage?: import("../core/agent-loop.js").AggregatedUsage;
 }
 
 /**
@@ -294,6 +324,87 @@ export async function getAgentHistory(
 }
 
 /**
+ * 최근 에이전트 히스토리 항목을 나타내는 인터페이스
+ */
+export interface RecentAgentEntry {
+  /** 에이전트 고유 ID (UUID) — resume 시 이 값을 전달 */
+  readonly agentId: string;
+  /** 에이전트에게 전달했던 최초 프롬프트(요약) */
+  readonly promptSummary: string;
+  /** 에이전트의 마지막 응답(요약) */
+  readonly lastResponseSummary: string;
+  /** 파일 수정 시각 (밀리초 기준 타임스탬프) */
+  readonly modifiedAt: number;
+}
+
+/**
+ * 최근 서브에이전트 히스토리 목록을 조회합니다.
+ *
+ * 디스크에 저장된 에이전트 히스토리 파일들을 수정 시각 기준 최신순으로 정렬하여 반환합니다.
+ * 각 항목에는 에이전트 ID, 최초 프롬프트 요약, 마지막 응답 요약이 포함됩니다.
+ *
+ * @param limit - 반환할 최대 항목 수 (기본값: 5)
+ * @returns 최근 에이전트 히스토리 배열 (최신순)
+ */
+export async function listRecentAgents(limit = 5): Promise<readonly RecentAgentEntry[]> {
+  try {
+    const entries = await readdir(AGENT_HISTORY_DIR);
+    const jsonFiles = entries.filter((f) => f.endsWith(".json"));
+
+    if (jsonFiles.length === 0) return [];
+
+    // 파일 수정 시각을 조회하여 최신순 정렬
+    const fileStats = await Promise.all(
+      jsonFiles.map(async (name) => {
+        const fp = join(AGENT_HISTORY_DIR, name);
+        const s = await stat(fp);
+        return { name, mtimeMs: s.mtimeMs, path: fp };
+      }),
+    );
+    fileStats.sort((a, b) => b.mtimeMs - a.mtimeMs); // 최신 먼저
+
+    const results: RecentAgentEntry[] = [];
+
+    for (const file of fileStats.slice(0, limit)) {
+      try {
+        const raw = await readFile(file.path, "utf-8");
+        const messages = JSON.parse(raw) as ChatMessage[];
+        if (!Array.isArray(messages) || messages.length === 0) continue;
+
+        // 첫 번째 user 메시지에서 프롬프트 요약 추출
+        const firstUser = messages.find((m) => m.role === "user");
+        const promptSummary = truncateSummary(firstUser?.content ?? "(no prompt)", 80);
+
+        // 마지막 assistant 메시지에서 응답 요약 추출
+        const lastAssistant = [...messages].reverse().find((m) => m.role === "assistant");
+        const lastResponseSummary = truncateSummary(lastAssistant?.content ?? "(no response)", 80);
+
+        const agentId = file.name.replace(".json", "");
+        results.push({
+          agentId,
+          promptSummary,
+          lastResponseSummary,
+          modifiedAt: file.mtimeMs,
+        });
+      } catch {
+        // 개별 파일 파싱 실패는 무시
+      }
+    }
+
+    return results;
+  } catch {
+    return []; // 디렉토리가 없는 경우 등
+  }
+}
+
+/** 문자열을 지정 길이로 잘라 요약을 만듭니다 (줄바꿈 제거) */
+function truncateSummary(text: string, maxLen: number): string {
+  const oneLine = text.replace(/\n/g, " ").trim();
+  if (oneLine.length <= maxLen) return oneLine;
+  return oneLine.slice(0, maxLen - 3) + "...";
+}
+
+/**
  * 허용 목록(allowlist)으로 필터링된 도구 레지스트리를 생성합니다.
  *
  * 원본 레지스트리에서 allowedTools에 포함된 도구만 새 레지스트리에 등록합니다.
@@ -407,6 +518,13 @@ function buildSubagentSystemPrompt(
   options?: {
     readonly capabilityTier?: import("../llm/model-capabilities.js").CapabilityTier;
     readonly workingDirectory?: string;
+    readonly locale?: string;
+    readonly projectInstructions?: string;
+    readonly tone?: string;
+    readonly autoMemoryContent?: string;
+    readonly repoMapContent?: string;
+    readonly isHeadless?: boolean;
+    readonly extendedThinkingEnabled?: boolean;
   },
 ): string {
   const toolNames = toolRegistry.getAll().map((t) => t.name);
@@ -418,7 +536,7 @@ function buildSubagentSystemPrompt(
     isSubagent: true,
     subagentType: builtinTypes.has(type) ? (type as "explore" | "plan" | "general") : undefined,
     availableTools: toolNames,
-    extendedThinkingEnabled: false,
+    extendedThinkingEnabled: options?.extendedThinkingEnabled ?? false,
     features: {},
   };
 
@@ -427,6 +545,12 @@ function buildSubagentSystemPrompt(
     sessionState,
     capabilityTier: options?.capabilityTier,
     workingDirectory: options?.workingDirectory,
+    locale: options?.locale,
+    projectInstructions: options?.projectInstructions,
+    tone: options?.tone,
+    autoMemoryContent: options?.autoMemoryContent,
+    repoMapContent: options?.repoMapContent,
+    isHeadless: options?.isHeadless,
   });
 }
 
@@ -583,6 +707,17 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
     disallowedTools,
     skills,
     memory,
+    locale,
+    projectInstructions,
+    tone,
+    autoMemoryContent,
+    repoMapContent,
+    isHeadless,
+    thinking,
+    depth,
+    checkPermission,
+    checkpointManager,
+    sessionId,
   } = config;
 
   // 고유한 에이전트 ID 생성 (UUID v4)
@@ -612,6 +747,17 @@ export async function spawnSubagent(config: SubagentConfig): Promise<SubagentRes
     disallowedTools,
     skills,
     memory,
+    locale,
+    projectInstructions,
+    tone,
+    autoMemoryContent,
+    repoMapContent,
+    isHeadless,
+    thinking,
+    depth,
+    checkPermission,
+    checkpointManager,
+    sessionId,
   };
 
   // ── 백그라운드 모드: 즉시 반환하고 나중에 이벤트로 결과 알림 ──
@@ -693,12 +839,24 @@ async function executeSubagent(params: {
   disallowedTools?: readonly string[];
   skills?: readonly string[];
   memory?: AgentMemoryScope;
+  locale?: string;
+  projectInstructions?: string;
+  tone?: string;
+  autoMemoryContent?: string;
+  repoMapContent?: string;
+  isHeadless?: boolean;
+  thinking?: import("../llm/provider.js").ThinkingConfig;
+  depth?: number;
+  checkPermission?: (
+    call: import("../tools/types.js").ExtractedToolCall,
+  ) => Promise<import("../core/agent-loop.js").PermissionResult>;
+  checkpointManager?: import("../core/checkpoint-manager.js").CheckpointManager;
+  sessionId?: string;
 }): Promise<SubagentResult> {
   const {
     agentId,
     type,
     prompt,
-    strategy,
     toolRegistry,
     maxIterations,
     signal,
@@ -711,7 +869,28 @@ async function executeSubagent(params: {
     maxContextTokens,
     agentDefinition,
     disallowedTools,
+    locale,
+    projectInstructions,
+    tone,
+    autoMemoryContent,
+    repoMapContent,
+    isHeadless,
+    thinking,
+    depth,
+    checkPermission,
+    checkpointManager,
+    sessionId,
   } = params;
+
+  // Nesting depth check — prevent infinite recursion
+  const currentDepth = depth ?? 0;
+  if (currentDepth >= MAX_NESTING_DEPTH) {
+    throw new SubagentError(`Maximum subagent nesting depth (${MAX_NESTING_DEPTH}) exceeded`, {
+      agentId,
+      type,
+      depth: currentDepth,
+    });
+  }
 
   // 1단계: 모델 오버라이드 적용 — 별칭을 실제 모델로 변환하고 프로바이더 선택
   const { model: effectiveModel, client: effectiveClient } = resolveModelForSubagent(
@@ -719,9 +898,13 @@ async function executeSubagent(params: {
     params.client,
     modelOverride,
   );
+  // Recalculate strategy based on effective model — prevents strategy/model mismatch
+  // when subagent uses a different model than parent (e.g., parent=llama3 → child=claude)
+  const effectiveStrategy = selectStrategy(effectiveModel);
+
   trace(
     "subagent",
-    `Spawning ${type}: model=${effectiveModel}, client=${effectiveClient.constructor.name}, agentId=${agentId}`,
+    `Spawning ${type}: model=${effectiveModel}, strategy=${effectiveStrategy.name}, client=${effectiveClient.constructor.name}, agentId=${agentId}, depth=${currentDepth}`,
   );
 
   let effectiveWorkingDir = params.workingDirectory;
@@ -763,6 +946,49 @@ async function executeSubagent(params: {
       agentRegistry = planSafe;
     }
 
+    // 4.5단계: 중첩 서브에이전트 도구 필터 상속 (보안)
+    // explore/plan 유형은 서브에이전트를 생성할 필요가 없으므로 "agent" 도구를 제거
+    // general 유형은 필터링된 레지스트리로 새 agent 도구를 생성하여
+    // 중첩 서브에이전트가 부모의 도구 제한을 우회하지 못하게 함
+    const hasAgentTool = agentRegistry.getAll().some((t) => t.name === "agent");
+    if (type === "explore" || type === "plan") {
+      // explore/plan은 조사/계획 전용이므로 하위 에이전트 생성 기능 제거
+      if (hasAgentTool) {
+        const withoutAgent = new ToolRegistry();
+        for (const tool of agentRegistry.getAll()) {
+          if (tool.name !== "agent") {
+            withoutAgent.register(tool);
+          }
+        }
+        agentRegistry = withoutAgent;
+      }
+    } else if (hasAgentTool) {
+      // general 및 커스텀 유형: 필터링된 레지스트리를 기반으로 agent 도구를 재생성
+      // 이렇게 하면 중첩 서브에이전트가 부모의 필터링된 도구만 사용 가능
+      const withoutAgent = new ToolRegistry();
+      for (const tool of agentRegistry.getAll()) {
+        if (tool.name !== "agent") {
+          withoutAgent.register(tool);
+        }
+      }
+      // 필터링된 레지스트리로 새로운 agent 도구를 생성하여 등록
+      // deps.toolRegistry가 이제 필터링된 레지스트리를 가리키므로
+      // 중첩 서브에이전트는 이 범위를 초과할 수 없음
+      withoutAgent.register(
+        createAgentTool({
+          client: effectiveClient,
+          model: effectiveModel,
+          strategy: effectiveStrategy,
+          toolRegistry: withoutAgent,
+          events: parentEvents,
+          locale,
+          projectInstructions,
+          thinking,
+        }),
+      );
+      agentRegistry = withoutAgent;
+    }
+
     // 5단계: 시스템 프롬프트 구성
     // 커스텀 에이전트 정의가 있으면 그 본문을 사용, 없으면 유형 기반 기본 프롬프트 생성
     const subagentModelCaps = getModelCapabilities(effectiveModel);
@@ -771,10 +997,46 @@ async function executeSubagent(params: {
       : buildSubagentSystemPrompt(type, agentRegistry, {
           capabilityTier: subagentModelCaps.capabilityTier,
           workingDirectory: effectiveWorkingDir,
+          locale,
+          projectInstructions,
+          tone,
+          autoMemoryContent,
+          repoMapContent,
+          isHeadless,
+          extendedThinkingEnabled: thinking?.type === "enabled",
         });
 
     // 격리된 이벤트 발행기 생성 — 서브에이전트의 이벤트가 부모에게 직접 전파되지 않음
     const events = createEventEmitter();
+
+    // Event bridge: forward subagent progress events to parent for UI visibility
+    // Only forwarding tool-level events — LLM text deltas intentionally excluded
+    // to avoid mixing subagent text output with parent conversation
+    if (parentEvents) {
+      events.on("tool:start", (data) => {
+        parentEvents.emit("tool:start", {
+          ...data,
+          subagentId: agentId,
+          subagentType: type,
+        });
+      });
+
+      events.on("tool:complete", (data) => {
+        parentEvents.emit("tool:complete", {
+          ...data,
+          subagentId: agentId,
+          subagentType: type,
+        });
+      });
+
+      // Forward usage events for cost tracking
+      events.on("agent:usage-update", (data) => {
+        parentEvents.emit("agent:usage-update", {
+          ...data,
+          subagentId: agentId,
+        });
+      });
+    }
 
     // 6단계: 초기 메시지 구성
     const initialMessages: ChatMessage[] = [];
@@ -826,7 +1088,7 @@ async function executeSubagent(params: {
           client: effectiveClient,
           model: effectiveModel,
           toolRegistry: agentRegistry,
-          strategy,
+          strategy: effectiveStrategy,
           events,
           maxIterations,
           signal,
@@ -835,6 +1097,10 @@ async function executeSubagent(params: {
           maxTokens: subagentModelCaps.maxOutputTokens,
           useStreaming: true,
           isSubagent: true,
+          thinking,
+          checkPermission,
+          checkpointManager,
+          sessionId,
         },
         initialMessages,
       ),
@@ -874,6 +1140,7 @@ async function executeSubagent(params: {
       messages: result.messages,
       workingDirectory: effectiveWorkingDir,
       sharedState,
+      usage: result.usage,
     };
   } catch (error) {
     // 에러 발생 시 공유 상태에 실패 보고

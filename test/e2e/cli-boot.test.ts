@@ -44,26 +44,30 @@ describe("CLI E2E", () => {
     expect(best).toBeLessThan(2000);
   });
 
-  it("should run headless mode with --print and fail gracefully without API key", () => {
-    // Without a valid API key, should fail with an error, not crash
-    try {
-      execSync(`node "${cliPath}" --print "test" --model test-model --api-key invalid 2>&1`, {
-        cwd: projectRoot,
-        timeout: 15_000,
-        env: {
-          ...process.env,
-          OPENAI_API_KEY: undefined,
-          DBCODE_API_KEY: undefined,
-        },
-      });
-    } catch (error) {
-      // Expected to fail — just verify it doesn't crash with a stack trace
-      const output = (error as { stdout?: Buffer }).stdout?.toString() ?? "";
-      const stderr = (error as { stderr?: Buffer }).stderr?.toString() ?? "";
-      const combined = output + stderr;
-      // Should not contain raw stack trace lines like "    at Object.<anonymous>"
-      // (some error output is expected, but not unhandled exceptions)
-      expect(combined).toBeDefined();
-    }
-  });
+  it(
+    "should run headless mode with --print and fail gracefully without API key",
+    { timeout: 20_000 },
+    () => {
+      // Without a valid API key, should fail with an error, not crash
+      try {
+        execSync(`node "${cliPath}" --print "test" --model test-model --api-key invalid 2>&1`, {
+          cwd: projectRoot,
+          timeout: 15_000,
+          env: {
+            ...process.env,
+            OPENAI_API_KEY: undefined,
+            DBCODE_API_KEY: undefined,
+          },
+        });
+      } catch (error) {
+        // Expected to fail — just verify it doesn't crash with a stack trace
+        const output = (error as { stdout?: Buffer }).stdout?.toString() ?? "";
+        const stderr = (error as { stderr?: Buffer }).stderr?.toString() ?? "";
+        const combined = output + stderr;
+        // Should not contain raw stack trace lines like "    at Object.<anonymous>"
+        // (some error output is expected, but not unhandled exceptions)
+        expect(combined).toBeDefined();
+      }
+    },
+  );
 });

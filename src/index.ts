@@ -327,12 +327,17 @@ program
       const strategy = selectStrategy(config.llm.model);
 
       // Agent 도구 등록 — 서브에이전트 생성 기능 (클라이언트, 모델, 전략, 도구 필요)
+      // tone, autoMemoryContent, repoMapContent는 세션 시작 후
+      // useAgentLoop에서 로드되므로 여기서는 초기값만 전달
       toolRegistry.register(
         createAgentTool({
           client,
           model: config.llm.model,
           strategy,
           toolRegistry,
+          locale: config.locale,
+          tone: config.tone,
+          isHeadless: !!opts.print,
         }),
       );
 

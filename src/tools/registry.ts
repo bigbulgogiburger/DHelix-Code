@@ -105,6 +105,18 @@ export class ToolRegistry {
   }
 
   /**
+   * 레지스트리에서 도구를 제거합니다.
+   *
+   * 도구가 존재하지 않으면 아무 일도 하지 않습니다.
+   *
+   * @param name - 제거할 도구의 이름
+   * @returns 도구가 제거되었으면 true, 존재하지 않았으면 false
+   */
+  unregister(name: string): boolean {
+    return this.tools.delete(name);
+  }
+
+  /**
    * 특정 이름의 도구가 등록되어 있는지 확인
    *
    * @param name - 확인할 도구 이름

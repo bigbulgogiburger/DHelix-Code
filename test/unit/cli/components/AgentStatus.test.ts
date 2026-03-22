@@ -93,8 +93,8 @@ describe("AgentStatus", () => {
       refIndex = 0;
       AgentStatus({});
 
-      // First effect is star animation
-      expect(effectCallbacks.length).toBe(3);
+      // Two effects: star animation + elapsed time (message cycling was removed)
+      expect(effectCallbacks.length).toBe(2);
 
       // starIndex starts at 0 (first useState)
       expect(stateStore.get(0)).toBe(0);
@@ -138,17 +138,7 @@ describe("AgentStatus", () => {
     });
   });
 
-  describe("message cycling", () => {
-    it("should register a message cycling interval", () => {
-      stateIndex = 0;
-      refIndex = 0;
-      AgentStatus({});
-
-      // Third effect is message cycling
-      const cleanup = effectCallbacks[2]();
-      expect(typeof cleanup).toBe("function");
-    });
-
+  describe("message selection", () => {
     it("should initialize with a valid message index", () => {
       stateIndex = 0;
       refIndex = 0;
@@ -157,7 +147,8 @@ describe("AgentStatus", () => {
       // messageIndex is state index 2, initialized via lazy initializer
       const messageIndex = stateStore.get(2) as number;
       expect(messageIndex).toBeGreaterThanOrEqual(0);
-      expect(messageIndex).toBeLessThan(15);
+      // STATUS_MESSAGES has 26 entries
+      expect(messageIndex).toBeLessThan(26);
     });
   });
 
@@ -171,12 +162,12 @@ describe("AgentStatus", () => {
   });
 
   describe("all effects return cleanup functions", () => {
-    it("should return cleanup for all three intervals", () => {
+    it("should return cleanup for all two intervals", () => {
       stateIndex = 0;
       refIndex = 0;
       AgentStatus({});
 
-      expect(effectCallbacks).toHaveLength(3);
+      expect(effectCallbacks).toHaveLength(2);
 
       for (const effect of effectCallbacks) {
         const cleanup = effect();

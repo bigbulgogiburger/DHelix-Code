@@ -233,6 +233,40 @@ export class MCPManager {
   }
 
   /**
+   * 런타임에 MCP 서버를 추가하고 도구를 등록합니다 (핫 리로드).
+   *
+   * 이미 연결된 서버가 있으면 기존 연결을 끊고 재연결합니다.
+   * connectServer의 래퍼로, 핫 리로드 시나리오에서 사용됩니다.
+   *
+   * @param name - 서버 이름
+   * @param config - 서버 연결 설정
+   * @returns 등록된 도구 이름 목록
+   */
+  async addServerRuntime(name: string, config: MCPServerConfig): Promise<readonly string[]> {
+    return this.connectServer(name, config);
+  }
+
+  /**
+   * 런타임에 MCP 서버를 제거합니다 (핫 리로드).
+   *
+   * 연결을 해제하고, 브리지에서 도구를 제거하고, 클라이언트를 정리합니다.
+   *
+   * @param name - 제거할 서버 이름
+   * @returns 서버가 존재하여 제거되었으면 true, 없으면 false
+   */
+  async removeServerRuntime(name: string): Promise<boolean> {
+    const client = this.clients.get(name);
+    if (!client) {
+      return false;
+    }
+
+    await client.disconnect();
+    this.bridge.unregisterServerTools(name);
+    this.clients.delete(name);
+    return true;
+  }
+
+  /**
    * 모든 연결된 MCP 서버의 연결을 해제합니다.
    *
    * Promise.allSettled를 사용하여 일부 서버 해제가 실패해도

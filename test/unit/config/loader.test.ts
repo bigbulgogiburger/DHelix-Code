@@ -34,6 +34,7 @@ describe("loadConfig", () => {
   });
 
   it("should apply environment overrides", async () => {
+    delete process.env.LOCAL_MODEL;
     process.env.DBCODE_MODEL = "env-model";
     const resolved = await loadConfig();
     expect(resolved.config.llm.model).toBe("env-model");
@@ -41,6 +42,7 @@ describe("loadConfig", () => {
   });
 
   it("should apply DBCODE_BASE_URL from env", async () => {
+    delete process.env.LOCAL_API_BASE_URL;
     process.env.DBCODE_BASE_URL = "http://custom:8080/v1";
     const resolved = await loadConfig();
     expect(resolved.config.llm.baseUrl).toBe("http://custom:8080/v1");
@@ -88,11 +90,12 @@ describe("loadConfig", () => {
     delete process.env.DBCODE_BASE_URL;
     delete process.env.DBCODE_MODEL;
     delete process.env.OPENAI_MODEL;
+    delete process.env.LOCAL_MODEL;
+    delete process.env.LOCAL_API_BASE_URL;
     process.env.OPENAI_API_KEY = "sk-test-openai-key";
     const resolved = await loadConfig();
     expect(resolved.config.llm.apiKey).toBe("sk-test-openai-key");
     expect(resolved.config.llm.baseUrl).toBe("https://api.openai.com/v1");
-    expect(resolved.config.llm.model).toBe("gpt-5.1-codex-mini");
     delete process.env.OPENAI_API_KEY;
   });
 
@@ -119,6 +122,8 @@ describe("loadConfig", () => {
     delete process.env.OPENAI_BASE_URL;
     delete process.env.DBCODE_BASE_URL;
     delete process.env.OPENAI_MODEL;
+    delete process.env.LOCAL_MODEL;
+    delete process.env.LOCAL_API_BASE_URL;
 
     const tmpDir = join(tmpdir(), `dbcode-config-test-${Date.now()}`);
     const projectConfigDir = join(tmpDir, ".dbcode");

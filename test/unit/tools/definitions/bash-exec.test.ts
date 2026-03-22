@@ -331,22 +331,25 @@ describe("BackgroundProcessManager", () => {
     ]);
   });
 
-  it("should kill by process ID with custom signal", async () => {
-    const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
-    outputFilesToClean.push(outputFile);
+  it.skipIf(process.platform === "win32")(
+    "should kill by process ID with custom signal",
+    async () => {
+      const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
+      outputFilesToClean.push(outputFile);
 
-    await new Promise((resolve) => setTimeout(resolve, 50));
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const killed = backgroundProcessManager.kill(processId, "SIGKILL");
-    expect(killed).toBe(true);
+      const killed = backgroundProcessManager.kill(processId, "SIGKILL");
+      expect(killed).toBe(true);
 
-    await new Promise<void>((resolve) => {
-      backgroundProcessManager.onComplete(processId, () => resolve());
-    });
+      await new Promise<void>((resolve) => {
+        backgroundProcessManager.onComplete(processId, () => resolve());
+      });
 
-    const status = backgroundProcessManager.getStatus(processId);
-    expect(status!.running).toBe(false);
-  });
+      const status = backgroundProcessManager.getStatus(processId);
+      expect(status!.running).toBe(false);
+    },
+  );
 
   it("should return false when killing an unknown process", () => {
     const killed = backgroundProcessManager.kill("bg-nonexistent");

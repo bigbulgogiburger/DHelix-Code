@@ -55,6 +55,18 @@ export interface ToolContext {
   readonly activeClient?: import("../llm/provider.js").LLMProvider;
   /** 현재 활성 모델명 (동적 모델 전환 지원) */
   readonly activeModel?: string;
+  /** 모델의 능력 등급 — 도구 인자 보정 복잡도를 결정 */
+  readonly capabilityTier?: import("../llm/model-capabilities.js").CapabilityTier;
+  /** 도구 실행 전 권한 확인 콜백 — 서브에이전트에 전파하여 동일한 권한 검사 적용 */
+  readonly checkPermission?: (
+    call: ExtractedToolCall,
+  ) => Promise<import("../core/agent-loop.js").PermissionResult>;
+  /** 파일 변경 시 자동 체크포인트 매니저 — 서브에이전트에 전파하여 파일 변경 추적 */
+  readonly checkpointManager?: import("../core/checkpoint-manager.js").CheckpointManager;
+  /** 세션 ID — 체크포인트 메타데이터용 */
+  readonly sessionId?: string;
+  /** Extended thinking 설정 — 서브에이전트에 전파하여 동일한 사고 설정 적용 */
+  readonly thinking?: import("../llm/provider.js").ThinkingConfig;
 }
 
 /**

@@ -421,19 +421,24 @@ describe("Path filter", () => {
   });
 
   describe("sensitive system paths", () => {
-    it("should block /etc/shadow", () => {
+    // These tests use Unix-style absolute paths (/etc/shadow, etc.)
+    // On Windows, resolve("/home/user/project", "/etc/shadow") prepends the drive letter (e.g., C:/etc/shadow)
+    // which doesn't match the SENSITIVE_SYSTEM_PATHS list, so skip on Windows.
+    const isWindows = process.platform === "win32";
+
+    it.skipIf(isWindows)("should block /etc/shadow", () => {
       const result = checkPath("/etc/shadow", workDir);
       expect(result.safe).toBe(false);
       expect(result.reason).toContain("sensitive system file");
     });
 
-    it("should block /etc/passwd", () => {
+    it.skipIf(isWindows)("should block /etc/passwd", () => {
       const result = checkPath("/etc/passwd", workDir);
       expect(result.safe).toBe(false);
       expect(result.reason).toContain("sensitive system file");
     });
 
-    it("should block /etc/sudoers", () => {
+    it.skipIf(isWindows)("should block /etc/sudoers", () => {
       const result = checkPath("/etc/sudoers", workDir);
       expect(result.safe).toBe(false);
       expect(result.reason).toContain("sensitive system file");

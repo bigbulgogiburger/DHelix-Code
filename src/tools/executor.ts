@@ -81,6 +81,10 @@ export async function executeTool(
     capabilityTier?: CapabilityTier;
     activeClient?: LLMProvider;
     activeModel?: string;
+    checkPermission?: import("./types.js").ToolContext["checkPermission"];
+    checkpointManager?: import("./types.js").ToolContext["checkpointManager"];
+    sessionId?: string;
+    thinking?: import("./types.js").ToolContext["thinking"];
   },
 ): Promise<ToolResult> {
   // 도구별 타임아웃이 지정되어 있으면 사용, 없으면 전역 기본값 사용
@@ -112,6 +116,11 @@ export async function executeTool(
     toolCallId: options?.toolCallId,
     activeClient: options?.activeClient,
     activeModel: options?.activeModel,
+    capabilityTier: options?.capabilityTier,
+    checkPermission: options?.checkPermission,
+    checkpointManager: options?.checkpointManager,
+    sessionId: options?.sessionId,
+    thinking: options?.thinking,
   };
 
   try {
@@ -120,7 +129,7 @@ export async function executeTool(
     const correctedArgs = correctToolCall(
       args,
       workingDirectory,
-      options?.capabilityTier ?? "high",
+      context.capabilityTier ?? options?.capabilityTier ?? "high",
     );
     // Zod 스키마로 인수 검증 — 잘못된 인수면 에러를 던짐
     const validatedArgs = parseToolArguments(tool.parameterSchema, correctedArgs);
@@ -178,6 +187,10 @@ export async function executeToolCall(
     capabilityTier?: CapabilityTier;
     activeClient?: LLMProvider;
     activeModel?: string;
+    checkPermission?: import("./types.js").ToolContext["checkPermission"];
+    checkpointManager?: import("./types.js").ToolContext["checkpointManager"];
+    sessionId?: string;
+    thinking?: import("../llm/provider.js").ThinkingConfig;
   },
 ): Promise<ToolCallResult> {
   // 레지스트리에서 도구를 이름으로 조회
@@ -201,6 +214,10 @@ export async function executeToolCall(
     capabilityTier: options?.capabilityTier,
     activeClient: options?.activeClient,
     activeModel: options?.activeModel,
+    checkPermission: options?.checkPermission,
+    checkpointManager: options?.checkpointManager,
+    sessionId: options?.sessionId,
+    thinking: options?.thinking,
   });
   return {
     id: call.id,

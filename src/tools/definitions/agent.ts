@@ -26,7 +26,7 @@ import { type LLMProvider } from "../../llm/provider.js";
 import { type ToolCallStrategy } from "../../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../registry.js";
 import { type AppEventEmitter } from "../../utils/events.js";
-import { spawnSubagent, type SubagentType } from "../../subagents/spawner.js";
+import { spawnSubagent, listRecentAgents, type SubagentType } from "../../subagents/spawner.js";
 
 /**
  * 매개변수 스키마 — 서브에이전트의 작업, 유형, 실행 옵션을 정의
@@ -60,8 +60,9 @@ const paramSchema = z.object({
   /** 이전 서브에이전트 재개(선택사항) — 에이전트 ID를 전달하면 이전 세션을 이어받음 */
   resume: z
     .string()
+    .uuid()
     .optional()
-    .describe("Resume from a previous subagent by providing its agent ID"),
+    .describe("Resume from a previous subagent by providing its agent ID (UUID format)"),
   /** 허용 도구 목록(선택사항) — 서브에이전트가 사용할 수 있는 도구를 이 목록으로 제한 */
   allowed_tools: z
     .array(z.string())
@@ -88,6 +89,30 @@ export interface AgentToolDeps {
   readonly toolRegistry: ToolRegistry;
   /** 이벤트 발행기(선택사항) — 부모 에이전트의 이벤트 시스템에 연결 */
   readonly events?: AppEventEmitter;
+  /** 응답 언어 로케일 (예: "ko", "en") — 서브에이전트 프롬프트 언어 설정 */
+  readonly locale?: string;
+  /** 프로젝트 지시사항 (DBCODE.md 내용) — 서브에이전트가 프로젝트 컨벤션을 따르도록 */
+  readonly projectInstructions?: string;
+  /** 응답 톤/스타일 (예: "normal", "cute", "senior") */
+  readonly tone?: string;
+  /** 자동 메모리 콘텐츠 (MEMORY.md 내용) */
+  readonly autoMemoryContent?: string;
+  /** 저장소 맵 콘텐츠 (코드베이스 구조 정보) */
+  readonly repoMapContent?: string;
+  /** 헤드리스 모드 여부 */
+  readonly isHeadless?: boolean;
+  /** Current nesting depth — incremented when spawning child subagents */
+  readonly depth?: number;
+  /** Extended thinking 설정 (Claude 모델 전용) — 서브에이전트에 전파 */
+  readonly thinking?: import("../../llm/provider.js").ThinkingConfig;
+  /** 도구 실행 전 권한 확인 콜백 — 서브에이전트에서도 동일한 권한 검사를 적용 */
+  readonly checkPermission?: (
+    call: import("../types.js").ExtractedToolCall,
+  ) => Promise<import("../../core/agent-loop.js").PermissionResult>;
+  /** 파일 변경 시 자동 체크포인트 매니저 — 서브에이전트 파일 변경도 추적 */
+  readonly checkpointManager?: import("../../core/checkpoint-manager.js").CheckpointManager;
+  /** 세션 ID (체크포인트 메타데이터용) */
+  readonly sessionId?: string;
 }
 
 /**
@@ -133,10 +158,34 @@ export function createAgentTool(deps: AgentToolDeps): ToolDefinition<Params> {
         run_in_background: params.run_in_background,
         isolation: params.isolation,
         resume: params.resume,
+        locale: deps.locale,
+        projectInstructions: deps.projectInstructions,
+        tone: deps.tone,
+        autoMemoryContent: deps.autoMemoryContent,
+        repoMapContent: deps.repoMapContent,
+        isHeadless: deps.isHeadless,
+        depth: (deps.depth ?? 0) + 1,
+        thinking: context.thinking ?? deps.thinking,
+        checkPermission: context.checkPermission ?? deps.checkPermission,
+        checkpointManager: context.checkpointManager ?? deps.checkpointManager,
+        sessionId: context.sessionId ?? deps.sessionId,
       });
 
+      // 최근 에이전트 목록을 조회하여 resume 시 사용자 편의 제공
+      const recentAgents = await listRecentAgents(3);
+      const resumeHint =
+        recentAgents.length > 0
+          ? `\n\n[Resumable agents:\n${recentAgents
+              .map((a) => {
+                const id = a.agentId.slice(0, 8);
+                const prompt = a.promptSummary.slice(0, 30);
+                return `  ${id}… "${prompt}"`;
+              })
+              .join("\n")}]`
+          : "";
+
       return {
-        output: result.response,
+        output: result.response + resumeHint,
         isError: false,
         metadata: {
           agentId: result.agentId, // 서브에이전트 고유 ID (재개 시 사용)
@@ -145,6 +194,8 @@ export function createAgentTool(deps: AgentToolDeps): ToolDefinition<Params> {
           aborted: result.aborted, // 사용자에 의해 중단되었는지 여부
           workingDirectory: result.workingDirectory,
           description: params.description,
+          recentAgents, // 최근 에이전트 목록 (UI에서 선택용)
+          usage: result.usage, // 서브에이전트 토큰 사용량 통계
         },
       };
     } catch (error) {

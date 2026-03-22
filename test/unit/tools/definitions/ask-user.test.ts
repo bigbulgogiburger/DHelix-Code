@@ -16,19 +16,18 @@ describe("ask_user tool", () => {
   it("should return question in output", async () => {
     const result = await askUserTool.execute({ question: "What framework?" }, context);
     expect(result.isError).toBe(false);
-    expect(result.output).toContain("AWAITING_USER_INPUT");
+    expect(result.output).toContain("[Question for user]");
     expect(result.output).toContain("What framework?");
     expect(result.metadata?.question).toBe("What framework?");
   });
 
-  it("should include choices in output", async () => {
+  it("should include choices in metadata", async () => {
     const result = await askUserTool.execute(
       { question: "Pick one", choices: ["React", "Vue", "Svelte"] },
       context,
     );
-    expect(result.output).toContain("[1] React");
-    expect(result.output).toContain("[2] Vue");
-    expect(result.output).toContain("[3] Svelte");
+    expect(result.output).toContain("[Question for user]");
+    expect(result.output).toContain("Pick one");
     expect(result.metadata?.choices).toEqual(["React", "Vue", "Svelte"]);
   });
 

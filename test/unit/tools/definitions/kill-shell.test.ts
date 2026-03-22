@@ -34,24 +34,27 @@ describe("kill_shell tool", () => {
     expect(result.output).toContain("No background process found");
   });
 
-  it("should terminate a running background process", async () => {
-    const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
-    outputFilesToClean.push(outputFile);
+  it.skipIf(process.platform === "win32")(
+    "should terminate a running background process",
+    async () => {
+      const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
+      outputFilesToClean.push(outputFile);
 
-    // Small delay to let the process start
-    await new Promise((resolve) => setTimeout(resolve, 50));
+      // Small delay to let the process start
+      await new Promise((resolve) => setTimeout(resolve, 50));
 
-    const result = await killShellTool.execute({ processId }, context);
-    expect(result.isError).toBe(false);
-    expect(result.output).toContain("Sent SIGTERM");
-    expect(result.output).toContain(processId);
-    expect(result.metadata?.signal).toBe("SIGTERM");
+      const result = await killShellTool.execute({ processId }, context);
+      expect(result.isError).toBe(false);
+      expect(result.output).toContain("Sent SIGTERM");
+      expect(result.output).toContain(processId);
+      expect(result.metadata?.signal).toBe("SIGTERM");
 
-    // Wait for the process to actually terminate
-    await new Promise<void>((resolve) => {
-      backgroundProcessManager.onComplete(processId, () => resolve());
-    });
-  });
+      // Wait for the process to actually terminate
+      await new Promise<void>((resolve) => {
+        backgroundProcessManager.onComplete(processId, () => resolve());
+      });
+    },
+  );
 
   it("should report already-exited process without error", async () => {
     const { processId, outputFile } = backgroundProcessManager.start(
@@ -71,7 +74,7 @@ describe("kill_shell tool", () => {
     expect(result.metadata?.running).toBe(false);
   });
 
-  it("should support sending SIGKILL signal", async () => {
+  it.skipIf(process.platform === "win32")("should support sending SIGKILL signal", async () => {
     const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
     outputFilesToClean.push(outputFile);
 
@@ -87,7 +90,7 @@ describe("kill_shell tool", () => {
     });
   });
 
-  it("should support sending SIGINT signal", async () => {
+  it.skipIf(process.platform === "win32")("should support sending SIGINT signal", async () => {
     const { processId, outputFile } = backgroundProcessManager.start("sleep 30", process.cwd());
     outputFilesToClean.push(outputFile);
 
@@ -102,7 +105,7 @@ describe("kill_shell tool", () => {
     });
   });
 
-  it("should also accept numeric PID as string", async () => {
+  it.skipIf(process.platform === "win32")("should also accept numeric PID as string", async () => {
     const { pid, processId, outputFile } = backgroundProcessManager.start(
       "sleep 30",
       process.cwd(),

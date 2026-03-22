@@ -47,6 +47,8 @@ export async function spawnGeneralAgent(options: {
   readonly signal?: AbortSignal;
   readonly parentEvents?: AppEventEmitter;
   readonly allowedTools?: readonly string[];
+  readonly locale?: string;
+  readonly projectInstructions?: string;
 }): Promise<SubagentResult> {
   // spawner 모듈의 범용 생성 함수를 호출 — 도구 제한 없이 모든 도구 사용 가능
   return spawnSubagent({
@@ -61,5 +63,7 @@ export async function spawnGeneralAgent(options: {
     signal: options.signal,
     parentEvents: options.parentEvents,
     allowedTools: options.allowedTools, // undefined이면 모든 도구 허용
+    locale: options.locale,
+    projectInstructions: options.projectInstructions,
   });
 }

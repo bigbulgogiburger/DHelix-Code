@@ -155,12 +155,13 @@ describe("Agent Loop + Tools Integration (text-parsing strategy)", () => {
     expect(toolStartEvents).toEqual(["file_read", "file_read"]);
 
     // Tool results message should contain both results
+    // Note: relative paths may be resolved to absolute paths by the tool-call corrector
     const toolResultMsg = result.messages.find(
       (m) => m.role === "user" && m.content.includes("tool_result"),
     );
     expect(toolResultMsg).toBeDefined();
-    expect(toolResultMsg!.content).toContain("content of a.txt");
-    expect(toolResultMsg!.content).toContain("content of b.txt");
+    expect(toolResultMsg!.content).toMatch(/content of .*a\.txt/);
+    expect(toolResultMsg!.content).toMatch(/content of .*b\.txt/);
   });
 
   it("should handle unknown tool gracefully", async () => {

@@ -22,7 +22,7 @@ import { spawnSubagent, type SubagentResult } from "./spawner.js";
  * 계획 수립에 사용할 도구 목록 (읽기 전용 + 검색)
  * 코드를 수정하지 않고 분석만 하므로 안전합니다.
  */
-const PLAN_ALLOWED_TOOLS = ["file_read", "glob_search", "grep_search"] as const;
+const PLAN_ALLOWED_TOOLS = ["file_read", "glob_search", "grep_search", "list_dir"] as const;
 
 /**
  * 계획(Plan) 서브에이전트를 생성하여 구현 계획과 의존성 분석을 수행합니다.
@@ -52,6 +52,8 @@ export async function spawnPlanAgent(options: {
   readonly maxIterations?: number;
   readonly signal?: AbortSignal;
   readonly parentEvents?: AppEventEmitter;
+  readonly locale?: string;
+  readonly projectInstructions?: string;
 }): Promise<SubagentResult> {
   // spawner 모듈의 범용 생성 함수를 호출하되, 계획 전용 설정을 적용
   return spawnSubagent({
@@ -66,5 +68,7 @@ export async function spawnPlanAgent(options: {
     signal: options.signal,
     parentEvents: options.parentEvents,
     allowedTools: [...PLAN_ALLOWED_TOOLS], // 읽기 전용 도구만 허용
+    locale: options.locale,
+    projectInstructions: options.projectInstructions,
   });
 }

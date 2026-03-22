@@ -154,7 +154,10 @@ export class SkillManager {
       sessionId: options.sessionId,
       // 스킬 파일의 디렉토리 경로 추출 (마지막 / 이전까지)
       skillDir: skill.sourcePath
-        ? skill.sourcePath.substring(0, skill.sourcePath.lastIndexOf("/"))
+        ? (() => {
+            const lastSlash = skill.sourcePath.lastIndexOf("/");
+            return lastSlash === -1 ? "." : skill.sourcePath.substring(0, lastSlash);
+          })()
         : undefined,
       projectDir: options.projectDir ?? options.workingDirectory,
       workingDirectory: options.workingDirectory,

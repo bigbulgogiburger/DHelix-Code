@@ -414,6 +414,21 @@ export class MCPToolBridge {
   }
 
   /**
+   * 특정 서버의 모든 등록된 도구를 레지스트리에서 제거합니다.
+   *
+   * @param serverName - 도구를 제거할 서버 이름
+   * @returns 제거된 도구 이름 배열
+   */
+  unregisterServerTools(serverName: string): readonly string[] {
+    const toolNames = this.registeredTools.get(serverName) ?? [];
+    for (const name of toolNames) {
+      this.toolRegistry.unregister(name);
+    }
+    this.registeredTools.delete(serverName);
+    return toolNames;
+  }
+
+  /**
    * 특정 서버에서 등록된 모든 도구 이름을 반환합니다.
    *
    * @param serverName - 서버 이름

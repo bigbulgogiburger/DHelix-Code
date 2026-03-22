@@ -53,6 +53,8 @@ export async function spawnExploreAgent(options: {
   readonly maxIterations?: number;
   readonly signal?: AbortSignal;
   readonly parentEvents?: AppEventEmitter;
+  readonly locale?: string;
+  readonly projectInstructions?: string;
 }): Promise<SubagentResult> {
   // spawner 모듈의 범용 생성 함수를 호출하되, 탐색 전용 설정을 적용
   return spawnSubagent({
@@ -67,5 +69,7 @@ export async function spawnExploreAgent(options: {
     signal: options.signal,
     parentEvents: options.parentEvents,
     allowedTools: [...EXPLORE_ALLOWED_TOOLS], // 읽기 전용 도구만 허용
+    locale: options.locale,
+    projectInstructions: options.projectInstructions,
   });
 }
