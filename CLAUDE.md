@@ -122,11 +122,11 @@ When compacting, always preserve:
 
 모듈별 다이어그램 + 코드 설명 + 구현 방향을 시각적으로 정리한 웹 문서입니다.
 
-| 페이지              | 설명                                   | 경로 / 실행                                |
-| ------------------- | -------------------------------------- | ------------------------------------------ |
-| Architecture 개요   | 4-Layer, Agent Loop, MCP 등 전체 구조  | `docs/architecture.html` (브라우저로 열기) |
-| Module Deep Dive    | 9개 모듈 내부 상태머신 + TS 인터페이스 | `docs/architecture-deep.html`              |
-| Deep Dive (Next.js) | 위와 동일 내용의 React/Next.js 버전    | `cd guide && npm run dev`                  |
+| 페이지              | 설명                                   | 경로 / 실행                                       |
+| ------------------- | -------------------------------------- | ------------------------------------------------- |
+| Architecture 개요   | 4-Layer, Agent Loop, MCP 등 전체 구조  | `docs/architecture.html` (브라우저로 열기)        |
+| Module Deep Dive    | 9개 모듈 내부 상태머신 + TS 인터페이스 | `docs/architecture-deep.html`                     |
+| Deep Dive (Next.js) | 위와 동일 내용의 React/Next.js 버전    | `cd guide && npm run dev` → http://localhost:3333 |
 
 > `guide/` 디렉토리에 별도 `CLAUDE.md`가 있습니다. guide 작업 시 디자인 시스템(Ethereal Glass), Tailwind v4 함정, 컴포넌트 규칙 등을 참조하세요.
 

@@ -228,7 +228,7 @@ export default function AgentLoopPage() {
               className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>{"🧠"}</span> 개요 -- ReAct 패턴이란?
+              <span>{"📋"}</span> 개요
             </h2>
 
             <div className="text-[14px] text-gray-600 leading-[1.85] space-y-4 mb-8">
@@ -343,7 +343,7 @@ export default function AgentLoopPage() {
               className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>{"📋"}</span> 레퍼런스
+              <span>{"📖"}</span> 레퍼런스
             </h2>
 
             {/* AgentLoopConfig */}
@@ -521,7 +521,7 @@ export default function AgentLoopPage() {
               className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>{"🔌"}</span> 사용법
+              <span>{"🚀"}</span> 사용법
             </h2>
 
             <h3 className="text-lg font-bold" style={{ marginTop: "32px", marginBottom: "16px" }}>

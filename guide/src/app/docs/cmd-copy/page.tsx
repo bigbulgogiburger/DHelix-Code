@@ -12,14 +12,14 @@ import { SeeAlso } from "@/components/SeeAlso";
 
 export default function CmdCopyPage() {
   return (
-    <div className="min-h-screen" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+    <div className="min-h-screen pt-10 pb-20">
       <div className="center-narrow">
         {/* ─── Header ─── */}
         <RevealOnScroll>
           <div style={{ marginBottom: "48px" }}>
             <FilePath path="src/commands/copy.ts" />
             <h1 className="text-3xl font-bold tracking-tight leading-[1.15] mt-4 mb-4">
-              <span className="text-gray-900">/copy 출력 복사</span>
+              <span className="text-gray-900">/copy</span>
             </h1>
             <div className="flex items-center gap-3 mb-5">
               <LayerBadge layer="leaf" />

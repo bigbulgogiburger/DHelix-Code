@@ -19,7 +19,10 @@ export default function Home() {
         style={{ paddingTop: "80px", paddingBottom: "64px" }}
       >
         <div className="center-wide">
-          <span className="inline-block bg-indigo-100 text-indigo-700 text-xs font-semibold px-3 py-1 rounded-full mb-6">
+          <span
+            className="inline-block bg-indigo-100 text-indigo-700 text-sm font-bold tracking-wide rounded-full"
+            style={{ padding: "10px 24px", marginBottom: "28px" }}
+          >
             Module Deep Dive — TypeScript Source Analysis
           </span>
           <h1 className="text-4xl font-bold text-gray-900 leading-tight mb-4">
@@ -37,8 +40,8 @@ export default function Home() {
           </p>
           <Link
             href="/docs"
-            className="inline-flex items-center gap-2 bg-indigo-600 text-white px-6 py-3 rounded-full text-sm font-semibold hover:bg-indigo-700 transition-colors"
-            style={{ marginTop: "24px" }}
+            className="inline-flex items-center gap-2 bg-indigo-600 rounded-full text-base font-semibold hover:bg-indigo-700 transition-colors"
+            style={{ marginTop: "28px", padding: "14px 32px", color: "#ffffff" }}
           >
             모듈 상세 문서 보기
             <span>→</span>

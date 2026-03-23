@@ -38,7 +38,7 @@ export default function RecoveryExecutorPage() {
               className="text-[22px] font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🔍</span> 개요
+              <span>📋</span> 개요
             </h2>
 
             <div className="text-[14px] text-gray-600 leading-[1.85] space-y-4">
@@ -93,7 +93,7 @@ export default function RecoveryExecutorPage() {
               className="text-[22px] font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>📘</span> 레퍼런스
+              <span>📖</span> 레퍼런스
             </h2>
 
             {/* executeRecovery */}
@@ -242,7 +242,7 @@ export default function RecoveryExecutorPage() {
               className="text-[22px] font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🛠️</span> 사용법
+              <span>🚀</span> 사용법
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-[1.85] mb-6">
@@ -369,7 +369,7 @@ export default function RecoveryExecutorPage() {
               className="text-[22px] font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🔬</span> 내부 구현
+              <span>⚙️</span> 내부 구현
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-[1.85] mb-6">
@@ -517,7 +517,7 @@ export default function RecoveryExecutorPage() {
               className="text-[22px] font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🩺</span> 트러블슈팅
+              <span>🔧</span> 트러블슈팅
             </h2>
 
             <div className="space-y-5">

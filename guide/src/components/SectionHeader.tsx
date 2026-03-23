@@ -19,8 +19,8 @@ export function SectionHeader({ label, labelColor, title, description }: Section
   return (
     <div className="text-center mb-14" style={{ textAlign: "center", marginBottom: "48px" }}>
       <span
-        className={`inline-block text-[11px] font-bold uppercase tracking-[2px] px-3.5 py-1.5 rounded-md mb-3.5 ${colorMap[labelColor]}`}
-        style={{ padding: "4px 12px", marginBottom: "12px", display: "inline-block" }}
+        className={`inline-block text-xs font-bold uppercase tracking-[2px] rounded-md ${colorMap[labelColor]}`}
+        style={{ padding: "8px 20px", marginBottom: "16px", display: "inline-block" }}
       >
         {label}
       </span>

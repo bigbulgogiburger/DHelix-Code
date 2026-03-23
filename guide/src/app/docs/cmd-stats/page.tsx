@@ -12,7 +12,7 @@ import { SeeAlso } from "@/components/SeeAlso";
 
 export default function CmdStatsPage() {
   return (
-    <div className="min-h-screen" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
+    <div className="min-h-screen pt-10 pb-20">
       <div className="center-narrow">
         {/* ─── Header ─── */}
         <RevealOnScroll>

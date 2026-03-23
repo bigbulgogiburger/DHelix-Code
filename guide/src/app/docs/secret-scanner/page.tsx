@@ -14,7 +14,7 @@ export default function SecretScannerPage() {
   return (
     <div className="min-h-screen" style={{ paddingTop: "40px", paddingBottom: "80px" }}>
       <div className="center-narrow">
-        {/* ── 1. Header ── */}
+        {/* ─── Header ─── */}
         <RevealOnScroll>
           <div style={{ marginBottom: "48px" }}>
             <FilePath path="src/guardrails/secret-scanner.ts" />
@@ -33,14 +33,14 @@ export default function SecretScannerPage() {
           </div>
         </RevealOnScroll>
 
-        {/* ── 2. 개요 ── */}
+        {/* ─── 1. 개요 (Overview) ─── */}
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🛡️</span> 개요
+              <span>📋</span> 개요
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-relaxed mb-6">
@@ -96,14 +96,14 @@ export default function SecretScannerPage() {
           </section>
         </RevealOnScroll>
 
-        {/* ── 3. 레퍼런스 ── */}
+        {/* ─── 2. 레퍼런스 (Reference) ─── */}
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>📋</span> 레퍼런스
+              <span>📖</span> 레퍼런스
             </h2>
 
             {/* SecretScanResult 인터페이스 */}
@@ -178,14 +178,14 @@ export default function SecretScannerPage() {
           </section>
         </RevealOnScroll>
 
-        {/* ── 4. 사용법 ── */}
+        {/* ─── 3. 사용법 (Usage) ─── */}
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🔍</span> 사용법
+              <span>🚀</span> 사용법
             </h2>
 
             <p className="text-[13px] text-gray-600 mb-5 leading-relaxed">
@@ -269,14 +269,14 @@ export default function SecretScannerPage() {
           </section>
         </RevealOnScroll>
 
-        {/* ── 5. 내부 구현 ── */}
+        {/* ─── 4. 내부 구현 (Internals) ─── */}
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🏗️</span> 내부 구현
+              <span>⚙️</span> 내부 구현
             </h2>
 
             {/* 탐지 패턴 목록 */}
@@ -553,11 +553,11 @@ export default function SecretScannerPage() {
           </section>
         </RevealOnScroll>
 
-        {/* ── 6. 트러블슈팅 ── */}
+        {/* ─── 5. 트러블슈팅 (Troubleshooting) ─── */}
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
               <span>🔧</span> 트러블슈팅
@@ -649,14 +649,14 @@ export default function SecretScannerPage() {
           </section>
         </RevealOnScroll>
 
-        {/* ── 7. 관련 문서 ── */}
+        {/* ─── 6. 관련 문서 (See Also) ─── */}
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>📚</span> 관련 문서
+              <span>🔗</span> 관련 문서
             </h2>
             <SeeAlso
               items={[

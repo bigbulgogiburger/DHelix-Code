@@ -50,10 +50,10 @@ export default function ContextManagerPage() {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-xl font-bold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#x1F3D7;&#xFE0F;</span> 개요
+              <span>📋</span> 개요
             </h2>
 
             <div className="text-[14px] text-gray-600 leading-relaxed mb-6 space-y-3">
@@ -143,10 +143,10 @@ export default function ContextManagerPage() {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-xl font-bold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#x1F4D6;</span> 레퍼런스
+              <span>📖</span> 레퍼런스
             </h2>
 
             {/* --- ContextManagerConfig --- */}
@@ -729,10 +729,10 @@ export default function ContextManagerPage() {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-xl font-bold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#x1F6E0;&#xFE0F;</span> 사용법
+              <span>🚀</span> 사용법
             </h2>
 
             {/* Basic usage */}
@@ -938,10 +938,10 @@ ctx.dispose();`}
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-xl font-bold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#x2699;&#xFE0F;</span> 내부 구현
+              <span>⚙️</span> 내부 구현
             </h2>
 
             <MermaidDiagram
@@ -1293,10 +1293,10 @@ async prepare(
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-xl font-bold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#x1F527;</span> 트러블슈팅
+              <span>🔧</span> 트러블슈팅
             </h2>
 
             <div className="space-y-4">
@@ -1522,10 +1522,10 @@ console.log(\`임계값: \${(ctx['compactionThreshold'] * 100).toFixed(1)}%\`);
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-xl font-bold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#x1F517;</span> 관련 문서
+              <span>🔗</span> 관련 문서
             </h2>
 
             <SeeAlso

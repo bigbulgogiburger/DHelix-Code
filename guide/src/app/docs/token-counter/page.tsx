@@ -724,7 +724,9 @@ export default function TokenCounterPage() {
             </CodeBlock>
             <p className="text-[12px] text-gray-400 mt-2 leading-relaxed">
               한국어 텍스트 <code className="text-cyan-600 text-[12px]">{'"안녕하세요"'}</code>
-              (5글자)는 약 <code className="text-cyan-600 text-[12px]">Math.ceil(5/2) = 3</code>{" "}
+              (5글자)는 약 <code className="text-cyan-600 text-[12px]">
+                Math.ceil(5/2) = 3
+              </code>{" "}
               토큰으로 추정됩니다. 실제 tiktoken 결과와 비교하면 대부분 10% 이내의 오차를 보입니다.
             </p>
 

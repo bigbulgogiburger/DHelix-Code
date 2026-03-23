@@ -8,7 +8,7 @@ dbcode 개발가이드 — Next.js 16 / React 19 / Tailwind CSS v4 / Mermaid.js 
 ## Commands
 
 ```bash
-npm run dev          # Next.js dev server (Turbopack)
+npm run dev          # Next.js dev server (Turbopack) → http://localhost:3333
 npm run build        # 프로덕션 빌드 — 전체 라우트 정적 생성
 npm run lint         # ESLint
 ```

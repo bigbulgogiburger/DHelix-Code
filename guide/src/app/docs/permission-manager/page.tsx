@@ -36,10 +36,10 @@ export default function PermissionManagerPage() {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#128208;</span> 개요
+              <span>📋</span> 개요
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-relaxed mb-6">
@@ -56,7 +56,7 @@ export default function PermissionManagerPage() {
               Privilege)을 따릅니다.
             </p>
 
-            <Callout type="info" icon="&#128161;">
+            <Callout type="info" icon="💡">
               <strong>왜 deny-first인가?</strong>
               <br />
               AI가 예상치 못한 도구를 호출하더라도, 명시적으로 허용되지 않은 작업은 자동으로
@@ -93,10 +93,10 @@ export default function PermissionManagerPage() {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#128218;</span> 레퍼런스
+              <span>📖</span> 레퍼런스
             </h2>
 
             {/* PermissionMode 타입 */}
@@ -391,7 +391,7 @@ export default function PermissionManagerPage() {
               Caveats
             </h3>
 
-            <Callout type="warn" icon="&#9888;&#65039;">
+            <Callout type="warn" icon="⚠️">
               <strong>Caveat 1: approveAlways()는 메모리만 변경합니다</strong>
               <br />
               <code className="text-cyan-600 text-xs">approveAlways()</code>는 내부 규칙 목록에만
@@ -400,7 +400,7 @@ export default function PermissionManagerPage() {
               디스크에 저장해야 합니다.
             </Callout>
 
-            <Callout type="warn" icon="&#9888;&#65039;">
+            <Callout type="warn" icon="⚠️">
               <strong>Caveat 2: 잘못된 패턴은 조용히 무시됩니다</strong>
               <br />
               <code className="text-cyan-600 text-xs">parsePersistentRules()</code>는 파싱에 실패한
@@ -408,7 +408,7 @@ export default function PermissionManagerPage() {
               문자열 형식을 먼저 확인하세요. 오류 로그는 남지 않습니다.
             </Callout>
 
-            <Callout type="warn" icon="&#9888;&#65039;">
+            <Callout type="warn" icon="⚠️">
               <strong>Caveat 3: 감사 로그는 fire-and-forget입니다</strong>
               <br />
               <code className="text-cyan-600 text-xs">logAudit()</code>는 비동기로 로그를 기록하지만
@@ -418,7 +418,7 @@ export default function PermissionManagerPage() {
               트레이드오프입니다.
             </Callout>
 
-            <Callout type="danger" icon="&#128683;">
+            <Callout type="danger" icon="🚫">
               <strong>Caveat 4: bypassPermissions 모드는 프로덕션에서 사용 금지</strong>
               <br />이 모드는 모든 권한 검사를 완전히 건너뜁니다. 개발/테스트 환경에서만 사용해야
               하며, 프로덕션에서 활성화하면 AI가 어떤 도구든 제한 없이 실행할 수 있어 심각한 보안
@@ -431,10 +431,10 @@ export default function PermissionManagerPage() {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#128736;&#65039;</span> 사용법
+              <span>🚀</span> 사용법
             </h2>
 
             {/* 기본 사용 */}
@@ -591,7 +591,7 @@ if (result.allowed) {
               </table>
             </div>
 
-            <Callout type="tip" icon="&#128161;">
+            <Callout type="tip" icon="💡">
               모드 전환은 <code className="text-cyan-600 text-xs">Shift+Tab</code> 키보드 단축키로
               할 수 있습니다.
               <code className="text-cyan-600 text-xs ml-1">
@@ -641,7 +641,7 @@ if (result.allowed) {
   }
 }`}</CodeBlock>
 
-            <Callout type="info" icon="&#128270;">
+            <Callout type="info" icon="🔍">
               패턴 매칭은 도구 인수의 <strong>문자열 값</strong>에 대해 수행됩니다. 예를 들어{" "}
               <code className="text-cyan-600 text-xs">Bash(npm *)</code> 패턴은 인수 중{" "}
               <code className="text-cyan-600 text-xs">{`{ command: "npm install" }`}</code>처럼
@@ -706,10 +706,10 @@ if (result.allowed) {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#9881;&#65039;</span> 내부 구현
+              <span>⚙️</span> 내부 구현
             </h2>
 
             <p className="text-[13px] text-gray-600 leading-relaxed mb-6">
@@ -816,7 +816,7 @@ if (result.allowed) {
 // 2. argPattern을 glob -> regex 변환: "npm *" -> /^npm .*$/
 // 3. 인수의 문자열 값 중 하나라도 매칭되면 true`}</CodeBlock>
 
-            <Callout type="tip" icon="&#128640;">
+            <Callout type="tip" icon="🚀">
               <strong>성능 최적화 포인트</strong>
               <br />
               <code className="text-cyan-600 text-xs">matchesPersistent()</code>는{" "}
@@ -832,10 +832,10 @@ if (result.allowed) {
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#128533;</span> 트러블슈팅
+              <span>🔧</span> 트러블슈팅
             </h2>
 
             {/* FAQ 1 */}
@@ -942,10 +942,10 @@ pm.clearSession(); // 이전 승인 모두 취소`}</CodeBlock>
         <RevealOnScroll>
           <section style={{ marginBottom: "64px" }}>
             <h2
-              className="text-2xl font-extrabold flex items-center gap-2"
+              className="text-2xl font-extrabold flex items-center gap-3"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>&#128279;</span> 관련 문서
+              <span>🔗</span> 관련 문서
             </h2>
             <SeeAlso
               items={[

@@ -95,7 +95,7 @@ export default function ModelCapabilitiesPage() {
               className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🗺️</span> 개요
+              <span>📋</span> 개요
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-relaxed mb-5">
@@ -366,7 +366,7 @@ export default function ModelCapabilitiesPage() {
               className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🔍</span> 사용법
+              <span>🚀</span> 사용법
             </h2>
 
             {/* 모델 능력 조회 */}
@@ -586,7 +586,7 @@ export default function ModelCapabilitiesPage() {
               className="text-2xl font-extrabold flex items-center gap-2"
               style={{ marginBottom: "24px", marginTop: "0" }}
             >
-              <span>🏗️</span> 내부 구현
+              <span>⚙️</span> 내부 구현
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-relaxed mb-5">

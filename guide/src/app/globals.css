@@ -286,6 +286,13 @@ a:hover {
 .sidebar-content {
   flex: 1;
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar-content > main {
+  width: 100%;
 }
 
 @media (max-width: 1024px) {
