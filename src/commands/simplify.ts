@@ -40,6 +40,7 @@ export const simplifyCommand: SlashCommand = {
     return {
       output: prompt,
       success: true,
+      shouldInjectAsUserMessage: true,
     };
   },
 };

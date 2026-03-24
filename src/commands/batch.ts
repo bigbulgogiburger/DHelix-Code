@@ -56,6 +56,7 @@ export const batchCommand: SlashCommand = {
     return {
       output: prompt,
       success: true,
+      shouldInjectAsUserMessage: true,
     };
   },
 };

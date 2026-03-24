@@ -35,6 +35,7 @@ import { useInputHistory } from "../hooks/useInput.js";
  * @param isDisabled - true이면 입력을 받지 않음 (에이전트 실행 중 등)
  * @param slashMenuVisible - 슬래시 명령 메뉴가 표시 중인지 여부 (키 이벤트 위임용)
  * @param placeholder - 빈 입력 시 표시할 안내 텍스트 (기본값: "Type a message...")
+ * @param onCtrlC - Ctrl+C 입력 시 호출되는 콜백 (미설정 시 process.exit(0))
  */
 export interface UserInputProps {
   readonly onSubmit: (text: string) => void;
@@ -42,6 +43,7 @@ export interface UserInputProps {
   readonly isDisabled?: boolean;
   readonly slashMenuVisible?: boolean;
   readonly placeholder?: string;
+  readonly onCtrlC?: () => void;
 }
 
 /** 커서 위치에서 현재 입력 중인 토큰을 추출 — 탭 자동완성의 대상 문자열 */
@@ -80,6 +82,7 @@ export function UserInput({
   isDisabled = false,
   slashMenuVisible = false,
   placeholder = "Type a message...",
+  onCtrlC,
 }: UserInputProps) {
   const [value, setValue] = useState("");
   const [cursorOffset, setCursorOffset] = useState(0);
@@ -195,9 +198,14 @@ export function UserInput({
         return;
       }
 
-      // Ctrl+C — exit
+      // Ctrl+C — delegate to parent (cancel or exit)
       if (key.ctrl && input === "c") {
-        process.exit(0);
+        if (onCtrlC) {
+          onCtrlC();
+        } else {
+          process.exit(0);
+        }
+        return;
       }
 
       // Ctrl+A — jump to start

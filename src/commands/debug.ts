@@ -48,6 +48,7 @@ export const debugCommand: SlashCommand = {
     return {
       output: prompt,
       success: true,
+      shouldInjectAsUserMessage: true,
     };
   },
 };

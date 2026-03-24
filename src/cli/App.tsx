@@ -292,6 +292,42 @@ export function App({
     };
   }, []);
 
+  // Ctrl+C 더블 탭 감지 — 첫 번째 Ctrl+C는 에이전트 취소, 두 번째(1.5초 이내)는 종료
+  const ctrlCTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const ctrlCPressedRef = useRef(false);
+
+  const handleCtrlC = useCallback(() => {
+    if (ctrlCPressedRef.current) {
+      // 두 번째 Ctrl+C — 즉시 종료
+      process.exit(0);
+    }
+
+    if (isProcessing) {
+      // 에이전트 실행 중이면 취소
+      events.emit("input:abort", undefined);
+      showNotification("Cancelled — press Ctrl+C again to exit");
+    } else {
+      // 유휴 상태에서는 안내만 표시
+      showNotification("Press Ctrl+C again to exit");
+    }
+
+    ctrlCPressedRef.current = true;
+    if (ctrlCTimerRef.current) {
+      clearTimeout(ctrlCTimerRef.current);
+    }
+    ctrlCTimerRef.current = setTimeout(() => {
+      ctrlCPressedRef.current = false;
+      ctrlCTimerRef.current = null;
+    }, 1500);
+  }, [isProcessing, events, showNotification]);
+
+  // Ctrl+C 타이머 정리
+  useEffect(() => {
+    return () => {
+      if (ctrlCTimerRef.current) clearTimeout(ctrlCTimerRef.current);
+    };
+  }, []);
+
   // 키바인딩에 연결할 액션 핸들러 — 각 단축키가 실행할 동작을 정의
   const actionHandlers = useMemo(
     () => ({
@@ -461,6 +497,7 @@ export function App({
             onSubmit={onUserSubmit}
             onChange={setInputValue}
             slashMenuVisible={slashMenuVisible}
+            onCtrlC={handleCtrlC}
           />
         </Box>
 

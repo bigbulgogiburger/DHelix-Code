@@ -580,6 +580,7 @@ program
           mcpConnector,
           mcpManager,
         }),
+        { exitOnCtrlC: false },
       );
     },
   );
