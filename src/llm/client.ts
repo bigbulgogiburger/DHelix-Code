@@ -399,6 +399,8 @@ export interface OpenAIClientConfig {
   readonly apiKey?: string;
   /** 요청 타임아웃(밀리초) — 기본값 120초 */
   readonly timeout?: number;
+  /** 커스텀 API 키 헤더명 (예: "model-api-key") — 설정 시 Authorization 대신 이 헤더로 키 전달 */
+  readonly apiKeyHeader?: string;
 }
 
 /**
@@ -468,19 +470,28 @@ export class OpenAICompatibleClient implements LLMProvider {
     // URL을 정규화하고, Azure인 경우 전용 헤더/쿼리를 설정
     const { baseURL, apiVersion, isAzure } = normalizeBaseUrl(config.baseURL);
     const apiKey = config.apiKey ?? "no-key-required";
+    const { apiKeyHeader } = config;
+
+    // 커스텀 헤더가 지정된 경우 (사내 모델 등):
+    // - Authorization 헤더 대신 커스텀 헤더로 API 키 전달
+    // - SDK의 자동 Authorization 헤더를 비활성화하기 위해 apiKey를 빈 문자열로 설정
+    const useCustomHeader = !!apiKeyHeader && !isAzure;
 
     this.client = new OpenAI({
       baseURL,
-      apiKey,
+      apiKey: useCustomHeader ? "sk-placeholder" : apiKey,
       timeout: config.timeout ?? 120_000,
       maxRetries: 0, // SDK의 내장 재시도를 비활성화하고, 직접 재시도 로직을 제어
-      // Azure인 경우 api-version 쿼리와 api-key 헤더를 추가
       ...(isAzure
         ? {
             defaultQuery: { "api-version": apiVersion ?? "2025-01-01-preview" },
             defaultHeaders: { "api-key": apiKey },
           }
-        : {}),
+        : useCustomHeader
+          ? {
+              defaultHeaders: { [apiKeyHeader]: apiKey },
+            }
+          : {}),
     });
   }
 

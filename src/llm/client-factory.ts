@@ -17,6 +17,8 @@ export interface LLMClientConfig {
   readonly baseURL: string;
   readonly apiKey: string;
   readonly timeout?: number;
+  /** 커스텀 API 키 헤더명 (예: "model-api-key") */
+  readonly apiKeyHeader?: string;
 }
 
 /**
@@ -30,6 +32,7 @@ export function createLLMClientForModel(config: LLMClientConfig): LLMProvider {
     baseURL: config.baseURL,
     apiKey: config.apiKey,
     timeout: config.timeout ?? 120_000,
+    apiKeyHeader: config.apiKeyHeader,
   };
 
   if (isResponsesOnlyModel(config.model)) {

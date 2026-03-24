@@ -26,6 +26,8 @@ export const llmConfigSchema = z.object({
   baseUrl: z.string().url().default("https://api.openai.com/v1"),
   /** API 인증 키 — 없으면 인증 없이 요청 (로컬 LLM용) */
   apiKey: z.string().optional(),
+  /** API 키 전달 시 사용할 커스텀 헤더명 (예: "model-api-key") — 로컬/사내 모델용 */
+  apiKeyHeader: z.string().optional(),
   /** 사용할 모델명 — 제품 기본값 (env 오버라이드는 config/loader.ts에서 처리) */
   model: z.string().default("gpt-5.1-codex-mini"),
   /** 응답 온도 — 0에 가까울수록 결정적, 2에 가까울수록 창의적 */

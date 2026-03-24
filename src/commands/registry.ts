@@ -104,6 +104,7 @@ export interface CommandResult {
     readonly model: string;
     readonly baseURL: string;
     readonly apiKey: string;
+    readonly apiKeyHeader?: string;
   };
   /** true면 프로젝트 설정(DBCODE.md 등)을 디스크에서 다시 로드 */
   readonly refreshInstructions?: boolean;

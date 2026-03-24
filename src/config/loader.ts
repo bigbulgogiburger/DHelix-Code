@@ -66,8 +66,10 @@ function loadEnvConfig(): Partial<AppConfig> {
     llm.baseUrl = process.env.OPENAI_BASE_URL;
   }
 
-  // API 키 결정: DBCODE_API_KEY > OPENAI_API_KEY
-  if (process.env.DBCODE_API_KEY) {
+  // API 키 결정: LOCAL_API_KEY > DBCODE_API_KEY > OPENAI_API_KEY
+  if (process.env.LOCAL_API_KEY) {
+    llm.apiKey = process.env.LOCAL_API_KEY;
+  } else if (process.env.DBCODE_API_KEY) {
     llm.apiKey = process.env.DBCODE_API_KEY;
   } else if (process.env.OPENAI_API_KEY) {
     llm.apiKey = process.env.OPENAI_API_KEY;
@@ -75,6 +77,11 @@ function loadEnvConfig(): Partial<AppConfig> {
     if (!process.env.DBCODE_BASE_URL && !process.env.OPENAI_BASE_URL) {
       llm.baseUrl = "https://api.openai.com/v1";
     }
+  }
+
+  // 커스텀 API 키 헤더명 (로컬/사내 모델에서 비표준 헤더를 요구하는 경우)
+  if (process.env.LOCAL_API_KEY_HEADER) {
+    llm.apiKeyHeader = process.env.LOCAL_API_KEY_HEADER;
   }
 
   // 모델명 결정: LOCAL_MODEL > DBCODE_MODEL > OPENAI_MODEL > 기본값

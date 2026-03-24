@@ -296,6 +296,7 @@ program
             baseURL: config.llm.baseUrl,
             apiKey: config.llm.apiKey,
             timeout: config.llm.timeout,
+            apiKeyHeader: config.llm.apiKeyHeader,
           });
 
       // ── 단계 6: 도구(Tool) 등록 ──

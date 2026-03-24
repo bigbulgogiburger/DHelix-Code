@@ -76,6 +76,7 @@ interface ProviderProfile {
   readonly model: string;
   readonly baseURL: string;
   readonly apiKey: string;
+  readonly apiKeyHeader?: string;
 }
 
 function getLocalProvider(): ProviderProfile | undefined {
@@ -86,6 +87,7 @@ function getLocalProvider(): ProviderProfile | undefined {
     model,
     baseURL,
     apiKey: process.env.LOCAL_API_KEY ?? "no-key-required",
+    apiKeyHeader: process.env.LOCAL_API_KEY_HEADER,
   };
 }
 

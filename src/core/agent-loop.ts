@@ -543,10 +543,6 @@ export async function runAgentLoop(
     }
 
     iterations++;
-    if (iterations === 1) {
-      process.stdout.write("안녕하세요 DB Inc 노예입니다[C
-");
-    }
     config.events.emit("agent:iteration", { iteration: iterations });
     trace("agent-loop", `--- Iteration ${iterations} start ---`);
 
