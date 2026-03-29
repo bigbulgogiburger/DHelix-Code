@@ -133,14 +133,14 @@ export class LSPManager {
     // 기존 서버가 죽었으면 재시작 시도
     if (managed && !managed.connection.isAlive) {
       if (managed.restartCount >= MAX_RESTART_ATTEMPTS) {
-        this.servers.delete(key);
+        await this.shutdownServer(key);
         throw new LSPNotAvailableError(
           language,
           `최대 재시작 횟수(${MAX_RESTART_ATTEMPTS}회) 초과`,
         );
       }
       this.clearIdleTimer(key);
-      this.servers.delete(key);
+      await this.shutdownServer(key);
       // fall through to start new server, carry restart count
     }
 
@@ -278,7 +278,7 @@ export class LSPManager {
       connection,
       language,
       projectDir: resolve(projectDir),
-      state: "starting" as LSPServerState,
+      state: "starting",
       idleTimer: undefined,
       lastUsedAt: Date.now(),
       restartCount: restartCount + 1,
@@ -294,10 +294,10 @@ export class LSPManager {
           `LSP 서버 시작 타임아웃 (${this.config.startupTimeoutMs}ms)`,
         ),
       ]);
-      managed.state = "running" as LSPServerState;
+      managed.state = "running";
       log.info({ language, projectDir }, "LSP 서버 시작 완료");
     } catch (error) {
-      managed.state = "error" as LSPServerState;
+      managed.state = "error";
       const message =
         error instanceof Error ? error.message : String(error);
       log.error({ language, projectDir, error: message }, "LSP 서버 시작 실패");
@@ -360,7 +360,7 @@ export class LSPManager {
     }
 
     const log = getLogger();
-    managed.state = "stopping" as LSPServerState;
+    managed.state = "stopping";
 
     try {
       await Promise.race([
@@ -373,7 +373,7 @@ export class LSPManager {
       log.warn({ key, error: message }, "LSP 서버 종료 중 오류 (무시)");
     }
 
-    managed.state = "stopped" as LSPServerState;
+    managed.state = "stopped";
     managed.openDocuments.clear();
     this.servers.delete(key);
   }
@@ -638,13 +638,14 @@ export class LSPManager {
 
     for (const loc of locations) {
       const filePath = this.uriToPath(loc.uri);
-      const line = loc.range.start.line;
-      const preview = await this.readPreviewLine(filePath, line);
+      const line = loc.range.start.line + 1;       // LSP 0-based → DHelix 1-based
+      const column = loc.range.start.character + 1; // LSP 0-based → DHelix 1-based
+      const preview = await this.readPreviewLine(filePath, loc.range.start.line);
 
       results.push({
         filePath,
         line,
-        column: loc.range.start.character,
+        column,
         preview,
       });
     }
@@ -665,13 +666,14 @@ export class LSPManager {
 
     for (const loc of locations) {
       const filePath = this.uriToPath(loc.uri);
-      const line = loc.range.start.line;
-      const context = await this.readPreviewLine(filePath, line);
+      const line = loc.range.start.line + 1;       // LSP 0-based → DHelix 1-based
+      const column = loc.range.start.character + 1; // LSP 0-based → DHelix 1-based
+      const context = await this.readPreviewLine(filePath, loc.range.start.line);
 
       results.push({
         filePath,
         line,
-        column: loc.range.start.character,
+        column,
         context,
         isDefinition: false,
       });
@@ -731,10 +733,10 @@ export class LSPManager {
       results.push({
         filePath,
         edits: textEdits.map((textEdit) => ({
-          startLine: textEdit.range.start.line,
-          startColumn: textEdit.range.start.character,
-          endLine: textEdit.range.end.line,
-          endColumn: textEdit.range.end.character,
+          startLine: textEdit.range.start.line + 1,       // LSP 0-based → 1-based
+          startColumn: textEdit.range.start.character + 1,
+          endLine: textEdit.range.end.line + 1,
+          endColumn: textEdit.range.end.character + 1,
           newText: textEdit.newText,
         })),
       });
@@ -786,4 +788,31 @@ export class LSPManager {
 interface LSPRange {
   readonly start: { readonly line: number; readonly character: number };
   readonly end: { readonly line: number; readonly character: number };
+}
+
+// ── 싱글턴 인스턴스 ──────────────────────────────────────────────
+
+/** 모듈 레벨 싱글턴 — 모든 도구가 동일한 LSPManager를 공유 */
+let singletonManager: LSPManager | undefined;
+
+/**
+ * LSPManager 싱글턴을 반환합니다.
+ * 여러 도구가 동시에 호출되어도 동일한 서버 풀을 공유합니다.
+ */
+export function getLSPManager(): LSPManager {
+  if (!singletonManager) {
+    singletonManager = new LSPManager();
+  }
+  return singletonManager;
+}
+
+/**
+ * 싱글턴 LSPManager를 종료하고 초기화합니다.
+ * 세션 종료 시 또는 테스트에서 사용합니다.
+ */
+export async function disposeLSPManager(): Promise<void> {
+  if (singletonManager) {
+    await singletonManager.dispose();
+    singletonManager = undefined;
+  }
 }

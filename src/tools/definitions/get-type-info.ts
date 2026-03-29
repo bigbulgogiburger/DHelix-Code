@@ -62,12 +62,12 @@ async function acquireSession(
   | undefined
 > {
   try {
-    const { LSPManager } = await import("../../lsp/manager.js");
+    const { getLSPManager } = await import("../../lsp/manager.js");
     const ext = extname(filePath);
     const lang = EXT_TO_LANG[ext];
     if (!lang) return undefined;
 
-    const manager = new LSPManager();
+    const manager = getLSPManager();
     const available = await manager.detectAvailableServers(cwd);
     if (!available.includes(lang as never)) return undefined;
 

@@ -18,7 +18,7 @@ vi.mock("node:fs/promises", async () => {
 });
 
 vi.mock("../../../../src/lsp/manager.js", () => ({
-  LSPManager: vi.fn().mockImplementation(() => ({
+  getLSPManager: vi.fn(() => ({
     acquire: mockAcquire,
     detectAvailableServers: mockDetectAvailableServers,
   })),

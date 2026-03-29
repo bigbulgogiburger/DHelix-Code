@@ -15,7 +15,7 @@ export interface LSPServerConfig {
 }
 
 /** 서버 인스턴스 상태 */
-export type LSPServerState = "starting" | "ready" | "error" | "shutdown";
+export type LSPServerState = "starting" | "ready" | "running" | "error" | "stopping" | "stopped" | "shutdown";
 
 /** 서버 인스턴스 정보 */
 export interface LSPServerInstance {

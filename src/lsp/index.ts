@@ -9,7 +9,7 @@
  * ```
  */
 
-export { LSPManager, LSPNotAvailableError } from "./manager.js";
+export { LSPManager, LSPNotAvailableError, getLSPManager, disposeLSPManager } from "./manager.js";
 export type {
   LSPSession,
   LSPLanguageId,

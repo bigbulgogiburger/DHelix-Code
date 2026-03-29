@@ -61,6 +61,7 @@ function createMockProcess() {
     stderr: new Readable({ read() {} }),
     kill: vi.fn(),
     on: vi.fn(),
+    removeAllListeners: vi.fn(),
     pid: 12345,
     exitCode: null,
   };

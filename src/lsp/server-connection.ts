@@ -270,6 +270,7 @@ export class LSPServerConnection {
       // 종료 중 에러는 무시
     } finally {
       this.connection.dispose();
+      this.process?.removeAllListeners();
       this.process?.kill();
       this.initialized = false;
       this.connection = undefined;
