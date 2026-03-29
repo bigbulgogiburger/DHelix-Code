@@ -58,6 +58,23 @@ export interface MemoryLoadResult {
 }
 
 /**
+ * 메모리 검색 결과 인터페이스
+ *
+ * search() 호출 시 반환되는 개별 결과 항목입니다.
+ * 소스 파일, 섹션 제목, 매칭된 내용, 관련도 점수를 포함합니다.
+ */
+export interface MemorySearchResult {
+  /** 매칭된 파일 경로 (MEMORY.md 또는 토픽 파일명) */
+  readonly source: string;
+  /** 매칭이 발생한 섹션 제목 (## 헤더, 없으면 빈 문자열) */
+  readonly section: string;
+  /** 매칭된 내용과 주변 컨텍스트 */
+  readonly content: string;
+  /** 관련도 점수 (0.0~1.0, 높을수록 관련도 높음) */
+  readonly relevance: number;
+}
+
+/**
  * 메모리 항목 입력 검증용 Zod 스키마
  *
  * 외부 입력(도구 호출 등)으로 받은 메모리 항목의 유효성을 검증합니다.

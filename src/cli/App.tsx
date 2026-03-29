@@ -185,6 +185,7 @@ export function App({
     setInteractiveSelect,
     pendingAskUser,
     setPendingAskUser,
+    streamingOutputs,
   } = useAgentLoop({
     client,
     model,
@@ -403,6 +404,7 @@ export function App({
           completedTurns={completedTurns}
           currentTurn={liveTurn}
           isExpanded={verboseMode}
+          streamingOutputs={streamingOutputs}
         />
 
         {isProcessing && !isStreamingFinal ? (

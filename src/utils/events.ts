@@ -197,6 +197,14 @@ export type AppEvents = {
     readonly count: number;
     readonly nextAction: string;
   };
+
+  /** fork 스킬이 실행되어 서브에이전트 생성이 필요함 */
+  "skill:fork": {
+    readonly prompt: string;
+    readonly model?: string;
+    readonly agentType?: "explore" | "plan" | "general";
+    readonly allowedTools?: readonly string[];
+  };
 };
 
 /**

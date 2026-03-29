@@ -99,7 +99,7 @@ describe("setupNotificationTriggers", () => {
     events.emit("llm:error", { error: new Error("Rate limit exceeded") });
 
     expect(mockSendNotification).toHaveBeenCalledWith({
-      title: "dhelix — Error",
+      title: "Dhelix Code — Error",
       message: "Rate limit exceeded",
       sound: false,
     });
@@ -307,7 +307,7 @@ describe("setupNotificationTriggers", () => {
     // Only the error notification should have been sent
     expect(mockSendNotification).toHaveBeenCalledTimes(1);
     expect(mockSendNotification).toHaveBeenCalledWith(
-      expect.objectContaining({ title: "dhelix — Error" }),
+      expect.objectContaining({ title: "Dhelix Code — Error" }),
     );
 
     cleanup();

@@ -14,7 +14,13 @@
  *    (KEY, TOKEN, SECRET, PASSWORD 등의 이름을 가진 변수)
  * 2. 할당된 값의 Shannon 엔트로피를 계산
  * 3. 임계값(4.5비트/문자)을 초과하면 잠재적 비밀 정보로 플래그
+ *
+ * ReDoS 보호:
+ * 긴 입력에 대해 정규식 실행 전 입력 길이를 제한하여
+ * 역추적 폭발(catastrophic backtracking)을 방지합니다.
  */
+
+import { getLogger } from "../utils/logger.js";
 
 /**
  * 시크릿 후보 인터페이스 — 높은 엔트로피가 탐지된 변수 할당 정보
@@ -29,6 +35,34 @@ export interface SecretCandidate {
   readonly entropy: number;
   readonly line: number;
   readonly pattern: string; // variable name pattern that matched
+}
+
+/** ReDoS 보호를 위한 최대 입력 길이 (문자 수) */
+const SAFE_REGEX_INPUT_LIMIT = 50_000;
+
+/**
+ * ReDoS 방지를 위한 안전한 정규식 exec 래퍼
+ *
+ * 엔트로피 스캐너는 소스 코드 전체를 대상으로 정규식을 실행하므로
+ * 입력이 매우 길 수 있습니다. 50,000자를 초과하는 입력은
+ * 잘라서 실행하여 역추적 폭발을 방지합니다.
+ *
+ * @param pattern - 실행할 정규식 (/g 플래그 포함)
+ * @param input - 검사할 입력 문자열
+ * @returns exec 결과 또는 null
+ */
+function safeRegexExec(pattern: RegExp, input: string): RegExpExecArray | null {
+  if (input.length > SAFE_REGEX_INPUT_LIMIT) {
+    const logger = getLogger();
+    logger.warn(
+      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      "ReDoS protection: input truncated for entropy scanner regex exec",
+    );
+    const truncated = input.slice(0, SAFE_REGEX_INPUT_LIMIT);
+    return pattern.exec(truncated);
+  }
+
+  return pattern.exec(input);
 }
 
 /**
@@ -188,7 +222,7 @@ export function detectHighEntropySecrets(content: string): readonly SecretCandid
     let match: RegExpExecArray | null;
 
     // exec()을 반복 호출하여 모든 매칭을 순회
-    while ((match = pattern.exec(content)) !== null) {
+    while ((match = safeRegexExec(pattern, content)) !== null) {
       const variableName = match[1]; // 캡처 그룹 1: 변수 이름
       const value = match[2]; // 캡처 그룹 2: 할당된 값
 

@@ -19,6 +19,7 @@ import { type ToolDefinition, type ToolResult } from "../tools/types.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { BaseError } from "../utils/error.js";
 import { getLogger } from "../utils/logger.js";
+import { scanForSecrets } from "../guardrails/secret-scanner.js";
 import { type MCPClient } from "./client.js";
 import { type MCPToolDefinition } from "./types.js";
 
@@ -210,10 +211,20 @@ function bridgeMCPTool(
         const result = await client.callTool(mcpTool.name, args);
 
         // 결과의 텍스트 콘텐츠를 하나의 문자열로 합침
-        const output = result.content
+        const rawOutput = result.content
           .map((c) => c.text ?? "")
           .filter(Boolean)
           .join("\n");
+
+        // 시크릿 스캐닝 — 출력 제한 전에 적용하여 파일 저장/truncation 전에 비밀 정보를 제거
+        const secretScan = scanForSecrets(rawOutput);
+        const output = secretScan.found ? secretScan.redacted : rawOutput;
+        if (secretScan.found) {
+          logger.warn(
+            { tool: namespacedName, patterns: secretScan.patterns },
+            `[MCP Bridge] Redacted secrets in output: ${secretScan.patterns.join(", ")}`,
+          );
+        }
 
         // 3-tier 출력 제한 (Claude Code 패턴)
         // Tier 3: 400,000자 초과 → 파일 저장 + preview

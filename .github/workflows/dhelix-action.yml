@@ -1,0 +1,46 @@
+name: DHelix Code Action
+description: Run DHelix Code in headless mode for automated coding tasks
+
+on:
+  workflow_call:
+    inputs:
+      prompt:
+        description: 'The prompt to send to DHelix'
+        required: true
+        type: string
+      model:
+        description: 'LLM model to use'
+        required: false
+        type: string
+        default: 'claude-sonnet-4-20250514'
+      output-format:
+        description: 'Output format (text, json, stream-json)'
+        required: false
+        type: string
+        default: 'json'
+    secrets:
+      ANTHROPIC_API_KEY:
+        required: false
+      OPENAI_API_KEY:
+        required: false
+
+jobs:
+  run-dhelix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+      - name: Run DHelix
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          node ./bin/dhelix.mjs -p "${{ inputs.prompt }}" \
+            --model "${{ inputs.model }}" \
+            --output-format "${{ inputs.output-format }}" \
+            --max-turns 20

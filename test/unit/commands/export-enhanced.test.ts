@@ -65,7 +65,7 @@ describe("/export enhanced", () => {
       await exportCommand.execute("test-export.md", baseContext);
       const filePath = join(TMP_DIR, "test-export.md");
       const content = await readFile(filePath, "utf-8");
-      expect(content).toContain("# dhelix Conversation Export");
+      expect(content).toContain("# Dhelix Code Conversation Export");
     });
   });
 

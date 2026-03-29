@@ -45,9 +45,9 @@ function sanitizeContent(content: string): string {
     .replace(/\b(sk-[a-zA-Z0-9]{20,})\b/g, "[REDACTED_API_KEY]")
     .replace(/\b(key-[a-zA-Z0-9]{20,})\b/g, "[REDACTED_KEY]")
     .replace(/\b(ssm_[a-zA-Z0-9]{20,})\b/g, "[REDACTED_KEY]")
-    .replace(/(Bearer\s+)[a-zA-Z0-9._\-]{20,}/g, "$1[REDACTED_TOKEN]")
+    .replace(/(Bearer\s+)[a-zA-Z0-9._-]{20,}/g, "$1[REDACTED_TOKEN]")
     .replace(/\b(ghp_[a-zA-Z0-9]{20,})\b/g, "[REDACTED_GITHUB_TOKEN]")
-    .replace(/\b(xoxb-[a-zA-Z0-9\-]{20,})\b/g, "[REDACTED_SLACK_TOKEN]")
+    .replace(/\b(xoxb-[a-zA-Z0-9-]{20,})\b/g, "[REDACTED_SLACK_TOKEN]")
     .replace(/(password["']?\s*[:=]\s*["'])[^"']{8,}(["'])/gi, "$1[REDACTED]$2");
 }
 

@@ -1,17 +1,20 @@
 /**
- * 스킬 실행기 — 스킬 본문의 변수 치환과 동적 컨텍스트 주입을 수행
+ * 스킬 실행기 — 스킬 본문의 동적 컨텍스트 주입과 변수 치환을 수행
  *
- * 스킬 실행 흐름:
- * 1. 변수 치환 (interpolateVariables): $ARGUMENTS, $0, $1 등을 실제 값으로 교체
- * 2. 동적 컨텍스트 주입 (resolveDynamicContext): `!command` 구문을 셸 명령 실행 결과로 교체
+ * 스킬 실행 흐름 (보안상 순서가 중요):
+ * 1. 동적 컨텍스트 주입 (resolveDynamicContext): `!command` 구문을 셸 명령 실행 결과로 교체
+ * 2. 변수 치환 (interpolateVariables): $ARGUMENTS, $0, $1 등을 실제 값으로 교체
  * 3. 최종 프롬프트 생성: LLM에 전송할 준비 완료
+ *
+ * 보안 노트: 동적 컨텍스트(셸 명령)를 변수 치환보다 먼저 수행하여,
+ * 사용자 입력($ARGUMENTS)이 exec()에 도달하는 셸 인젝션을 방지합니다.
  *
  * 예시 스킬 본문:
  * "현재 브랜치는 `!git branch --show-current`이고, $ARGUMENTS를 분석해주세요."
  * → "현재 브랜치는 main이고, src/index.ts를 분석해주세요."
  */
 
-import { exec } from "node:child_process";
+import { execFile } from "node:child_process";
 import { BaseError } from "../utils/error.js";
 import { type SkillDefinition, type SkillContext, type SkillExecutionResult } from "./types.js";
 
@@ -76,13 +79,18 @@ function interpolateVariables(body: string, context: SkillContext): string {
  * 동적 컨텍스트 주입(`!command` 구문)에서 사용됩니다.
  * 명령 실행 실패 시 에러 메시지를 반환하며, 예외를 던지지 않습니다.
  *
- * @param command - 실행할 셸 명령어
+ * 보안: execFile을 사용하여 명령 문자열을 /bin/sh의 단일 인자로 전달합니다.
+ * 실행 순서 변경(동적 컨텍스트 → 변수 치환)과 함께 defense-in-depth 역할을 합니다.
+ *
+ * @param command - 실행할 셸 명령어 (스킬 본문 원본에서 추출된 명령)
  * @param cwd - 명령어 실행 시 작업 디렉토리
  * @returns 명령 실행 결과 (stdout) 또는 에러 메시지
  */
 async function executeShellCommand(command: string, cwd: string): Promise<string> {
   return new Promise<string>((resolve) => {
-    exec(command, { timeout: COMMAND_TIMEOUT_MS, cwd }, (error, stdout, stderr) => {
+    // execFile로 /bin/sh -c에 명령을 단일 인자로 전달하여 제어된 셸 실행 수행
+    // 실행 순서 변경으로 사용자 입력이 이 함수에 도달할 수 없지만, defense-in-depth로 유지
+    execFile("/bin/sh", ["-c", command], { timeout: COMMAND_TIMEOUT_MS, cwd }, (error, stdout, stderr) => {
       if (error) {
         // 실패해도 프로세스를 중단하지 않고 에러 메시지를 본문에 삽입
         resolve(`[Command failed: ${stderr.trim() || error.message}]`);
@@ -127,9 +135,9 @@ async function resolveDynamicContext(body: string, cwd: string): Promise<string>
 /**
  * 스킬을 실행하여 최종 프롬프트를 생성하는 메인 함수
  *
- * 실행 단계:
- * 1. 변수 치환 ($ARGUMENTS, $0 등 → 실제 값)
- * 2. 동적 컨텍스트 주입 (`!command` → 명령 실행 결과)
+ * 실행 단계 (보안상 순서가 중요):
+ * 1. 동적 컨텍스트 주입 (`!command` → 명령 실행 결과) — 스킬 원본 명령만 실행
+ * 2. 변수 치환 ($ARGUMENTS, $0 등 → 실제 값) — 사용자 입력은 셸 실행 이후에 주입
  * 3. 결과 반환 (프롬프트 + 모델 오버라이드 + fork 여부 등)
  *
  * @param skill - 실행할 스킬 정의 (프론트매터 + 본문)
@@ -150,14 +158,15 @@ export async function executeSkill(
     });
   }
 
-  // 단계 1: 변수 치환 — $ARGUMENTS, $0 등을 실제 값으로 교체
-  const interpolated = interpolateVariables(body, context);
+  // 단계 1: 동적 컨텍스트 주입 — `!command` 구문을 실행 결과로 교체
+  // 보안: 변수 치환 전에 실행하여 사용자 입력($ARGUMENTS)이 exec()에 도달하지 않도록 함
+  const resolved = await resolveDynamicContext(body, context.workingDirectory);
 
-  // 단계 2: 동적 컨텍스트 주입 — `!command` 구문을 실행 결과로 교체
-  const resolved = await resolveDynamicContext(interpolated, context.workingDirectory);
+  // 단계 2: 변수 치환 — $ARGUMENTS, $0 등을 실제 값으로 교체 (셸 실행 완료 후)
+  const interpolated = interpolateVariables(resolved, context);
 
   return {
-    prompt: resolved,
+    prompt: interpolated,
     model: frontmatter.model ?? undefined,
     fork: frontmatter.context === "fork", // "fork"이면 서브에이전트로 실행
     agentType: frontmatter.agent,

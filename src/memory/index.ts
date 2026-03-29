@@ -32,7 +32,7 @@ export {
 export { computeProjectHash, getMemoryDir, getMemoryFilePath, getTopicFilePath } from "./paths.js";
 
 // 타입 내보내기 — 외부에서 타입 참조용
-export type { MemoryConfig, MemoryEntry, MemoryLoadResult } from "./types.js";
+export type { MemoryConfig, MemoryEntry, MemoryLoadResult, MemorySearchResult } from "./types.js";
 
 // Zod 스키마 — 메모리 항목 입력 검증용
 export { memoryEntrySchema } from "./types.js";

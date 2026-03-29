@@ -64,7 +64,7 @@ describe("/doctor enhanced diagnostics", () => {
       model: "gpt-4o",
     });
 
-    expect(result.output).toContain("dhelix Doctor");
+    expect(result.output).toContain("Dhelix Code Doctor");
     expect(result.output).toContain("=============");
     expect(result.output).toContain("Node.js");
     expect(result.output).toContain("Git");
@@ -340,7 +340,7 @@ describe("/doctor enhanced diagnostics", () => {
       const doctorCommand = await getDoctorCommand();
       const result = await doctorCommand.execute("", baseContext);
       const lines = result.output.split("\n");
-      expect(lines[0]).toBe("dhelix Doctor");
+      expect(lines[0]).toBe("Dhelix Code Doctor");
       expect(lines[1]).toBe("=============");
     });
 

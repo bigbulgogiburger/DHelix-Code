@@ -14,7 +14,13 @@
  * - JWT 토큰
  * - 데이터베이스 연결 문자열 (PostgreSQL, MongoDB, MySQL)
  * - 일반적인 비밀번호/API 키 패턴
+ *
+ * ReDoS 보호:
+ * 긴 입력에 대해 정규식 실행 전 입력 길이를 제한하여
+ * 역추적 폭발(catastrophic backtracking)을 방지합니다.
  */
+
+import { getLogger } from "../utils/logger.js";
 
 /**
  * 시크릿 스캔 결과 인터페이스
@@ -27,6 +33,60 @@ export interface SecretScanResult {
   readonly found: boolean;
   readonly redacted: string;
   readonly patterns: readonly string[];
+}
+
+/** ReDoS 보호를 위한 최대 입력 길이 (문자 수) */
+const SAFE_REGEX_INPUT_LIMIT = 50_000;
+
+/**
+ * ReDoS 방지를 위한 안전한 정규식 test 래퍼
+ *
+ * 시크릿 스캐너는 LLM 출력 전체를 대상으로 정규식을 실행하므로
+ * 입력이 매우 길 수 있습니다. 50,000자를 초과하는 입력은
+ * 잘라서 실행하여 역추적 폭발을 방지합니다.
+ *
+ * @param pattern - 실행할 정규식
+ * @param input - 검사할 입력 문자열
+ * @returns 패턴이 매칭되면 true, 아니면 false
+ */
+function safeRegexTest(pattern: RegExp, input: string): boolean {
+  if (input.length > SAFE_REGEX_INPUT_LIMIT) {
+    const logger = getLogger();
+    logger.warn(
+      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      "ReDoS protection: input truncated for secret scanner regex test",
+    );
+    const truncated = input.slice(0, SAFE_REGEX_INPUT_LIMIT);
+    return pattern.test(truncated);
+  }
+
+  return pattern.test(input);
+}
+
+/**
+ * ReDoS 방지를 위한 안전한 문자열 replace 래퍼
+ *
+ * String.prototype.replace에 정규식을 사용할 때도 역추적이 발생할 수 있습니다.
+ * 입력 길이를 제한한 후, 잘린 부분과 나머지를 결합하여 반환합니다.
+ *
+ * @param input - 대체할 원본 문자열
+ * @param pattern - 대체에 사용할 정규식
+ * @param replacement - 대체 문자열
+ * @returns 패턴이 대체된 문자열
+ */
+function safeRegexReplace(input: string, pattern: RegExp, replacement: string): string {
+  if (input.length > SAFE_REGEX_INPUT_LIMIT) {
+    const logger = getLogger();
+    logger.warn(
+      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      "ReDoS protection: input truncated for secret scanner regex replace",
+    );
+    const truncatedPart = input.slice(0, SAFE_REGEX_INPUT_LIMIT);
+    const remainder = input.slice(SAFE_REGEX_INPUT_LIMIT);
+    return truncatedPart.replace(pattern, replacement) + remainder;
+  }
+
+  return input.replace(pattern, replacement);
 }
 
 /**
@@ -186,12 +246,12 @@ export function scanForSecrets(text: string): SecretScanResult {
     // (같은 RegExp 객체를 재사용하면 lastIndex가 누적되어 오탐 발생 가능)
     const pattern = new RegExp(regex.source, regex.flags);
 
-    // 먼저 패턴이 매칭되는지 확인
-    if (pattern.test(redacted)) {
+    // 먼저 패턴이 매칭되는지 확인 (safeRegexTest로 ReDoS 방지)
+    if (safeRegexTest(pattern, redacted)) {
       matchedPatterns.push(name);
       // 새로운 RegExp 객체로 실제 대체 수행 (test()가 lastIndex를 변경했으므로)
       const replacePattern = new RegExp(regex.source, regex.flags);
-      redacted = redacted.replace(replacePattern, "[REDACTED]");
+      redacted = safeRegexReplace(redacted, replacePattern, "[REDACTED]");
     }
   }
 

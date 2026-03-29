@@ -516,6 +516,9 @@ export async function runAgentLoop(
   let duplicateToolCallCount = 0;
   const MAX_DUPLICATE_TOOL_CALLS = 3;
 
+  // 선제적 컴팩션: 마지막 컴팩션이 발생한 반복 번호를 추적하여 이중 컴팩션 방지
+  let lastCompactionIteration = -Infinity;
+
   // Context manager for auto-compaction when token budget is exceeded
   const contextManager = new ContextManager({
     maxContextTokens: config.maxContextTokens,
@@ -561,7 +564,31 @@ export async function runAgentLoop(
     // Apply observation masking to reduce token usage before compaction
     const maskedMessages = applyObservationMasking(messages, { keepRecentN: 5 });
     // Apply context compaction if messages exceed token budget
-    const managedMessages = [...(await contextManager.prepare(maskedMessages))];
+    let managedMessages = [...(await contextManager.prepare(maskedMessages))];
+
+    // 선제적 컴팩션 — LLM 호출 전에 컨텍스트 사용량이 임계치에 근접하면 미리 압축
+    // prepare()의 자동 컴팩션(83.5%)과 별도로, 80%에서 선제적으로 실행하여
+    // LLM 호출 실패나 품질 저하를 사전에 방지합니다.
+    // 이중 컴팩션 방지: 최근 2회 반복 이내에 컴팩션이 발생했으면 건너뜁니다.
+    if (iterations - lastCompactionIteration > 2) {
+      const preemptiveUsage = contextManager.getUsage(managedMessages);
+      if (preemptiveUsage.usageRatio >= AGENT_LOOP.preemptiveCompactionThreshold) {
+        trace(
+          "agent-loop",
+          `Preemptive compaction triggered at ${(preemptiveUsage.usageRatio * 100).toFixed(1)}% usage`,
+        );
+        config.events.emit("context:pre-compact", {
+          compactionNumber: 0,
+        });
+        const { messages: compacted } = await contextManager.compact(managedMessages);
+        managedMessages = [...compacted];
+        lastCompactionIteration = iterations;
+        trace(
+          "agent-loop",
+          `Preemptive compaction complete — usage now ${(contextManager.getUsage(managedMessages).usageRatio * 100).toFixed(1)}%`,
+        );
+      }
+    }
 
     // Prepare request with tool definitions
     // Deferred mode: hot tools only by default, plus schemas for recently used deferred tools

@@ -1,7 +1,7 @@
-# CLAUDE.md — dhelix
+# CLAUDE.md — Dhelix Code
 
-CLI AI coding assistant for local/external LLMs.
-Node.js 20+ / TypeScript 5.x / ESM only / Ink 5.x (React for CLI) / Vitest / tsup
+CLI AI coding assistant for local/external LLMs. (Double Helix = DNA of your code)
+Node.js 20+ / TypeScript 5.x / ESM only / Ink 5.x (React for CLI) / Vitest / tsup / v0.2.0
 
 ## Architecture
 
@@ -52,6 +52,28 @@ graph TD
 ```
 
 **Dependency rule**: top → bottom only. Circular deps forbidden (`madge --circular src/`).
+
+## Naming Convention
+
+| Context | Name | Example |
+|---------|------|---------|
+| Package / CLI command | `dhelix` | `npx dhelix`, `bin/dhelix.mjs` |
+| Project instruction file | `DHELIX.md` | `{project}/DHELIX.md` |
+| Config directory | `.dhelix` | `~/.dhelix/`, `{project}/.dhelix/` |
+| Environment variable prefix | `DHELIX_` | `DHELIX_MODEL`, `DHELIX_BASE_URL` |
+| Display / brand name | `Dhelix Code` | UI titles, docs |
+
+## Brand Colors (Double Helix Palette)
+
+| Token | Hex | Usage |
+|-------|-----|-------|
+| Bright accent | `#00E5FF` | Success, completion, assistant messages |
+| Primary | `#00BCD4` | Secondary emphasis, agent animation |
+| Dark accent | `#0097A7` | Borders, muted accents |
+| Cyan | `cyan` | Spinner, selection highlight, model name |
+| Semantic | `red`/`yellow`/`gray` | Errors / warnings / muted (unchanged) |
+
+Theme source of truth: `src/cli/renderer/theme.ts`
 
 ## Commands
 
@@ -114,13 +136,7 @@ When compacting, always preserve:
 - Files created/modified in this session
 - Any blockers or workarounds discovered
 
-## E2E 멀티턴 테스트 가이드
-
-> 상세: `.claude/docs/reference/e2e-test-guide.md` — QA 에이전트 원칙, NEXUS.md 패턴, 채점 기준
-
 ## 개발가이드 페이지
-
-모듈별 다이어그램 + 코드 설명 + 구현 방향을 시각적으로 정리한 웹 문서입니다.
 
 | 페이지              | 설명                                   | 경로 / 실행                                       |
 | ------------------- | -------------------------------------- | ------------------------------------------------- |

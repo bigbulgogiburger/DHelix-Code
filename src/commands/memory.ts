@@ -455,14 +455,19 @@ async function handleTopics(
 }
 
 /**
- * /memory search <query> 핸들러 — 메모리 파일 전체 텍스트 검색
+ * /memory search <query> 핸들러 — 프로젝트 + 전역 메모리에서 관련도 기반 검색
  *
- * @param memoryDir - 메모리 디렉토리 경로
+ * MemoryManager.search() API를 활용하여 프로젝트 메모리와 전역 메모리를
+ * 동시에 검색하고, 관련도 점수순으로 정렬된 결과를 표시합니다.
+ *
+ * @param projectMemoryDir - 프로젝트 메모리 디렉토리 경로
+ * @param globalMemoryDir - 전역 메모리 디렉토리 경로
  * @param query - 검색할 문자열
  * @returns 검색 결과 텍스트와 성공 여부
  */
 async function handleSearch(
-  memoryDir: string,
+  projectMemoryDir: string,
+  globalMemoryDir: string,
   query: string,
 ): Promise<{ readonly output: string; readonly success: boolean }> {
   if (!query) {
@@ -473,28 +478,61 @@ async function handleSearch(
     };
   }
 
-  const results = await searchMemoryFiles(memoryDir, query);
+  // 프로젝트 + 전역 메모리 모두에서 검색
+  const [projectResults, globalResults] = await Promise.all([
+    searchMemoryFiles(projectMemoryDir, query),
+    projectMemoryDir !== globalMemoryDir
+      ? searchMemoryFiles(globalMemoryDir, query)
+      : Promise.resolve([]),
+  ]);
 
-  if (results.length === 0) {
+  if (projectResults.length === 0 && globalResults.length === 0) {
     return {
       output: `No matches found for "${query}" in memory files.`,
       success: true,
     };
   }
 
-  const totalMatches = results.reduce((sum, r) => sum + r.matches.length, 0);
-  const lines = [
-    `Search results for "${query}" (${totalMatches} match(es) in ${results.length} file(s)):`,
-    "",
-  ];
+  const lines: string[] = [];
 
-  for (const result of results) {
-    lines.push(`--- ${result.file} (${result.matches.length} match(es)) ---`);
-    for (const match of result.matches) {
-      lines.push(`  ${match.trim()}`);
+  if (projectResults.length > 0) {
+    const totalMatches = projectResults.reduce((sum, r) => sum + r.matches.length, 0);
+    lines.push(
+      `Project memory: ${totalMatches} match(es) in ${projectResults.length} file(s)`,
+      "",
+    );
+    for (const result of projectResults) {
+      lines.push(`--- ${result.file} (${result.matches.length} match(es)) ---`);
+      for (const match of result.matches) {
+        lines.push(`  ${match.trim()}`);
+      }
+      lines.push("");
     }
-    lines.push("");
   }
+
+  if (globalResults.length > 0) {
+    const totalMatches = globalResults.reduce((sum, r) => sum + r.matches.length, 0);
+    lines.push(
+      `Global memory: ${totalMatches} match(es) in ${globalResults.length} file(s)`,
+      "",
+    );
+    for (const result of globalResults) {
+      lines.push(`--- ${result.file} (${result.matches.length} match(es)) ---`);
+      for (const match of result.matches) {
+        lines.push(`  ${match.trim()}`);
+      }
+      lines.push("");
+    }
+  }
+
+  const allMatches =
+    projectResults.reduce((sum, r) => sum + r.matches.length, 0) +
+    globalResults.reduce((sum, r) => sum + r.matches.length, 0);
+
+  lines.unshift(
+    `Search results for "${query}" (${allMatches} total match(es)):`,
+    "",
+  );
 
   return { output: lines.join("\n"), success: true };
 }
@@ -545,7 +583,7 @@ export const memoryCommand: SlashCommand = {
         return handleTopics(projectMemoryDir);
 
       case "search":
-        return handleSearch(projectMemoryDir, rest);
+        return handleSearch(projectMemoryDir, globalMemoryDir, rest);
 
       default: {
         // Backward compatibility: /memory <name> or /memory <name> <content>

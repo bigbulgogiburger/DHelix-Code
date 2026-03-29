@@ -48,6 +48,9 @@ const BASE_RATE_LIMIT_DELAY_MS = 5_000;
 /** Rate Limit 백오프 최대 대기 시간 (60초) — 무한정 대기하지 않도록 상한 설정 */
 const MAX_RATE_LIMIT_DELAY_MS = 60_000;
 
+/** 스트리밍 청크 간 타임아웃 (30초) — LLM이 응답을 멈추면 무한 대기 방지 */
+const STREAM_CHUNK_TIMEOUT_MS = 30_000;
+
 /**
  * 내부 ChatMessage 형식을 OpenAI API 형식으로 변환
  *
@@ -583,7 +586,7 @@ export class OpenAICompatibleClient implements LLMProvider {
       choice.message.tool_calls
         ?.filter((tc) => tc.type === "function" && "function" in tc)
         .map((tc) => {
-          const funcTc = tc as OpenAI.Chat.Completions.ChatCompletionMessageFunctionToolCall;
+          const funcTc = tc as OpenAI.Chat.Completions.ChatCompletionMessageToolCall;
           return {
             id: funcTc.id,
             name: funcTc.function.name,
@@ -756,57 +759,92 @@ export class OpenAICompatibleClient implements LLMProvider {
     // 응답 종료 사유 (스트리밍 청크에서 수신)
     let streamFinishReason: string | undefined;
 
-    for await (const chunk of stream) {
-      // OpenAI는 stream_options.include_usage가 true일 때 마지막 청크에 usage를 포함
-      if (chunk.usage) {
-        streamUsage = {
-          promptTokens: chunk.usage.prompt_tokens ?? 0,
-          completionTokens: chunk.usage.completion_tokens ?? 0,
-          totalTokens: chunk.usage.total_tokens ?? 0,
-        };
+    // 청크 간 타임아웃 — LLM이 응답을 멈추면 무한 대기를 방지
+    let chunkTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const clearChunkTimer = (): void => {
+      if (chunkTimer) {
+        clearTimeout(chunkTimer);
+        chunkTimer = undefined;
       }
+    };
 
-      // 응답 종료 사유 캡처 — 마지막 유효한 finish_reason을 보존
-      const choiceFinishReason = chunk.choices[0]?.finish_reason;
-      if (choiceFinishReason) {
-        streamFinishReason = choiceFinishReason;
-      }
+    const chunkTimeoutPromise = (): Promise<never> =>
+      new Promise<never>((_, reject) => {
+        chunkTimer = setTimeout(() => {
+          reject(new LLMError("Stream chunk timeout: no data received for 30 seconds"));
+        }, STREAM_CHUNK_TIMEOUT_MS);
+      });
 
-      const delta = chunk.choices[0]?.delta;
-      if (!delta) continue;
+    try {
+      const iterator = stream[Symbol.asyncIterator]();
 
-      // 텍스트 내용 청크
-      if (delta.content) {
-        yield { type: "text-delta", text: delta.content };
-      }
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const result = await Promise.race([
+          iterator.next(),
+          chunkTimeoutPromise(),
+        ]);
 
-      // 도구 호출 청크 — 점진적으로 조립
-      // LLM은 도구 호출 인자를 한 번에 보내지 않고 여러 청크에 나눠서 전송
-      if (delta.tool_calls) {
-        for (const tc of delta.tool_calls) {
-          const existing = toolCallsInProgress.get(tc.index);
-          if (existing) {
-            // 기존 도구 호출에 인자 조각을 이어 붙임
-            existing.arguments += tc.function?.arguments ?? "";
-          } else {
-            // 새로운 도구 호출 시작
-            toolCallsInProgress.set(tc.index, {
-              id: tc.id ?? "",
-              name: tc.function?.name ?? "",
-              arguments: tc.function?.arguments ?? "",
-            });
-          }
-          // UI에서 실시간으로 도구 호출 진행 상황을 표시하기 위해 delta를 전달
-          yield {
-            type: "tool-call-delta",
-            toolCall: {
-              id: tc.id ?? existing?.id,
-              name: tc.function?.name ?? existing?.name,
-              arguments: tc.function?.arguments ?? "",
-            },
+        clearChunkTimer();
+
+        if (result.done) break;
+
+        const chunk = result.value;
+
+        // OpenAI는 stream_options.include_usage가 true일 때 마지막 청크에 usage를 포함
+        if (chunk.usage) {
+          streamUsage = {
+            promptTokens: chunk.usage.prompt_tokens ?? 0,
+            completionTokens: chunk.usage.completion_tokens ?? 0,
+            totalTokens: chunk.usage.total_tokens ?? 0,
           };
         }
+
+        // 응답 종료 사유 캡처 — 마지막 유효한 finish_reason을 보존
+        const choiceFinishReason = chunk.choices[0]?.finish_reason;
+        if (choiceFinishReason) {
+          streamFinishReason = choiceFinishReason;
+        }
+
+        const delta = chunk.choices[0]?.delta;
+        if (!delta) continue;
+
+        // 텍스트 내용 청크
+        if (delta.content) {
+          yield { type: "text-delta", text: delta.content };
+        }
+
+        // 도구 호출 청크 — 점진적으로 조립
+        // LLM은 도구 호출 인자를 한 번에 보내지 않고 여러 청크에 나눠서 전송
+        if (delta.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const existing = toolCallsInProgress.get(tc.index);
+            if (existing) {
+              // 기존 도구 호출에 인자 조각을 이어 붙임
+              existing.arguments += tc.function?.arguments ?? "";
+            } else {
+              // 새로운 도구 호출 시작
+              toolCallsInProgress.set(tc.index, {
+                id: tc.id ?? "",
+                name: tc.function?.name ?? "",
+                arguments: tc.function?.arguments ?? "",
+              });
+            }
+            // UI에서 실시간으로 도구 호출 진행 상황을 표시하기 위해 delta를 전달
+            yield {
+              type: "tool-call-delta",
+              toolCall: {
+                id: tc.id ?? existing?.id,
+                name: tc.function?.name ?? existing?.name,
+                arguments: tc.function?.arguments ?? "",
+              },
+            };
+          }
+        }
       }
+    } finally {
+      clearChunkTimer();
     }
 
     // 스트리밍 완료 신호와 함께 최종 사용량 및 종료 사유 전달
@@ -859,34 +897,71 @@ export class OpenAICompatibleClient implements LLMProvider {
     // Responses API의 응답 상태 ("completed" 등)
     let responseStatus: string | undefined;
 
+    // 청크 간 타임아웃 — LLM이 응답을 멈추면 무한 대기를 방지
+    let chunkTimer: ReturnType<typeof setTimeout> | undefined;
+
+    const clearChunkTimer = (): void => {
+      if (chunkTimer) {
+        clearTimeout(chunkTimer);
+        chunkTimer = undefined;
+      }
+    };
+
+    const chunkTimeoutPromise = (): Promise<never> =>
+      new Promise<never>((_, reject) => {
+        chunkTimer = setTimeout(() => {
+          reject(new LLMError("Stream chunk timeout: no data received for 30 seconds"));
+        }, STREAM_CHUNK_TIMEOUT_MS);
+      });
+
     // Responses API 스트리밍은 청크가 아닌 이벤트(event) 단위로 데이터를 전송
-    for await (const event of stream) {
-      // 텍스트 델타 이벤트 — 텍스트 응답의 일부분
-      if (event.type === "response.output_text.delta") {
-        yield { type: "text-delta", text: event.delta ?? "" };
-      }
-      // 함수 호출 인자 완료 이벤트 — 도구 호출 정보가 완성됨
-      else if (event.type === "response.function_call_arguments.done") {
-        yield {
-          type: "tool-call-delta",
-          toolCall: {
-            id: event.call_id ?? event.item_id ?? "",
-            name: event.name ?? "",
-            arguments: event.arguments ?? "{}",
-          },
-        };
-      }
-      // 응답 완료 이벤트 — 토큰 사용량 정보 및 상태 포함
-      else if (event.type === "response.completed") {
-        responseStatus = event.response?.status as string | undefined;
-        if (event.response?.usage) {
-          streamUsage = {
-            promptTokens: event.response.usage.input_tokens ?? 0,
-            completionTokens: event.response.usage.output_tokens ?? 0,
-            totalTokens: event.response.usage.total_tokens ?? 0,
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const iterator = (stream as any)[Symbol.asyncIterator]();
+
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const result = await Promise.race([
+          iterator.next(),
+          chunkTimeoutPromise(),
+        ]);
+
+        clearChunkTimer();
+
+        if (result.done) break;
+
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const event = result.value as any;
+
+        // 텍스트 델타 이벤트 — 텍스트 응답의 일부분
+        if (event.type === "response.output_text.delta") {
+          yield { type: "text-delta", text: event.delta ?? "" };
+        }
+        // 함수 호출 인자 완료 이벤트 — 도구 호출 정보가 완성됨
+        else if (event.type === "response.function_call_arguments.done") {
+          yield {
+            type: "tool-call-delta",
+            toolCall: {
+              id: event.call_id ?? event.item_id ?? "",
+              name: event.name ?? "",
+              arguments: event.arguments ?? "{}",
+            },
           };
         }
+        // 응답 완료 이벤트 — 토큰 사용량 정보 및 상태 포함
+        else if (event.type === "response.completed") {
+          responseStatus = event.response?.status as string | undefined;
+          if (event.response?.usage) {
+            streamUsage = {
+              promptTokens: event.response.usage.input_tokens ?? 0,
+              completionTokens: event.response.usage.output_tokens ?? 0,
+              totalTokens: event.response.usage.total_tokens ?? 0,
+            };
+          }
+        }
       }
+    } finally {
+      clearChunkTimer();
     }
 
     yield {

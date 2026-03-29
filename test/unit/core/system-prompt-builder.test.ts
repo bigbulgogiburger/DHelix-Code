@@ -16,7 +16,7 @@ import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 describe("buildSystemPrompt", () => {
   it("should build a prompt with identity section", () => {
     const prompt = buildSystemPrompt();
-    expect(prompt).toContain("dhelix");
+    expect(prompt).toContain("dhelix v");
     expect(prompt).toContain("AI coding assistant");
   });
 
@@ -311,7 +311,7 @@ describe("token budget", () => {
   it("should trim lowest-priority sections when budget exceeded", () => {
     const prompt = buildSystemPrompt({
       customSections: [{ id: "big-low", content: "A".repeat(5000), priority: 5 }],
-      totalTokenBudget: 500,
+      totalTokenBudget: 2000,
     });
     // The high-priority identity section should be included
     expect(prompt).toContain("dhelix");

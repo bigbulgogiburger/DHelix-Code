@@ -129,8 +129,8 @@ describe("TeammateStatus", () => {
       expect(mod.getStatusColor("running")).toBe("yellow");
     });
 
-    it("should return green for completed", () => {
-      expect(mod.getStatusColor("completed")).toBe("green");
+    it("should return #00E5FF for completed", () => {
+      expect(mod.getStatusColor("completed")).toBe("#00E5FF");
     });
 
     it("should return red for failed", () => {
