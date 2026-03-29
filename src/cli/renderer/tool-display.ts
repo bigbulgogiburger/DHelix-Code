@@ -716,6 +716,106 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     extractHeaderArg: (args) =>
       typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
   },
+  goto_definition: {
+    running: "Finding definition",
+    complete: "Found definition",
+    headerVerb: "GotoDef",
+    runningHeaderVerb: "Finding definition",
+    headerColor: "blue",
+    extractDetail: (args, _output, metadata) => {
+      const filePath =
+        typeof metadata?.filePath === "string"
+          ? shortenPath(metadata.filePath)
+          : typeof args?.file_path === "string"
+            ? shortenPath(args.file_path)
+            : undefined;
+      const symbolName =
+        typeof args?.symbol_name === "string" ? args.symbol_name : undefined;
+      const count =
+        typeof metadata?.resultCount === "number" ? metadata.resultCount : undefined;
+      const parts: string[] = [];
+      if (symbolName) parts.push(`"${symbolName}"`);
+      if (filePath) parts.push(filePath);
+      if (count !== undefined) parts.push(`${count} result${count === 1 ? "" : "s"}`);
+      return parts.length > 0 ? parts.join(" — ") : undefined;
+    },
+    extractHeaderArg: (args) =>
+      typeof args?.symbol_name === "string"
+        ? args.symbol_name
+        : typeof args?.file_path === "string"
+          ? shortenPath(args.file_path)
+          : undefined,
+  },
+  find_references: {
+    running: "Finding references",
+    complete: "Found references",
+    headerVerb: "FindRefs",
+    runningHeaderVerb: "Finding references",
+    headerColor: "blue",
+    extractDetail: (args, _output, metadata) => {
+      const filePath =
+        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+      const count =
+        typeof metadata?.resultCount === "number" ? metadata.resultCount : undefined;
+      const fileCount =
+        typeof metadata?.fileCount === "number" ? metadata.fileCount : undefined;
+      const parts: string[] = [];
+      if (filePath) parts.push(filePath);
+      if (count !== undefined)
+        parts.push(`${count} ref${count === 1 ? "" : "s"}`);
+      if (fileCount !== undefined)
+        parts.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`);
+      return parts.length > 0 ? parts.join(" — ") : undefined;
+    },
+    extractHeaderArg: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+  },
+  get_type_info: {
+    running: "Getting type info",
+    complete: "Got type info",
+    headerVerb: "TypeInfo",
+    runningHeaderVerb: "Getting type info",
+    headerColor: "cyan",
+    extractDetail: (args, _output, metadata) => {
+      const filePath =
+        typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
+      const type = typeof metadata?.type === "string" ? metadata.type : undefined;
+      const parts: string[] = [];
+      if (filePath) parts.push(filePath);
+      if (type) {
+        const truncated = type.length > 60 ? type.slice(0, 57) + "..." : type;
+        parts.push(truncated);
+      }
+      return parts.length > 0 ? parts.join(" — ") : undefined;
+    },
+    extractHeaderArg: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+  },
+  safe_rename: {
+    running: "Renaming",
+    complete: "Renamed",
+    headerVerb: "Rename",
+    runningHeaderVerb: "Renaming",
+    headerColor: "yellow",
+    extractDetail: (args, _output, metadata) => {
+      const newName = typeof args?.new_name === "string" ? args.new_name : undefined;
+      const dryRun = typeof args?.dry_run === "boolean" ? args.dry_run : true;
+      const filesModified =
+        typeof metadata?.filesModified === "number" ? metadata.filesModified : undefined;
+      const totalEdits =
+        typeof metadata?.totalEdits === "number" ? metadata.totalEdits : undefined;
+      const parts: string[] = [];
+      if (newName) parts.push(`→ "${newName}"`);
+      if (dryRun) parts.push("[dry run]");
+      if (filesModified !== undefined)
+        parts.push(`${filesModified} file${filesModified === 1 ? "" : "s"}`);
+      if (totalEdits !== undefined)
+        parts.push(`${totalEdits} edit${totalEdits === 1 ? "" : "s"}`);
+      return parts.length > 0 ? parts.join(" — ") : undefined;
+    },
+    extractHeaderArg: (args) =>
+      typeof args?.new_name === "string" ? args.new_name : undefined,
+  },
 };
 
 /**

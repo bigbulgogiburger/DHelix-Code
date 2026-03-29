@@ -184,11 +184,18 @@ const CODE_INTELLIGENCE_GUIDE = `## Code Intelligence Tools
 - **symbol_search**: 함수/클래스/인터페이스를 정확하게 검색. 주석이나 문자열 내 일치를 무시.
 - **code_outline**: 파일 전체를 읽지 않고 구조(함수, 클래스, 메서드)만 추출. 토큰 절약.
 - **find_dependencies**: 파일의 import/export 의존 관계 추적.
+- **goto_definition**: 심볼의 정의 위치를 정확히 찾음 (LSP 기반, cross-file 지원)
+- **find_references**: 심볼의 모든 사용처를 찾음 (LSP 기반, 100% 정확)
+- **get_type_info**: 심볼의 타입과 문서를 조회
+- **safe_rename**: 모든 참조를 자동 업데이트하는 안전한 리네이밍
 
 사용 가이드:
-- 심볼 정의 찾기 → symbol_search (grep_search보다 정확)
+- 심볼 정의 찾기 → goto_definition (정확한 위치) 또는 symbol_search (이름 검색)
 - 파일 구조 파악 → code_outline (file_read보다 효율적)
 - 의존 관계 파악 → find_dependencies
+- 사용처 파악 → find_references (리팩토링 전 필수)
+- 타입 확인 → get_type_info (시그니처/문서 조회)
+- 이름 변경 → safe_rename (dry_run=true로 먼저 확인)
 - 텍스트 패턴/정규식 → grep_search (기존대로)
 - 파일명 패턴 → glob_search (기존대로)
 `;

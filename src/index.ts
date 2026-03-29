@@ -157,6 +157,10 @@ program
         { symbolSearchTool },
         { codeOutlineTool },
         { findDependenciesTool },
+        { gotoDefinitionTool },
+        { findReferencesTool },
+        { getTypeInfoTool },
+        { safeRenameTool },
         { CommandRegistry },
         { clearCommand },
         { compactCommand },
@@ -225,6 +229,10 @@ program
         import("./tools/definitions/symbol-search.js"),
         import("./tools/definitions/code-outline.js"),
         import("./tools/definitions/find-dependencies.js"),
+        import("./tools/definitions/goto-definition.js"),
+        import("./tools/definitions/find-references.js"),
+        import("./tools/definitions/get-type-info.js"),
+        import("./tools/definitions/safe-rename.js"),
         import("./commands/registry.js"),
         import("./commands/clear.js"),
         import("./commands/compact.js"),
@@ -328,6 +336,10 @@ program
         symbolSearchTool,
         codeOutlineTool,
         findDependenciesTool,
+        gotoDefinitionTool,
+        findReferencesTool,
+        getTypeInfoTool,
+        safeRenameTool,
       ]);
 
       _t = _profileLog("tools registered", _t);
