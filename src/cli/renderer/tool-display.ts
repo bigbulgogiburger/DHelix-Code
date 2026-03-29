@@ -691,6 +691,31 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       return undefined;
     },
   },
+  code_outline: {
+    running: "Analyzing",
+    complete: "Outlined",
+    headerVerb: "Outline",
+    runningHeaderVerb: "Analyzing",
+    headerColor: "blue",
+    extractDetail: (args, _output, metadata) => {
+      const filePath =
+        typeof metadata?.filePath === "string"
+          ? shortenPath(metadata.filePath)
+          : typeof args?.file_path === "string"
+            ? shortenPath(args.file_path)
+            : undefined;
+      if (!filePath) return undefined;
+
+      const lang = typeof metadata?.language === "string" ? metadata.language : undefined;
+      const count = typeof metadata?.symbolCount === "number" ? metadata.symbolCount : undefined;
+      const parts = [filePath];
+      if (lang) parts.push(lang);
+      if (count !== undefined) parts.push(`${count} symbols`);
+      return parts.join(" — ");
+    },
+    extractHeaderArg: (args) =>
+      typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined,
+  },
 };
 
 /**

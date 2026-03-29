@@ -154,6 +154,9 @@ program
         { notebookEditTool },
         { createAgentTool },
         { todoWriteTool },
+        { symbolSearchTool },
+        { codeOutlineTool },
+        { findDependenciesTool },
         { CommandRegistry },
         { clearCommand },
         { compactCommand },
@@ -219,6 +222,9 @@ program
         import("./tools/definitions/notebook-edit.js"),
         import("./tools/definitions/agent.js"),
         import("./tools/definitions/todo-write.js"),
+        import("./tools/definitions/symbol-search.js"),
+        import("./tools/definitions/code-outline.js"),
+        import("./tools/definitions/find-dependencies.js"),
         import("./commands/registry.js"),
         import("./commands/clear.js"),
         import("./commands/compact.js"),
@@ -300,7 +306,7 @@ program
           });
 
       // ── 단계 6: 도구(Tool) 등록 ──
-      // 16개의 기본 도구를 레지스트리에 등록
+      // 19개의 기본 도구를 레지스트리에 등록
       // 각 도구는 AI가 파일 읽기, 셸 명령 실행 등을 수행하는 데 사용
       const toolRegistry = new ToolRegistry();
       toolRegistry.registerAll([
@@ -319,6 +325,9 @@ program
         listDirTool,
         notebookEditTool,
         todoWriteTool,
+        symbolSearchTool,
+        codeOutlineTool,
+        findDependenciesTool,
       ]);
 
       _t = _profileLog("tools registered", _t);

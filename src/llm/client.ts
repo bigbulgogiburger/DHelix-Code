@@ -586,7 +586,7 @@ export class OpenAICompatibleClient implements LLMProvider {
       choice.message.tool_calls
         ?.filter((tc) => tc.type === "function" && "function" in tc)
         .map((tc) => {
-          const funcTc = tc as OpenAI.Chat.Completions.ChatCompletionMessageToolCall;
+          const funcTc = tc as OpenAI.Chat.Completions.ChatCompletionMessageToolCall & { function: { name: string; arguments: string } };
           return {
             id: funcTc.id,
             name: funcTc.function.name,

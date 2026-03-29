@@ -175,6 +175,24 @@ export interface BuildSystemPromptOptions {
   readonly isHeadless?: boolean;
 }
 
+/**
+ * 코드 인텔리전스 도구 사용 가이드
+ * symbol_search, code_outline, find_dependencies가 등록되어 있을 때만 포함됩니다.
+ */
+const CODE_INTELLIGENCE_GUIDE = `## Code Intelligence Tools
+
+- **symbol_search**: 함수/클래스/인터페이스를 정확하게 검색. 주석이나 문자열 내 일치를 무시.
+- **code_outline**: 파일 전체를 읽지 않고 구조(함수, 클래스, 메서드)만 추출. 토큰 절약.
+- **find_dependencies**: 파일의 import/export 의존 관계 추적.
+
+사용 가이드:
+- 심볼 정의 찾기 → symbol_search (grep_search보다 정확)
+- 파일 구조 파악 → code_outline (file_read보다 효율적)
+- 의존 관계 파악 → find_dependencies
+- 텍스트 패턴/정규식 → grep_search (기존대로)
+- 파일명 패턴 → glob_search (기존대로)
+`;
+
 /** 시스템 프롬프트의 기본 토큰 예산 (32,000 토큰) */
 const DEFAULT_TOTAL_TOKEN_BUDGET = 32_000;
 
@@ -276,6 +294,20 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
     priority: 76,
     condition: () => tone !== "normal",
   });
+
+  // Code intelligence tools guide — only if the tools are registered
+  {
+    const reg = options?.toolRegistry;
+    const hasCodeIntel =
+      reg?.has("symbol_search") && reg?.has("code_outline") && reg?.has("find_dependencies");
+    if (hasCodeIntel) {
+      sections.push({
+        id: "code-intelligence",
+        content: CODE_INTELLIGENCE_GUIDE,
+        priority: 75,
+      });
+    }
+  }
 
   // HeadlessGuard: headless 모드에서 ask_user 억제 + 자율 진행 지시
   const isHeadless = options?.isHeadless === true;
