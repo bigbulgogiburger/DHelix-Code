@@ -43,9 +43,9 @@ export default function TokenStorePage() {
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
                 <code className="text-cyan-600">token-store</code>는 API 토큰을 두 가지 소스에서
-                관리합니다: 환경 변수(<code className="text-cyan-600">DBCODE_API_KEY</code>,{" "}
+                관리합니다: 환경 변수(<code className="text-cyan-600">DHELIX_API_KEY</code>,{" "}
                 <code className="text-cyan-600">OPENAI_API_KEY</code>)와 자격 증명 파일(
-                <code className="text-cyan-600">~/.dbcode/credentials.json</code>).
+                <code className="text-cyan-600">~/.dhelix/credentials.json</code>).
               </p>
               <p>
                 환경 변수가 최우선입니다. CI/CD 파이프라인이나 Docker 환경에서 파일 없이 토큰을
@@ -62,8 +62,8 @@ export default function TokenStorePage() {
               titleColor="purple"
               chart={`graph TD
   RESOLVE["resolveToken()"]
-  ENV{"환경 변수<br/>DBCODE_API_KEY<br/>OPENAI_API_KEY"}
-  FILE{"자격 증명 파일<br/>~/.dbcode/credentials.json"}
+  ENV{"환경 변수<br/>DHELIX_API_KEY<br/>OPENAI_API_KEY"}
+  FILE{"자격 증명 파일<br/>~/.dhelix/credentials.json"}
   RESULT_ENV["ResolvedToken<br/><small>source: environment</small>"]
   RESULT_FILE["ResolvedToken<br/><small>source: file</small>"]
   NONE["undefined<br/><small>토큰 없음</small>"]
@@ -150,7 +150,7 @@ export default function TokenStorePage() {
             </h3>
             <div className="bg-white border border-gray-200 rounded-xl p-5 text-[13px] text-gray-600 space-y-2.5">
               <p>
-                <code className="text-cyan-600">DBCODE_API_KEY</code> &mdash; dbcode 전용 API 키
+                <code className="text-cyan-600">DHELIX_API_KEY</code> &mdash; dhelix 전용 API 키
                 (최우선)
               </p>
               <p>
@@ -171,7 +171,7 @@ export default function TokenStorePage() {
               자격 증명 파일 형식
             </h3>
             <CodeBlock>
-              <span className="cm">{"// ~/.dbcode/credentials.json"}</span>
+              <span className="cm">{"// ~/.dhelix/credentials.json"}</span>
               {"\n"}
               {"{"}
               {"\n"}
@@ -274,7 +274,7 @@ export default function TokenStorePage() {
               <span className="str">&quot;sk-your-api-key-here&quot;</span>,{"\n"}
               {"}"});
               {"\n"}
-              <span className="cm">{"// → ~/.dbcode/credentials.json 생성 (mode: 0o600)"}</span>
+              <span className="cm">{"// → ~/.dhelix/credentials.json 생성 (mode: 0o600)"}</span>
             </CodeBlock>
 
             <Callout type="warn" icon="!">
@@ -285,7 +285,7 @@ export default function TokenStorePage() {
 
             <Callout type="tip" icon="*">
               <strong>팁:</strong> CI/CD 환경에서는 파일 대신 환경 변수를 사용하세요.
-              <code>export DBCODE_API_KEY=sk-...</code>만으로 인증이 설정됩니다. 파일 기반 토큰보다
+              <code>export DHELIX_API_KEY=sk-...</code>만으로 인증이 설정됩니다. 파일 기반 토큰보다
               보안적으로 우수합니다.
             </Callout>
           </section>
@@ -310,7 +310,7 @@ export default function TokenStorePage() {
               titleColor="purple"
               chart={`graph TD
   subgraph ENV_LOAD["loadFromEnv()"]
-    E1["process.env.DBCODE_API_KEY"]
+    E1["process.env.DHELIX_API_KEY"]
     E2["process.env.OPENAI_API_KEY"]
     E3["TokenConfig<br/><small>method: bearer</small>"]
     E1 -->|"존재"| E3
@@ -378,7 +378,7 @@ export default function TokenStorePage() {
                 &quot;Failed to save token 에러가 발생해요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">~/.dbcode/</code> 디렉토리에 쓰기 권한이 있는지
+                <code className="text-cyan-600">~/.dhelix/</code> 디렉토리에 쓰기 권한이 있는지
                 확인하세요. 홈 디렉토리가 읽기 전용이거나, 디스크 용량이 부족한 경우에도 발생합니다.
               </p>
             </div>
@@ -389,8 +389,8 @@ export default function TokenStorePage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 환경 변수가 현재 셸 세션에 올바르게 설정되었는지 확인하세요.
-                <code className="text-cyan-600">echo $DBCODE_API_KEY</code>로 값을 확인하세요. 또한
-                TokenManager의 캐시가 이전 값을 유지하고 있을 수 있으므로 dbcode를 재시작하세요.
+                <code className="text-cyan-600">echo $DHELIX_API_KEY</code>로 값을 확인하세요. 또한
+                TokenManager의 캐시가 이전 값을 유지하고 있을 수 있으므로 dhelix를 재시작하세요.
               </p>
             </div>
 

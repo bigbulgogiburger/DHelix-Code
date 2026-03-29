@@ -243,7 +243,7 @@ anthropic.ts → thinking-delta 청크
 
 ### Claude Code vs Aider vs Cursor vs Codex CLI
 
-| 기능              | Claude Code        | Aider                    | Cursor     | Codex CLI | **dbcode**     |
+| 기능              | Claude Code        | Aider                    | Cursor     | Codex CLI | **dhelix**     |
 | ----------------- | ------------------ | ------------------------ | ---------- | --------- | -------------- |
 | **Diff 표시**     | search/replace     | search/replace 전용 포맷 | IDE 인라인 | —         | ✅ +/- diff    |
 | **Git 통합**      | 수동 커밋          | 자동 커밋 + /undo        | IDE 연동   | —         | ✅ 수동 커밋   |
@@ -265,7 +265,7 @@ anthropic.ts → thinking-delta 청크
 
 ### Aider에서 배울 점
 
-| 패턴              | Aider 구현                                        | dbcode 적용 방안                                   |
+| 패턴              | Aider 구현                                        | dhelix 적용 방안                                   |
 | ----------------- | ------------------------------------------------- | -------------------------------------------------- |
 | Git 네이티브 Undo | 모든 AI 변경을 자동 커밋 → `/undo` = `git revert` | 체크포인트 대신 git stash/commit 기반 undo 고려    |
 | 완료 알림         | `--notifications` (터미널 벨) + 커스텀 명령       | `src/utils/notifications.ts` 존재 — 연결만 하면 됨 |

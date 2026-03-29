@@ -85,7 +85,7 @@ export function SelectList({
   if (options.length === 0) {
     return (
       <Box flexDirection="column" marginY={1}>
-        <Text color="yellow">{prompt}</Text>
+        <Text color="#00BCD4">{prompt}</Text>
         <Text dimColor>No options available.</Text>
       </Box>
     );
@@ -96,8 +96,8 @@ export function SelectList({
   const hasMoreBelow = scrollOffset + maxVisible < options.length;
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1} marginY={1}>
-      <Text color="yellow" bold>
+    <Box flexDirection="column" borderStyle="single" borderColor="#0097A7" paddingX={1} marginY={1}>
+      <Text color="#00BCD4" bold>
         {prompt}
       </Text>
       <Box marginTop={1} flexDirection="column">

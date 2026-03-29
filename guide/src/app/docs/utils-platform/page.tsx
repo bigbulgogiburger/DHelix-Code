@@ -42,7 +42,7 @@ export default function UtilsPlatformPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                dbcode는 macOS, Windows, Linux에서 실행되며, WSL(Windows Subsystem for Linux)과 Git
+                dhelix는 macOS, Windows, Linux에서 실행되며, WSL(Windows Subsystem for Linux)과 Git
                 Bash 환경도 지원합니다. 이 모듈은 현재 실행 환경을 감지하여 플랫폼별로 다른 동작(셸
                 선택, 경로 형식, 샌드박스 설정 등)을 가능하게 합니다.
               </p>

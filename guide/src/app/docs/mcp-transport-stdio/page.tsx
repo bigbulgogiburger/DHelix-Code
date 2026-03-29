@@ -64,19 +64,19 @@ export default function MCPTransportStdioPage() {
               title="StdioTransport 통신 흐름"
               titleColor="purple"
               chart={`graph LR
-  DBCODE["dbcode<br/><small>부모 프로세스</small>"]
+  DHELIX["dhelix<br/><small>부모 프로세스</small>"]
   MCP["MCP 서버<br/><small>자식 프로세스</small>"]
 
-  DBCODE -->|"stdin<br/>JSON-RPC 요청/알림"| MCP
-  MCP -->|"stdout<br/>JSON-RPC 응답/알림"| DBCODE
-  MCP -.->|"stderr<br/>디버그 출력"| DBCODE
+  DHELIX -->|"stdin<br/>JSON-RPC 요청/알림"| MCP
+  MCP -->|"stdout<br/>JSON-RPC 응답/알림"| DHELIX
+  MCP -.->|"stderr<br/>디버그 출력"| DHELIX
 
-  style DBCODE fill:#e0e7ff,stroke:#3b82f6,color:#1e293b,stroke-width:2px
+  style DHELIX fill:#e0e7ff,stroke:#3b82f6,color:#1e293b,stroke-width:2px
   style MCP fill:#ede9fe,stroke:#8b5cf6,color:#1e293b,stroke-width:3px`}
             />
 
             <Callout type="info" icon="💡">
-              <strong>비유:</strong> 두 사람이 종이 메모를 주고받는 것과 비슷합니다. 한 쪽(dbcode)이
+              <strong>비유:</strong> 두 사람이 종이 메모를 주고받는 것과 비슷합니다. 한 쪽(dhelix)이
               메모를 써서 구멍에 넣으면(stdin), 상대방(MCP 서버)이 읽고 응답 메모를 다른 구멍으로
               보냅니다(stdout). 각 메모는 한 줄씩이고, 줄바꿈이 &quot;다음 메모&quot;의 신호입니다.
             </Callout>
@@ -349,7 +349,7 @@ export default function MCPTransportStdioPage() {
               {"}"},{"\n"}
               {"  "}
               <span className="prop">clientInfo</span>: {"{"} <span className="prop">name</span>:{" "}
-              <span className="str">&quot;dbcode&quot;</span> {"}"},{"\n"}
+              <span className="str">&quot;dhelix&quot;</span> {"}"},{"\n"}
               {"}"});
             </CodeBlock>
 

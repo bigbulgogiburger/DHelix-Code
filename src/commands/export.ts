@@ -129,7 +129,7 @@ export const exportCommand: SlashCommand = {
     const toClipboard = trimmedArgs === "--clipboard";
     const now = new Date();
     const timestamp = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
-    const filename = toClipboard ? "" : trimmedArgs || `dbcode-conversation-${timestamp}.md`;
+    const filename = toClipboard ? "" : trimmedArgs || `dhelix-conversation-${timestamp}.md`;
     const filePath = toClipboard ? "" : join(context.workingDirectory, filename);
 
     try {
@@ -137,7 +137,7 @@ export const exportCommand: SlashCommand = {
 
       // ── Build metadata table ──
       const lines: string[] = [
-        `# dbcode Conversation Export`,
+        `# Dhelix Code Conversation Export`,
         ``,
         `| Field | Value |`,
         `|-------|-------|`,

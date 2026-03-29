@@ -185,7 +185,7 @@ async function searchDuckDuckGo(
     signal,
     method: "POST",
     headers: {
-      "User-Agent": "dbcode/1.0",
+      "User-Agent": "dhelix/1.0",
       Accept: "text/html",
       "Content-Type": "application/x-www-form-urlencoded",
     },

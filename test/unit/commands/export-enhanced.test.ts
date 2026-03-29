@@ -37,7 +37,7 @@ describe("/export enhanced", () => {
     try {
       const files = await readdir(TMP_DIR);
       for (const f of files) {
-        if (f.startsWith("dbcode-conversation") || f === "test-export.md") {
+        if (f.startsWith("dhelix-conversation") || f === "test-export.md") {
           await cleanup(join(TMP_DIR, f));
         }
       }
@@ -57,7 +57,7 @@ describe("/export enhanced", () => {
     it("should generate default filename when no args given", async () => {
       const result = await exportCommand.execute("", baseContext);
       expect(result.success).toBe(true);
-      expect(result.output).toContain("dbcode-conversation");
+      expect(result.output).toContain("dhelix-conversation");
       expect(result.output).toContain(".md");
     });
 
@@ -65,7 +65,7 @@ describe("/export enhanced", () => {
       await exportCommand.execute("test-export.md", baseContext);
       const filePath = join(TMP_DIR, "test-export.md");
       const content = await readFile(filePath, "utf-8");
-      expect(content).toContain("# dbcode Conversation Export");
+      expect(content).toContain("# dhelix Conversation Export");
     });
   });
 

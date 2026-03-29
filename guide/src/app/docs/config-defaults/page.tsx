@@ -65,9 +65,9 @@ export default function ConfigDefaultsPage() {
               titleColor="orange"
               chart={`flowchart TB
   DEF["DEFAULT_CONFIG<br/><small>Level 1 — 가장 낮은 우선순위</small>"]
-  USER["사용자 설정<br/><small>Level 2 — ~/.dbcode/config.json</small>"]
-  PROJ["프로젝트 설정<br/><small>Level 3 — .dbcode/config.json</small>"]
-  ENV["환경변수<br/><small>Level 4 — DBCODE_*, OPENAI_*</small>"]
+  USER["사용자 설정<br/><small>Level 2 — ~/.dhelix/config.json</small>"]
+  PROJ["프로젝트 설정<br/><small>Level 3 — .dhelix/config.json</small>"]
+  ENV["환경변수<br/><small>Level 4 — DHELIX_*, OPENAI_*</small>"]
   CLI["CLI 플래그<br/><small>Level 5 — 가장 높은 우선순위</small>"]
 
   DEF -->|덮어쓰임| USER
@@ -366,7 +366,7 @@ export default function ConfigDefaultsPage() {
             <p className="text-[13px] text-gray-600 mb-3">
               모델명과 LLM 기본값은 <code className="text-cyan-600 text-xs">constants.ts</code>에서
               가져옵니다. 이 파일은 환경변수(
-              <code className="text-cyan-600 text-xs">DBCODE_MODEL</code> 등)를 읽어 단일 진실의
+              <code className="text-cyan-600 text-xs">DHELIX_MODEL</code> 등)를 읽어 단일 진실의
               원천(single source of truth)으로 동작합니다.
             </p>
 
@@ -423,7 +423,7 @@ export default function ConfigDefaultsPage() {
                     <code className="text-cyan-600 text-xs">DEFAULT_MODEL</code>은{" "}
                     <code className="text-cyan-600 text-xs">constants.ts</code>에서 환경변수를
                     확인하여 결정됩니다.
-                    <code className="text-cyan-600 text-xs"> DBCODE_MODEL</code> 환경변수가 설정되어
+                    <code className="text-cyan-600 text-xs"> DHELIX_MODEL</code> 환경변수가 설정되어
                     있으면 defaults.ts의 모델명이 달라질 수 있습니다.
                   </p>
                 </div>

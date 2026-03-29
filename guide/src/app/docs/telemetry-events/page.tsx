@@ -279,7 +279,7 @@ export default function TelemetryEventsPage() {
                   name: "serviceName",
                   type: "string",
                   required: false,
-                  desc: '서비스 이름 (기본: "dbcode")',
+                  desc: '서비스 이름 (기본: "dhelix")',
                 },
                 {
                   name: "serviceVersion",
@@ -309,7 +309,7 @@ export default function TelemetryEventsPage() {
               </li>
               <li>
                 텔레메트리는 기본적으로 <strong>비활성</strong>입니다.
-                <code className="text-cyan-600">DBCODE_TELEMETRY=true</code> 환경 변수로 활성화해야
+                <code className="text-cyan-600">DHELIX_TELEMETRY=true</code> 환경 변수로 활성화해야
                 합니다.
               </li>
               <li>
@@ -386,12 +386,12 @@ export default function TelemetryEventsPage() {
             <CodeBlock>
               <span className="cm">{"// 환경 변수 설정 (셸 또는 .env)"}</span>
               {"\n"}
-              <span className="prop">DBCODE_TELEMETRY</span>=<span className="str">true</span>
+              <span className="prop">DHELIX_TELEMETRY</span>=<span className="str">true</span>
               {"\n"}
-              <span className="prop">DBCODE_TELEMETRY_OTLP_ENDPOINT</span>=
+              <span className="prop">DHELIX_TELEMETRY_OTLP_ENDPOINT</span>=
               <span className="str">http://localhost:4318</span>
               {"\n"}
-              <span className="prop">DBCODE_TELEMETRY_EXPORT_INTERVAL_MS</span>=
+              <span className="prop">DHELIX_TELEMETRY_EXPORT_INTERVAL_MS</span>=
               <span className="str">30000</span>
             </CodeBlock>
             <CodeBlock>
@@ -516,7 +516,7 @@ export default function TelemetryEventsPage() {
               <p className="mb-3">텔레메트리 설정은 두 가지 네이밍 규칙을 지원합니다:</p>
               <ul className="list-disc list-inside space-y-1.5 text-gray-600">
                 <li>
-                  <code className="text-cyan-600">DBCODE_TELEMETRY_*</code> &mdash; 전용 환경 변수
+                  <code className="text-cyan-600">DHELIX_TELEMETRY_*</code> &mdash; 전용 환경 변수
                   (우선순위 높음)
                 </li>
                 <li>
@@ -526,7 +526,7 @@ export default function TelemetryEventsPage() {
               </ul>
               <p className="mt-3 text-gray-600">
                 예를 들어 OTLP 엔드포인트는{" "}
-                <code className="text-cyan-600">DBCODE_TELEMETRY_OTLP_ENDPOINT</code>가 먼저
+                <code className="text-cyan-600">DHELIX_TELEMETRY_OTLP_ENDPOINT</code>가 먼저
                 확인되고, 없으면 <code className="text-cyan-600">OTEL_EXPORTER_OTLP_ENDPOINT</code>
                 를 사용합니다. Zod 스키마가 유효성 검사와 기본값 적용을 담당합니다.
               </p>
@@ -549,9 +549,9 @@ export default function TelemetryEventsPage() {
                 &quot;이벤트가 OTLP에 전송되지 않아요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">DBCODE_TELEMETRY=true</code> 환경 변수가 설정되어
+                <code className="text-cyan-600">DHELIX_TELEMETRY=true</code> 환경 변수가 설정되어
                 있는지,
-                <code className="text-cyan-600">DBCODE_TELEMETRY_OTLP_ENDPOINT</code>가 올바른
+                <code className="text-cyan-600">DHELIX_TELEMETRY_OTLP_ENDPOINT</code>가 올바른
                 URL인지 확인하세요. 두 조건이 모두 충족되어야 내보내기가 활성화됩니다.
               </p>
             </div>

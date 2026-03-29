@@ -164,7 +164,7 @@ export default function SubagentSpawnerPage() {
               </p>
               <p>
                 &bull; <code className="text-gray-500">string</code> &mdash;{" "}
-                <code>.dbcode/agents/*.md</code> 파일로 정의한 커스텀 에이전트 이름
+                <code>.dhelix/agents/*.md</code> 파일로 정의한 커스텀 에이전트 이름
               </p>
             </div>
 
@@ -587,7 +587,7 @@ export default function SubagentSpawnerPage() {
               {"\n"}
               {"\n"}
               <span className="cm">
-                {"// result.workingDirectory → .dbcode/worktrees/{agentId}"}
+                {"// result.workingDirectory → .dhelix/worktrees/{agentId}"}
               </span>
               {"\n"}
               <span className="cm">{"// 변경 사항이 있으면 브랜치 유지, 없으면 자동 정리"}</span>
@@ -820,7 +820,7 @@ export default function SubagentSpawnerPage() {
                   <strong>메모리 캐시</strong> (Map): 최대 50개, LRU 방식으로 오래된 것부터 삭제
                 </li>
                 <li>
-                  <strong>디스크</strong> (~/.dbcode/agent-history/): 최대 20개 JSON 파일, 수정 시각
+                  <strong>디스크</strong> (~/.dhelix/agent-history/): 최대 20개 JSON 파일, 수정 시각
                   기준 정리
                 </li>
               </ul>
@@ -872,7 +872,7 @@ export default function SubagentSpawnerPage() {
                 메모리 캐시(50개)와 디스크(20개)의 크기 제한을 확인하세요. 오래된 히스토리는 자동
                 삭제됩니다. 또한 디스크 영속화는 best-effort이므로, 디스크 공간 부족이나 권한 문제로
                 저장에 실패했을 수 있습니다.
-                <code className="text-cyan-600"> DBCODE_VERBOSE=1</code>로 로그를 확인하세요.
+                <code className="text-cyan-600"> DHELIX_VERBOSE=1</code>로 로그를 확인하세요.
               </p>
             </div>
 
@@ -896,7 +896,7 @@ export default function SubagentSpawnerPage() {
                 <span className="cm">{"// 또는 git 명령으로 직접 정리"}</span>
                 {"\n"}
                 <span className="cm">
-                  {"// git worktree remove --force .dbcode/worktrees/<agentId>"}
+                  {"// git worktree remove --force .dhelix/worktrees/<agentId>"}
                 </span>
               </CodeBlock>
             </div>

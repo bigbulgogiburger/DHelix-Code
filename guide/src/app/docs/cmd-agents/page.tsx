@@ -50,8 +50,8 @@ export default function CmdAgentsPage() {
                 에이전트 정의는 마크다운 파일(<code className="text-cyan-600">.md</code>)로
                 작성되며, YAML 프론트매터에 이름, 모델, 최대 턴 수, 권한 모드 등의 메타데이터를
                 포함합니다.
-                <strong>프로젝트 스코프</strong>(<code>.dbcode/agents/</code>)와
-                <strong>사용자 스코프</strong>(<code>~/.dbcode/agents/</code>)에서 로드됩니다.
+                <strong>프로젝트 스코프</strong>(<code>.dhelix/agents/</code>)와
+                <strong>사용자 스코프</strong>(<code>~/.dhelix/agents/</code>)에서 로드됩니다.
               </p>
               <p>
                 내장 에이전트 타입도 제공하여, 사용자 정의 없이도 코드 리뷰어, 보안 분석가 등의 미리
@@ -65,8 +65,8 @@ export default function CmdAgentsPage() {
               chart={`graph TD
   CMD["/agents 명령어"]
   SCAN["scanAgentDirectory()<br/><small>디렉토리 스캔</small>"]
-  PROJ[".dbcode/agents/<br/><small>프로젝트 스코프</small>"]
-  USER["~/.dbcode/agents/<br/><small>사용자 스코프</small>"]
+  PROJ[".dhelix/agents/<br/><small>프로젝트 스코프</small>"]
+  USER["~/.dhelix/agents/<br/><small>사용자 스코프</small>"]
   PARSE["parseBasicFrontmatter()<br/><small>YAML 메타 파싱</small>"]
   LIST["list<br/><small>전체 에이전트 목록</small>"]
   SHOW["show<br/><small>에이전트 상세</small>"]
@@ -336,7 +336,7 @@ export default function CmdAgentsPage() {
               <span className="cm">{"//   Permission mode: plan"}</span>
               {"\n"}
               <span className="cm">
-                {"//   File:            /path/to/.dbcode/agents/code-reviewer.md"}
+                {"//   File:            /path/to/.dhelix/agents/code-reviewer.md"}
               </span>
               {"\n"}
               <span className="cm">{"// System Prompt:"}</span>
@@ -384,7 +384,7 @@ export default function CmdAgentsPage() {
 
             <Callout type="tip" icon="*">
               <strong>팁:</strong> 에이전트 정의 파일을 만들고 싶다면
-              <code>.dbcode/agents/</code>(프로젝트용) 또는 <code>~/.dbcode/agents/</code>(전역)에
+              <code>.dhelix/agents/</code>(프로젝트용) 또는 <code>~/.dhelix/agents/</code>(전역)에
               .md 파일을 생성하세요. YAML 프론트매터로 메타데이터를, 본문에 시스템 프롬프트를
               작성합니다.
             </Callout>
@@ -428,11 +428,11 @@ export default function CmdAgentsPage() {
               </CodeBlock>
               <ul className="list-disc list-inside space-y-1.5 text-gray-600 mt-3">
                 <li>
-                  <strong>프로젝트 스코프:</strong> <code>.dbcode/agents/my-agent.md</code> &mdash;
+                  <strong>프로젝트 스코프:</strong> <code>.dhelix/agents/my-agent.md</code> &mdash;
                   해당 프로젝트에서만 사용
                 </li>
                 <li>
-                  <strong>사용자 스코프:</strong> <code>~/.dbcode/agents/my-agent.md</code> &mdash;
+                  <strong>사용자 스코프:</strong> <code>~/.dhelix/agents/my-agent.md</code> &mdash;
                   모든 프로젝트에서 사용
                 </li>
               </ul>
@@ -464,8 +464,8 @@ export default function CmdAgentsPage() {
               titleColor="purple"
               chart={`graph TD
   LIST["/agents list"]
-  SCAN1["scanAgentDirectory()<br/><small>.dbcode/agents/</small>"]
-  SCAN2["scanAgentDirectory()<br/><small>~/.dbcode/agents/</small>"]
+  SCAN1["scanAgentDirectory()<br/><small>.dhelix/agents/</small>"]
+  SCAN2["scanAgentDirectory()<br/><small>~/.dhelix/agents/</small>"]
   PALL["Promise.all"]
   READ["readdir()<br/><small>.md 파일 필터</small>"]
   PARSE["parseBasicFrontmatter()<br/><small>YAML 메타 추출</small>"]
@@ -581,7 +581,7 @@ export default function CmdAgentsPage() {
                   파일 확장자가 <code>.md</code>인지 확인 (다른 확장자는 무시됨)
                 </li>
                 <li>
-                  파일 위치가 <code>.dbcode/agents/</code> 또는 <code>~/.dbcode/agents/</code>인지
+                  파일 위치가 <code>.dhelix/agents/</code> 또는 <code>~/.dhelix/agents/</code>인지
                   확인
                 </li>
                 <li>파일이 정상적인 텍스트 파일인지 확인 (심볼릭 링크, 디렉토리는 건너뜀)</li>

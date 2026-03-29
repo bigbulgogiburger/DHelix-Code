@@ -21,7 +21,7 @@ import { CONFIG_DIR } from "../constants.js";
 import { joinPath } from "../utils/path.js";
 
 /**
- * 사용자의 모델 선택을 ~/.dbcode/config.json에 영속화합니다.
+ * 사용자의 모델 선택을 ~/.dhelix/config.json에 영속화합니다.
  * 다음 세션에서도 선택한 모델이 기본값으로 사용됩니다.
  */
 async function persistModelChoice(model: string): Promise<void> {
@@ -133,7 +133,7 @@ function getKnownModels(): ReadonlyArray<{ label: string; value: string; descrip
 
   // 프로바이더가 없으면 기존 방식으로 Default 표시
   if (entries.length === 0) {
-    const envModel = process.env.DBCODE_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
+    const envModel = process.env.DHELIX_MODEL || process.env.OPENAI_MODEL || "gpt-4o-mini";
     entries.push({
       label: `Default (${envModel})`,
       value: envModel,
@@ -238,7 +238,7 @@ export const modelCommand: SlashCommand = {
 
     const info = `(${(caps.maxContextTokens / 1000).toFixed(0)}K context${notes.length > 0 ? ", " + notes.join(", ") : ""})`;
 
-    // 선택한 모델을 ~/.dbcode/config.json에 영속화 (다음 세션에서도 유지)
+    // 선택한 모델을 ~/.dhelix/config.json에 영속화 (다음 세션에서도 유지)
     await persistModelChoice(newModel);
 
     return {

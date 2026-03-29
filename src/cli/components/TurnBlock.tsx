@@ -75,7 +75,7 @@ function renderEntry(
     case "user-message":
       return (
         <Box key={`entry-${index}`} marginBottom={0}>
-          <Text color="green" bold>
+          <Text color="#00E5FF" bold>
             {">"}{" "}
           </Text>
           <Text>{String(entry.data.content ?? "")}</Text>

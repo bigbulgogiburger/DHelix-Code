@@ -5,7 +5,7 @@
 Traditional Spring MVC web application with JSP views, JSTL, jQuery/vanilla JS frontend.
 Classic enterprise pattern still used in many Korean enterprise systems.
 
-## DBCODE.md Template
+## DHELIX.md Template
 
 ```markdown
 # Todo Manager - Spring MVC + JSP
@@ -54,7 +54,7 @@ src/main/webapp/
 ### Turn 0: /init
 
 ```
-Run /init to initialize this project. Create a DBCODE.md describing a Spring MVC + JSP + JavaScript
+Run /init to initialize this project. Create a DHELIX.md describing a Spring MVC + JSP + JavaScript
 Todo Manager application. Use Java 17, Spring Framework 6.x with Maven, JSP+JSTL views, jQuery,
 H2 database, Spring JDBC Template. Include JUnit 5 + Mockito + JaCoCo for 80% coverage.
 Specify directory structure as: controller, service, repository, model, dto under src/main/java
@@ -66,9 +66,9 @@ and WEB-INF/views under src/main/webapp.
 ```
 Create the Maven project with pom.xml. Include dependencies for:
 spring-webmvc, spring-jdbc, h2, jstl, javax.servlet-api, junit-jupiter, mockito, jacoco-maven-plugin.
-Set up the directory structure exactly as defined in DBCODE.md.
+Set up the directory structure exactly as defined in DHELIX.md.
 Create the Spring configuration class (AppConfig.java) with component scan, view resolver for JSP,
-and DataSource bean for H2. Follow DBCODE.md conventions.
+and DataSource bean for H2. Follow DHELIX.md conventions.
 ```
 
 **Assert:** pom.xml exists, AppConfig.java exists, directory structure matches
@@ -78,7 +78,7 @@ and DataSource bean for H2. Follow DBCODE.md conventions.
 ```
 Implement the Todo domain model with fields: id (Long), title (String), description (String),
 completed (boolean), createdAt (LocalDateTime). Create TodoRepository using Spring JdbcTemplate
-with CRUD operations. Include schema.sql for H2 table creation. Refer to DBCODE.md for naming.
+with CRUD operations. Include schema.sql for H2 table creation. Refer to DHELIX.md for naming.
 ```
 
 **Assert:** Todo.java, TodoRepository.java, schema.sql exist
@@ -88,7 +88,7 @@ with CRUD operations. Include schema.sql for H2 table creation. Refer to DBCODE.
 ```
 Implement TodoService with business logic: createTodo, getTodoById, getAllTodos,
 updateTodo, toggleComplete, deleteTodo. Use constructor injection.
-Follow DBCODE.md conventions for package structure.
+Follow DHELIX.md conventions for package structure.
 ```
 
 **Assert:** TodoService.java exists with all methods
@@ -100,7 +100,7 @@ Create TodoController with endpoints: GET / (list), GET /todos/new (form),
 POST /todos (create), GET /todos/{id}/edit (edit form), POST /todos/{id} (update),
 POST /todos/{id}/delete (delete), POST /todos/{id}/toggle (toggle).
 Create corresponding JSP views: list.jsp, form.jsp. Use JSTL tags, no scriptlets.
-Follow DBCODE.md — controller returns view name strings, not @ResponseBody.
+Follow DHELIX.md — controller returns view name strings, not @ResponseBody.
 ```
 
 **Assert:** TodoController.java, list.jsp, form.jsp exist
@@ -110,7 +110,7 @@ Follow DBCODE.md — controller returns view name strings, not @ResponseBody.
 ```
 Add jQuery-based interactivity: AJAX toggle complete without page reload,
 confirm dialog before delete, form validation on client side.
-Create separate .js files under src/main/webapp/resources/js/ as specified in DBCODE.md.
+Create separate .js files under src/main/webapp/resources/js/ as specified in DHELIX.md.
 Do NOT use inline JavaScript in JSP files.
 ```
 
@@ -136,10 +136,10 @@ Target: 80% line coverage. Fix any failing tests.
 
 **Assert:** Tests pass, coverage >= 80%
 
-### Turn 8: DBCODE.md Compliance
+### Turn 8: DHELIX.md Compliance
 
 ```
-Review all code against DBCODE.md conventions. Verify:
+Review all code against DHELIX.md conventions. Verify:
 1. No scriptlets in JSP
 2. JavaScript in separate files
 3. Correct package structure
@@ -147,4 +147,4 @@ Review all code against DBCODE.md conventions. Verify:
 Fix any violations.
 ```
 
-**Assert:** Agent reads DBCODE.md, compliance verified
+**Assert:** Agent reads DHELIX.md, compliance verified

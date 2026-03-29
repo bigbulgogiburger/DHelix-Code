@@ -330,7 +330,7 @@ function classifyError(error: unknown, operation: string, model: string): LLMErr
   // 인증 에러 — API 키가 잘못되었거나 만료됨
   if (error instanceof OpenAI.AuthenticationError) {
     return new LLMError(
-      "Authentication failed. Check your API key (OPENAI_API_KEY or DBCODE_API_KEY).",
+      "Authentication failed. Check your API key (OPENAI_API_KEY or DHELIX_API_KEY).",
       { model, cause: error.message, status: error.status },
     );
   }

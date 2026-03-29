@@ -1,8 +1,8 @@
-# dbcode 개발 계획서
+# dhelix 개발 계획서
 
 > **작성일**: 2026-03-07
 > **작성자**: AI Agent Architecture Review
-> **대상**: dbcode v0.1.0 → v1.0.0 로드맵
+> **대상**: dhelix v0.1.0 → v1.0.0 로드맵
 > **현재 상태**: ~11,710 LOC / TypeScript / Ink 5.x / 7 P0 Tools / 26 Slash Commands
 
 ---
@@ -11,7 +11,7 @@
 
 1. [현황 진단](#1-현황-진단)
 2. [Critical Issues (사용자 보고)](#2-critical-issues-사용자-보고)
-3. [DBCODE.md 프로젝트 인스트럭션 시스템](#issue-6-dbcodemd-프로젝트-인스트럭션-시스템-고도화)
+3. [DHELIX.md 프로젝트 인스트럭션 시스템](#issue-6-dhelixmd-프로젝트-인스트럭션-시스템-고도화)
 4. [Agent Activity Feed — 에이전트 작업 내역 UI](#3-agent-activity-feed--에이전트-작업-내역-ui)
 5. [Gap Analysis: Claude Code 대비 부족한 부분](#4-gap-analysis-claude-code-대비-부족한-부분)
 6. [Phase별 개발 계획](#5-phase별-개발-계획)
@@ -190,9 +190,9 @@ setCursorOffset((prev) => prev + input.length);
 
 ---
 
-### Issue #6: DBCODE.md 프로젝트 인스트럭션 시스템 고도화
+### Issue #6: DHELIX.md 프로젝트 인스트럭션 시스템 고도화
 
-> `dbcode init` → `DBCODE.md` 생성 → 대화 시 자동 참조 — Claude Code의 CLAUDE.md처럼.
+> `dhelix init` → `DHELIX.md` 생성 → 대화 시 자동 참조 — Claude Code의 CLAUDE.md처럼.
 
 #### 6-1. Claude Code의 CLAUDE.md 시스템 (레퍼런스)
 
@@ -245,29 +245,29 @@ Claude Code는 프로젝트 인스트럭션을 **계층적으로 발견, 로드,
 
 ---
 
-#### 6-2. dbcode 현재 구현 상태 (이미 상당 부분 구현됨!)
+#### 6-2. dhelix 현재 구현 상태 (이미 상당 부분 구현됨!)
 
-분석 결과, dbcode에는 **놀랍게도 이미 정교한 인스트럭션 시스템이 존재**한다:
+분석 결과, dhelix에는 **놀랍게도 이미 정교한 인스트럭션 시스템이 존재**한다:
 
 | 컴포넌트              | 파일                                | 상태                                              |
 | --------------------- | ----------------------------------- | ------------------------------------------------- |
-| DBCODE.md 로딩        | `src/instructions/loader.ts`        | **완성** — 프로젝트 루트 + `.dbcode/` 탐색        |
+| DHELIX.md 로딩        | `src/instructions/loader.ts`        | **완성** — 프로젝트 루트 + `.dhelix/` 탐색        |
 | @import 지시자        | `src/instructions/parser.ts`        | **완성** — 재귀 해석, 순환 참조 방지 (10단계)     |
-| 경로 조건부 규칙      | `src/instructions/path-matcher.ts`  | **완성** — `.dbcode/rules/*.md` + glob 매칭       |
+| 경로 조건부 규칙      | `src/instructions/path-matcher.ts`  | **완성** — `.dhelix/rules/*.md` + glob 매칭       |
 | 시스템 프롬프트 주입  | `src/core/system-prompt-builder.ts` | **완성** — priority 70으로 주입                   |
 | Interactive 모드 연동 | `src/cli/App.tsx`                   | **완성** — useEffect로 로드                       |
 | Headless 모드 연동    | `src/cli/headless.ts`               | **완성** — 에이전트 루프 전 로드                  |
-| `dbcode init`         | `src/commands/init.ts`              | **기본** — DBCODE.md + settings.json 생성         |
+| `dhelix init`         | `src/commands/init.ts`              | **기본** — DHELIX.md + settings.json 생성         |
 | 훅 시스템             | `src/hooks/`                        | **완성** — 17개 이벤트, `InstructionsLoaded` 포함 |
 
 **실제 로딩 흐름 (이미 구현됨):**
 
 ```
-dbcode 시작
+dhelix 시작
   → loadInstructions(workingDirectory)
-    → DBCODE.md 또는 .dbcode/DBCODE.md 찾기
+    → DHELIX.md 또는 .dhelix/DHELIX.md 찾기
     → @import 지시자 재귀 해석
-    → .dbcode/rules/*.md 로드 + glob 필터링
+    → .dhelix/rules/*.md 로드 + glob 필터링
     → { projectInstructions, pathRules, combined } 반환
   → buildSystemPrompt({ projectInstructions: combined })
     → 6개 섹션 조합 (identity, tasks, environment, tools, conventions, instructions)
@@ -279,17 +279,17 @@ dbcode 시작
 
 #### 6-3. Claude Code 대비 Gap 분석
 
-| 기능                                    | Claude Code   | dbcode           | Gap                  |
+| 기능                                    | Claude Code   | dhelix           | Gap                  |
 | --------------------------------------- | ------------- | ---------------- | -------------------- |
-| 프로젝트 루트 DBCODE.md                 | O             | O                | -                    |
-| `.dbcode/DBCODE.md`                     | O             | O                | -                    |
-| @import 지시자                          | O (5단계)     | O (10단계)       | - (dbcode가 더 관대) |
+| 프로젝트 루트 DHELIX.md                 | O             | O                | -                    |
+| `.dhelix/DHELIX.md`                     | O             | O                | -                    |
+| @import 지시자                          | O (5단계)     | O (10단계)       | - (dhelix가 더 관대) |
 | 경로 조건부 규칙                        | O             | O                | -                    |
 | 시스템 프롬프트 주입                    | O             | O                | -                    |
 | `InstructionsLoaded` 훅                 | O             | O                | -                    |
-| **사용자 글로벌** `~/.dbcode/DBCODE.md` | O             | **X**            | **HIGH**             |
+| **사용자 글로벌** `~/.dhelix/DHELIX.md` | O             | **X**            | **HIGH**             |
 | **상위 디렉토리 상향 탐색**             | O (CWD→/)     | **X**            | MEDIUM               |
-| **DBCODE.local.md** (개인용, gitignore) | O             | **X**            | **HIGH**             |
+| **DHELIX.local.md** (개인용, gitignore) | O             | **X**            | **HIGH**             |
 | **Compaction 시 재로딩**                | O             | **X**            | **HIGH**             |
 | **`/init` 코드베이스 분석**             | O (AI가 분석) | **X** (템플릿만) | **HIGH**             |
 | 하위 디렉토리 지연 로딩                 | O             | X                | MEDIUM               |
@@ -303,26 +303,26 @@ dbcode 시작
 ##### P0: `/init` 코드베이스 분석 기능 (Phase 1)
 
 **현재:** 고정 템플릿만 생성
-**목표:** Claude Code처럼 **LLM이 프로젝트를 분석하여 맞춤형 DBCODE.md 생성**
+**목표:** Claude Code처럼 **LLM이 프로젝트를 분석하여 맞춤형 DHELIX.md 생성**
 
 ```
-dbcode init
+dhelix init
   1. 프로젝트 파일 스캔:
      - package.json, Cargo.toml, go.mod, pyproject.toml, pom.xml 등 감지
      - README.md, .gitignore, tsconfig.json 등 읽기
      - src/ 디렉토리 구조 파악
   2. LLM에게 분석 요청:
-     "이 프로젝트를 분석하고 DBCODE.md를 생성해줘:
+     "이 프로젝트를 분석하고 DHELIX.md를 생성해줘:
       - 런타임, 프레임워크, 테스트/빌드 명령
       - 코딩 컨벤션 (감지된 패턴 기반)
       - 디렉토리 구조 요약"
-  3. 생성된 DBCODE.md를 사용자에게 보여주고 확인 후 저장
-  4. 기존 DBCODE.md가 있으면 개선 제안 (덮어쓰기 X)
+  3. 생성된 DHELIX.md를 사용자에게 보여주고 확인 후 저장
+  4. 기존 DHELIX.md가 있으면 개선 제안 (덮어쓰기 X)
 ```
 
 **파일:** `src/commands/init.ts` 수정
 
-##### P0: 사용자 글로벌 인스트럭션 (`~/.dbcode/DBCODE.md`)
+##### P0: 사용자 글로벌 인스트럭션 (`~/.dhelix/DHELIX.md`)
 
 **파일:** `src/instructions/loader.ts` 수정
 
@@ -334,14 +334,14 @@ async function loadInstructions(cwd: string): Promise<LoadedInstructions> {
   const layers: string[] = [];
 
   // 1. 사용자 글로벌
-  const globalMd = await tryRead(join(homedir(), ".dbcode", "DBCODE.md"));
+  const globalMd = await tryRead(join(homedir(), ".dhelix", "DHELIX.md"));
   if (globalMd) layers.push(globalMd);
 
   // 2. 사용자 글로벌 규칙
-  const globalRules = await loadRules(join(homedir(), ".dbcode", "rules"));
+  const globalRules = await loadRules(join(homedir(), ".dhelix", "rules"));
   if (globalRules) layers.push(globalRules);
 
-  // 3. 프로젝트 DBCODE.md (기존 로직)
+  // 3. 프로젝트 DHELIX.md (기존 로직)
   const projectMd = await findProjectInstructions(cwd);
   if (projectMd) layers.push(await resolveImports(projectMd.content, projectMd.dir));
 
@@ -349,8 +349,8 @@ async function loadInstructions(cwd: string): Promise<LoadedInstructions> {
   const projectRules = await loadPathRules(cwd);
   if (projectRules) layers.push(projectRules);
 
-  // 5. DBCODE.local.md (신규)
-  const localMd = await tryRead(join(cwd, "DBCODE.local.md"));
+  // 5. DHELIX.local.md (신규)
+  const localMd = await tryRead(join(cwd, "DHELIX.local.md"));
   if (localMd) layers.push(localMd);
 
   return {
@@ -360,18 +360,18 @@ async function loadInstructions(cwd: string): Promise<LoadedInstructions> {
 }
 ```
 
-##### P1: DBCODE.local.md 지원
+##### P1: DHELIX.local.md 지원
 
 **목표:** 개인 설정용 파일 (git에 커밋하지 않음)
 
 **변경 사항:**
 
-1. `loader.ts`에서 `DBCODE.local.md` 로드 추가 (최고 우선순위)
-2. `dbcode init`에서 `.gitignore`에 `DBCODE.local.md` 자동 추가
+1. `loader.ts`에서 `DHELIX.local.md` 로드 추가 (최고 우선순위)
+2. `dhelix init`에서 `.gitignore`에 `DHELIX.local.md` 자동 추가
 3. 템플릿:
 
 ```markdown
-# DBCODE.local.md — Personal Settings (not committed to git)
+# DHELIX.local.md — Personal Settings (not committed to git)
 
 # Add your personal preferences here:
 
@@ -384,13 +384,13 @@ async function loadInstructions(cwd: string): Promise<LoadedInstructions> {
 
 ##### P1: Compaction 시 인스트럭션 재로딩
 
-**현재 문제:** Context compaction 시 DBCODE.md 내용이 요약되어 정보 손실 가능
+**현재 문제:** Context compaction 시 DHELIX.md 내용이 요약되어 정보 손실 가능
 
 **해결:** `context-manager.ts`의 compaction 로직에서:
 
 ```typescript
 async function compactContext(messages, config) {
-  // 1. 디스크에서 DBCODE.md 다시 읽기
+  // 1. 디스크에서 DHELIX.md 다시 읽기
   const freshInstructions = await loadInstructions(config.workingDirectory);
 
   // 2. 시스템 프롬프트 재구성
@@ -413,13 +413,13 @@ async function compactContext(messages, config) {
 ##### P2: 상위 디렉토리 상향 탐색
 
 ```typescript
-// CWD에서 / 까지 올라가며 DBCODE.md 수집
+// CWD에서 / 까지 올라가며 DHELIX.md 수집
 function findInstructionsUpward(cwd: string): string[] {
   const results: string[] = [];
   let dir = cwd;
   while (dir !== dirname(dir)) {
     // 루트에 도달할 때까지
-    const md = tryReadSync(join(dir, "DBCODE.md"));
+    const md = tryReadSync(join(dir, "DHELIX.md"));
     if (md) results.unshift(md); // 상위가 앞에 (낮은 우선순위)
     dir = dirname(dir);
   }
@@ -432,21 +432,21 @@ function findInstructionsUpward(cwd: string): string[] {
 ```
 /memory
   Loaded instruction files:
-  ├─ ~/.dbcode/DBCODE.md (global, 45 lines)
-  ├─ ./DBCODE.md (project, 120 lines)
+  ├─ ~/.dhelix/DHELIX.md (global, 45 lines)
+  ├─ ./DHELIX.md (project, 120 lines)
   ├─   └─ @imported: ./docs/conventions.md (28 lines)
-  ├─ ./.dbcode/rules/auth.md (path: src/auth/**, 15 lines)
-  └─ ./DBCODE.local.md (local, 8 lines)
+  ├─ ./.dhelix/rules/auth.md (path: src/auth/**, 15 lines)
+  └─ ./DHELIX.local.md (local, 8 lines)
 
   Total: 216 lines (~1,850 tokens, 1.4% of context)
 ```
 
 ---
 
-#### 6-5. `dbcode init` 개선된 흐름 (최종 목표)
+#### 6-5. `dhelix init` 개선된 흐름 (최종 목표)
 
 ```
-$ dbcode init
+$ dhelix init
 
   Analyzing project structure...
 
@@ -458,23 +458,23 @@ $ dbcode init
   ├─ Test: vitest
   ├─ Lint: eslint + prettier
 
-  Generating DBCODE.md...
+  Generating DHELIX.md...
 
   Created:
-  ├─ .dbcode/DBCODE.md (72 lines)
-  ├─ .dbcode/settings.json
-  └─ .dbcode/rules/ (empty, add rules here)
+  ├─ .dhelix/DHELIX.md (72 lines)
+  ├─ .dhelix/settings.json
+  └─ .dhelix/rules/ (empty, add rules here)
 
   Added to .gitignore:
-  └─ DBCODE.local.md
+  └─ DHELIX.local.md
 
-  ✓ Project initialized. Edit .dbcode/DBCODE.md to customize.
+  ✓ Project initialized. Edit .dhelix/DHELIX.md to customize.
 ```
 
-**생성되는 DBCODE.md 예시 (AI가 프로젝트 분석 후 자동 생성):**
+**생성되는 DHELIX.md 예시 (AI가 프로젝트 분석 후 자동 생성):**
 
 ```markdown
-# DBCODE.md — dbcode Project Instructions
+# DHELIX.md — dhelix Project Instructions
 
 ## Project
 
@@ -515,9 +515,9 @@ $ dbcode init
 | #   | 작업                                    | Phase   | 우선순위 |
 | --- | --------------------------------------- | ------- | -------- |
 | 1   | `/init` AI 코드베이스 분석              | Phase 1 | **P0**   |
-| 2   | `~/.dbcode/DBCODE.md` 글로벌 인스트럭션 | Phase 1 | **P0**   |
+| 2   | `~/.dhelix/DHELIX.md` 글로벌 인스트럭션 | Phase 1 | **P0**   |
 | 3   | Compaction 시 인스트럭션 재로딩         | Phase 1 | **P0**   |
-| 4   | `DBCODE.local.md` 지원                  | Phase 1 | P1       |
+| 4   | `DHELIX.local.md` 지원                  | Phase 1 | P1       |
 | 5   | 상위 디렉토리 상향 탐색                 | Phase 2 | P2       |
 | 6   | `/memory` 디버그 커맨드                 | Phase 2 | P2       |
 | 7   | 하위 디렉토리 지연 로딩                 | Phase 3 | P2       |
@@ -540,7 +540,7 @@ $ dbcode init
 ## 3. Agent Activity Feed — 에이전트 작업 내역 UI
 
 > Claude Code에서 프롬프트를 입력하면 에이전트가 수행하는 모든 작업이 위에서 아래로 실시간 스크롤되며 표시된다.
-> 이것이 "Agent Activity Feed"이다. dbcode에서 이를 구현하기 위한 완전한 명세.
+> 이것이 "Agent Activity Feed"이다. dhelix에서 이를 구현하기 위한 완전한 명세.
 
 ### 3.1 Activity Feed란 무엇인가
 
@@ -711,9 +711,9 @@ Activity feed 스크롤이 멈추고 사용자 응답을 기다림. 응답 후 f
 
 ---
 
-### 3.3 dbcode 현재 상태 vs. Claude Code Activity Feed
+### 3.3 dhelix 현재 상태 vs. Claude Code Activity Feed
 
-| 컴포넌트               | Claude Code        | dbcode 현재                                | Gap          |
+| 컴포넌트               | Claude Code        | dhelix 현재                                | Gap          |
 | ---------------------- | ------------------ | ------------------------------------------ | ------------ |
 | `<Static>` 완료 메시지 | O (스크롤백)       | O (`MessageList.tsx`)                      | -            |
 | 스트리밍 텍스트 + 커서 | O                  | O (`StreamingMessage.tsx`)                 | -            |
@@ -728,7 +728,7 @@ Activity feed 스크롤이 멈추고 사용자 응답을 기다림. 응답 후 f
 | Status Bar 비용 표시   | O                  | △ (토큰만, 비용 없음)                      | LOW          |
 | 이벤트 시스템          | O                  | O (`mitt` 기반)                            | -            |
 
-**핵심 Gap:** dbcode의 `ToolCallBlock.tsx`는 도구 이름과 상태 아이콘만 표시한다. Claude Code처럼 **현재 작업 대상(파일명, 명령어)을 실시간 표시**하고, **완료 시 과거시제 요약으로 전환**하는 패턴이 없다.
+**핵심 Gap:** dhelix의 `ToolCallBlock.tsx`는 도구 이름과 상태 아이콘만 표시한다. Claude Code처럼 **현재 작업 대상(파일명, 명령어)을 실시간 표시**하고, **완료 시 과거시제 요약으로 전환**하는 패턴이 없다.
 
 ---
 
@@ -1060,7 +1060,7 @@ App.tsx (상태 관리)
 
 ### 입력 시스템
 
-| 기능                           | Claude Code     | dbcode | Gap          |
+| 기능                           | Claude Code     | dhelix | Gap          |
 | ------------------------------ | --------------- | ------ | ------------ |
 | 커서 좌/우 이동                | O               | X      | **CRITICAL** |
 | Ctrl+A/E (Home/End)            | O               | X      | HIGH         |
@@ -1075,7 +1075,7 @@ App.tsx (상태 관리)
 
 ### Permission 시스템
 
-| 기능                | Claude Code | dbcode   | Gap          |
+| 기능                | Claude Code | dhelix   | Gap          |
 | ------------------- | ----------- | -------- | ------------ |
 | 방향키 선택 UI      | O           | X        | **CRITICAL** |
 | Session-level 승인  | O           | O (일부) | -            |
@@ -1085,7 +1085,7 @@ App.tsx (상태 관리)
 
 ### Git 통합
 
-| 기능                  | Claude Code           | dbcode        | Gap      |
+| 기능                  | Claude Code           | dhelix        | Gap      |
 | --------------------- | --------------------- | ------------- | -------- |
 | git 명령 실행         | O                     | O (bash_exec) | -        |
 | 자동 체크포인트       | O (매 수정 전 스냅샷) | X             | **HIGH** |
@@ -1096,7 +1096,7 @@ App.tsx (상태 관리)
 
 ### Agent 기능
 
-| 기능            | Claude Code | dbcode      | Gap    |
+| 기능            | Claude Code | dhelix      | Gap    |
 | --------------- | ----------- | ----------- | ------ |
 | Sub-agent 실행  | O           | 골격만 존재 | HIGH   |
 | Background task | O           | X           | MEDIUM |
@@ -1106,7 +1106,7 @@ App.tsx (상태 관리)
 
 ### 도구(Tools) 시스템
 
-| 기능          | Claude Code        | dbcode              | Gap    |
+| 기능          | Claude Code        | dhelix              | Gap    |
 | ------------- | ------------------ | ------------------- | ------ |
 | file_read     | O                  | O                   | -      |
 | file_write    | O                  | O                   | -      |
@@ -1459,7 +1459,7 @@ export const mkdirTool: ToolDefinition = {
     ├→ onChange(value)     → App → SlashCommandMenu / FileCompleter
     ├→ onSubmit(value)     → App → Agent Loop
     └→ InputHistory        → 위/아래 방향키로 이전 입력 탐색
-         └→ ~/.dbcode/input-history.json (최근 100개)
+         └→ ~/.dhelix/input-history.json (최근 100개)
 ```
 
 ### 6.2 Permission 시스템 아키텍처
@@ -1603,6 +1603,6 @@ describe("SlashCommandMenu", () => {
 
 ---
 
-> **핵심 메시지:** Phase 0의 4개 작업이 완료되면 dbcode는 "사용 가능한" 도구가 됩니다.
+> **핵심 메시지:** Phase 0의 4개 작업이 완료되면 dhelix는 "사용 가능한" 도구가 됩니다.
 > Phase 1까지 완료되면 "생산적인" 도구가 됩니다.
 > Phase 2까지 완료되면 Claude Code에 근접한 "자율적 AI Agent"가 됩니다.

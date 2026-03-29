@@ -12,9 +12,9 @@
  *   /mcp add -s project <이름> <명령어> — 특정 스코프에 추가
  *
  * 스코프 우선순위: local > project > user
- *   - user:    ~/.dbcode/mcp-servers.json (글로벌)
- *   - project: .dbcode/mcp.json (팀 공유, git 커밋 대상)
- *   - local:   .dbcode/mcp-local.json (개인, gitignore 대상)
+ *   - user:    ~/.dhelix/mcp-servers.json (글로벌)
+ *   - project: .dhelix/mcp.json (팀 공유, git 커밋 대상)
+ *   - local:   .dhelix/mcp-local.json (개인, gitignore 대상)
  */
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { homedir } from "node:os";
@@ -40,11 +40,11 @@ interface ScopeServerEntry {
 function getConfigPath(scope: "local" | "project" | "user", workingDirectory: string): string {
   switch (scope) {
     case "local":
-      return join(workingDirectory, ".dbcode", "mcp-local.json");
+      return join(workingDirectory, ".dhelix", "mcp-local.json");
     case "project":
-      return join(workingDirectory, ".dbcode", "mcp.json");
+      return join(workingDirectory, ".dhelix", "mcp.json");
     case "user":
-      return join(homedir(), ".dbcode", "mcp-servers.json");
+      return join(homedir(), ".dhelix", "mcp-servers.json");
   }
 }
 
@@ -117,11 +117,11 @@ function scopeLabel(scope: Scope): string {
 function scopeDescription(scope: Scope): string {
   switch (scope) {
     case "user":
-      return `~/.dbcode/mcp-servers.json`;
+      return `~/.dhelix/mcp-servers.json`;
     case "project":
-      return `.dbcode/mcp.json`;
+      return `.dhelix/mcp.json`;
     case "local":
-      return `.dbcode/mcp-local.json`;
+      return `.dhelix/mcp-local.json`;
   }
 }
 
@@ -155,9 +155,9 @@ export const mcpCommand: SlashCommand = {
             "  /mcp remove -s <scope> <name>        — Remove from specific scope",
             "",
             "Scopes (priority: local > project > user):",
-            "  user     ~/.dbcode/mcp-servers.json    Global, all projects",
-            "  project  .dbcode/mcp.json              Shared with team (git)",
-            "  local    .dbcode/mcp-local.json        Personal (gitignored)",
+            "  user     ~/.dhelix/mcp-servers.json    Global, all projects",
+            "  project  .dhelix/mcp.json              Shared with team (git)",
+            "  local    .dhelix/mcp-local.json        Personal (gitignored)",
           ].join("\n"),
           success: true,
         };
@@ -322,7 +322,7 @@ async function handleAdd(
         `  Config: ${configPath}`,
         `  Command: ${[command, ...cmdArgs].join(" ")}`,
         "",
-        "Restart dbcode to connect to this server.",
+        "Restart dhelix to connect to this server.",
       ].join("\n"),
       success: true,
     };
@@ -395,7 +395,7 @@ async function handleRemove(
     output: [
       `MCP server "${name}" removed from: ${removed.join(", ")}`,
       "",
-      "Restart dbcode for changes to take effect.",
+      "Restart dhelix for changes to take effect.",
     ].join("\n"),
     success: true,
   };

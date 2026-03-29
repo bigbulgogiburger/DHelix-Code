@@ -1,7 +1,7 @@
 ---
 name: generate-class-docs
 description: |
-  dbcode 프로젝트의 TypeScript 클래스/모듈을 초보자도 이해할 수 있는 구조화된 개발 문서로 생성합니다.
+  dhelix 프로젝트의 TypeScript 클래스/모듈을 초보자도 이해할 수 있는 구조화된 개발 문서로 생성합니다.
   Next.js 기반 guide/ 사이트에 새 페이지를 추가하는 형태로 동작합니다.
   Spring Framework 공식 문서 + React 공식 문서의 구조를 벤치마킹한 3단 구조(Reference → Usage → Troubleshooting)를 사용합니다.
 
@@ -17,7 +17,7 @@ description: |
 
 # 클래스/모듈 개발 문서 생성 스킬
 
-이 스킬은 dbcode 프로젝트의 TypeScript 소스 코드를 분석하여, 초보자도 이해할 수 있는
+이 스킬은 dhelix 프로젝트의 TypeScript 소스 코드를 분석하여, 초보자도 이해할 수 있는
 구조화된 개발 문서 페이지를 `guide/` Next.js 프로젝트에 생성합니다.
 
 ## 문서화 철학

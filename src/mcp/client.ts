@@ -175,7 +175,7 @@ export class MCPClient {
       const initResult = (await this.sendRequest("initialize", {
         protocolVersion: "2024-11-05",
         capabilities: {},
-        clientInfo: { name: "dbcode", version: "0.1.0" },
+        clientInfo: { name: "dhelix", version: "0.1.0" },
       })) as {
         capabilities?: MCPServerCapabilities;
         serverInfo?: { name: string; version: string };

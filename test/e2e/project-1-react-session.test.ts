@@ -1,7 +1,7 @@
 /**
  * E2E Multi-turn Session Test: React + TypeScript Dashboard
  *
- * Uses dbcode's agent-loop to build a React Dashboard project incrementally
+ * Uses dhelix's agent-loop to build a React Dashboard project incrementally
  * across multiple conversation turns, verifying file system state after each turn.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";

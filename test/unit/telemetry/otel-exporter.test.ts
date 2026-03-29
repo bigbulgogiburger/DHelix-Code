@@ -21,7 +21,7 @@ describe("OTelExporter", () => {
     enabled: true,
     otlpEndpoint: "http://localhost:4318",
     exportIntervalMs: 60000,
-    serviceName: "dbcode-test",
+    serviceName: "dhelix-test",
     serviceVersion: "1.0.0",
     resourceAttributes: { "host.name": "test-host" },
   };

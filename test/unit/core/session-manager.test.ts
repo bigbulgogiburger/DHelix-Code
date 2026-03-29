@@ -9,7 +9,7 @@ describe("SessionManager", () => {
   let manager: SessionManager;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-session-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-session-test-"));
     manager = new SessionManager(tempDir);
   });
 
@@ -276,7 +276,7 @@ describe("atomicWrite", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-atomic-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-atomic-test-"));
   });
 
   afterEach(async () => {
@@ -305,7 +305,7 @@ describe("withFileLock", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-lock-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-lock-test-"));
   });
 
   afterEach(async () => {

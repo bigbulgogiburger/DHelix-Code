@@ -107,7 +107,7 @@ Import 되는 곳:
 | 문제                                    | 원인                                                | 해결                                  |
 | --------------------------------------- | --------------------------------------------------- | ------------------------------------- |
 | "시스템 프롬프트가 너무 길어요"         | 총 토큰 예산 초과 → 낮은 우선순위 섹션 탈락         | TIER_BUDGETS 확인, 섹션 우선순위 조정 |
-| "프로젝트 지시사항이 반영되지 않아요"   | DBCODE.md 경로가 detectProjectType()에서 인식 안 됨 | 프로젝트 루트에 DBCODE.md 배치 확인   |
+| "프로젝트 지시사항이 반영되지 않아요"   | DHELIX.md 경로가 detectProjectType()에서 인식 안 됨 | 프로젝트 루트에 DHELIX.md 배치 확인   |
 | "서브에이전트가 다른 프롬프트를 받아요" | SessionState.isSubagent로 분기되어 다른 섹션 포함   | isSubagent + subagentType 조합 확인   |
 
 #### SeeAlso 계획
@@ -609,14 +609,14 @@ Import 되는 곳:
 #### Mermaid 다이어그램 계획
 
 1. **아키텍처 위치** — App → MCPManager → MCPClient(s) → External MCP Servers
-2. **3-Scope 설정** — User(~/.dbcode) < Project(.dbcode/) < Local (우선순위) (flowchart)
+2. **3-Scope 설정** — User(~/.dhelix) < Project(.dhelix/) < Local (우선순위) (flowchart)
 3. **연결 시퀀스** — loadScopedConfigs → connectAll (Promise.allSettled) → bridge.registerTools
 
 #### 핵심 알고리즘 설명 포인트
 
 1. **3-Scope 우선순위**: local > project > user (같은 이름의 서버는 상위 스코프가 덮어씀)
 2. **병렬 연결**: Promise.allSettled → 부분 실패 허용 (일부 서버 실패해도 나머지 연결)
-3. **도구 브리지**: MCP 서버의 도구를 dbcode의 ToolRegistry에 자동 등록
+3. **도구 브리지**: MCP 서버의 도구를 dhelix의 ToolRegistry에 자동 등록
 4. **재연결**: connectServer()에서 기존 연결이 있으면 disconnect 후 재연결
 
 #### Pitfall 후보
@@ -676,10 +676,10 @@ Import 되는 곳:
 #### 스킬 로딩 디렉토리 (우선순위 낮→높)
 
 ```
-1. ~/.dbcode/skills/       (글로벌 스킬)
-2. ~/.dbcode/commands/     (글로벌 명령)
-3. {cwd}/.dbcode/skills/   (프로젝트 스킬)
-4. {cwd}/.dbcode/commands/ (프로젝트 명령 — 최고 우선순위)
+1. ~/.dhelix/skills/       (글로벌 스킬)
+2. ~/.dhelix/commands/     (글로벌 명령)
+3. {cwd}/.dhelix/skills/   (프로젝트 스킬)
+4. {cwd}/.dhelix/commands/ (프로젝트 명령 — 최고 우선순위)
 ```
 
 #### 의존성 관계
@@ -723,7 +723,7 @@ Import 되는 곳:
 | -------------- | --------------------------------------------------------------------------------------------- |
 | **파일**       | `src/instructions/loader.ts`                                                                  |
 | **레이어**     | Layer 4: Leaf                                                                                 |
-| **한 줄 설명** | 6단계 DBCODE.md 로딩 체인 — global → rules → parents → project → path-rules → local 계층 병합 |
+| **한 줄 설명** | 6단계 DHELIX.md 로딩 체인 — global → rules → parents → project → path-rules → local 계층 병합 |
 | **복잡도**     | ★★★★☆ (높음 — 6단계 계층 + 패턴 매칭 + @import 처리)                                          |
 
 #### 문서화할 Export 목록
@@ -753,12 +753,12 @@ Import 되는 곳:
 
 ```
 우선순위 (낮→높):
-1. ~/.dbcode/DBCODE.md              (글로벌 인스트럭션)
-2. ~/.dbcode/rules/*.md             (글로벌 규칙 — 경로 조건부)
-3. 부모 디렉토리의 DBCODE.md        (모노레포 지원)
-4. {projectRoot}/DBCODE.md          (프로젝트 인스트럭션)
-5. {projectRoot}/.dbcode/rules/*.md (프로젝트 규칙 — 경로 조건부)
-6. DBCODE.local.md                  (개인 오버라이드, gitignore 대상)
+1. ~/.dhelix/DHELIX.md              (글로벌 인스트럭션)
+2. ~/.dhelix/rules/*.md             (글로벌 규칙 — 경로 조건부)
+3. 부모 디렉토리의 DHELIX.md        (모노레포 지원)
+4. {projectRoot}/DHELIX.md          (프로젝트 인스트럭션)
+5. {projectRoot}/.dhelix/rules/*.md (프로젝트 규칙 — 경로 조건부)
+6. DHELIX.local.md                  (개인 오버라이드, gitignore 대상)
 
 결합: '\n\n---\n\n' 구분자로 병합
 ```
@@ -779,27 +779,27 @@ Import 되는 곳:
 #### Mermaid 다이어그램 계획
 
 1. **6-Layer 계층 다이어그램** — Global → Rules → Parent → Project → Path Rules → Local (flowchart)
-2. **프로젝트 루트 탐색** — cwd → 상위 디렉토리 순회 → DBCODE.md 발견 (flowchart)
+2. **프로젝트 루트 탐색** — cwd → 상위 디렉토리 순회 → DHELIX.md 발견 (flowchart)
 3. **Path Rule 매칭** — frontmatter patterns → matchPath() → 현재 경로에 해당하는 규칙만 포함
 
 #### 핵심 알고리즘 설명 포인트
 
-1. **프로젝트 루트 탐색**: cwd부터 위로 순회하며 DBCODE.md 또는 .dbcode/ 디렉토리 탐색
+1. **프로젝트 루트 탐색**: cwd부터 위로 순회하며 DHELIX.md 또는 .dhelix/ 디렉토리 탐색
 2. **Frontmatter 패턴**: rules/\*.md의 `paths:` 필드로 적용 경로 조건 지정
 3. **@import 지시어**: parseInstructions()에서 외부 파일 인라인 포함
 4. **LazyInstructionLoader**: 파일별 온디맨드 로딩 + 디렉토리별 캐시
 
 #### Pitfall 후보
 
-- "DBCODE.local.md는 gitignore에 추가해야 합니다. 개인 설정이 팀원에게 공유되면 안 됩니다."
+- "DHELIX.local.md는 gitignore에 추가해야 합니다. 개인 설정이 팀원에게 공유되면 안 됩니다."
 - "rules/\*.md의 paths 패턴이 현재 작업 디렉토리와 일치하지 않으면 해당 규칙은 무시됩니다."
-- "모노레포에서 부모 DBCODE.md가 있으면 자동으로 포함됩니다. 의도치 않은 상속에 주의하세요."
+- "모노레포에서 부모 DHELIX.md가 있으면 자동으로 포함됩니다. 의도치 않은 상속에 주의하세요."
 
 #### 트러블슈팅 후보
 
 | 문제                                      | 원인                    | 해결                                            |
 | ----------------------------------------- | ----------------------- | ----------------------------------------------- |
-| "DBCODE.md 내용이 프롬프트에 안 나와요"   | 프로젝트 루트 탐지 실패 | findProjectRoot()가 올바른 경로 반환하는지 확인 |
+| "DHELIX.md 내용이 프롬프트에 안 나와요"   | 프로젝트 루트 탐지 실패 | findProjectRoot()가 올바른 경로 반환하는지 확인 |
 | "규칙 파일이 적용되지 않아요"             | paths 패턴 불일치       | frontmatter의 `paths:` 필드와 cwd 확인          |
 | "LazyInstructionLoader 캐시가 오래됐어요" | 캐시 무효화 안 됨       | invalidate(dirPath) 또는 clearCache() 호출      |
 

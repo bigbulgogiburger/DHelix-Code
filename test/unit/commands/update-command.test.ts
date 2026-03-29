@@ -132,7 +132,7 @@ describe("update command (mocked)", () => {
 
     expect(result.output).toContain("Latest version: 99.99.99");
     expect(result.output).toContain("Updated to 99.99.99 successfully");
-    expect(result.output).toContain("Restart dbcode");
+    expect(result.output).toContain("Restart dhelix");
     expect(result.success).toBe(true);
   });
 

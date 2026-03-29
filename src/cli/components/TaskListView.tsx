@@ -10,11 +10,11 @@
 import { Box, Text } from "ink";
 import { type Task, type TaskStatus } from "../../core/task-manager.js";
 
-/** 작업 상태별 표시 색상 — pending=회색, in_progress=노랑, completed=초록 등 */
+/** 작업 상태별 표시 색상 — pending=회색, in_progress=노랑, completed=밝은시안 등 */
 const STATUS_COLORS: Record<TaskStatus, string> = {
   pending: "gray",
   in_progress: "yellow",
-  completed: "green",
+  completed: "#00E5FF",
   failed: "red",
   cancelled: "gray",
 };

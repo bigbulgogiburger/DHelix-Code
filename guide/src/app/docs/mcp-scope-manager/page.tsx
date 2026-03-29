@@ -62,9 +62,9 @@ export default function MCPScopeManagerPage() {
               title="MCPScopeManager 3-Scope 병합 흐름"
               titleColor="purple"
               chart={`graph TD
-  USER["~/.dbcode/mcp-servers.json<br/><small>User Scope (글로벌)</small>"]
-  PROJECT[".dbcode/mcp.json<br/><small>Project Scope (팀 공유)</small>"]
-  LOCAL[".dbcode/mcp-local.json<br/><small>Local Scope (개인, gitignore)</small>"]
+  USER["~/.dhelix/mcp-servers.json<br/><small>User Scope (글로벌)</small>"]
+  PROJECT[".dhelix/mcp.json<br/><small>Project Scope (팀 공유)</small>"]
+  LOCAL[".dhelix/mcp-local.json<br/><small>Local Scope (개인, gitignore)</small>"]
   MANAGER["MCPScopeManager<br/><small>scope-manager.ts</small>"]
   MERGED["병합된 설정 Map<br/><small>서버이름 → MCPServerConfig</small>"]
 
@@ -240,11 +240,11 @@ export default function MCPScopeManagerPage() {
               {"\n"}
               <span className="cm">{"// 경로 규칙:"}</span>
               {"\n"}
-              <span className="cm">{"// local:   {workingDir}/.dbcode/mcp-local.json"}</span>
+              <span className="cm">{"// local:   {workingDir}/.dhelix/mcp-local.json"}</span>
               {"\n"}
-              <span className="cm">{"// project: {workingDir}/.dbcode/mcp.json"}</span>
+              <span className="cm">{"// project: {workingDir}/.dhelix/mcp.json"}</span>
               {"\n"}
-              <span className="cm">{"// user:    ~/.dbcode/mcp-servers.json"}</span>
+              <span className="cm">{"// user:    ~/.dhelix/mcp-servers.json"}</span>
             </CodeBlock>
 
             {/* Caveats */}
@@ -336,7 +336,7 @@ export default function MCPScopeManagerPage() {
               각 스코프의 JSON 파일 형식입니다.
             </p>
             <CodeBlock>
-              <span className="cm">{"// .dbcode/mcp.json (project 스코프 — 팀 공유)"}</span>
+              <span className="cm">{"// .dhelix/mcp.json (project 스코프 — 팀 공유)"}</span>
               {"\n"}
               {"{"}
               {"\n"}
@@ -365,7 +365,7 @@ export default function MCPScopeManagerPage() {
               {"\n"}
               {"\n"}
               <span className="cm">
-                {"// .dbcode/mcp-local.json (local 스코프 — 개인, gitignore)"}
+                {"// .dhelix/mcp-local.json (local 스코프 — 개인, gitignore)"}
               </span>
               {"\n"}
               {"{"}
@@ -419,7 +419,7 @@ export default function MCPScopeManagerPage() {
               <span className="prop">scopeManager</span>.<span className="fn">getConfigPath</span>(
               <span className="str">&quot;project&quot;</span>);
               {"\n"}
-              <span className="cm">{'// → "/path/to/project/.dbcode/mcp.json"'}</span>
+              <span className="cm">{'// → "/path/to/project/.dhelix/mcp.json"'}</span>
             </CodeBlock>
 
             <Callout type="tip" icon="*">
@@ -623,8 +623,8 @@ export default function MCPScopeManagerPage() {
               </p>
               <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
                 <li>
-                  파일 경로가 정확한지 확인: <code className="text-cyan-600">.dbcode/mcp.json</code>{" "}
-                  (project) 또는 <code className="text-cyan-600">.dbcode/mcp-local.json</code>{" "}
+                  파일 경로가 정확한지 확인: <code className="text-cyan-600">.dhelix/mcp.json</code>{" "}
+                  (project) 또는 <code className="text-cyan-600">.dhelix/mcp-local.json</code>{" "}
                   (local)
                 </li>
                 <li>JSON 최상위가 객체({"{}"})인지 확인 (배열이면 무시됩니다)</li>
@@ -652,7 +652,7 @@ export default function MCPScopeManagerPage() {
                 &quot;user 글로벌 설정 파일 위치가 어디인가요?&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">~/.dbcode/mcp-servers.json</code>입니다.
+                <code className="text-cyan-600">~/.dhelix/mcp-servers.json</code>입니다.
                 <code className="text-cyan-600">getConfigPath(&quot;user&quot;)</code>로 정확한
                 경로를 확인할 수 있습니다. 이 파일은 모든 프로젝트에 공통으로 적용됩니다.
               </p>
@@ -687,7 +687,7 @@ export default function MCPScopeManagerPage() {
                   name: "config-loader.ts",
                   slug: "config-loader",
                   relation: "sibling",
-                  desc: "dbcode 전체 설정의 5-layer 병합 시스템 — MCP 스코프와 유사한 계층 구조",
+                  desc: "dhelix 전체 설정의 5-layer 병합 시스템 — MCP 스코프와 유사한 계층 구조",
                 },
               ]}
             />

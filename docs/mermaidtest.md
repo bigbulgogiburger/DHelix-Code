@@ -4,7 +4,7 @@
 
 ```mermaid
 graph TD
-  root["dbcode/"]
+  root["dhelix/"]
   root --> src
   root --> docs
   root --> scripts

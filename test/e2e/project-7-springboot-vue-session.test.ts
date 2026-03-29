@@ -36,7 +36,7 @@ const progressFile = resolve(projectDir, ".e2e-progress.json");
 interface SessionMetrics {
   totalIterations: number;
   turnsCompleted: number;
-  dbcodeReads: string[];
+  dhelixReads: string[];
   toolCalls: Array<{ turn: number; tool: string }>;
   errors: string[];
 }
@@ -60,8 +60,8 @@ function writeProgress(
           status,
           iterations: metrics.totalIterations,
           turnsCompleted: metrics.turnsCompleted,
-          dbcodeReads: metrics.dbcodeReads.length,
-          dbcodeReadTurns: metrics.dbcodeReads,
+          dhelixReads: metrics.dhelixReads.length,
+          dhelixReadTurns: metrics.dhelixReads,
           lastToolCall: metrics.toolCalls.at(-1)?.tool ?? "none",
           totalToolCalls: metrics.toolCalls.length,
           errors: metrics.errors,
@@ -112,7 +112,7 @@ describe.skipIf(!hasApiKey)(
     const metrics: SessionMetrics = {
       totalIterations: 0,
       turnsCompleted: 0,
-      dbcodeReads: [],
+      dhelixReads: [],
       toolCalls: [],
       errors: [],
     };
@@ -141,13 +141,13 @@ describe.skipIf(!hasApiKey)(
 
       const events = createEventEmitter();
 
-      // Monitor DBCODE.md reads and all tool calls
+      // Monitor DHELIX.md reads and all tool calls
       events.on(
         "tool:start",
         ({ name, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
           metrics.toolCalls.push({ turn: currentTurn, tool: name });
-          if (name === "file_read" && args?.file_path?.toString().includes("DBCODE.md")) {
-            metrics.dbcodeReads.push(`Turn ${currentTurn}`);
+          if (name === "file_read" && args?.file_path?.toString().includes("DHELIX.md")) {
+            metrics.dhelixReads.push(`Turn ${currentTurn}`);
           }
         },
       );
@@ -200,12 +200,12 @@ describe.skipIf(!hasApiKey)(
 
       writeProgress(metrics, currentTurn, name, "running");
 
-      // Inject DBCODE.md reference for turns after initial setup
+      // Inject DHELIX.md reference for turns after initial setup
       let enrichedMessage = userMessage;
-      const dbcodePath = resolve(projectDir, "DBCODE.md");
-      if (currentTurn > 1 && existsSync(dbcodePath)) {
-        const dbcodeContent = readFileSync(dbcodePath, "utf-8");
-        enrichedMessage = `[Project conventions from DBCODE.md]\n${dbcodeContent}\n\n---\n\n${userMessage}`;
+      const dhelixPath = resolve(projectDir, "DHELIX.md");
+      if (currentTurn > 1 && existsSync(dhelixPath)) {
+        const dhelixContent = readFileSync(dhelixPath, "utf-8");
+        enrichedMessage = `[Project conventions from DHELIX.md]\n${dhelixContent}\n\n---\n\n${userMessage}`;
       }
 
       messages.push({ role: "user", content: enrichedMessage });
@@ -263,22 +263,22 @@ describe.skipIf(!hasApiKey)(
     }
 
     // ================================================================
-    // TURNS — dbcode does ALL the work via runAgentLoop()
+    // TURNS — dhelix does ALL the work via runAgentLoop()
     // ================================================================
 
-    // ---- Turn 0: /init — Create DBCODE.md ----
-    it("Turn 0: Initialize project with DBCODE.md", async () => {
+    // ---- Turn 0: /init — Create DHELIX.md ----
+    it("Turn 0: Initialize project with DHELIX.md", async () => {
       await sendTurn(
-        `Run /init to initialize this project at ${projectDir}. Create a DBCODE.md for a Task Manager application using Spring Boot 3.2 (Gradle Kotlin DSL, Java 17, H2, Spring Data JPA) as backend and Vue 3 (TypeScript, Vite, Pinia, Tailwind CSS) as frontend. Monorepo structure with backend/ and frontend/ directories. Testing: JUnit 5 + JaCoCo (backend), Vitest + Vue Test Utils (frontend). Target 80% coverage. Include:
+        `Run /init to initialize this project at ${projectDir}. Create a DHELIX.md for a Task Manager application using Spring Boot 3.2 (Gradle Kotlin DSL, Java 17, H2, Spring Data JPA) as backend and Vue 3 (TypeScript, Vite, Pinia, Tailwind CSS) as frontend. Monorepo structure with backend/ and frontend/ directories. Testing: JUnit 5 + JaCoCo (backend), Vitest + Vue Test Utils (frontend). Target 80% coverage. Include:
 - Directory structure for both backend and frontend
 - Build commands (./gradlew build, npm run build)
 - Test commands (./gradlew test jacocoTestReport, npx vitest run --coverage)
 - Coding conventions: RESTful endpoints under /api/v1/, Vue 3 Composition API with <script setup>, TypeScript strict mode, Pinia for state management, Tailwind CSS only (no scoped styles)`,
-        "Initialize DBCODE.md",
+        "Initialize DHELIX.md",
       );
 
-      expect(existsSync(resolve(projectDir, "DBCODE.md"))).toBe(true);
-      const content = readFileSync(resolve(projectDir, "DBCODE.md"), "utf-8");
+      expect(existsSync(resolve(projectDir, "DHELIX.md"))).toBe(true);
+      const content = readFileSync(resolve(projectDir, "DHELIX.md"), "utf-8");
       expect(content.toLowerCase()).toContain("task manager");
       expect(content.toLowerCase()).toContain("spring boot");
       expect(content.toLowerCase()).toContain("vue");
@@ -287,7 +287,7 @@ describe.skipIf(!hasApiKey)(
     // ---- Turn 1: Backend scaffold ----
     it("Turn 1: Create Spring Boot backend scaffold", async () => {
       await sendTurn(
-        `Create the backend/ directory with a Spring Boot 3.2 Gradle (Kotlin DSL) project. Include dependencies: spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-validation, h2, lombok. Add JaCoCo plugin for coverage. Create application.yml with H2 in-memory config (spring.datasource.url=jdbc:h2:mem:taskmanager). Add a main application class. Follow DBCODE.md directory structure exactly.
+        `Create the backend/ directory with a Spring Boot 3.2 Gradle (Kotlin DSL) project. Include dependencies: spring-boot-starter-web, spring-boot-starter-data-jpa, spring-boot-starter-validation, h2, lombok. Add JaCoCo plugin for coverage. Create application.yml with H2 in-memory config (spring.datasource.url=jdbc:h2:mem:taskmanager). Add a main application class. Follow DHELIX.md directory structure exactly.
 
 IMPORTANT: Do NOT use \`gradle init\` or interactive Gradle commands. Write build.gradle.kts and settings.gradle.kts files manually. You may run \`gradle wrapper\` AFTER writing build.gradle.kts to generate the Gradle wrapper.`,
         "Backend scaffold",
@@ -300,7 +300,7 @@ IMPORTANT: Do NOT use \`gradle init\` or interactive Gradle commands. Write buil
     // ---- Turn 2: Backend REST API ----
     it("Turn 2: Implement Task REST API", async () => {
       await sendTurn(
-        `Implement the Task Management REST API. Create a Task entity with fields: id (Long, auto-generated), title (String, required, max 100), description (String, max 500), status (enum: TODO, IN_PROGRESS, DONE, default TODO), priority (enum: LOW, MEDIUM, HIGH, default MEDIUM), dueDate (LocalDate, nullable), createdAt (LocalDateTime, auto-set), updatedAt (LocalDateTime, auto-set). Create: entity with JPA annotations, repository (Spring Data JPA), service layer, DTOs (CreateTaskRequest, UpdateTaskRequest, TaskResponse), and @RestController with full CRUD under /api/v1/tasks. Add @Valid on request bodies. Refer to DBCODE.md for API conventions.`,
+        `Implement the Task Management REST API. Create a Task entity with fields: id (Long, auto-generated), title (String, required, max 100), description (String, max 500), status (enum: TODO, IN_PROGRESS, DONE, default TODO), priority (enum: LOW, MEDIUM, HIGH, default MEDIUM), dueDate (LocalDate, nullable), createdAt (LocalDateTime, auto-set), updatedAt (LocalDateTime, auto-set). Create: entity with JPA annotations, repository (Spring Data JPA), service layer, DTOs (CreateTaskRequest, UpdateTaskRequest, TaskResponse), and @RestController with full CRUD under /api/v1/tasks. Add @Valid on request bodies. Refer to DHELIX.md for API conventions.`,
         "Backend REST API",
       );
 
@@ -316,7 +316,7 @@ IMPORTANT: Do NOT use \`gradle init\` or interactive Gradle commands. Write buil
 - tailwind.config.js scanning src/**/*.{vue,ts}
 - postcss.config.js with tailwindcss and autoprefixer
 - src/main.ts mounting the Vue app with router and Pinia
-Follow DBCODE.md directory structure: src/components/, src/composables/, src/services/, src/types/, src/views/, src/stores/.`,
+Follow DHELIX.md directory structure: src/components/, src/composables/, src/services/, src/types/, src/views/, src/stores/.`,
         "Frontend scaffold",
       );
 
@@ -336,7 +336,7 @@ Follow DBCODE.md directory structure: src/components/, src/composables/, src/ser
 6) components/TaskForm.vue — modal form for creating/editing tasks with validation
 7) components/TaskFilter.vue — filter bar with status and priority dropdowns
 8) views/TaskBoard.vue — main page composing TaskFilter, TaskList, and TaskForm
-Use Tailwind CSS only (no scoped styles per DBCODE.md). All components must use Composition API.`,
+Use Tailwind CSS only (no scoped styles per DHELIX.md). All components must use Composition API.`,
         "Frontend components",
       );
 
@@ -354,7 +354,7 @@ Use Tailwind CSS only (no scoped styles per DBCODE.md). All components must use 
 4) Add loading spinners (a simple Tailwind CSS spinner) and error toast/banner for API failures
 5) Update App.vue with <RouterView /> and a navigation header with app title
 6) Ensure all API calls use the typed fetch wrapper from services/api.ts
-Refer to DBCODE.md for conventions.`,
+Refer to DHELIX.md for conventions.`,
         "Frontend integration",
       );
 
@@ -418,23 +418,23 @@ Fix any failing tests and re-run until all pass with 80%+ coverage.`,
       expect(frontendTest.success).toBe(true);
     }, 600_000);
 
-    // ---- Turn 8: DBCODE.md compliance ----
-    it("Turn 8: DBCODE.md compliance review", async () => {
+    // ---- Turn 8: DHELIX.md compliance ----
+    it("Turn 8: DHELIX.md compliance review", async () => {
       await sendTurn(
-        `Read DBCODE.md and review the entire project for compliance. Check and fix:
+        `Read DHELIX.md and review the entire project for compliance. Check and fix:
 1. All REST endpoints are under /api/v1/
 2. Frontend uses Vue 3 Composition API with <script setup> only (no Options API)
 3. TypeScript strict mode is enabled
 4. State management uses Pinia (not Vuex or raw refs)
 5. API client uses a typed fetch wrapper (not raw fetch())
 6. Styling uses Tailwind CSS only (no scoped styles, no .css imports except Tailwind)
-7. Directory structure matches DBCODE.md specification
+7. Directory structure matches DHELIX.md specification
 List any violations found and fix them.`,
-        "DBCODE.md compliance",
+        "DHELIX.md compliance",
       );
 
-      // Verify agent actually read DBCODE.md during the session
-      expect(metrics.dbcodeReads.length).toBeGreaterThanOrEqual(2);
+      // Verify agent actually read DHELIX.md during the session
+      expect(metrics.dhelixReads.length).toBeGreaterThanOrEqual(2);
     }, 300_000);
 
     // ---- Final Evaluation ----
@@ -447,7 +447,7 @@ Model: ${MODEL}
 Turns Completed: ${metrics.turnsCompleted} / ${TOTAL_TURNS}
 Total Iterations: ${metrics.totalIterations}
 Avg Iterations/Turn: ${(metrics.totalIterations / Math.max(metrics.turnsCompleted, 1)).toFixed(1)}
-DBCODE.md Reads: ${metrics.dbcodeReads.length} (${metrics.dbcodeReads.join(", ") || "none"})
+DHELIX.md Reads: ${metrics.dhelixReads.length} (${metrics.dhelixReads.join(", ") || "none"})
 Total Tool Calls: ${metrics.toolCalls.length}
 Errors: ${metrics.errors.length}
 ${metrics.errors.length > 0 ? "Error Details:\n" + metrics.errors.map((e) => `  - ${e}`).join("\n") : ""}

@@ -34,9 +34,9 @@ const COMMAND_TIMEOUT_MS = 10_000;
  * - $ARGUMENTS: 전체 인자 문자열 (예: "fix auth bug")
  * - $ARGUMENTS[N]: N번째 인자 (0부터 시작)
  * - $0, $1, $2...: 위치별 인자 (= $ARGUMENTS[N])
- * - ${DBCODE_SESSION_ID}: 현재 세션 ID
- * - ${DBCODE_SKILL_DIR}: 스킬 파일이 위치한 디렉토리
- * - ${DBCODE_PROJECT_DIR}: 프로젝트 루트 디렉토리
+ * - ${DHELIX_SESSION_ID}: 현재 세션 ID
+ * - ${DHELIX_SKILL_DIR}: 스킬 파일이 위치한 디렉토리
+ * - ${DHELIX_PROJECT_DIR}: 프로젝트 루트 디렉토리
  *
  * @param body - 변수가 포함된 스킬 본문 원본
  * @param context - 변수에 대입할 런타임 컨텍스트 정보
@@ -58,14 +58,14 @@ function interpolateVariables(body: string, context: SkillContext): string {
     return context.positionalArgs[Number(idx)] ?? "";
   });
 
-  // ${DBCODE_SESSION_ID} — 현재 세션의 고유 식별자
-  result = result.replace(/\$\{DBCODE_SESSION_ID\}/g, context.sessionId ?? "");
+  // ${DHELIX_SESSION_ID} — 현재 세션의 고유 식별자
+  result = result.replace(/\$\{DHELIX_SESSION_ID\}/g, context.sessionId ?? "");
 
-  // ${DBCODE_SKILL_DIR} — 스킬 파일이 있는 디렉토리 경로
-  result = result.replace(/\$\{DBCODE_SKILL_DIR\}/g, context.skillDir ?? "");
+  // ${DHELIX_SKILL_DIR} — 스킬 파일이 있는 디렉토리 경로
+  result = result.replace(/\$\{DHELIX_SKILL_DIR\}/g, context.skillDir ?? "");
 
-  // ${DBCODE_PROJECT_DIR} — 프로젝트 루트 디렉토리 경로
-  result = result.replace(/\$\{DBCODE_PROJECT_DIR\}/g, context.projectDir ?? "");
+  // ${DHELIX_PROJECT_DIR} — 프로젝트 루트 디렉토리 경로
+  result = result.replace(/\$\{DHELIX_PROJECT_DIR\}/g, context.projectDir ?? "");
 
   return result;
 }

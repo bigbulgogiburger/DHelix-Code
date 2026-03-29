@@ -84,7 +84,7 @@ export default function SlashCommandMenuPage() {
             <Callout type="info" icon="💡">
               <strong>비유:</strong> SlashCommandMenu는 IDE의 명령 팔레트(Command Palette)와
               비슷합니다. VS Code에서 <code>Ctrl+Shift+P</code>를 누르면 명령 목록이 나타나고,
-              타이핑하면 필터링되는 것처럼, dbcode에서 <code>/</code>를 입력하면 사용 가능한 슬래시
+              타이핑하면 필터링되는 것처럼, dhelix에서 <code>/</code>를 입력하면 사용 가능한 슬래시
               명령어가 필터링되어 표시됩니다.
             </Callout>
           </section>

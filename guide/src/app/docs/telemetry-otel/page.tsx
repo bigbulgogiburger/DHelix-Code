@@ -272,8 +272,8 @@ export default function TelemetryOtelPage() {
             </CodeBlock>
 
             <Callout type="warn" icon="!">
-              <strong>주의:</strong> 환경 변수 <code>DBCODE_TELEMETRY=true</code>와{" "}
-              <code>DBCODE_TELEMETRY_OTLP_ENDPOINT</code>가 설정되지 않으면 <code>start()</code>/
+              <strong>주의:</strong> 환경 변수 <code>DHELIX_TELEMETRY=true</code>와{" "}
+              <code>DHELIX_TELEMETRY_OTLP_ENDPOINT</code>가 설정되지 않으면 <code>start()</code>/
               <code>export()</code>가 모두 no-op로 동작합니다. 데이터가 전송되지 않는다면 이 두 환경
               변수를 먼저 확인하세요.
             </Callout>
@@ -376,7 +376,7 @@ export default function TelemetryOtelPage() {
             <DeepDive title="OTel SDK를 사용하지 않는 이유">
               <p className="mb-3">
                 OpenTelemetry JavaScript SDK는 강력하지만 번들 크기와 부팅 시간에 큰 영향을
-                미칩니다. dbcode는 CLI 도구로서 빠른 부팅(
+                미칩니다. dhelix는 CLI 도구로서 빠른 부팅(
                 <code className="text-cyan-600">~150ms</code>)이 최우선 요구사항이므로, 순수
                 HTTP/JSON으로 OTLP 프로토콜을 직접 구현했습니다.
               </p>
@@ -405,8 +405,8 @@ export default function TelemetryOtelPage() {
                 &quot;데이터가 Grafana에 나타나지 않아요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                1. <code className="text-cyan-600">DBCODE_TELEMETRY=true</code> 설정 여부 확인. 2.{" "}
-                <code className="text-cyan-600">DBCODE_TELEMETRY_OTLP_ENDPOINT</code>가 올바른
+                1. <code className="text-cyan-600">DHELIX_TELEMETRY=true</code> 설정 여부 확인. 2.{" "}
+                <code className="text-cyan-600">DHELIX_TELEMETRY_OTLP_ENDPOINT</code>가 올바른
                 URL인지 확인(예: <code className="text-cyan-600">http://localhost:4318</code>). 3.{" "}
                 <code className="text-cyan-600">exporter.start()</code>를 호출했는지 확인. 세 조건이
                 모두 충족되어야 데이터가 전송됩니다.
@@ -432,8 +432,8 @@ export default function TelemetryOtelPage() {
                 <code className="text-cyan-600">buildMetricPayload()</code>에서 키를{" "}
                 <code className="text-cyan-600">&quot;{"{"}&quot;</code>로 분리하여 메트릭 이름을
                 추출합니다. 예를 들어{" "}
-                <code className="text-cyan-600">dbcode.tokens.total{"{type=input}"}</code>에서 이름
-                부분은 <code className="text-cyan-600">dbcode.tokens.total</code>이고, 레이블은 OTLP
+                <code className="text-cyan-600">dhelix.tokens.total{"{type=input}"}</code>에서 이름
+                부분은 <code className="text-cyan-600">dhelix.tokens.total</code>이고, 레이블은 OTLP
                 속성(attributes)으로 분리됩니다.
               </p>
             </div>

@@ -15,7 +15,7 @@
  *   /fork              → 이름 없이 분기
  *   /fork auth-refactor → "auth-refactor"라는 이름으로 분기
  *
- * 분기된 세션은 `dbcode --resume <세션ID>`로 이어서 사용할 수 있습니다.
+ * 분기된 세션은 `dhelix --resume <세션ID>`로 이어서 사용할 수 있습니다.
  */
 import { SessionManager } from "../core/session-manager.js";
 import { type SlashCommand } from "./registry.js";
@@ -47,7 +47,7 @@ export const forkCommand: SlashCommand = {
           `New session: ${newId}`,
           forkName ? `Name: "${forkName}"` : "",
           "",
-          `Resume with: dbcode --resume ${newId}`,
+          `Resume with: dhelix --resume ${newId}`,
         ]
           .filter(Boolean)
           .join("\n"),

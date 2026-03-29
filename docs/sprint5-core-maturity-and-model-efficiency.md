@@ -273,7 +273,7 @@ try {
 } catch (parseError) {
   args = {};
   // 구조화된 경고 — 디버그 모드에서만 출력
-  if (process.env.DBCODE_VERBOSE) {
+  if (process.env.DHELIX_VERBOSE) {
     process.stderr.write(`Warning: Invalid tool call JSON for ${tc.name}: ${String(parseError)}\n`);
   }
 }
@@ -292,7 +292,7 @@ try {
 try {
   yield JSON.parse(data) as AnthropicStreamEvent;
 } catch {
-  if (process.env.DBCODE_VERBOSE) {
+  if (process.env.DHELIX_VERBOSE) {
     process.stderr.write(`Warning: Unparseable SSE event: ${data.slice(0, 100)}\n`);
   }
 }
@@ -480,7 +480,7 @@ mcpConnector: undefined,  // MCP initialization is a future task — wiring only
 let mcpConnector: MCPManagerConnector | undefined;
 
 // MCP config 파일이 존재하면 초기화
-const mcpConfigPath = join(process.cwd(), ".dbcode", "mcp.json");
+const mcpConfigPath = join(process.cwd(), ".dhelix", "mcp.json");
 if (existsSync(mcpConfigPath)) {
   const { MCPManagerConnector } = await import("./mcp/manager-connector.js");
   const mcpConfig = JSON.parse(await readFile(mcpConfigPath, "utf-8"));
@@ -901,7 +901,7 @@ jobs:
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bigbulgogiburger/dbcode"
+    "url": "https://github.com/bigbulgogiburger/dhelix"
   },
   "files": ["dist/", "bin/", "README.md", "LICENSE", "CHANGELOG.md"],
   "engines": { "node": ">=20" },

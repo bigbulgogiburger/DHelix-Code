@@ -49,7 +49,7 @@ export default function UpdateCheckerPage() {
               </p>
               <p>
                 매번 확인하면 앱이 느려지므로, 확인 결과를{" "}
-                <code className="text-cyan-600 text-[13px]">~/.dbcode/update-check.json</code>에
+                <code className="text-cyan-600 text-[13px]">~/.dhelix/update-check.json</code>에
                 캐싱합니다. 마지막 확인 시각을 저장해두고 7일이 지나야 새로 확인합니다.
               </p>
               <p>
@@ -62,7 +62,7 @@ export default function UpdateCheckerPage() {
               title="checkForUpdates() 흐름"
               titleColor="cyan"
               chart={`flowchart TD
-    START["checkForUpdates(currentVersion)"] --> READ["readState()\\n~/.dbcode/update-check.json 읽기"]
+    START["checkForUpdates(currentVersion)"] --> READ["readState()\\n~/.dhelix/update-check.json 읽기"]
     READ --> HAS{"상태 파일\\n존재?"}
     HAS -->|"없음"| FETCH["fetchLatestVersion()\\nnpm 레지스트리 조회"]
     HAS -->|"있음"| AGE{"마지막 확인\\n7일 이내?"}
@@ -201,7 +201,7 @@ export default function UpdateCheckerPage() {
                     name: "updateCommand",
                     type: "string",
                     required: true,
-                    desc: '업데이트 명령어. 예: "npm install -g dbcode@latest".',
+                    desc: '업데이트 명령어. 예: "npm install -g dhelix@latest".',
                   },
                 ]}
               />
@@ -267,7 +267,7 @@ export default function UpdateCheckerPage() {
               <span className="text-[13px]">
                 <strong>주의:</strong> <code className="text-cyan-600">checkForUpdates()</code>는
                 7일 이내에 확인한 결과가 있으면 캐시를 사용합니다. 테스트 중 캐시를 초기화하려면
-                <code className="text-cyan-600"> ~/.dbcode/update-check.json</code>을 삭제하세요.
+                <code className="text-cyan-600"> ~/.dhelix/update-check.json</code>을 삭제하세요.
                 캐시 파일이 손상되어도 에러가 발생하지 않고 새로 확인합니다.
               </span>
             </Callout>
@@ -333,7 +333,7 @@ export default function UpdateCheckerPage() {
               </p>
               <p>
                 <strong className="text-gray-900">상태 파일 구조:</strong>{" "}
-                <code className="text-cyan-600">~/.dbcode/update-check.json</code>에는{" "}
+                <code className="text-cyan-600">~/.dhelix/update-check.json</code>에는{" "}
                 <code className="text-cyan-600">lastCheckTimestamp</code>(Unix 밀리초)와{" "}
                 <code className="text-cyan-600">latestVersion</code>(문자열 또는 null)만 저장됩니다.
                 저장 실패는 치명적이지 않으므로 조용히 무시합니다.
@@ -392,7 +392,7 @@ export default function UpdateCheckerPage() {
                 <p className="text-[13px] text-gray-600 leading-[1.8]">
                   <span className="text-emerald-600 font-bold">A.</span> 7일 이내에 이미 확인한
                   결과가 캐시되어 있을 수 있습니다.{" "}
-                  <code className="text-cyan-600">~/.dbcode/update-check.json</code>을 삭제하면 다음
+                  <code className="text-cyan-600">~/.dhelix/update-check.json</code>을 삭제하면 다음
                   실행 시 새로 확인합니다. 또한 네트워크가 차단된 환경이라면{" "}
                   <code className="text-cyan-600">fetchLatestVersion()</code>이 null을 반환합니다.
                 </p>
@@ -450,7 +450,7 @@ export default function UpdateCheckerPage() {
                   name: "memory-storage.ts",
                   slug: "memory-storage",
                   relation: "sibling",
-                  desc: "비슷한 JSON 파일 캐싱 패턴을 사용합니다. ~/.dbcode/ 디렉토리에 상태를 저장합니다.",
+                  desc: "비슷한 JSON 파일 캐싱 패턴을 사용합니다. ~/.dhelix/ 디렉토리에 상태를 저장합니다.",
                 },
                 {
                   name: "session-manager.ts",

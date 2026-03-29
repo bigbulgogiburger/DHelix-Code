@@ -1,4 +1,4 @@
-# DBCODE Core Architecture Analysis Summary
+# DHELIX Core Architecture Analysis Summary
 
 **Date:** 2026-03-11
 **Overall Readiness:** 82% (vs Claude Code: 95%)
@@ -72,7 +72,7 @@
 **Session Manager:**
 
 - Format: JSONL append-only (durable)
-- Structure: ~/.dbcode/sessions/{sessionId}/messages.jsonl
+- Structure: ~/.dhelix/sessions/{sessionId}/messages.jsonl
 - Atomic: write-temp + rename
 - Locking: mkdir-based with stale detection (5s timeout)
 - **Gap:** No cleanup policy
@@ -94,4 +94,4 @@
 
 ## Full Report
 
-See: `/Users/pyeondohun/development/dbcode/CORE_ARCHITECTURE_ANALYSIS.md` (40+ pages)
+See: `/Users/pyeondohun/development/dhelix/CORE_ARCHITECTURE_ANALYSIS.md` (40+ pages)

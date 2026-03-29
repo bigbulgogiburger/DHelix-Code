@@ -57,7 +57,7 @@ export default function CmdUndoPage() {
                 비슷한 명령어인 <code className="text-cyan-600">/rewind</code>와의 차이점을 이해하는
                 것이 중요합니다.
                 <code className="text-cyan-600">/undo</code>는 git의 마지막 커밋 상태로 돌아가지만,
-                <code className="text-cyan-600">/rewind</code>는 dbcode 체크포인트(LLM 수정 전)
+                <code className="text-cyan-600">/rewind</code>는 dhelix 체크포인트(LLM 수정 전)
                 상태로 돌아갑니다.
               </p>
             </div>
@@ -285,7 +285,7 @@ export default function CmdUndoPage() {
                   <code>git checkout --</code> 사용
                 </li>
                 <li>
-                  <strong>/rewind</strong> &mdash; dbcode 체크포인트(LLM이 수정하기 전) 상태로 복원.
+                  <strong>/rewind</strong> &mdash; dhelix 체크포인트(LLM이 수정하기 전) 상태로 복원.
                   내부 체크포인트 시스템 사용
                 </li>
               </ul>

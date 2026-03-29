@@ -1,9 +1,9 @@
-# dbcode vs Claude Code — v4 종합 비교 분석
+# dhelix vs Claude Code — v4 종합 비교 분석
 
 > **분석일**: 2026-03-11
 > **이전 분석**: v3 (2026-03-10, 8.7/10)
 > **Claude Code 기준 버전**: v2.1.71 (2026-03-06 릴리즈)
-> **dbcode 기준**: main branch (Rich Tool Call Display 구현 완료 후)
+> **dhelix 기준**: main branch (Rich Tool Call Display 구현 완료 후)
 > **분석자 관점**: Anthropic Claude Code 핵심 개발자로서의 기술적 평가
 
 ---
@@ -125,7 +125,7 @@ Claude Code의 핵심 DX인 `Update(filepath)` 의미론적 헤더, `⎿` 트리
 
 ### 4.1 CLI / UX (주요 변경)
 
-| 항목                     | Claude Code       | dbcode v4                            | 상태           |
+| 항목                     | Claude Code       | dhelix v4                            | 상태           |
 | ------------------------ | ----------------- | ------------------------------------ | -------------- |
 | 터미널 UI (Ink)          | ✅                | ✅                                   | 동등           |
 | 안티플리커               | ✅                | ✅ DEC Mode 2026                     | 동등           |
@@ -242,7 +242,7 @@ Claude Code의 핵심 DX인 `Update(filepath)` 의미론적 헤더, `⎿` 트리
    `tool-start` 상태에서도 "Reading 3 files..." 형태의 라이브 그룹핑이 가능하면 더 좋겠다.
 
 3. **접기/펼치기 전환 시 시각적 피드백**: Claude Code는 접기/펼치기 전환 시
-   해당 영역이 부드럽게 축소/확장된다. dbcode는 즉시 전환되어 약간 급격할 수 있다.
+   해당 영역이 부드럽게 축소/확장된다. dhelix는 즉시 전환되어 약간 급격할 수 있다.
 
 ### 아키텍처적 권장사항
 
@@ -325,13 +325,13 @@ Claude Code의 핵심 DX인 `Update(filepath)` 의미론적 헤더, `⎿` 트리
 
 ### 한 줄 요약
 
-> dbcode v4는 **CLI 도구 호출 표시에서 Claude Code와 시각적으로 동등**하며,
+> dhelix v4는 **CLI 도구 호출 표시에서 Claude Code와 시각적으로 동등**하며,
 > `Update(filepath)` 의미론적 헤더, `⎿` 트리 커넥터, Read 그룹핑, ctrl+o 토글로
 > **개발자 체감 품질이 프로덕션 수준**에 도달했다.
 
-### Claude Code 대비 dbcode의 포지셔닝 (v4 업데이트)
+### Claude Code 대비 dhelix의 포지셔닝 (v4 업데이트)
 
-| 관점          | Claude Code                                    | dbcode v4                        |
+| 관점          | Claude Code                                    | dhelix v4                        |
 | ------------- | ---------------------------------------------- | -------------------------------- |
 | **타겟**      | Anthropic 생태계 사용자                        | 모든 LLM 사용자                  |
 | **가격**      | Claude Pro/Max 필요                            | 무료 + BYOK (어떤 API든)         |
@@ -356,8 +356,8 @@ v5 (목표)    ███████████████████░ 9.5/
 
 ## Sources
 
-- v3 분석 문서: `docs/dbcode-vs-claude-code-v3.md`
+- v3 분석 문서: `docs/dhelix-vs-claude-code-v3.md`
 - [Claude Code Overview](https://code.claude.com/docs/en/overview)
 - [Claude Code Agent Teams](https://code.claude.com/docs/en/agent-teams)
 - [Claude Code Memory](https://code.claude.com/docs/en/memory)
-- dbcode 소스 코드 분석 (Rich Tool Call Display 구현 완료 후)
+- dhelix 소스 코드 분석 (Rich Tool Call Display 구현 완료 후)

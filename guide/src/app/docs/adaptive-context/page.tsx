@@ -70,7 +70,7 @@ export default function AdaptiveContextPage() {
   AC["AdaptiveContext<br/><small>adaptive-context.ts</small>"]
   SPB["System Prompt Builder<br/><small>system-prompt.ts</small>"]
   RM["Repo Map<br/><small>프로젝트 파일 구조</small>"]
-  INST["Instructions<br/><small>DBCODE.md, 설정 파일</small>"]
+  INST["Instructions<br/><small>DHELIX.md, 설정 파일</small>"]
   LLM["LLM Client<br/><small>llm/client.ts</small>"]
 
   USER -->|"estimateTaskComplexity()"| AC
@@ -159,7 +159,7 @@ export default function AdaptiveContextPage() {
                   name: "includeFullInstructions",
                   type: "boolean",
                   required: true,
-                  desc: "전체 프로젝트 지침(DBCODE.md 등)을 포함할지",
+                  desc: "전체 프로젝트 지침(DHELIX.md 등)을 포함할지",
                 },
                 {
                   name: "maxSystemPromptSections",

@@ -1,6 +1,6 @@
 # Anthropic Claude API Provider
 
-This document summarizes the latest implementation of the Anthropic Claude API provider in the `dbcode` project.
+This document summarizes the latest implementation of the Anthropic Claude API provider in the `dhelix` project.
 
 ## Overview
 

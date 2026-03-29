@@ -65,8 +65,8 @@ export default function TokenManagerAuthPage() {
   LLM["LLM Client<br/><small>llm/client.ts</small>"]
   TM["TokenManager<br/><small>auth/token-manager.ts</small>"]
   TS["Token Store<br/><small>auth/token-store.ts</small>"]
-  ENV["환경 변수<br/><small>DBCODE_API_KEY</small>"]
-  FILE["자격 증명 파일<br/><small>~/.dbcode/credentials.json</small>"]
+  ENV["환경 변수<br/><small>DHELIX_API_KEY</small>"]
+  FILE["자격 증명 파일<br/><small>~/.dhelix/credentials.json</small>"]
   CACHE["메모리 캐시<br/><small>cachedToken</small>"]
 
   LLM -->|"getAuthHeaders()"| TM
@@ -317,7 +317,7 @@ export default function TokenManagerAuthPage() {
               {"\n"}
               {"  "}
               <span className="fn">console</span>.<span className="fn">log</span>(
-              <span className="str">&quot;dbcode auth 명령으로 토큰을 설정하세요&quot;</span>);
+              <span className="str">&quot;dhelix auth 명령으로 토큰을 설정하세요&quot;</span>);
               {"\n"}
               {"}"}
             </CodeBlock>
@@ -353,9 +353,9 @@ export default function TokenManagerAuthPage() {
             </CodeBlock>
 
             <Callout type="tip" icon="*">
-              <strong>팁:</strong> 환경 변수(<code>DBCODE_API_KEY</code>)가 설정되어 있으면 파일보다
+              <strong>팁:</strong> 환경 변수(<code>DHELIX_API_KEY</code>)가 설정되어 있으면 파일보다
               우선합니다. CI/CD 환경에서는 환경 변수를, 로컬 개발에서는
-              <code>dbcode auth</code> 명령(파일 저장)을 사용하세요.
+              <code>dhelix auth</code> 명령(파일 저장)을 사용하세요.
             </Callout>
           </section>
         </RevealOnScroll>
@@ -391,12 +391,12 @@ export default function TokenManagerAuthPage() {
     Cache-->>TM: ResolvedToken
   else 캐시 미스
     TM->>Store: resolveToken()
-    Store->>Env: DBCODE_API_KEY / OPENAI_API_KEY
+    Store->>Env: DHELIX_API_KEY / OPENAI_API_KEY
     alt 환경 변수 존재
       Env-->>Store: TokenConfig
       Store-->>TM: {config, source: "environment"}
     else 환경 변수 없음
-      Store->>File: ~/.dbcode/credentials.json
+      Store->>File: ~/.dhelix/credentials.json
       File-->>Store: TokenConfig 또는 undefined
       Store-->>TM: {config, source: "file"} 또는 undefined
     end
@@ -479,9 +479,9 @@ export default function TokenManagerAuthPage() {
                 &quot;No API token configured 에러가 발생해요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                환경 변수(<code className="text-cyan-600">DBCODE_API_KEY</code> 또는
+                환경 변수(<code className="text-cyan-600">DHELIX_API_KEY</code> 또는
                 <code className="text-cyan-600">OPENAI_API_KEY</code>)를 설정하거나,
-                <code className="text-cyan-600">dbcode auth</code> 명령으로 토큰을 저장하세요.
+                <code className="text-cyan-600">dhelix auth</code> 명령으로 토큰을 저장하세요.
               </p>
             </div>
 
@@ -491,7 +491,7 @@ export default function TokenManagerAuthPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 TokenManager는 한 번 해석된 토큰을 메모리에 캐시합니다. 환경 변수 변경 후에는{" "}
-                <code className="text-cyan-600">clearCache()</code>를 호출하거나, dbcode를
+                <code className="text-cyan-600">clearCache()</code>를 호출하거나, dhelix를
                 재시작하세요.
               </p>
             </div>

@@ -25,7 +25,7 @@ export default function InstructionParserPage() {
               <span className="text-gray-900">Instruction Parser</span>
             </h1>
             <p className="text-[16px] text-gray-600 max-w-[640px]">
-              DBCODE.md 파일의 <span className="text-cyan-600 font-semibold">@import</span> 지시어를
+              DHELIX.md 파일의 <span className="text-cyan-600 font-semibold">@import</span> 지시어를
               해석하고 가져온 파일 내용을 병합하는 파서 모듈입니다. 순환 참조 감지, 최대 깊이 제한,{" "}
               <span className="text-violet-600 font-semibold">.md 전용</span> 보안 정책을
               적용합니다.
@@ -60,7 +60,7 @@ export default function InstructionParserPage() {
               title="@import 해석 파이프라인"
               titleColor="orange"
               chart={`flowchart TD
-  INPUT["📄 DBCODE.md 원본\\n@import 지시어 포함"]
+  INPUT["📄 DHELIX.md 원본\\n@import 지시어 포함"]
   EXTRACT["🔍 임포트 경로 추출\\n표준 + 단축 형식"]
   VALIDATE{"✅ 검증\\n.md 파일?\\n순환 참조?\\n깊이 초과?"}
   READ["📖 파일 읽기\\nreadFile(utf-8)"]
@@ -189,7 +189,7 @@ export default function InstructionParserPage() {
                     name: "baseDir",
                     type: "string",
                     required: true,
-                    desc: "상대 경로 해석 기준 디렉토리 (보통 DBCODE.md가 있는 디렉토리)",
+                    desc: "상대 경로 해석 기준 디렉토리 (보통 DHELIX.md가 있는 디렉토리)",
                   },
                 ]}
               />
@@ -304,10 +304,10 @@ export default function InstructionParserPage() {
               className="text-[15px] font-bold"
               style={{ marginTop: "32px", marginBottom: "16px" }}
             >
-              기본 사용 (DBCODE.md 파싱)
+              기본 사용 (DHELIX.md 파싱)
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
-              DBCODE.md 파일을 읽은 후{" "}
+              DHELIX.md 파일을 읽은 후{" "}
               <code className="text-cyan-600 text-xs">parseInstructions()</code>에 전달하면 모든
               @import가 해석된 최종 텍스트를 받을 수 있습니다.
             </p>
@@ -326,7 +326,7 @@ export default function InstructionParserPage() {
               <span className="text-[#ff7b72]">await</span>{" "}
               <span className="text-[#d2a8ff]">readFile</span>
               <span className="text-[#c9d1d9]">(</span>
-              <span className="text-[#a5d6ff]">{'"./DBCODE.md"'}</span>
+              <span className="text-[#a5d6ff]">{'"./DHELIX.md"'}</span>
               <span className="text-[#c9d1d9]">,</span>{" "}
               <span className="text-[#a5d6ff]">{'"utf-8"'}</span>
               <span className="text-[#c9d1d9]">);</span>
@@ -349,14 +349,14 @@ export default function InstructionParserPage() {
               className="text-[15px] font-bold"
               style={{ marginTop: "32px", marginBottom: "16px" }}
             >
-              DBCODE.md에서 @import 활용
+              DHELIX.md에서 @import 활용
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
               프로젝트 인스트럭션을 주제별로 분리하여 관리할 수 있습니다.
             </p>
 
             <CodeBlock>
-              <span className="text-[#8b949e]">{"# DBCODE.md"}</span>
+              <span className="text-[#8b949e]">{"# DHELIX.md"}</span>
               {"\n\n"}
               <span className="text-[#c9d1d9]">이 프로젝트는 React + TypeScript 기반입니다.</span>
               {"\n\n"}
@@ -533,7 +533,7 @@ export default function InstructionParserPage() {
                 <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p className="mb-2">
                     <strong className="text-gray-900">원인 1:</strong> 파일이 존재하지 않습니다.
-                    상대 경로가 DBCODE.md 기준인지 확인하세요. 결과에{" "}
+                    상대 경로가 DHELIX.md 기준인지 확인하세요. 결과에{" "}
                     <code className="text-cyan-600 text-xs">{"<!-- import not found -->"}</code>{" "}
                     주석이 있으면 파일을 찾지 못한 것입니다.
                   </p>
@@ -606,7 +606,7 @@ export default function InstructionParserPage() {
                   name: "instructions/loader.ts",
                   slug: "instruction-loader",
                   relation: "parent",
-                  desc: "6단계 DBCODE.md 로딩 체인 — parser를 내부적으로 사용",
+                  desc: "6단계 DHELIX.md 로딩 체인 — parser를 내부적으로 사용",
                 },
                 {
                   name: "config/loader.ts",

@@ -35,36 +35,36 @@ describe("loadConfig", () => {
 
   it("should apply environment overrides", async () => {
     delete process.env.LOCAL_MODEL;
-    process.env.DBCODE_MODEL = "env-model";
+    process.env.DHELIX_MODEL = "env-model";
     const resolved = await loadConfig();
     expect(resolved.config.llm.model).toBe("env-model");
-    delete process.env.DBCODE_MODEL;
+    delete process.env.DHELIX_MODEL;
   });
 
-  it("should apply DBCODE_BASE_URL from env", async () => {
+  it("should apply DHELIX_BASE_URL from env", async () => {
     delete process.env.LOCAL_API_BASE_URL;
-    process.env.DBCODE_BASE_URL = "http://custom:8080/v1";
+    process.env.DHELIX_BASE_URL = "http://custom:8080/v1";
     const resolved = await loadConfig();
     expect(resolved.config.llm.baseUrl).toBe("http://custom:8080/v1");
-    delete process.env.DBCODE_BASE_URL;
+    delete process.env.DHELIX_BASE_URL;
   });
 
-  it("should apply DBCODE_API_KEY from env", async () => {
-    process.env.DBCODE_API_KEY = "test-key-123";
+  it("should apply DHELIX_API_KEY from env", async () => {
+    process.env.DHELIX_API_KEY = "test-key-123";
     const resolved = await loadConfig();
     expect(resolved.config.llm.apiKey).toBe("test-key-123");
-    delete process.env.DBCODE_API_KEY;
+    delete process.env.DHELIX_API_KEY;
   });
 
   it("should apply verbose from env", async () => {
-    process.env.DBCODE_VERBOSE = "true";
+    process.env.DHELIX_VERBOSE = "true";
     const resolved = await loadConfig();
     expect(resolved.config.verbose).toBe(true);
-    delete process.env.DBCODE_VERBOSE;
+    delete process.env.DHELIX_VERBOSE;
   });
 
   it("CLI overrides should take highest priority", async () => {
-    process.env.DBCODE_MODEL = "env-model";
+    process.env.DHELIX_MODEL = "env-model";
     const resolved = await loadConfig({
       llm: {
         model: "cli-model",
@@ -76,7 +76,7 @@ describe("loadConfig", () => {
       },
     });
     expect(resolved.config.llm.model).toBe("cli-model");
-    delete process.env.DBCODE_MODEL;
+    delete process.env.DHELIX_MODEL;
   });
 
   it("should handle non-existent project directory", async () => {
@@ -84,11 +84,11 @@ describe("loadConfig", () => {
     expect(resolved.config).toBeDefined();
   });
 
-  it("should fallback to OPENAI_API_KEY when DBCODE_API_KEY not set", async () => {
-    delete process.env.DBCODE_API_KEY;
+  it("should fallback to OPENAI_API_KEY when DHELIX_API_KEY not set", async () => {
+    delete process.env.DHELIX_API_KEY;
     delete process.env.OPENAI_BASE_URL;
-    delete process.env.DBCODE_BASE_URL;
-    delete process.env.DBCODE_MODEL;
+    delete process.env.DHELIX_BASE_URL;
+    delete process.env.DHELIX_MODEL;
     delete process.env.OPENAI_MODEL;
     delete process.env.LOCAL_MODEL;
     delete process.env.LOCAL_API_BASE_URL;
@@ -99,34 +99,34 @@ describe("loadConfig", () => {
     delete process.env.OPENAI_API_KEY;
   });
 
-  it("should prefer DBCODE_API_KEY over OPENAI_API_KEY", async () => {
-    process.env.DBCODE_API_KEY = "dbcode-key";
+  it("should prefer DHELIX_API_KEY over OPENAI_API_KEY", async () => {
+    process.env.DHELIX_API_KEY = "dhelix-key";
     process.env.OPENAI_API_KEY = "openai-key";
     const resolved = await loadConfig();
-    expect(resolved.config.llm.apiKey).toBe("dbcode-key");
-    delete process.env.DBCODE_API_KEY;
+    expect(resolved.config.llm.apiKey).toBe("dhelix-key");
+    delete process.env.DHELIX_API_KEY;
     delete process.env.OPENAI_API_KEY;
   });
 
-  it("should load project config from .dbcode/config.json", async () => {
+  it("should load project config from .dhelix/config.json", async () => {
     // Clear env vars so they don't override project config
     const savedKey = process.env.OPENAI_API_KEY;
-    const savedDbKey = process.env.DBCODE_API_KEY;
-    const savedModel = process.env.DBCODE_MODEL;
+    const savedDbKey = process.env.DHELIX_API_KEY;
+    const savedModel = process.env.DHELIX_MODEL;
     const savedBaseUrl = process.env.OPENAI_BASE_URL;
-    const savedDbBaseUrl = process.env.DBCODE_BASE_URL;
+    const savedDbBaseUrl = process.env.DHELIX_BASE_URL;
     const savedOpenaiModel = process.env.OPENAI_MODEL;
     delete process.env.OPENAI_API_KEY;
-    delete process.env.DBCODE_API_KEY;
-    delete process.env.DBCODE_MODEL;
+    delete process.env.DHELIX_API_KEY;
+    delete process.env.DHELIX_MODEL;
     delete process.env.OPENAI_BASE_URL;
-    delete process.env.DBCODE_BASE_URL;
+    delete process.env.DHELIX_BASE_URL;
     delete process.env.OPENAI_MODEL;
     delete process.env.LOCAL_MODEL;
     delete process.env.LOCAL_API_BASE_URL;
 
-    const tmpDir = join(tmpdir(), `dbcode-config-test-${Date.now()}`);
-    const projectConfigDir = join(tmpDir, ".dbcode");
+    const tmpDir = join(tmpdir(), `dhelix-config-test-${Date.now()}`);
+    const projectConfigDir = join(tmpDir, ".dhelix");
     await mkdir(projectConfigDir, { recursive: true });
     await writeFile(
       join(projectConfigDir, "config.json"),
@@ -140,10 +140,10 @@ describe("loadConfig", () => {
 
     // Restore env
     if (savedKey) process.env.OPENAI_API_KEY = savedKey;
-    if (savedDbKey) process.env.DBCODE_API_KEY = savedDbKey;
-    if (savedModel) process.env.DBCODE_MODEL = savedModel;
+    if (savedDbKey) process.env.DHELIX_API_KEY = savedDbKey;
+    if (savedModel) process.env.DHELIX_MODEL = savedModel;
     if (savedBaseUrl) process.env.OPENAI_BASE_URL = savedBaseUrl;
-    if (savedDbBaseUrl) process.env.DBCODE_BASE_URL = savedDbBaseUrl;
+    if (savedDbBaseUrl) process.env.DHELIX_BASE_URL = savedDbBaseUrl;
     if (savedOpenaiModel) process.env.OPENAI_MODEL = savedOpenaiModel;
     await rm(tmpDir, { recursive: true, force: true });
   });

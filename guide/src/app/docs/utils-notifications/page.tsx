@@ -119,7 +119,7 @@ export default function UtilsNotificationsPage() {
             </p>
             <ParamTable
               params={[
-                { name: "title", type: "string", required: true, desc: "알림 제목 (예: 'dbcode')" },
+                { name: "title", type: "string", required: true, desc: "알림 제목 (예: 'dhelix')" },
                 {
                   name: "message",
                   type: "string",
@@ -355,7 +355,7 @@ export default function UtilsNotificationsPage() {
               <span className="kw">await</span> <span className="fn">sendNotification</span>({"{"}
               {"\n"}
               {"  "}
-              <span className="prop">title</span>: <span className="str">&quot;dbcode&quot;</span>,
+              <span className="prop">title</span>: <span className="str">&quot;dhelix&quot;</span>,
               {"\n"}
               {"  "}
               <span className="prop">message</span>:{" "}
@@ -368,7 +368,7 @@ export default function UtilsNotificationsPage() {
               <span className="kw">await</span> <span className="fn">sendNotification</span>({"{"}
               {"\n"}
               {"  "}
-              <span className="prop">title</span>: <span className="str">&quot;dbcode&quot;</span>,
+              <span className="prop">title</span>: <span className="str">&quot;dhelix&quot;</span>,
               {"\n"}
               {"  "}
               <span className="prop">message</span>:{" "}
@@ -546,7 +546,7 @@ export default function UtilsNotificationsPage() {
               {"\n"}
               {"    "}
               <span className="kw">void</span> <span className="fn">sendNotification</span>({"{"}{" "}
-              <span className="prop">title</span>: <span className="str">&quot;dbcode&quot;</span>,
+              <span className="prop">title</span>: <span className="str">&quot;dhelix&quot;</span>,
               ... {"}"});
               {"\n"}
               {"  "}
@@ -564,7 +564,7 @@ export default function UtilsNotificationsPage() {
               {"  "}
               <span className="kw">void</span> <span className="fn">sendNotification</span>({"{"}{" "}
               <span className="prop">title</span>:{" "}
-              <span className="str">&quot;dbcode — Error&quot;</span>, ... {"}"});
+              <span className="str">&quot;dhelix — Error&quot;</span>, ... {"}"});
               {"\n"}
               {"}"});
             </CodeBlock>

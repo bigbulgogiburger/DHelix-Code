@@ -39,22 +39,22 @@ export interface Theme {
   readonly colors: ThemeColors;
 }
 
-/** 다크 테마 (기본값) — 시안 primary, 마젠타 secondary, 초록 success */
+/** 다크 테마 (기본값) — 시안/청록 Double Helix 브랜드 컬러 */
 const darkTheme: Theme = {
   name: "dark",
   colors: {
     primary: "cyan",
-    secondary: "magenta",
-    success: "green",
+    secondary: "#00BCD4",
+    success: "#00E5FF",
     warning: "yellow",
     error: "red",
-    info: "blue",
+    info: "cyanBright",
     muted: "gray",
     text: "white",
-    border: "gray",
+    border: "#0097A7",
     background: "black",
-    highlight: "yellowBright",
-    code: "greenBright",
+    highlight: "cyanBright",
+    code: "cyanBright",
   },
 };
 

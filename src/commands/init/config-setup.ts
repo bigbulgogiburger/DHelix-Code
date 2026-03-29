@@ -2,7 +2,7 @@
  * 프로젝트 디렉토리 설정 헬퍼 모듈
  *
  * init 명령에서 추출된 유틸리티 함수들로,
- * 파일 존재 확인, .gitignore 관리, .dbcode/ 디렉토리 구조 생성을 담당합니다.
+ * 파일 존재 확인, .gitignore 관리, .dhelix/ 디렉토리 구조 생성을 담당합니다.
  */
 import { access, mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -12,7 +12,7 @@ import { APP_NAME, PROJECT_CONFIG_DIR, DEFAULT_MODEL } from "../../constants.js"
 /** 로컬 지시 파일명 — .gitignore에 추가되어 git에 커밋되지 않는 개인 설정 */
 export const LOCAL_INSTRUCTIONS_FILE = `${APP_NAME.toUpperCase()}.local.md`;
 
-/** 기본 설정값 — .dbcode/settings.json에 기록되는 초기 설정 */
+/** 기본 설정값 — .dhelix/settings.json에 기록되는 초기 설정 */
 export const DEFAULT_SETTINGS: Readonly<{
   readonly model: string;
   readonly allowedTools: readonly string[];
@@ -40,7 +40,7 @@ export async function fileExists(filePath: string): Promise<boolean> {
 }
 
 /**
- * .gitignore에 DBCODE.local.md 항목을 추가하는 함수
+ * .gitignore에 DHELIX.local.md 항목을 추가하는 함수
  *
  * .gitignore가 존재하고 해당 항목이 아직 없는 경우에만 추가합니다.
  * 로컬 설정 파일이 git에 커밋되지 않도록 보호합니다.
@@ -64,15 +64,15 @@ export async function ensureGitignoreEntry(cwd: string): Promise<void> {
 }
 
 /**
- * .dbcode/ 디렉토리 구조를 생성하는 함수 (없는 경우에만)
+ * .dhelix/ 디렉토리 구조를 생성하는 함수 (없는 경우에만)
  *
  * 생성되는 구조:
- *   .dbcode/
+ *   .dhelix/
  *     settings.json    — 모델 및 도구 설정
  *     rules/           — 커스텀 규칙 파일 디렉토리
  *       .gitkeep       — 빈 디렉토리 유지용
  *
- * 이미 .dbcode/ 디렉토리가 존재하면 아무 작업도 수행하지 않고 false를 반환합니다.
+ * 이미 .dhelix/ 디렉토리가 존재하면 아무 작업도 수행하지 않고 false를 반환합니다.
  *
  * @param cwd - 프로젝트 루트 디렉토리
  * @returns 새로 생성됐으면 true, 이미 존재하면 false

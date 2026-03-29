@@ -14,7 +14,7 @@
  *
  * 디렉토리 구조:
  * ```
- * ~/.dbcode/sessions/
+ * ~/.dhelix/sessions/
  * ├── index.json               # 전체 세션 목록 (경량 인덱스)
  * ├── {session-id}/
  * │   ├── transcript.jsonl     # 메시지 기록 (한 줄 = 한 메시지)
@@ -247,7 +247,7 @@ export class SessionManager {
   private readonly sessionsDir: string;
 
   /**
-   * @param sessionsDir - 세션 저장 디렉토리 (기본값: ~/.dbcode/sessions/)
+   * @param sessionsDir - 세션 저장 디렉토리 (기본값: ~/.dhelix/sessions/)
    */
   constructor(sessionsDir?: string) {
     this.sessionsDir = sessionsDir ?? SESSIONS_DIR;

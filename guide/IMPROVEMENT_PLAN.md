@@ -1,4 +1,4 @@
-# dbcode Guide 개선 마스터 플랜
+# dhelix Guide 개선 마스터 플랜
 
 > 작성일: 2026-03-22
 > 기준: 사이트 감사 48개 이슈 + 업계 Best Practice 리서치 (React.dev, Stripe, Tailwind, Next.js, Spring.io)

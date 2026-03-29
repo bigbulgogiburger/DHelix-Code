@@ -10,7 +10,7 @@
  * - prompt: 사용자에게 확인 프롬프트 표시
  * - agent: 선언적 유효성 검사 표현식(validator)으로 페이로드 검증
  *
- * 설정 위치: .dbcode/settings.json의 "hooks" 키
+ * 설정 위치: .dhelix/settings.json의 "hooks" 키
  *
  * @example
  * // settings.json 예시
@@ -136,7 +136,7 @@ export interface HttpHookHandler extends BaseHookHandler {
 /**
  * 프롬프트 핸들러 — 사용자에게 확인(confirmation) 프롬프트를 표시합니다.
  *
- * CI 환경에서는 DBCODE_HOOK_AUTO_APPROVE=true로 자동 승인할 수 있습니다.
+ * CI 환경에서는 DHELIX_HOOK_AUTO_APPROVE=true로 자동 승인할 수 있습니다.
  */
 export interface PromptHookHandler extends BaseHookHandler {
   readonly type: "prompt";

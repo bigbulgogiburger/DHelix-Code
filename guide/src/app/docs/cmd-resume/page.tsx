@@ -42,7 +42,7 @@ export default function CmdResumePage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">/resume</code>는 dbcode의 세션 영속화 시스템과
+                <code className="text-cyan-600">/resume</code>는 dhelix의 세션 영속화 시스템과
                 연동되는 명령어입니다. 대화 히스토리는 디스크에 자동으로 저장되며, 이 명령어를 통해
                 이전 세션을 조회하고 재개할 수 있습니다.
               </p>

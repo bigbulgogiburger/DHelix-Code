@@ -574,7 +574,7 @@ export default function CmdRewindPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 체크포인트 데이터가 손상되었거나, 파일 시스템 권한 문제일 수 있습니다. 세션
-                디렉토리(<code className="text-cyan-600">~/.dbcode/sessions/</code>)의 권한을
+                디렉토리(<code className="text-cyan-600">~/.dhelix/sessions/</code>)의 권한을
                 확인하세요. 또한 체크포인트 ID가 정확한지 확인하세요 &mdash;{" "}
                 <code className="text-cyan-600">/rewind</code>로 목록을 먼저 조회하여 올바른 ID를
                 복사하는 것이 좋습니다.

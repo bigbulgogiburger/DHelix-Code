@@ -17,9 +17,9 @@
 ## Common Setup
 
 ```bash
-TC_DIR=/tmp/dbcode-qa-tcXX
-mkdir -p $TC_DIR && cp C:/Users/DBInc/dbcode/.env $TC_DIR/.env && cd $TC_DIR
-DBCODE='node C:/Users/DBInc/dbcode/dist/index.js'
+TC_DIR=/tmp/dhelix-qa-tcXX
+mkdir -p $TC_DIR && cp C:/Users/DBInc/dhelix/.env $TC_DIR/.env && cd $TC_DIR
+DHELIX='node C:/Users/DBInc/dhelix/dist/index.js'
 ```
 
 ---
@@ -223,7 +223,7 @@ DBCODE='node C:/Users/DBInc/dbcode/dist/index.js'
 | **Turns**        | 2                                 |
 | **Prerequisite** | NEXUS.md (3 MCP servers), zod dep |
 
-**T1:** .dbcode/mcp.json(3서버) + src/mcp-tool-bridge.ts(bridgeMcpTool: JSON Schema->Zod, mcp\_\_ naming, confirm, stub). named.
+**T1:** .dhelix/mcp.json(3서버) + src/mcp-tool-bridge.ts(bridgeMcpTool: JSON Schema->Zod, mcp\_\_ naming, confirm, stub). named.
 **T2:** src/mcp-tool-bridge.test.ts vitest 4+ tests.
 
 **Grading (10pt):** mcp.json(1) + 3 servers(1) + bridge(1) + function(1) + naming(1) + Zod(2) + tsc(1) + tests(1) + named(1)
@@ -297,7 +297,7 @@ DBCODE='node C:/Users/DBInc/dbcode/dist/index.js'
 | TC-50 WS Advanced   | TC-35         | Rooms vs reconnect+heartbeat+queue   |
 | TC-51 Refactoring   | TC-21/30      | 2-3 files vs 5+ files                |
 | TC-52 Monorepo      | TC-40         | Structure vs topo sort               |
-| TC-53 MCP Bridge    | None          | New (dbcode architecture)            |
+| TC-53 MCP Bridge    | None          | New (dhelix architecture)            |
 | TC-54 Stream Parser | TC-33         | Python CSV vs TS Transform Stream    |
 | TC-55 Worker Pool   | None          | New topic                            |
 

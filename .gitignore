@@ -16,7 +16,7 @@ test-projects/
 testJava/
 .e2e-progress.json
 .gradle/
-DBCODE.local.md
+DHELIX.local.md
 .claude/settings.local.json
 
 # 임시/개인 파일

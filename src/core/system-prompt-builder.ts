@@ -338,7 +338,7 @@ export function buildSystemPrompt(options?: BuildSystemPromptOptions): string {
     }
   }
 
-  // Load project-level instructions from .dbcode/DBCODE.md
+  // Load project-level instructions from .dhelix/DHELIX.md
   const projectInstructions = options?.projectInstructions ?? loadProjectInstructions(cwd);
   if (projectInstructions) {
     sections.push({
@@ -817,7 +817,7 @@ function detectProjectType(cwd: string): string | null {
   return null;
 }
 
-/** DBCODE.md에서 프로젝트 지침을 로드합니다 (루트 우선, .dbcode/ 폴백) */
+/** DHELIX.md에서 프로젝트 지침을 로드합니다 (루트 우선, .dhelix/ 폴백) */
 function loadProjectInstructions(cwd: string): string | null {
   const paths = getProjectConfigPaths(cwd);
 

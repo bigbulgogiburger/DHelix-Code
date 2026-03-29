@@ -1,4 +1,4 @@
-# dbcode - AI Coding Assistant Architecture Plan v3.0
+# dhelix - AI Coding Assistant Architecture Plan v3.0
 
 > 폐쇄망/외부망 LLM을 활용한 Claude Code 수준의 CLI 코딩 어시스턴트
 > 플랫폼: **Windows + macOS** 크로스 플랫폼
@@ -35,16 +35,16 @@
 ## 2. 프로젝트 구조
 
 ```
-dbcode/
+dhelix/
 ├── package.json
 ├── tsconfig.json
 ├── tsconfig.build.json
 ├── vitest.config.ts
 ├── tsup.config.ts
-├── .dbcodeignore                      # 시크릿 스캔 제외 패턴
+├── .dhelixignore                      # 시크릿 스캔 제외 패턴
 │
 ├── bin/
-│   └── dbcode.mjs                     # ESM entry point (#!/usr/bin/env node)
+│   └── dhelix.mjs                     # ESM entry point (#!/usr/bin/env node)
 │
 ├── src/
 │   ├── index.ts                       # CLI 부트스트랩 (commander)
@@ -148,7 +148,7 @@ dbcode/
 │   │   └── types.ts                 # Config 타입 (Zod infer)
 │   │
 │   ├── instructions/                 # ═══ 프로젝트 지시사항 ═══
-│   │   ├── loader.ts                # DBCODE.md / .dbcode/rules/ 로더
+│   │   ├── loader.ts                # DHELIX.md / .dhelix/rules/ 로더
 │   │   ├── parser.ts                # @import 구문 처리
 │   │   └── path-matcher.ts          # 경로 기반 조건부 규칙 로딩
 │   │
@@ -208,7 +208,7 @@ dbcode/
 │   ├── mcp/                          # ═══ MCP (Model Context Protocol) ═══
 │   │   ├── client.ts                # MCP 클라이언트 (stdio/HTTP/SSE 트랜스포트)
 │   │   ├── registry.ts              # 서버 등록, 스코프 관리 (local/project/user)
-│   │   ├── tool-bridge.ts           # MCP 도구 → dbcode 도구 레지스트리 브릿지
+│   │   ├── tool-bridge.ts           # MCP 도구 → dhelix 도구 레지스트리 브릿지
 │   │   ├── resource-resolver.ts     # MCP 리소스 해석 (@server:uri 멘션)
 │   │   ├── auth.ts                  # OAuth 2.0 플로우 (원격 MCP 서버)
 │   │   ├── config.ts                # .mcp.json 파싱, 환경변수 확장
@@ -834,7 +834,7 @@ interface AuditEntry {
 }
 ```
 
-- 저장: `~/.dbcode/audit/YYYY-MM-DD.jsonl`
+- 저장: `~/.dhelix/audit/YYYY-MM-DD.jsonl`
 - 로테이션: 7일 기본 (설정 가능)
 - 형식: JSONL (한 줄 = 한 엔트리, append-only)
 
@@ -872,9 +872,9 @@ interface SandboxConfig {
 ```
 1. 관리형 설정 (Enterprise) ← 시스템 수준 정책 (MDM/Registry/plist)
 2. CLI 플래그              ← --model, --base-url, --temperature
-3. 로컬 설정               ← .dbcode/settings.local.json (gitignored)
-4. 프로젝트 설정           ← .dbcode/settings.json (공유)
-5. 사용자 설정             ← ~/.dbcode/settings.json (개인)
+3. 로컬 설정               ← .dhelix/settings.local.json (gitignored)
+4. 프로젝트 설정           ← .dhelix/settings.json (공유)
+5. 사용자 설정             ← ~/.dhelix/settings.json (개인)
 ```
 
 ### 11.2 전체 설정 스키마
@@ -917,7 +917,7 @@ const configSchema = z.object({
   auth: z.object({
     type: z.enum(["bearer", "api-key", "custom-header", "none"]).default("none"),
     tokenSource: z.enum(["env", "file", "keychain", "prompt"]).default("env"),
-    envVariable: z.string().default("DBCODE_API_KEY"),
+    envVariable: z.string().default("DHELIX_API_KEY"),
     headerName: z.string().default("Authorization"),
     refreshUrl: z.string().url().optional(),
   }),
@@ -1028,24 +1028,24 @@ const configSchema = z.object({
 
 ## 12. 프로젝트 지시사항 시스템
 
-### 12.1 DBCODE.md
+### 12.1 DHELIX.md
 
 Claude Code의 `CLAUDE.md`에 대응하는 프로젝트별 지시사항 파일:
 
 ```
 우선순위 (높→낮):
-1. 관리형: /Library/Application Support/dbcode/DBCODE.md (macOS)
-          %PROGRAMDATA%\dbcode\DBCODE.md (Windows)
-2. 프로젝트: ./DBCODE.md 또는 ./.dbcode/DBCODE.md
-3. 사용자: ~/.dbcode/DBCODE.md
-4. 로컬: ./DBCODE.local.md (gitignored)
+1. 관리형: /Library/Application Support/dhelix/DHELIX.md (macOS)
+          %PROGRAMDATA%\dhelix\DHELIX.md (Windows)
+2. 프로젝트: ./DHELIX.md 또는 ./.dhelix/DHELIX.md
+3. 사용자: ~/.dhelix/DHELIX.md
+4. 로컬: ./DHELIX.local.md (gitignored)
 5. 하위 디렉토리: 해당 디렉토리 파일 읽을 때 on-demand 로딩
 ```
 
 ### 12.2 규칙 디렉토리
 
 ```
-.dbcode/rules/
+.dhelix/rules/
 ├── coding-style.md          # 코딩 스타일 가이드
 ├── git-workflow.md          # Git 워크플로우
 ├── security.md              # 보안 규칙
@@ -1075,7 +1075,7 @@ Claude Code의 `CLAUDE.md`에 대응하는 프로젝트별 지시사항 파일:
 
 | 전략         | 설명                             | 구현                                    |
 | ------------ | -------------------------------- | --------------------------------------- |
-| **Write**    | 중요 정보를 지속적 저장소에 기록 | DBCODE.md, 태스크 리스트, 세션 파일     |
+| **Write**    | 중요 정보를 지속적 저장소에 기록 | DHELIX.md, 태스크 리스트, 세션 파일     |
 | **Select**   | 관련 정보만 선택적 로딩          | 경로 기반 규칙, 지연 도구 로딩, @import |
 | **Compress** | 기존 컨텍스트를 요약             | 자동 압축, /compact 명령                |
 | **Isolate**  | 독립된 컨텍스트에서 작업         | 서브에이전트, 워크트리 격리             |
@@ -1087,7 +1087,7 @@ Claude Code의 `CLAUDE.md`에 대응하는 프로젝트별 지시사항 파일:
 ### 14.1 저장 형식: JSONL
 
 ```
-~/.dbcode/sessions/
+~/.dhelix/sessions/
 ├── index.json               # 세션 목록 (id, name, created, lastUsed)
 ├── {session-id}/
 │   ├── transcript.jsonl     # 대화 기록 (한 줄 = 한 메시지)
@@ -1190,9 +1190,9 @@ LLM이 응답 중일 때도 다음 지시를 타이핑할 수 있다:
 ### 15.5.3 디버그/Verbose 모드
 
 ```bash
-dbcode --debug "api,mcp"        # 카테고리별 디버그 출력
-dbcode --debug "!file,!statsig" # 부정 패턴 (해당 카테고리 제외)
-dbcode --verbose                # 전체 턴별 상세 출력
+dhelix --debug "api,mcp"        # 카테고리별 디버그 출력
+dhelix --debug "!file,!statsig" # 부정 패턴 (해당 카테고리 제외)
+dhelix --verbose                # 전체 턴별 상세 출력
 ```
 
 ### 15.5.4 알림 시스템
@@ -1366,7 +1366,7 @@ function useImageAttach(): {
 | `TaskCompleted`      | 태스크 완료 표시 시       | 품질 게이트, exit 2로 완료 거부       |
 | `ConfigChange`       | 설정 파일 변경 시         | 설정 전파, 핫리로드                   |
 | `PreCompact`         | 컨텍스트 압축 전          | 보존할 내용 영향                      |
-| `InstructionsLoaded` | DBCODE.md/rules 로드 시   | 지시사항 후처리                       |
+| `InstructionsLoaded` | DHELIX.md/rules 로드 시   | 지시사항 후처리                       |
 | `WorktreeCreate`     | 워크트리 생성 시          | VCS 비종속적 격리 구현                |
 | `WorktreeRemove`     | 워크트리 삭제 시          | 정리, 브랜치 관리                     |
 
@@ -1423,17 +1423,17 @@ MCP는 AI 도구 통합의 사실상 표준으로, 외부 서비스(DB, API, 파
 
 | 스코프      | 위치                        | 공유 | 용도                 |
 | ----------- | --------------------------- | ---- | -------------------- |
-| **local**   | `.dbcode/mcp.local.json`    | 개인 | 개인 도구, 로컬 DB   |
+| **local**   | `.dhelix/mcp.local.json`    | 개인 | 개인 도구, 로컬 DB   |
 | **project** | `.mcp.json` (프로젝트 루트) | VCS  | 팀 공유 도구         |
-| **user**    | `~/.dbcode/mcp.json`        | 개인 | 크로스 프로젝트 도구 |
+| **user**    | `~/.dhelix/mcp.json`        | 개인 | 크로스 프로젝트 도구 |
 
-### 17.4 MCP → dbcode 도구 브릿지
+### 17.4 MCP → dhelix 도구 브릿지
 
 ```typescript
 // src/mcp/tool-bridge.ts
-// MCP 서버의 도구를 dbcode Tool Registry에 자동 등록
+// MCP 서버의 도구를 dhelix Tool Registry에 자동 등록
 class MCPToolBridge {
-  // MCP 도구 정의를 dbcode ToolDefinition으로 변환
+  // MCP 도구 정의를 dhelix ToolDefinition으로 변환
   bridgeTool(mcpTool: MCPToolDef): ToolDefinition { ... }
 
   // 지연 로딩: MCP 도구가 컨텍스트 10% 초과 시 자동 디퍼
@@ -1478,12 +1478,12 @@ class MCPToolBridge {
 ### 17.8 CLI 관리 명령어
 
 ```bash
-dbcode mcp add <name> <command> [args...]    # 서버 추가
-dbcode mcp add --transport http <name> <url>  # HTTP 서버 추가
-dbcode mcp remove <name>                      # 서버 제거
-dbcode mcp list                               # 서버 목록
-dbcode mcp get <name>                         # 서버 상세 정보
-dbcode mcp serve                              # dbcode를 MCP 서버로 노출
+dhelix mcp add <name> <command> [args...]    # 서버 추가
+dhelix mcp add --transport http <name> <url>  # HTTP 서버 추가
+dhelix mcp remove <name>                      # 서버 제거
+dhelix mcp list                               # 서버 목록
+dhelix mcp get <name>                         # 서버 상세 정보
+dhelix mcp serve                              # dhelix를 MCP 서버로 노출
 ```
 
 ---
@@ -1571,25 +1571,25 @@ thinking: z.object({
 // src/telemetry/metrics.ts
 const metrics = {
   // 세션 메트릭
-  sessionCount: counter("dbcode.sessions.total"),
-  sessionDuration: histogram("dbcode.sessions.duration_seconds"),
+  sessionCount: counter("dhelix.sessions.total"),
+  sessionDuration: histogram("dhelix.sessions.duration_seconds"),
 
   // 토큰 메트릭
-  tokensUsed: counter("dbcode.tokens.total", { labels: ["type", "model"] }),
-  tokenCost: counter("dbcode.cost.usd"),
+  tokensUsed: counter("dhelix.tokens.total", { labels: ["type", "model"] }),
+  tokenCost: counter("dhelix.cost.usd"),
 
   // 도구 메트릭
-  toolInvocations: counter("dbcode.tools.invocations", {
+  toolInvocations: counter("dhelix.tools.invocations", {
     labels: ["tool", "status"],
   }),
-  toolDuration: histogram("dbcode.tools.duration_ms"),
-  toolDecisions: counter("dbcode.tools.decisions", {
+  toolDuration: histogram("dhelix.tools.duration_ms"),
+  toolDecisions: counter("dhelix.tools.decisions", {
     labels: ["tool", "decision"],
   }),
 
   // 에이전트 메트릭
-  agentIterations: histogram("dbcode.agent.iterations_per_task"),
-  linesOfCode: counter("dbcode.code.lines", { labels: ["action"] }), // added/removed/modified
+  agentIterations: histogram("dhelix.agent.iterations_per_task"),
+  linesOfCode: counter("dhelix.code.lines", { labels: ["action"] }), // added/removed/modified
 };
 ```
 
@@ -1702,9 +1702,9 @@ PR 정보:
 | `$ARGUMENTS`                        | 전체 인자 문자열   |
 | `$0`, `$1`, `$2`...                 | 위치별 인자        |
 | `$ARGUMENTS[0]`, `$ARGUMENTS[1]`... | 위치별 인자 (배열) |
-| `${DBCODE_SESSION_ID}`              | 현재 세션 ID       |
-| `${DBCODE_SKILL_DIR}`               | 스킬 디렉토리 경로 |
-| `${DBCODE_PROJECT_DIR}`             | 프로젝트 루트 경로 |
+| `${DHELIX_SESSION_ID}`              | 현재 세션 ID       |
+| `${DHELIX_SKILL_DIR}`               | 스킬 디렉토리 경로 |
+| `${DHELIX_PROJECT_DIR}`             | 프로젝트 루트 경로 |
 
 ### 22.4 설명 예산 관리
 
@@ -1723,7 +1723,7 @@ PR 정보:
 
 ### 22.6 Agent Skills 표준
 
-dbcode 스킬은 [agentskills.io](https://agentskills.io) 오픈 표준을 따라, Claude Code, Codex CLI, Gemini CLI 등 다른 도구와 스킬 호환 가능.
+dhelix 스킬은 [agentskills.io](https://agentskills.io) 오픈 표준을 따라, Claude Code, Codex CLI, Gemini CLI 등 다른 도구와 스킬 호환 가능.
 
 ---
 
@@ -1788,7 +1788,7 @@ interface RepoMapConfig {
 | 7   | 마크다운 렌더링        | markdown.ts, syntax.ts                         |
 | 8   | Extended Thinking 기본 | effort 레벨 설정, 시스템 프롬프트 조절         |
 
-**검증**: `npx dbcode` → 메시지 입력 → 스트리밍 응답 마크다운 렌더링, `dbcode --version` 출력
+**검증**: `npx dhelix` → 메시지 입력 → 스트리밍 응답 마크다운 렌더링, `dhelix --version` 출력
 
 ### Phase 2: Tool System (도구) — 주 3-4
 
@@ -1821,7 +1821,7 @@ interface RepoMapConfig {
 | 4   | 체크포인팅 + 리와인드 | checkpoint-manager.ts ("여기서부터 요약" 포함)                    |
 | 5   | Text Parsing 폴백     | text-parsing.ts (XML)                                             |
 | 6   | 전략 자동 감지        | tool-call-strategy.ts                                             |
-| 7   | DBCODE.md 로더        | instructions/loader.ts, @import 구문                              |
+| 7   | DHELIX.md 로더        | instructions/loader.ts, @import 구문                              |
 | 8   | 슬래시 명령어 (P0)    | /clear, /compact, /help, /model, /resume, /rewind, /effort, /fast |
 | 9   | 에러 복구             | classify-retry-fallback 패턴                                      |
 | 10  | 폴백 모델 자동 전환   | 오버로드 감지 → fallbackModel 전환                                |
@@ -1842,7 +1842,7 @@ interface RepoMapConfig {
 | 5   | OS 샌드박스 (macOS)        | macos-seatbelt.ts                       |
 | 6   | OS 샌드박스 (Windows)      | windows-appcontainer.ts                 |
 | 7   | 네트워크 샌드박스 (프록시) | 도메인 허용 목록 기반 프록시 필터링     |
-| 8   | .dbcodeignore              | 시크릿 스캔 제외 패턴                   |
+| 8   | .dhelixignore              | 시크릿 스캔 제외 패턴                   |
 | 9   | 보안 프로파일 분기         | local vs external 자동 전환             |
 | 10  | USD 예산 한도              | `--max-budget-usd` (헤드리스 모드)      |
 
@@ -1861,9 +1861,9 @@ interface RepoMapConfig {
 | 5   | 태스크 매니저                   | task-manager.ts, TaskListView.tsx                 |
 | 6   | MCP 클라이언트                  | mcp/client.ts (stdio, HTTP, SSE 트랜스포트)       |
 | 7   | MCP 도구 브릿지                 | mcp/tool-bridge.ts (지연 로딩, list_changed)      |
-| 8   | MCP CLI 관리                    | dbcode mcp add/remove/list/serve                  |
+| 8   | MCP CLI 관리                    | dhelix mcp add/remove/list/serve                  |
 | 9   | 모델 라우팅 (Hybrid)            | model-router.ts                                   |
-| 10  | 규칙 디렉토리                   | .dbcode/rules/ 경로 기반 로딩                     |
+| 10  | 규칙 디렉토리                   | .dhelix/rules/ 경로 기반 로딩                     |
 | 11  | @ 멘션 시스템 + MCP 리소스      | mentions/ + MCP 리소스 멘션                       |
 | 12  | 키바인딩 커스터마이징           | useKeybindings.ts + 설정 파일                     |
 | 13  | 헤드리스 모드 (-p)              | print mode, stream-json, 구조화 출력              |
@@ -1902,10 +1902,10 @@ interface RepoMapConfig {
 | 3   | E2E 테스트           | 주요 사용자 시나리오                             |
 | 4   | StatusBar 완성       | 토큰 사용량, 컨텍스트 %, 모델, effort 레벨       |
 | 5   | 테마 시스템          | dark/light/auto/colorblind-accessible            |
-| 6   | dbcode update 명령   | 자동 업데이트                                    |
-| 7   | npm 배포             | bin/dbcode.mjs, package.json bin 필드            |
+| 6   | dhelix update 명령   | 자동 업데이트                                    |
+| 7   | npm 배포             | bin/dhelix.mjs, package.json bin 필드            |
 | 8   | 에어갭 배포          | npm pack + 오프라인 설치 가이드                  |
-| 9   | GitHub Actions 래퍼  | CI/CD에서 dbcode 실행                            |
+| 9   | GitHub Actions 래퍼  | CI/CD에서 dhelix 실행                            |
 | 10  | 플러그인 시스템 기초 | plugins/loader.ts, manifest.ts (P2)              |
 
 **검증**: `vitest --coverage` 80%+, `npm pack` → 에어갭 환경 설치/실행, GitHub Actions 동작
@@ -1935,8 +1935,8 @@ interface RepoMapConfig {
 
 ### MVP (Phase 1-2 완료)
 
-- [ ] `npx dbcode` 실행하여 대화형 CLI 진입
-- [ ] `dbcode --version` 버전 출력
+- [ ] `npx dhelix` 실행하여 대화형 CLI 진입
+- [ ] `dhelix --version` 버전 출력
 - [ ] 스트리밍 응답이 마크다운 + 구문 강조로 렌더링
 - [ ] LLM이 file_read, file_edit, bash_exec 도구를 호출하여 코드 수정
 - [ ] 권한 확인 프롬프트 [y/n/a] 동작 (5개 모드)
@@ -1984,7 +1984,7 @@ interface RepoMapConfig {
 
 ### 주요 경쟁사 차별점 (CLI 도구만)
 
-| 경쟁사         | 핵심 차별화                                                        | dbcode 대응                                                 |
+| 경쟁사         | 핵심 차별화                                                        | dhelix 대응                                                 |
 | -------------- | ------------------------------------------------------------------ | ----------------------------------------------------------- |
 | **Aider**      | Architect/Editor 이중 모델, repo-map (tree-sitter), 자동 린트+수정 | Phase 6 repo-map, Hybrid 모델 라우팅, PostToolUse 린트 루프 |
 | **Codex CLI**  | Agent Skills 표준 공유, CSV fan-out 다중 에이전트                  | 22.6 agentskills.io 표준 준수                               |
@@ -1997,10 +1997,10 @@ interface RepoMapConfig {
 
 ### 업계 공통 패턴 (6개+ 도구에서 채택)
 
-| 패턴                                  | 채택 도구 수 | dbcode 상태                    |
+| 패턴                                  | 채택 도구 수 | dhelix 상태                    |
 | ------------------------------------- | ------------ | ------------------------------ |
 | MCP (Model Context Protocol)          | 7+           | ✅ Phase 5에 포함              |
-| 프로젝트 지시사항 파일 (CLAUDE.md 등) | 4+           | ✅ DBCODE.md 설계 완료         |
+| 프로젝트 지시사항 파일 (CLAUDE.md 등) | 4+           | ✅ DHELIX.md 설계 완료         |
 | 멀티 모델 / 벤더 비종속               | 6+           | ✅ OpenAI 호환 + Hybrid 라우팅 |
 | Git 네이티브 워크플로우               | 4+           | ✅ 도구 기반 Git 지원          |
 | Plan 모드 / 승인 게이팅               | 3+           | ✅ plan 권한 모드              |
@@ -2008,7 +2008,7 @@ interface RepoMapConfig {
 | 샌드박스 / 권한 승인                  | 3+           | ✅ 6계층 보안 모델             |
 | CI/CD 헤드리스 모드                   | 4+           | ✅ Phase 5, Phase 7            |
 | 자동 린트/테스트 피드백 루프          | 2+           | ✅ Phase 6                     |
-| 세션 메모리 지속성                    | 3+           | ✅ DBCODE.md + 자동 메모리     |
+| 세션 메모리 지속성                    | 3+           | ✅ DHELIX.md + 자동 메모리     |
 
 ---
 

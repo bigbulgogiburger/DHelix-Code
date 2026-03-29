@@ -7,7 +7,7 @@ describe("TelemetryConfig", () => {
   beforeEach(() => {
     // Clean telemetry env vars
     for (const key of Object.keys(process.env)) {
-      if (key.startsWith("DBCODE_TELEMETRY_") || key.startsWith("OTEL_")) {
+      if (key.startsWith("DHELIX_TELEMETRY_") || key.startsWith("OTEL_")) {
         delete process.env[key];
       }
     }
@@ -20,12 +20,12 @@ describe("TelemetryConfig", () => {
   it("should return defaults when no env vars set", () => {
     const config = loadTelemetryConfig();
     expect(config.enabled).toBe(false);
-    expect(config.serviceName).toBe("dbcode");
+    expect(config.serviceName).toBe("dhelix");
     expect(config.exportIntervalMs).toBe(60_000);
   });
 
   it("should enable telemetry via env var", () => {
-    process.env.DBCODE_TELEMETRY_ENABLED = "true";
+    process.env.DHELIX_TELEMETRY_ENABLED = "true";
     const config = loadTelemetryConfig();
     expect(config.enabled).toBe(true);
   });
@@ -36,8 +36,8 @@ describe("TelemetryConfig", () => {
     expect(config.otlpEndpoint).toBe("http://localhost:4318");
   });
 
-  it("should prefer DBCODE prefix over OTEL prefix", () => {
-    process.env.DBCODE_TELEMETRY_OTLP_ENDPOINT = "http://custom:4318";
+  it("should prefer DHELIX prefix over OTEL prefix", () => {
+    process.env.DHELIX_TELEMETRY_OTLP_ENDPOINT = "http://custom:4318";
     process.env.OTEL_EXPORTER_OTLP_ENDPOINT = "http://otel:4318";
     const config = loadTelemetryConfig();
     expect(config.otlpEndpoint).toBe("http://custom:4318");
@@ -50,13 +50,13 @@ describe("TelemetryConfig", () => {
   });
 
   it("should read export interval from env", () => {
-    process.env.DBCODE_TELEMETRY_EXPORT_INTERVAL_MS = "5000";
+    process.env.DHELIX_TELEMETRY_EXPORT_INTERVAL_MS = "5000";
     const config = loadTelemetryConfig();
     expect(config.exportIntervalMs).toBe(5000);
   });
 
   it("should read prometheus port from env", () => {
-    process.env.DBCODE_TELEMETRY_PROMETHEUS_PORT = "9090";
+    process.env.DHELIX_TELEMETRY_PROMETHEUS_PORT = "9090";
     const config = loadTelemetryConfig();
     expect(config.prometheusPort).toBe(9090);
   });
@@ -67,7 +67,7 @@ describe("TelemetryConfig", () => {
   });
 
   it("should set service version from env", () => {
-    process.env.DBCODE_TELEMETRY_SERVICE_VERSION = "2.0.0";
+    process.env.DHELIX_TELEMETRY_SERVICE_VERSION = "2.0.0";
     const config = loadTelemetryConfig();
     expect(config.serviceVersion).toBe("2.0.0");
   });

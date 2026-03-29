@@ -43,14 +43,14 @@ export default function UtilsLoggerPage() {
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
                 <code className="text-cyan-600">pino</code>는 Node.js에서 가장 빠른 JSON 로거 중
-                하나입니다. 이 모듈은 pino를 래핑하여 dbcode에 특화된 기능을 추가합니다: API 키,
+                하나입니다. 이 모듈은 pino를 래핑하여 dhelix에 특화된 기능을 추가합니다: API 키,
                 토큰, 비밀번호 등 14개 경로의 민감 정보를 자동으로 &quot;[REDACTED]&quot;로
                 마스킹합니다.
               </p>
               <p>
                 로그는 stdout이 아닌 <strong>파일</strong>로 출력됩니다. CLI 앱의 특성상 stdout은
                 사용자 인터페이스(Ink)가 점유하므로, 로그는 별도 파일에 JSON 형식으로 기록합니다.
-                로그 레벨은 <code className="text-cyan-600">DBCODE_LOG_LEVEL</code> 환경 변수로
+                로그 레벨은 <code className="text-cyan-600">DHELIX_LOG_LEVEL</code> 환경 변수로
                 제어합니다.
               </p>
               <p>
@@ -127,7 +127,7 @@ export default function UtilsLoggerPage() {
                   name: "options.level",
                   type: "string",
                   required: false,
-                  desc: '로그 레벨 (기본값: DBCODE_LOG_LEVEL 환경 변수 또는 "info")',
+                  desc: '로그 레벨 (기본값: DHELIX_LOG_LEVEL 환경 변수 또는 "info")',
                 },
                 {
                   name: "options.file",
@@ -303,20 +303,20 @@ export default function UtilsLoggerPage() {
               로그 레벨 제어
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
-              <code className="text-cyan-600">DBCODE_LOG_LEVEL</code> 환경 변수로 로그 레벨을
+              <code className="text-cyan-600">DHELIX_LOG_LEVEL</code> 환경 변수로 로그 레벨을
               제어합니다.
             </p>
             <CodeBlock>
               <span className="cm">{"// 디버그 로그까지 출력"}</span>
               {"\n"}
-              <span className="prop">DBCODE_LOG_LEVEL</span>=<span className="str">debug</span>{" "}
-              <span className="prop">dbcode</span>
+              <span className="prop">DHELIX_LOG_LEVEL</span>=<span className="str">debug</span>{" "}
+              <span className="prop">dhelix</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"// 에러만 출력"}</span>
               {"\n"}
-              <span className="prop">DBCODE_LOG_LEVEL</span>=<span className="str">error</span>{" "}
-              <span className="prop">dbcode</span>
+              <span className="prop">DHELIX_LOG_LEVEL</span>=<span className="str">error</span>{" "}
+              <span className="prop">dhelix</span>
               {"\n"}
               {"\n"}
               <span className="cm">
@@ -475,10 +475,10 @@ export default function UtilsLoggerPage() {
                 &quot;디버그 로그를 보고 싶어요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">DBCODE_LOG_LEVEL=debug</code> 환경 변수를 설정한 후
-                dbcode를 실행하세요. 로그 파일(LOG_FILE 경로)에서 JSON 형식으로 확인할 수 있습니다.
+                <code className="text-cyan-600">DHELIX_LOG_LEVEL=debug</code> 환경 변수를 설정한 후
+                dhelix를 실행하세요. 로그 파일(LOG_FILE 경로)에서 JSON 형식으로 확인할 수 있습니다.
                 <code className="text-cyan-600">jq</code> 도구를 사용하면 가독성이 좋아집니다:
-                <code className="text-cyan-600">cat ~/.dbcode/logs/app.log | jq .</code>
+                <code className="text-cyan-600">cat ~/.dhelix/logs/app.log | jq .</code>
               </p>
             </div>
           </section>

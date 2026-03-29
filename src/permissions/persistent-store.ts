@@ -5,8 +5,8 @@
  * settings.json 파일에 저장되어 다음 세션에서도 유지됩니다.
  *
  * 두 가지 저장 범위(scope)가 있습니다:
- * - project: 프로젝트별 설정 → {프로젝트}/.dbcode/settings.json
- * - user: 사용자 전체 설정 → ~/.dbcode/settings.json
+ * - project: 프로젝트별 설정 → {프로젝트}/.dhelix/settings.json
+ * - user: 사용자 전체 설정 → ~/.dhelix/settings.json
  *
  * 우선순위 규칙:
  * 1. deny 규칙은 항상 allow 규칙보다 우선합니다 (안전 제일 원칙)
@@ -65,15 +65,15 @@ interface PermissionsConfig {
  * @example
  * ```
  * settingsPath("project", "/home/user/my-app")
- * // → "/home/user/my-app/.dbcode/settings.json"
+ * // → "/home/user/my-app/.dhelix/settings.json"
  *
  * settingsPath("user", "/home/user/my-app")
- * // → "/home/user/.dbcode/settings.json"
+ * // → "/home/user/.dhelix/settings.json"
  * ```
  */
 function settingsPath(scope: "project" | "user", projectDir: string): string {
   if (scope === "user") {
-    return joinPath(homedir(), `.dbcode`, "settings.json");
+    return joinPath(homedir(), `.dhelix`, "settings.json");
   }
   return joinPath(projectDir, PROJECT_CONFIG_DIR, "settings.json");
 }

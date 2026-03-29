@@ -64,7 +64,7 @@ describe("/doctor enhanced diagnostics", () => {
       model: "gpt-4o",
     });
 
-    expect(result.output).toContain("dbcode Doctor");
+    expect(result.output).toContain("dhelix Doctor");
     expect(result.output).toContain("=============");
     expect(result.output).toContain("Node.js");
     expect(result.output).toContain("Git");
@@ -169,7 +169,7 @@ describe("/doctor enhanced diagnostics", () => {
 
     it("should pass when OPENAI_API_KEY is set", async () => {
       process.env["OPENAI_API_KEY"] = "sk-test-key";
-      delete process.env["DBCODE_API_KEY"];
+      delete process.env["DHELIX_API_KEY"];
       delete process.env["ANTHROPIC_API_KEY"];
 
       const doctorCommand = await getDoctorCommand();
@@ -177,9 +177,9 @@ describe("/doctor enhanced diagnostics", () => {
       expect(result.output).toContain("\u2713 API key: configured");
     });
 
-    it("should pass when DBCODE_API_KEY is set", async () => {
+    it("should pass when DHELIX_API_KEY is set", async () => {
       delete process.env["OPENAI_API_KEY"];
-      process.env["DBCODE_API_KEY"] = "dbcode-test-key";
+      process.env["DHELIX_API_KEY"] = "dhelix-test-key";
       delete process.env["ANTHROPIC_API_KEY"];
 
       const doctorCommand = await getDoctorCommand();
@@ -189,7 +189,7 @@ describe("/doctor enhanced diagnostics", () => {
 
     it("should pass when ANTHROPIC_API_KEY is set", async () => {
       delete process.env["OPENAI_API_KEY"];
-      delete process.env["DBCODE_API_KEY"];
+      delete process.env["DHELIX_API_KEY"];
       process.env["ANTHROPIC_API_KEY"] = "ant-test-key";
 
       const doctorCommand = await getDoctorCommand();
@@ -199,7 +199,7 @@ describe("/doctor enhanced diagnostics", () => {
 
     it("should warn when no API key is set", async () => {
       delete process.env["OPENAI_API_KEY"];
-      delete process.env["DBCODE_API_KEY"];
+      delete process.env["DHELIX_API_KEY"];
       delete process.env["ANTHROPIC_API_KEY"];
 
       const doctorCommand = await getDoctorCommand();
@@ -253,7 +253,7 @@ describe("/doctor enhanced diagnostics", () => {
 
       const doctorCommand = await getDoctorCommand();
       const result = await doctorCommand.execute("", baseContext);
-      expect(result.output).toContain("\u2713 Config directory: ~/.dbcode (writable)");
+      expect(result.output).toContain("\u2713 Config directory: ~/.dhelix (writable)");
     });
 
     it("should warn when config dir does not exist", async () => {
@@ -261,8 +261,8 @@ describe("/doctor enhanced diagnostics", () => {
 
       const doctorCommand = await getDoctorCommand();
       const result = await doctorCommand.execute("", baseContext);
-      expect(result.output).toContain("\u26A0 Config directory: ~/.dbcode does not exist");
-      expect(result.output).toContain("Fix: Run dbcode once");
+      expect(result.output).toContain("\u26A0 Config directory: ~/.dhelix does not exist");
+      expect(result.output).toContain("Fix: Run dhelix once");
     });
 
     it("should fail when config dir is not writable", async () => {
@@ -273,7 +273,7 @@ describe("/doctor enhanced diagnostics", () => {
 
       const doctorCommand = await getDoctorCommand();
       const result = await doctorCommand.execute("", baseContext);
-      expect(result.output).toContain("\u2717 Config directory: ~/.dbcode is not writable");
+      expect(result.output).toContain("\u2717 Config directory: ~/.dhelix is not writable");
       expect(result.output).toContain("Fix: Fix permissions");
       expect(result.success).toBe(false);
     });
@@ -302,7 +302,7 @@ describe("/doctor enhanced diagnostics", () => {
     it("should show warnings count in summary", async () => {
       // Remove API keys to trigger a warning
       delete process.env["OPENAI_API_KEY"];
-      delete process.env["DBCODE_API_KEY"];
+      delete process.env["DHELIX_API_KEY"];
       delete process.env["ANTHROPIC_API_KEY"];
 
       const doctorCommand = await getDoctorCommand();
@@ -340,13 +340,13 @@ describe("/doctor enhanced diagnostics", () => {
       const doctorCommand = await getDoctorCommand();
       const result = await doctorCommand.execute("", baseContext);
       const lines = result.output.split("\n");
-      expect(lines[0]).toBe("dbcode Doctor");
+      expect(lines[0]).toBe("dhelix Doctor");
       expect(lines[1]).toBe("=============");
     });
 
     it("should include fix suggestions for warnings and failures", async () => {
       delete process.env["OPENAI_API_KEY"];
-      delete process.env["DBCODE_API_KEY"];
+      delete process.env["DHELIX_API_KEY"];
       delete process.env["ANTHROPIC_API_KEY"];
 
       const doctorCommand = await getDoctorCommand();

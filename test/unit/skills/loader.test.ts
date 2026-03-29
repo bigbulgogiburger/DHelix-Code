@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { loadSkill, loadSkillsFromDirectory } from "../../../src/skills/loader.js";
 
-const testDir = join(tmpdir(), "dbcode-skill-test-" + Date.now());
+const testDir = join(tmpdir(), "dhelix-skill-test-" + Date.now());
 
 beforeAll(async () => {
   await mkdir(testDir, { recursive: true });

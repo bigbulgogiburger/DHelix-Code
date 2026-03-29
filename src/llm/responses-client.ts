@@ -27,7 +27,7 @@ import { countTokens } from "./token-counter.js";
 import { LLMError } from "../utils/error.js";
 
 const trace = (tag: string, msg: string) => {
-  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+  if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
 };
 
 // ─── 재시도 관련 상수 ────────────────────────────────────────────────

@@ -34,7 +34,7 @@ export function correctToolCall(
 ): Record<string, unknown> {
   // 0단계: Windows 환경에서 Git Bash 경로를 Windows 경로로 변환
   // 모든 성능 등급에 적용 — LLM이 시스템 프롬프트/도구 결과의 Git Bash 경로를 그대로 반환하는 경우
-  // 예: "/c/Users/DBInc/dbcode/src" → "C:\Users\DBInc\dbcode\src"
+  // 예: "/c/Users/DBInc/dhelix/src" → "C:\Users\DBInc\dhelix\src"
   const gitBashCorrected = correctGitBashPaths(args);
 
   // 고성능 모델은 추가 교정 불필요 — Git Bash 변환만 적용 후 반환

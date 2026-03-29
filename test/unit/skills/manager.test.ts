@@ -341,7 +341,7 @@ describe("SkillManager", () => {
     it("should extract skillDir from sourcePath", async () => {
       const skill = makeSkill({
         name: "nested",
-        sourcePath: "/home/user/.dbcode/skills/nested.md",
+        sourcePath: "/home/user/.dhelix/skills/nested.md",
       });
       mockLoadSkillsFromDirectory.mockResolvedValueOnce([skill]);
       mockExecuteSkill.mockResolvedValue({ prompt: "ok", fork: false });
@@ -352,7 +352,7 @@ describe("SkillManager", () => {
       });
 
       const passedContext = mockExecuteSkill.mock.calls[0][1];
-      expect(passedContext.skillDir).toBe("/home/user/.dbcode/skills");
+      expect(passedContext.skillDir).toBe("/home/user/.dhelix/skills");
     });
 
     it("should handle empty args string", async () => {

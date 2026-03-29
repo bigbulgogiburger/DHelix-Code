@@ -95,7 +95,7 @@ export function SlashCommandMenu({
   const hasMoreBelow = scrollOffset + MAX_VISIBLE < filtered.length;
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="gray" paddingX={1}>
+    <Box flexDirection="column" borderStyle="single" borderColor="#0097A7" paddingX={1}>
       {hasMoreAbove && (
         <Text color="gray" dimColor>
           {"  ↑ more"}

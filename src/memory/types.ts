@@ -4,7 +4,7 @@
  * 메모리 시스템은 AI가 세션 간에 학습한 내용(사용자 선호, 디버깅 패턴, 아키텍처 결정 등)을
  * 마크다운 파일로 저장하여 다음 세션에서 활용합니다.
  *
- * 저장 위치: ~/.dbcode/projects/{프로젝트해시}/memory/MEMORY.md
+ * 저장 위치: ~/.dhelix/projects/{프로젝트해시}/memory/MEMORY.md
  *
  * MEMORY.md 구조:
  * # Project Memory
@@ -24,7 +24,7 @@ export interface MemoryConfig {
   readonly maxLoadLines: number;
   /** MEMORY.md의 최대 줄 수 — 초과 시 오래된 섹션을 토픽 파일로 분리(overflow) */
   readonly maxMemoryLines: number;
-  /** 프로젝트 메모리 저장 기본 디렉토리 (~/.dbcode/projects/) */
+  /** 프로젝트 메모리 저장 기본 디렉토리 (~/.dhelix/projects/) */
   readonly projectsBaseDir: string;
 }
 

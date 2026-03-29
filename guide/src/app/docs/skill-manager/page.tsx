@@ -42,7 +42,7 @@ export default function SkillManagerPage() {
               <span>{"📋"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-[1.85] mb-4">
-              dbcode의 스킬 시스템은 마크다운 파일(
+              dhelix의 스킬 시스템은 마크다운 파일(
               <code className="text-cyan-600 text-xs">.md</code>)로 작성된 재사용 가능한 프롬프트
               템플릿입니다.
               <code className="text-cyan-600 text-xs"> SkillManager</code>는 이 스킬들을
@@ -62,10 +62,10 @@ export default function SkillManagerPage() {
               title="4-Directory 스킬 로딩 우선순위"
               titleColor="orange"
               chart={`flowchart TB
-  D1["📁 Dir 1\\n~/.dbcode/skills/\\n(전역 스킬 — 가장 낮은 우선순위)"]
-  D2["📁 Dir 2\\n~/.dbcode/commands/\\n(전역 커맨드)"]
-  D3["📂 Dir 3\\n{cwd}/.dbcode/skills/\\n(프로젝트 스킬)"]
-  D4["📂 Dir 4\\n{cwd}/.dbcode/commands/\\n(프로젝트 커맨드 — 가장 높은 우선순위)"]
+  D1["📁 Dir 1\\n~/.dhelix/skills/\\n(전역 스킬 — 가장 낮은 우선순위)"]
+  D2["📁 Dir 2\\n~/.dhelix/commands/\\n(전역 커맨드)"]
+  D3["📂 Dir 3\\n{cwd}/.dhelix/skills/\\n(프로젝트 스킬)"]
+  D4["📂 Dir 4\\n{cwd}/.dhelix/commands/\\n(프로젝트 커맨드 — 가장 높은 우선순위)"]
 
   D1 -->|"Map.set(name)"| MAP["🗺️ skills Map\\n(같은 이름 → 덮어쓰기)<br/><small>우선순위 기반 스킬 저장소</small>"]
   D2 -->|"Map.set(name)"| MAP
@@ -88,7 +88,7 @@ export default function SkillManagerPage() {
               <h4 className="text-[14px] font-bold mb-3">각 디렉토리의 역할</h4>
               <div className="flex flex-col gap-2.5 text-[13px] text-gray-600">
                 <div className="flex gap-3">
-                  <span className="text-amber-600 font-bold shrink-0 w-44">~/.dbcode/skills/</span>
+                  <span className="text-amber-600 font-bold shrink-0 w-44">~/.dhelix/skills/</span>
                   <span>
                     사용자 전역 스킬 &mdash; 모든 프로젝트에서 공통 사용하는 스킬 (가장 낮은
                     우선순위)
@@ -96,7 +96,7 @@ export default function SkillManagerPage() {
                 </div>
                 <div className="flex gap-3">
                   <span className="text-amber-600 font-bold shrink-0 w-44">
-                    ~/.dbcode/commands/
+                    ~/.dhelix/commands/
                   </span>
                   <span>
                     사용자 전역 커맨드 &mdash; skills/와 기능적 차이 없이, 조직화 목적으로 분리
@@ -104,13 +104,13 @@ export default function SkillManagerPage() {
                 </div>
                 <div className="flex gap-3">
                   <span className="text-violet-600 font-bold shrink-0 w-44">
-                    {"{cwd}"}/.dbcode/skills/
+                    {"{cwd}"}/.dhelix/skills/
                   </span>
                   <span>프로젝트 로컬 스킬 &mdash; 해당 프로젝트에서만 사용하는 스킬</span>
                 </div>
                 <div className="flex gap-3">
                   <span className="text-violet-600 font-bold shrink-0 w-44">
-                    {"{cwd}"}/.dbcode/commands/
+                    {"{cwd}"}/.dhelix/commands/
                   </span>
                   <span>
                     프로젝트 로컬 커맨드 &mdash;{" "}
@@ -174,7 +174,7 @@ export default function SkillManagerPage() {
                     name: "workingDirectory",
                     type: "string",
                     required: true,
-                    desc: "프로젝트 루트 디렉토리 경로. 프로젝트 레벨 스킬 검색 기준 ({cwd}/.dbcode/skills/, {cwd}/.dbcode/commands/)",
+                    desc: "프로젝트 루트 디렉토리 경로. 프로젝트 레벨 스킬 검색 기준 ({cwd}/.dhelix/skills/, {cwd}/.dhelix/commands/)",
                   },
                 ]}
               />
@@ -596,7 +596,7 @@ export default function SkillManagerPage() {
               </p>
 
               <CodeBlock>
-                <span className="text-[#8b949e]">{"# ~/.dbcode/skills/commit.md"}</span>
+                <span className="text-[#8b949e]">{"# ~/.dhelix/skills/commit.md"}</span>
                 {"\n"}
                 <span className="text-[#c9d1d9]">---</span>
                 {"\n"}
@@ -686,13 +686,13 @@ export default function SkillManagerPage() {
               title="loadAll() 실행 흐름"
               titleColor="cyan"
               chart={`flowchart TD
-  START["loadAll(workingDirectory)<br/><small>전체 스킬 로딩 시작</small>"] --> DIR1["1. loadSkillsFromDirectory\\n(~/.dbcode/skills/)<br/><small>전역 스킬 디렉토리 읽기</small>"]
+  START["loadAll(workingDirectory)<br/><small>전체 스킬 로딩 시작</small>"] --> DIR1["1. loadSkillsFromDirectory\\n(~/.dhelix/skills/)<br/><small>전역 스킬 디렉토리 읽기</small>"]
   DIR1 --> SET1["skills.set(name, skill)\\n— 전역 스킬 등록<br/><small>Map에 스킬 저장</small>"]
-  SET1 --> DIR2["2. loadSkillsFromDirectory\\n(~/.dbcode/commands/)<br/><small>전역 커맨드 디렉토리 읽기</small>"]
+  SET1 --> DIR2["2. loadSkillsFromDirectory\\n(~/.dhelix/commands/)<br/><small>전역 커맨드 디렉토리 읽기</small>"]
   DIR2 --> SET2["skills.set(name, skill)\\n— 전역 커맨드 등록\\n(같은 이름 → 덮어쓰기)<br/><small>중복 시 최신으로 교체</small>"]
-  SET2 --> DIR3["3. loadSkillsFromDirectory\\n({cwd}/.dbcode/skills/)<br/><small>프로젝트 스킬 디렉토리 읽기</small>"]
+  SET2 --> DIR3["3. loadSkillsFromDirectory\\n({cwd}/.dhelix/skills/)<br/><small>프로젝트 스킬 디렉토리 읽기</small>"]
   DIR3 --> SET3["skills.set(name, skill)\\n— 프로젝트 스킬 등록<br/><small>전역 스킬보다 우선</small>"]
-  SET3 --> DIR4["4. loadSkillsFromDirectory\\n({cwd}/.dbcode/commands/)<br/><small>프로젝트 커맨드 디렉토리 읽기</small>"]
+  SET3 --> DIR4["4. loadSkillsFromDirectory\\n({cwd}/.dhelix/commands/)<br/><small>프로젝트 커맨드 디렉토리 읽기</small>"]
   DIR4 --> SET4["skills.set(name, skill)\\n— 프로젝트 커맨드 등록\\n(최종 우선순위)<br/><small>가장 높은 우선순위 적용</small>"]
   SET4 --> DONE["✅ Map 완성\\n— 각 이름에 최고 우선순위 스킬만 남음<br/><small>최종 스킬 맵 반환</small>"]
 
@@ -843,8 +843,8 @@ export default function SkillManagerPage() {
                   <p>
                     <strong className="text-gray-900">원인 2:</strong> 스킬 파일이 올바른 디렉토리에
                     있지 않습니다.
-                    <code className="text-cyan-600 text-xs"> ~/.dbcode/skills/</code> 또는{" "}
-                    <code className="text-cyan-600 text-xs">.dbcode/skills/</code>에 위치해야
+                    <code className="text-cyan-600 text-xs"> ~/.dhelix/skills/</code> 또는{" "}
+                    <code className="text-cyan-600 text-xs">.dhelix/skills/</code>에 위치해야
                     합니다.
                   </p>
                 </div>
@@ -859,8 +859,8 @@ export default function SkillManagerPage() {
                 <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p>
                     프로젝트 디렉토리의{" "}
-                    <code className="text-cyan-600 text-xs">.dbcode/skills/</code> 또는{" "}
-                    <code className="text-cyan-600 text-xs">.dbcode/commands/</code>에{" "}
+                    <code className="text-cyan-600 text-xs">.dhelix/skills/</code> 또는{" "}
+                    <code className="text-cyan-600 text-xs">.dhelix/commands/</code>에{" "}
                     <strong className="text-gray-900">같은 이름</strong>의 스킬 파일을 만드세요.
                     프로젝트 레벨이 전역 레벨보다 우선순위가 높으므로, 전역 스킬이 자동으로
                     덮어씌워집니다. 이렇게 하면 다른 프로젝트에서는 전역 스킬이 그대로 유지됩니다.
@@ -935,7 +935,7 @@ export default function SkillManagerPage() {
                   name: "instruction-loader.ts",
                   slug: "instruction-loader",
                   relation: "sibling",
-                  desc: "6단계 DBCODE.md 로딩 체인 — 같은 레이어에서 지시사항을 수집하는 형제 모듈",
+                  desc: "6단계 DHELIX.md 로딩 체인 — 같은 레이어에서 지시사항을 수집하는 형제 모듈",
                 },
                 {
                   name: "system-prompt-builder.ts",

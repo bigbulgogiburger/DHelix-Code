@@ -102,7 +102,7 @@ export function getToolBreakdown(): ReadonlyArray<{
 
   for (const key of counterData.keys()) {
     if (!key.startsWith(toolPrefix)) continue;
-    // Key format: dbcode.tools.invocations{status=success,tool=xyz}
+    // Key format: dhelix.tools.invocations{status=success,tool=xyz}
     const toolMatch = key.match(/tool=([^,}]+)/);
     const statusMatch = key.match(/status=success/);
     if (toolMatch && statusMatch) {

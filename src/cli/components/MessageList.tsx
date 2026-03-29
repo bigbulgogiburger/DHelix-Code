@@ -62,17 +62,17 @@ const MessageItem = React.memo(function MessageItem({ message, enableMarkdown }:
   );
 });
 
-/** 메시지 역할에 따른 표시 색상을 반환 (User=파랑, Assistant=초록, System=회색, Tool=노랑) */
+/** 메시지 역할에 따른 표시 색상을 반환 (User=파랑, Assistant=밝은시안, System=회색, Tool=틸) */
 function getRoleColor(role: string): string {
   switch (role) {
     case MessageRole.User:
       return "blue";
     case MessageRole.Assistant:
-      return "green";
+      return "#00E5FF";
     case MessageRole.System:
       return "gray";
     case MessageRole.Tool:
-      return "yellow";
+      return "#00BCD4";
     default:
       return "white";
   }

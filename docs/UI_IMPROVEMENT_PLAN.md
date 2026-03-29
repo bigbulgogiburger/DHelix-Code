@@ -1,4 +1,4 @@
-# dbcode UI Improvement Plan v2 — Production Roadmap
+# dhelix UI Improvement Plan v2 — Production Roadmap
 
 > Author: Claude (Anthropic Claude Code 책임 기획자 & Codex 책임 기획자)
 > Date: 2026-03-12 (v2 revised)
@@ -10,7 +10,7 @@
 ## Executive Summary
 
 Claude Code, Codex CLI (v0.105+), GitHub Copilot CLI, Cline CLI 2.0 등
-**주요 경쟁 CLI 도구**를 전수 조사한 뒤, dbcode의 **현재 코드베이스 상태**를
+**주요 경쟁 CLI 도구**를 전수 조사한 뒤, dhelix의 **현재 코드베이스 상태**를
 정밀 분석하여 **실제 구현이 필요한 항목만** 선별했습니다.
 
 - 기존 41개 항목 → **8개 삭제** → **33개 확정**
@@ -99,9 +99,9 @@ Sprint 5+ (장기) — "차별화" [Tier 4]
 
 ### 1. Claude Code (Primary Reference)
 
-가장 성숙한 CLI AI 도구. dbcode의 주요 벤치마크 대상.
+가장 성숙한 CLI AI 도구. dhelix의 주요 벤치마크 대상.
 
-| 카테고리       | 핵심 기능                                  | dbcode 현황                     | 격차 |
+| 카테고리       | 핵심 기능                                  | dhelix 현황                     | 격차 |
 | -------------- | ------------------------------------------ | ------------------------------- | ---- |
 | **비용 추적**  | Customizable Statusline (JSON→셸 스크립트) | 고정 StatusBar                  | 높음 |
 | **비용 추적**  | /cost 세션 비용                            | /cost 존재, 비용 미연결         | 중간 |
@@ -122,7 +122,7 @@ Sprint 5+ (장기) — "차별화" [Tier 4]
 
 ### 2. Codex CLI (v0.105+, Rust/Ratatui)
 
-| 카테고리       | 핵심 기능                                             | dbcode 현황            | 격차 |
+| 카테고리       | 핵심 기능                                             | dhelix 현황            | 격차 |
 | -------------- | ----------------------------------------------------- | ---------------------- | ---- |
 | **피드백**     | Working Timer ("Working 3s")                          | Spinner에 시간 없음    | 중간 |
 | **피드백**     | Notification on Completion (OSC9/BEL)                 | 없음                   | 중간 |
@@ -136,7 +136,7 @@ Sprint 5+ (장기) — "차별화" [Tier 4]
 
 ### 3. 기타 도구 (핵심만)
 
-| Source          | 기능                                        | dbcode 현황 | 격차 |
+| Source          | 기능                                        | dhelix 현황 | 격차 |
 | --------------- | ------------------------------------------- | ----------- | ---- |
 | **Copilot CLI** | Inline Permission Feedback (거부 사유 입력) | Deny만 가능 | 높음 |
 | **Copilot CLI** | Word-Level Diff Highlighting                | 줄 단위만   | 중간 |
@@ -317,7 +317,7 @@ After:   45  - const ███ = "██████";
 **변경 파일**: `src/cli/components/PermissionPrompt.tsx`, `src/permissions/manager.ts`
 
 1. 4번째 옵션 추가: "Allow always" (`a` 키)
-2. `.dbcode/permissions.json`에 영구 저장
+2. `.dhelix/permissions.json`에 영구 저장
 3. 다음 세션부터 자동 승인
 
 ### 2.9 Notification on Completion
@@ -385,7 +385,7 @@ After:   45  - const ███ = "██████";
 }
 ```
 
-2. 설정: `statusLine.command = "~/.dbcode/statusline.sh"`
+2. 설정: `statusLine.command = "~/.dhelix/statusline.sh"`
 3. 하이브리드: 설정 있으면 커스텀, 없으면 기존 StatusBar
 
 ### 3.3 Interactive /diff Viewer

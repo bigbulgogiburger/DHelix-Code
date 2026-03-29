@@ -4,7 +4,7 @@
  * 하위 모듈(loader, writer, paths)의 기능을 하나의 인터페이스로 통합합니다.
  * 프로젝트당 하나의 인스턴스를 생성하여 사용합니다.
  *
- * 메모리 저장 위치: ~/.dbcode/projects/{프로젝트해시}/memory/
+ * 메모리 저장 위치: ~/.dhelix/projects/{프로젝트해시}/memory/
  * 프로젝트해시 = SHA-256(절대프로젝트경로).slice(0, 16)
  *
  * 사용 예시:
@@ -150,7 +150,7 @@ export class MemoryManager {
   /**
    * 이 프로젝트의 메모리 디렉토리 경로 반환
    *
-   * @returns ~/.dbcode/projects/{해시}/memory/ 의 절대 경로
+   * @returns ~/.dhelix/projects/{해시}/memory/ 의 절대 경로
    */
   getMemoryDir(): string {
     return getMemoryDir(this.projectRoot);

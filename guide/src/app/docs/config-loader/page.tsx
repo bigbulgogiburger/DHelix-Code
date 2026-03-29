@@ -42,7 +42,7 @@ export default function ConfigLoaderPage() {
               <span>{"📦"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
-              dbcode는 하나의 설정 파일에 의존하지 않습니다.
+              dhelix는 하나의 설정 파일에 의존하지 않습니다.
               <strong className="text-gray-900"> 5개 레이어</strong>에서 설정을 모아
               <span className="text-cyan-600 font-semibold"> deepMerge</span>로 합치고, 마지막에{" "}
               <span className="text-violet-600 font-semibold">Zod 스키마</span>로 검증합니다. 이
@@ -60,9 +60,9 @@ export default function ConfigLoaderPage() {
               titleColor="orange"
               chart={`flowchart TB
   L1["🔧 Level 1\\ndefaults.ts\\n(가장 낮은 우선순위)"]
-  L2["👤 Level 2\\n~/.dbcode/config.json\\n(사용자 전역)"]
-  L3["📁 Level 3\\n.dbcode/config.json\\n(프로젝트별)"]
-  L4["🌍 Level 4\\n환경변수\\n(DBCODE_*, OPENAI_*)"]
+  L2["👤 Level 2\\n~/.dhelix/config.json\\n(사용자 전역)"]
+  L3["📁 Level 3\\n.dhelix/config.json\\n(프로젝트별)"]
+  L4["🌍 Level 4\\n환경변수\\n(DHELIX_*, OPENAI_*)"]
   L5["⚡ Level 5\\nCLI 플래그\\n(가장 높은 우선순위)"]
 
   L1 -->|deepMerge| L2
@@ -97,7 +97,7 @@ export default function ConfigLoaderPage() {
                   <span className="text-blue-600 font-bold shrink-0 w-20">Level 3</span>
                   <span>
                     프로젝트별 설정 &mdash; 팀원과 공유 가능 (
-                    <code className="text-cyan-600 text-xs">.dbcode/config.json</code>을 Git에 커밋)
+                    <code className="text-cyan-600 text-xs">.dhelix/config.json</code>을 Git에 커밋)
                   </span>
                 </div>
                 <div className="flex gap-3">
@@ -155,7 +155,7 @@ export default function ConfigLoaderPage() {
                     name: "projectDir",
                     type: "string | undefined",
                     required: false,
-                    desc: "프로젝트 디렉토리 경로. 지정하면 해당 디렉토리의 .dbcode/config.json을 로딩",
+                    desc: "프로젝트 디렉토리 경로. 지정하면 해당 디렉토리의 .dhelix/config.json을 로딩",
                   },
                 ]}
               />
@@ -200,7 +200,7 @@ export default function ConfigLoaderPage() {
               </h3>
               <p className="text-[13px] text-gray-600 mb-3">
                 환경변수에서 설정 관련 값을 추출합니다.{" "}
-                <code className="text-cyan-600 text-xs">DBCODE_*</code> 변수가
+                <code className="text-cyan-600 text-xs">DHELIX_*</code> 변수가
                 <code className="text-cyan-600 text-xs"> OPENAI_*</code> 변수보다 우선합니다.
               </p>
 
@@ -228,24 +228,24 @@ export default function ConfigLoaderPage() {
                       <tr className="border-b border-gray-200">
                         <td className="p-2.5 text-gray-600">Base URL</td>
                         <td className="p-2.5 text-red-600 font-semibold">LOCAL_API_BASE_URL</td>
-                        <td className="p-2.5 text-amber-600">DBCODE_BASE_URL</td>
+                        <td className="p-2.5 text-amber-600">DHELIX_BASE_URL</td>
                         <td className="p-2.5 text-emerald-600">OPENAI_BASE_URL</td>
                       </tr>
                       <tr className="border-b border-gray-200">
                         <td className="p-2.5 text-gray-600">API Key</td>
-                        <td className="p-2.5 text-amber-600 font-semibold">DBCODE_API_KEY</td>
+                        <td className="p-2.5 text-amber-600 font-semibold">DHELIX_API_KEY</td>
                         <td className="p-2.5 text-emerald-600">OPENAI_API_KEY</td>
                         <td className="p-2.5 text-gray-400">&mdash;</td>
                       </tr>
                       <tr className="border-b border-gray-200">
                         <td className="p-2.5 text-gray-600">Model</td>
                         <td className="p-2.5 text-red-600 font-semibold">LOCAL_MODEL</td>
-                        <td className="p-2.5 text-amber-600">DBCODE_MODEL</td>
+                        <td className="p-2.5 text-amber-600">DHELIX_MODEL</td>
                         <td className="p-2.5 text-emerald-600">OPENAI_MODEL</td>
                       </tr>
                       <tr>
                         <td className="p-2.5 text-gray-600">Verbose</td>
-                        <td className="p-2.5 text-amber-600 font-semibold">DBCODE_VERBOSE</td>
+                        <td className="p-2.5 text-amber-600 font-semibold">DHELIX_VERBOSE</td>
                         <td className="p-2.5 text-gray-400">&mdash;</td>
                         <td className="p-2.5 text-gray-400">&mdash;</td>
                       </tr>
@@ -260,7 +260,7 @@ export default function ConfigLoaderPage() {
                 <code className="text-cyan-600 text-xs">https://api.openai.com/v1</code>이
                 사용됩니다. 로컬 LLM을 쓸 때는 반드시{" "}
                 <code className="text-cyan-600 text-xs">LOCAL_API_BASE_URL</code>이나
-                <code className="text-cyan-600 text-xs"> DBCODE_BASE_URL</code>을 함께 설정하세요.
+                <code className="text-cyan-600 text-xs"> DHELIX_BASE_URL</code>을 함께 설정하세요.
               </Callout>
             </div>
 
@@ -369,14 +369,14 @@ export default function ConfigLoaderPage() {
               설정 파일로 오버라이드하기
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
-              <code className="text-cyan-600 text-xs">~/.dbcode/config.json</code> (사용자 전역)
-              또는 <code className="text-cyan-600 text-xs">.dbcode/config.json</code> (프로젝트별)에
+              <code className="text-cyan-600 text-xs">~/.dhelix/config.json</code> (사용자 전역)
+              또는 <code className="text-cyan-600 text-xs">.dhelix/config.json</code> (프로젝트별)에
               JSON 파일을 만들면 자동으로 로딩됩니다. 특정 키만 지정하면 나머지는 기본값이
               유지됩니다.
             </p>
 
             <CodeBlock>
-              <span className="text-[#8b949e]">{"// ~/.dbcode/config.json (사용자 전역)"}</span>
+              <span className="text-[#8b949e]">{"// ~/.dhelix/config.json (사용자 전역)"}</span>
               {"\n"}
               <span className="text-[#c9d1d9]">{"{"}</span>
               {"\n"}
@@ -407,8 +407,8 @@ export default function ConfigLoaderPage() {
 
             <DeepDive title="환경변수로 설정하기 (CI/CD, Docker)">
               <p className="mb-3">
-                배포 환경에서는 설정 파일 대신 환경변수를 사용하는 것이 일반적입니다. dbcode는{" "}
-                <code className="text-cyan-600 text-xs">DBCODE_*</code>,{" "}
+                배포 환경에서는 설정 파일 대신 환경변수를 사용하는 것이 일반적입니다. dhelix는{" "}
+                <code className="text-cyan-600 text-xs">DHELIX_*</code>,{" "}
                 <code className="text-cyan-600 text-xs">OPENAI_*</code>,{" "}
                 <code className="text-cyan-600 text-xs">LOCAL_*</code> 접두사의 환경변수를 자동
                 인식합니다.
@@ -435,14 +435,14 @@ export default function ConfigLoaderPage() {
                 <span className="text-[#a5d6ff]">sk-...</span>
                 {"\n"}
                 <span className="text-[#ff7b72]">export</span>{" "}
-                <span className="text-[#79c0ff]">DBCODE_MODEL</span>
+                <span className="text-[#79c0ff]">DHELIX_MODEL</span>
                 <span className="text-[#c9d1d9]">=</span>
                 <span className="text-[#a5d6ff]">gpt-4o</span>
                 {"\n\n"}
                 <span className="text-[#8b949e]">{"# 디버깅 모드"}</span>
                 {"\n"}
                 <span className="text-[#ff7b72]">export</span>{" "}
-                <span className="text-[#79c0ff]">DBCODE_VERBOSE</span>
+                <span className="text-[#79c0ff]">DHELIX_VERBOSE</span>
                 <span className="text-[#c9d1d9]">=</span>
                 <span className="text-[#a5d6ff]">true</span>
               </CodeBlock>
@@ -450,7 +450,7 @@ export default function ConfigLoaderPage() {
               <Callout type="warn" icon="⚠️">
                 <code className="text-cyan-600 text-xs">LOCAL_API_BASE_URL</code>과{" "}
                 <code className="text-cyan-600 text-xs">LOCAL_MODEL</code>은 최우선순위입니다. 이
-                변수들이 설정되면 <code className="text-cyan-600 text-xs">DBCODE_*</code>이나{" "}
+                변수들이 설정되면 <code className="text-cyan-600 text-xs">DHELIX_*</code>이나{" "}
                 <code className="text-cyan-600 text-xs">OPENAI_*</code> 값은 무시됩니다.
               </Callout>
             </DeepDive>
@@ -675,17 +675,17 @@ export default function ConfigLoaderPage() {
                     조용히 <code className="text-cyan-600 text-xs">undefined</code>를 반환합니다.
                     터미널에서{" "}
                     <code className="text-cyan-600 text-xs">
-                      cat .dbcode/config.json | python3 -m json.tool
+                      cat .dhelix/config.json | python3 -m json.tool
                     </code>
                     로 문법을 확인해보세요.
                   </p>
                   <p>
                     <strong className="text-gray-900">원인 3:</strong> 파일 경로가 틀렸습니다.
                     사용자 설정은{" "}
-                    <code className="text-cyan-600 text-xs">~/.dbcode/config.json</code>, 프로젝트
+                    <code className="text-cyan-600 text-xs">~/.dhelix/config.json</code>, 프로젝트
                     설정은{" "}
                     <code className="text-cyan-600 text-xs">
-                      {"{projectDir}"}/.dbcode/config.json
+                      {"{projectDir}"}/.dhelix/config.json
                     </code>
                     이어야 합니다.
                   </p>
@@ -771,7 +771,7 @@ export default function ConfigLoaderPage() {
                   name: "instruction-loader.ts",
                   slug: "instruction-loader",
                   relation: "sibling",
-                  desc: "6단계 DBCODE.md 로딩 체인 — config-loader와 함께 Leaf Layer를 구성",
+                  desc: "6단계 DHELIX.md 로딩 체인 — config-loader와 함께 Leaf Layer를 구성",
                 },
                 {
                   name: "skill-manager.ts",

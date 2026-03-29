@@ -10,7 +10,7 @@
  * 장시간 작업 완료나 에러 발생을 사용자에게 알릴 때 사용합니다.
  *
  * @example
- * await sendNotification({ title: "dbcode", message: "작업 완료!", sound: true });
+ * await sendNotification({ title: "dhelix", message: "작업 완료!", sound: true });
  *
  * @example
  * const available = await isNotificationAvailable();

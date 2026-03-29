@@ -478,7 +478,7 @@ async function* parseSSEStream(
             yield parsed;
           } catch {
             // JSON 파싱 실패 — 상세 모드에서만 경고 출력
-            if (process.env.DBCODE_VERBOSE) {
+            if (process.env.DHELIX_VERBOSE) {
               process.stderr.write(
                 `[anthropic] Failed to parse SSE data (event: ${currentEventType}): ${data}\n`,
               );

@@ -67,7 +67,7 @@ export default function AutoMemoryPage() {
   AM["AutoMemoryCollector<br/><small>auto-memory.ts</small>"]
   MS["Memory Storage<br/><small>memory-storage.ts</small>"]
   SP["System Prompt Builder<br/><small>system-prompt.ts</small>"]
-  DISK["MEMORY.md + Topic Files<br/><small>.dbcode/memory/</small>"]
+  DISK["MEMORY.md + Topic Files<br/><small>.dhelix/memory/</small>"]
 
   AL -->|"턴 완료 시 analyzeForMemories()"| AM
   AM -->|"flush() 시 저장"| MS

@@ -297,7 +297,7 @@ OPENAI_API_KEY=valid-key
 OPENAI_MODEL=gpt-5.1-codex-mini
 OPENAI_BASE_URL=https://valid-azure-endpoint.com/openai/responses
 
-# dbcode 실행 → /model → ☁️ OpenAI 전환 → 코드 탐색 요청
+# dhelix 실행 → /model → ☁️ OpenAI 전환 → 코드 탐색 요청
 node dist/index.js
 > /model
 > (☁️ OpenAI Default 선택)

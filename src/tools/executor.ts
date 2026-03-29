@@ -321,7 +321,7 @@ export class BackgroundProcessManager {
     // 사람이 읽기 쉬운 순차 ID 할당
     const processId = `bg-${this.nextId++}`;
     // 임시 디렉토리에 출력 로그 파일 생성
-    const outputFile = join(tmpdir(), `dbcode-bg-${fileId}.log`);
+    const outputFile = join(tmpdir(), `dhelix-bg-${fileId}.log`);
     const shell = getShellCommand();
     const args = getShellArgs(command);
 

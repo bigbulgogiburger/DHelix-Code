@@ -41,7 +41,7 @@ const progressFile = resolve(projectDir, ".e2e-progress.json");
 interface SessionMetrics {
   totalIterations: number;
   turnsCompleted: number;
-  dbcodeReads: string[];
+  dhelixReads: string[];
   toolCalls: Array<{ turn: number; tool: string; args: Record<string, unknown> }>;
   errors: string[];
 }
@@ -65,8 +65,8 @@ function writeProgress(
           status,
           iterations: metrics.totalIterations,
           turnsCompleted: metrics.turnsCompleted,
-          dbcodeReads: metrics.dbcodeReads.length,
-          dbcodeReadTurns: metrics.dbcodeReads,
+          dhelixReads: metrics.dhelixReads.length,
+          dhelixReadTurns: metrics.dhelixReads,
           lastToolCall: metrics.toolCalls.at(-1)?.tool ?? "none",
           totalToolCalls: metrics.toolCalls.length,
           errors: metrics.errors,
@@ -95,7 +95,7 @@ describe.skipIf(!hasApiKey)(
     const metrics: SessionMetrics = {
       totalIterations: 0,
       turnsCompleted: 0,
-      dbcodeReads: [],
+      dhelixReads: [],
       toolCalls: [],
       errors: [],
     };
@@ -126,13 +126,13 @@ describe.skipIf(!hasApiKey)(
 
       const events = createEventEmitter();
 
-      // Monitor DBCODE.md reads and all tool calls
+      // Monitor DHELIX.md reads and all tool calls
       events.on(
         "tool:start",
         ({ name, id, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
           metrics.toolCalls.push({ turn: currentTurn, tool: name, args: args ?? {} });
-          if (name === "file_read" && args?.file_path?.toString().includes("DBCODE.md")) {
-            metrics.dbcodeReads.push(`Turn ${currentTurn}`);
+          if (name === "file_read" && args?.file_path?.toString().includes("DHELIX.md")) {
+            metrics.dhelixReads.push(`Turn ${currentTurn}`);
           }
         },
       );
@@ -215,9 +215,9 @@ describe.skipIf(!hasApiKey)(
     // See references/stack-*.md for per-stack turn definitions
     //
     // Example:
-    // it("Turn 0: Initialize project with DBCODE.md", async () => {
-    //   await sendTurn("Run /init to initialize...", "Initialize DBCODE.md");
-    //   expect(existsSync(resolve(projectDir, "DBCODE.md"))).toBe(true);
+    // it("Turn 0: Initialize project with DHELIX.md", async () => {
+    //   await sendTurn("Run /init to initialize...", "Initialize DHELIX.md");
+    //   expect(existsSync(resolve(projectDir, "DHELIX.md"))).toBe(true);
     // }, 180_000);
 
     // ---- Final Evaluation ----
@@ -230,7 +230,7 @@ Model: ${MODEL}
 Turns Completed: ${metrics.turnsCompleted} / ${TOTAL_TURNS}
 Total Iterations: ${metrics.totalIterations}
 Avg Iterations/Turn: ${(metrics.totalIterations / Math.max(metrics.turnsCompleted, 1)).toFixed(1)}
-DBCODE.md Reads: ${metrics.dbcodeReads.length} (${metrics.dbcodeReads.join(", ") || "none"})
+DHELIX.md Reads: ${metrics.dhelixReads.length} (${metrics.dhelixReads.join(", ") || "none"})
 Total Tool Calls: ${metrics.toolCalls.length}
 Errors: ${metrics.errors.length}
 ${metrics.errors.length > 0 ? "Error Details:\n" + metrics.errors.map((e) => `  - ${e}`).join("\n") : ""}
@@ -307,10 +307,10 @@ function parseCoverage(output: string): number | null {
 ## Important Reminders
 
 1. **This test file is the ONLY thing Claude writes.** All project files inside
-   `test-projects/` are created by dbcode's agent loop (the LLM inside `runAgentLoop()`).
+   `test-projects/` are created by dhelix's agent loop (the LLM inside `runAgentLoop()`).
 
 2. **Claude runs this test, then watches.** After generating this file, Claude runs
    `npx vitest run` in the background and monitors `.e2e-progress.json` every 30 seconds.
 
-3. **If dbcode fails to produce working code, that's the test result.** Claude does NOT
+3. **If dhelix fails to produce working code, that's the test result.** Claude does NOT
    fix the generated code — it reports the failure.

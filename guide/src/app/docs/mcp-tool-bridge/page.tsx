@@ -25,7 +25,7 @@ export default function MCPToolBridgePage() {
               <LayerBadge layer="infra" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              MCP 서버의 도구를 dbcode 도구 레지스트리에 변환하여 연결하는 브리지 모듈입니다.
+              MCP 서버의 도구를 dhelix 도구 레지스트리에 변환하여 연결하는 브리지 모듈입니다.
             </p>
           </div>
         </RevealOnScroll>
@@ -42,7 +42,7 @@ export default function MCPToolBridgePage() {
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
                 <code className="text-cyan-600">MCPToolBridge</code>는 MCP 서버의 도구
-                정의(MCPToolDefinition)를 dbcode의 도구 시스템(ToolDefinition)으로 변환하는
+                정의(MCPToolDefinition)를 dhelix의 도구 시스템(ToolDefinition)으로 변환하는
                 &quot;다리&quot; 역할을 합니다. 이 변환 덕분에 에이전트는 MCP 도구와 내장 도구를
                 구분 없이 동일한 인터페이스로 사용할 수 있습니다.
               </p>
@@ -82,7 +82,7 @@ export default function MCPToolBridgePage() {
 
             <Callout type="info" icon="💡">
               <strong>비유:</strong> MCPToolBridge는 해외 전자기기를 쓸 때 필요한 &quot;전원
-              어댑터&quot;와 같습니다. MCP 서버의 도구(해외 플러그)를 dbcode의 도구 시스템(국내
+              어댑터&quot;와 같습니다. MCP 서버의 도구(해외 플러그)를 dhelix의 도구 시스템(국내
               콘센트)에 맞게 변환하여 자연스럽게 사용할 수 있게 합니다.
             </Callout>
           </section>
@@ -154,7 +154,7 @@ export default function MCPToolBridgePage() {
               class MCPToolBridge
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
-              MCP 도구를 발견하고 dbcode 도구 레지스트리에 등록하는 메인 클래스입니다.
+              MCP 도구를 발견하고 dhelix 도구 레지스트리에 등록하는 메인 클래스입니다.
             </p>
 
             {/* Constructor */}
@@ -169,7 +169,7 @@ export default function MCPToolBridgePage() {
                   name: "toolRegistry",
                   type: "ToolRegistry",
                   required: true,
-                  desc: "도구를 등록할 dbcode 도구 레지스트리",
+                  desc: "도구를 등록할 dhelix 도구 레지스트리",
                 },
               ]}
             />
@@ -311,7 +311,7 @@ export default function MCPToolBridgePage() {
               <span className="prop">toolRegistry</span>);
               {"\n"}
               {"\n"}
-              <span className="cm">{"// 2. MCP 도구를 dbcode 도구로 등록"}</span>
+              <span className="cm">{"// 2. MCP 도구를 dhelix 도구로 등록"}</span>
               {"\n"}
               <span className="kw">const</span> <span className="prop">names</span> ={" "}
               <span className="kw">await</span> <span className="prop">bridge</span>.
@@ -362,7 +362,7 @@ export default function MCPToolBridgePage() {
               {"\n"}
               <span className="cm">{"// Tier 3: 400,000자 초과 → 파일 저장 + preview"}</span>
               {"\n"}
-              <span className="cm">{"// → /tmp/dbcode-mcp-outputs/ 에 저장"}</span>
+              <span className="cm">{"// → /tmp/dhelix-mcp-outputs/ 에 저장"}</span>
               {"\n"}
               <span className="cm">{"// → 처음 2,000자만 LLM에 전달"}</span>
             </CodeBlock>
@@ -408,7 +408,7 @@ export default function MCPToolBridgePage() {
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
               <code className="text-cyan-600">bridgeMCPTool()</code>이 수행하는 변환 과정입니다.
-              하나의 MCP 도구를 dbcode ToolDefinition으로 변환합니다.
+              하나의 MCP 도구를 dhelix ToolDefinition으로 변환합니다.
             </p>
 
             <MermaidDiagram
@@ -629,7 +629,7 @@ export default function MCPToolBridgePage() {
                   name: "tool-registry.ts",
                   slug: "tool-registry",
                   relation: "sibling",
-                  desc: "브리지된 도구가 등록되는 dbcode 도구 레지스트리",
+                  desc: "브리지된 도구가 등록되는 dhelix 도구 레지스트리",
                 },
                 {
                   name: "tool-search.ts",

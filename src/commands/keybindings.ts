@@ -12,7 +12,7 @@
  *   Alt+T     → 씽킹 모드 토글
  *   Ctrl+J    → 여러 줄 입력에서 줄 바꿈
  *
- * 커스텀 설정: ~/.dbcode/keybindings.json 파일에서 단축키를 변경할 수 있습니다.
+ * 커스텀 설정: ~/.dhelix/keybindings.json 파일에서 단축키를 변경할 수 있습니다.
  */
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 import {

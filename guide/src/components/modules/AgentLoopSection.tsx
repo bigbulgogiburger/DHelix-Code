@@ -52,7 +52,7 @@ export function AgentLoopSection() {
             label="MODULE 01"
             labelColor="purple"
             title="Agent Loop — ReAct 상태머신"
-            description="dbcode의 심장. 사용자 입력을 받아 LLM 호출 → 도구 실행 → 결과 피드백을 반복하는 핵심 루프입니다."
+            description="dhelix의 심장. 사용자 입력을 받아 LLM 호출 → 도구 실행 → 결과 피드백을 반복하는 핵심 루프입니다."
           />
         </RevealOnScroll>
 

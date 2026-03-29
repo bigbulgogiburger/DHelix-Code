@@ -26,7 +26,7 @@
     │
     ├─→ Layer 2: Auto-Compaction (임계값 초과 시)
     │   ├─ usageRatio ≥ compactionThreshold → 트리거
-    │   ├─ 시스템 메시지 보존 + DBCODE.md 리로드
+    │   ├─ 시스템 메시지 보존 + DHELIX.md 리로드
     │   ├─ 최근 N턴 보존, 중간 턴 요약 (LLM 또는 로컬)
     │   └─ 대형 도구 결과 Head+Tail 잘라내기
     │
@@ -169,7 +169,7 @@ private async writeColdStorage(dir: string, content: string): Promise<ColdStorag
 }
 ```
 
-**저장 경로**: `~/.dbcode/sessions/{sessionId}/cold-storage/{sha256-16자}.txt`
+**저장 경로**: `~/.dhelix/sessions/{sessionId}/cold-storage/{sha256-16자}.txt`
 
 **교체 메시지**:
 
@@ -185,7 +185,7 @@ private async writeColdStorage(dir: string, content: string): Promise<ColdStorag
 
 ```
 1. onPreCompact 이벤트 발행
-2. DBCODE.md 디스크에서 리로드 → 최신 시스템 프롬프트 재구성
+2. DHELIX.md 디스크에서 리로드 → 최신 시스템 프롬프트 재구성
 3. 시스템 메시지와 대화 메시지 분리
 4. 대화 턴 식별 (user → assistant/tool 그룹)
 5. if (턴 수 ≤ preserveRecentTurns):
@@ -447,7 +447,7 @@ const contextManager = new ContextManager({
 | 4   | Microcompaction 상시 실행   | ✅   | `prepare()` 호출 시 매번           |
 | 5   | Cold storage 디스크 저장    | ✅   | content-addressable, SHA-256       |
 | 6   | 시스템 메시지 보존          | ✅   | compaction 시 항상 보존            |
-| 7   | DBCODE.md 리로드            | ✅   | compaction 시 디스크에서 재로드    |
+| 7   | DHELIX.md 리로드            | ✅   | compaction 시 디스크에서 재로드    |
 | 8   | Head+Tail 잘라내기          | ✅   | 60/40 비율                         |
 | 9   | GC 적응적 간격              | ✅   | usage 기반 1/5/15                  |
 | 10  | `/compact` 수동 트리거      | ❌   | **미연결**                         |

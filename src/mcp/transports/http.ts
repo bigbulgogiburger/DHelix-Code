@@ -159,7 +159,7 @@ export class HttpTransport implements MCPTransportLayer {
           params: {
             protocolVersion: "2024-11-05",
             capabilities: {},
-            clientInfo: { name: "dbcode", version: "0.1.0" },
+            clientInfo: { name: "dhelix", version: "0.1.0" },
           },
         }),
         signal: controller.signal,

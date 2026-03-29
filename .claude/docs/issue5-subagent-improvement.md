@@ -1,7 +1,7 @@
 # Issue 5: 서브에이전트 개선 방향 — 도구 미호출 + 시스템 프롬프트 + 구조적 문제
 
 > 작성일: 2026-03-19
-> 근거: `DBCODE_VERBOSE=1` 트레이스 로그 실측 + 코드 심층 분석
+> 근거: `DHELIX_VERBOSE=1` 트레이스 로그 실측 + 코드 심층 분석
 > 상태: ✅ 전체 구현 완료 (2026-03-20)
 
 ---
@@ -112,7 +112,7 @@ Be thorough and report your results clearly.
 | --------------------- | ------------- | ---------------- | ----------------------------------- |
 | `capabilityTier`      | ✅ 전달       | ❌ undefined     | 티어별 가이드 미적용                |
 | `workingDirectory`    | ✅ 전달       | ❌ process.cwd() | 환경 섹션의 경로가 부정확할 수 있음 |
-| `projectInstructions` | ✅ DBCODE.md  | ❌ 미전달        | 프로젝트 컨벤션 무시                |
+| `projectInstructions` | ✅ DHELIX.md  | ❌ 미전달        | 프로젝트 컨벤션 무시                |
 | `repoMapContent`      | ✅ 전달       | ❌ 미전달        | 코드베이스 개요 없음                |
 | `locale`              | ✅ 전달       | ❌ 기본값("en")  | 한국어 환경에서 영어 프롬프트       |
 
@@ -255,7 +255,7 @@ if (config.isSubagent && iterations === 1 && extractedCalls.length === 0) {
 
 수정 후:
 
-- [x] `DBCODE_VERBOSE=1`로 실행 ✅
+- [x] `DHELIX_VERBOSE=1`로 실행 ✅
 - [x] explore 서브에이전트가 **도구를 호출**하는지 확인 ✅ (list_dir + file_read)
 - [x] explore 서브에이전트가 `list_dir` 사용 가능한지 확인 ✅
 - [x] explore가 2회 이상 반복하며 여러 파일을 읽는지 확인 ✅ (3회 반복)

@@ -120,8 +120,8 @@ export type AgentDefinitionFrontmatter = z.infer<typeof agentDefinitionSchema>;
 
 /**
  * 에이전트 정의가 로드된 출처
- * - project: 프로젝트 디렉토리 (.dbcode/agents/)
- * - user: 사용자 전역 디렉토리 (~/.dbcode/agents/)
+ * - project: 프로젝트 디렉토리 (.dhelix/agents/)
+ * - user: 사용자 전역 디렉토리 (~/.dhelix/agents/)
  * - cli: CLI에서 직접 정의 (파일 없이)
  */
 export type AgentDefinitionSource = "project" | "user" | "cli";

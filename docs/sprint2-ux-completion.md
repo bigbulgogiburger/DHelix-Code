@@ -23,7 +23,7 @@
 
 ## Sprint 2 범위 선정
 
-dbcode_develop_v2.md 로드맵에서 남은 격차:
+dhelix_develop_v2.md 로드맵에서 남은 격차:
 
 | #      | 기능                     | 현재 구현률                         | 복잡도    | Sprint 2 포함?       |
 | ------ | ------------------------ | ----------------------------------- | --------- | -------------------- |
@@ -647,7 +647,7 @@ Day 4    │  벤치마크 + 커밋
 
 ## Sprint 2 이후 남은 작업
 
-Sprint 2 완료 시 dbcode vs Claude Code 격차:
+Sprint 2 완료 시 dhelix vs Claude Code 격차:
 
 | 격차                        | Sprint 2 후 상태 |
 | --------------------------- | ---------------- |
@@ -660,4 +660,4 @@ Sprint 2 완료 시 dbcode vs Claude Code 격차:
 | I1 Worktree Isolation       | 🟡 Sprint 3      |
 | I6 OAuth/SSO 인증           | 🟡 Sprint 4      |
 
-**Sprint 2 완료 시 dbcode의 UX 격차가 사실상 해소**됩니다. 남은 항목은 고급 기능(Plan 자동 실행, SSE MCP, Worktree)으로, 핵심 사용성에는 큰 영향이 없습니다.
+**Sprint 2 완료 시 dhelix의 UX 격차가 사실상 해소**됩니다. 남은 항목은 고급 기능(Plan 자동 실행, SSE MCP, Worktree)으로, 핵심 사용성에는 큰 영향이 없습니다.

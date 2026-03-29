@@ -10,7 +10,7 @@
  *
  * 세션 저장소는 기본적으로 메모리에만 유지되지만,
  * save()/load()를 통해 디스크에 영속화할 수도 있습니다.
- * (파일 경로: ~/.dbcode/session-approvals.json)
+ * (파일 경로: ~/.dhelix/session-approvals.json)
  *
  * 영구 권한 저장소(persistent-store.ts)와의 차이점:
  * - 세션 저장소: 현재 실행 동안만 유지, 빈번한 읽기 최적화
@@ -110,10 +110,10 @@ export class SessionApprovalStore {
 
   /**
    * 세션 승인을 영속화할 파일 경로
-   * ~/.dbcode/session-approvals.json
+   * ~/.dhelix/session-approvals.json
    */
   private get persistPath(): string {
-    return join(homedir(), ".dbcode", "session-approvals.json");
+    return join(homedir(), ".dhelix", "session-approvals.json");
   }
 
   /**
@@ -124,7 +124,7 @@ export class SessionApprovalStore {
    */
   save(): void {
     try {
-      const dir = join(homedir(), ".dbcode");
+      const dir = join(homedir(), ".dhelix");
       // 디렉토리가 없으면 생성 (recursive: true)
       mkdirSync(dir, { recursive: true });
       // Set을 배열로 변환하여 JSON으로 직렬화

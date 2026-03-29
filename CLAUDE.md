@@ -1,4 +1,4 @@
-# CLAUDE.md — dbcode
+# CLAUDE.md — dhelix
 
 CLI AI coding assistant for local/external LLMs.
 Node.js 20+ / TypeScript 5.x / ESM only / Ink 5.x (React for CLI) / Vitest / tsup
@@ -86,7 +86,7 @@ npm run ci           # typecheck + lint + coverage + build
 | Shift+Tab | Cycle permissions | Ctrl+D   | Exit           |
 | Alt+T     | Toggle thinking   |          |                |
 
-Customizable: `~/.dbcode/keybindings.json`
+Customizable: `~/.dhelix/keybindings.json`
 
 ## Verify Skills
 
@@ -139,7 +139,7 @@ When compacting, always preserve:
 | Directory Structure   | 파일 위치 파악, 새 모듈 배치         | `.claude/docs/reference/directory-structure.md`  |
 | Architecture Deep     | Agent loop, 컨텍스트, 서브에이전트   | `.claude/docs/reference/architecture-deep.md`    |
 | Interfaces & Tools    | Tool 추가/수정, LLM 연동, MCP 브리지 | `.claude/docs/reference/interfaces-and-tools.md` |
-| Config & Instructions | DBCODE.md, 설정 계층, MCP 스코프     | `.claude/docs/reference/config-system.md`        |
+| Config & Instructions | DHELIX.md, 설정 계층, MCP 스코프     | `.claude/docs/reference/config-system.md`        |
 | Skills & Commands     | 스킬 개발, 42개 슬래시 명령          | `.claude/docs/reference/skills-and-commands.md`  |
 | Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션      | `.claude/docs/reference/coding-conventions.md`   |
 | MCP System            | MCP 서버 연동, 스코프, 도구 브리지   | `.claude/docs/reference/mcp-system.md`           |

@@ -145,7 +145,7 @@ export interface MCPServerConfig {
    * 서버 스코프(범위) — 설정이 적용되는 범위를 지정:
    * - "local": 로컬 개발자 전용 (.gitignore 대상)
    * - "project": 프로젝트 전체 공유 (git에 커밋)
-   * - "user": 사용자 글로벌 설정 (~/.dbcode/)
+   * - "user": 사용자 글로벌 설정 (~/.dhelix/)
    */
   readonly scope?: "local" | "project" | "user";
 }

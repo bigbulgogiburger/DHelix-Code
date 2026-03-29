@@ -160,7 +160,7 @@ export default function SystemPromptBuilderPage() {
                 </div>
                 <div className="flex gap-3">
                   <span className="text-violet-600 font-bold shrink-0 w-28">70 project</span>
-                  <span>DBCODE.md 프로젝트 지침</span>
+                  <span>DHELIX.md 프로젝트 지침</span>
                 </div>
                 <div className="flex gap-3">
                   <span className="text-purple-600 font-bold shrink-0 w-28">60 features</span>
@@ -509,7 +509,7 @@ export default function SystemPromptBuilderPage() {
                       name: "projectInstructions",
                       type: "string",
                       required: false,
-                      desc: "DBCODE.md에서 로드한 프로젝트 지침",
+                      desc: "DHELIX.md에서 로드한 프로젝트 지침",
                     },
                     {
                       name: "workingDirectory",
@@ -1248,7 +1248,7 @@ export default function SystemPromptBuilderPage() {
               {/* FAQ 1 */}
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <h4 className="text-[14px] font-bold mb-2 flex items-center gap-2">
-                  <span className="text-red-600">Q.</span> 프로젝트 지침(DBCODE.md)이 프롬프트에
+                  <span className="text-red-600">Q.</span> 프로젝트 지침(DHELIX.md)이 프롬프트에
                   포함되지 않아요
                 </h4>
                 <div className="text-[13px] text-gray-600 leading-relaxed">
@@ -1261,8 +1261,8 @@ export default function SystemPromptBuilderPage() {
                   </p>
                   <p className="mb-2">
                     <strong className="text-gray-900">원인 2:</strong> 파일 경로 오류.
-                    <code className="text-cyan-600 text-xs"> DBCODE.md</code>는 프로젝트 루트 또는
-                    <code className="text-cyan-600 text-xs"> .dbcode/</code> 디렉토리에 있어야
+                    <code className="text-cyan-600 text-xs"> DHELIX.md</code>는 프로젝트 루트 또는
+                    <code className="text-cyan-600 text-xs"> .dhelix/</code> 디렉토리에 있어야
                     합니다.
                     <code className="text-cyan-600 text-xs"> getProjectConfigPaths()</code>가
                     반환하는 경로를 확인하세요.

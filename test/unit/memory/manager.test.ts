@@ -17,7 +17,7 @@ describe("memory/manager", () => {
   afterEach(async () => {
     try {
       await rm(tmpProjectRoot, { recursive: true, force: true });
-      // Also clean up the ~/.dbcode/projects/... directory created during tests
+      // Also clean up the ~/.dhelix/projects/... directory created during tests
       const memoryDir = getMemoryDir(tmpProjectRoot);
       await rm(memoryDir, { recursive: true, force: true });
     } catch {

@@ -440,21 +440,21 @@ export default function HookRunnerPage() {
             <div className="bg-white border border-gray-200 rounded-xl p-4">
               <div className="flex flex-col gap-2.5 text-[13px] text-gray-600">
                 <div className="flex gap-3">
-                  <code className="text-cyan-600 font-bold shrink-0 w-40">DBCODE_EVENT</code>
+                  <code className="text-cyan-600 font-bold shrink-0 w-40">DHELIX_EVENT</code>
                   <span>
                     이벤트 이름 (예: <code className="text-cyan-600 text-xs">"PostToolUse"</code>)
                   </span>
                 </div>
                 <div className="flex gap-3">
-                  <code className="text-cyan-600 font-bold shrink-0 w-40">DBCODE_TOOL_NAME</code>
+                  <code className="text-cyan-600 font-bold shrink-0 w-40">DHELIX_TOOL_NAME</code>
                   <span>실행된 도구 이름</span>
                 </div>
                 <div className="flex gap-3">
-                  <code className="text-cyan-600 font-bold shrink-0 w-40">DBCODE_FILE_PATH</code>
+                  <code className="text-cyan-600 font-bold shrink-0 w-40">DHELIX_FILE_PATH</code>
                   <span>현재 파일 경로</span>
                 </div>
                 <div className="flex gap-3">
-                  <code className="text-cyan-600 font-bold shrink-0 w-40">DBCODE_SESSION_ID</code>
+                  <code className="text-cyan-600 font-bold shrink-0 w-40">DHELIX_SESSION_ID</code>
                   <span>현재 세션 ID</span>
                 </div>
               </div>

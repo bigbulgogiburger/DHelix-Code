@@ -42,7 +42,7 @@ export default function CmdBugPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">/bug</code> 명령어는 사용자가 dbcode에서 버그를
+                <code className="text-cyan-600">/bug</code> 명령어는 사용자가 dhelix에서 버그를
                 발견했을 때 빠르게 리포트를 작성할 수 있도록 도와줍니다. 사용자가 설명을 입력하면
                 OS, Node.js 버전, 현재 모델명, 세션 ID, 타임스탬프 등 시스템 진단 정보를 자동으로
                 수집합니다.
@@ -284,7 +284,7 @@ export default function CmdBugPage() {
               {"\n"}
               <span className="cm">{"// ### Environment"}</span>
               {"\n"}
-              <span className="cm">{"// - dbcode: v0.1.0"}</span>
+              <span className="cm">{"// - dhelix: v0.1.0"}</span>
               {"\n"}
               <span className="cm">{"// - Platform: darwin (arm64)"}</span>
               {"\n"}
@@ -430,7 +430,7 @@ export default function CmdBugPage() {
               {"  "}
               <span className="kw">return</span>{" "}
               <span className="str">
-                `https://github.com/bigbulgogiburger/dbcode/issues/new?${"{"}
+                `https://github.com/bigbulgogiburger/dhelix/issues/new?${"{"}
               </span>
               <span className="prop">params</span>
               <span className="str">{"}"}`</span>;{"\n"}

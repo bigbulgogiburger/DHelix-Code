@@ -183,8 +183,8 @@ export const configSchema = z.object({
   workingDirectory: z.string().optional(),
   /** 상세 로깅 모드 — true이면 디버그 정보 출력 */
   verbose: z.boolean().default(false),
-  /** DBCODE.md 로딩 시 제외할 glob 패턴 (특정 규칙 파일 무시) */
-  dbcodeMdExcludes: z.array(z.string()).default([]),
+  /** DHELIX.md 로딩 시 제외할 glob 패턴 (특정 규칙 파일 무시) */
+  dhelixMdExcludes: z.array(z.string()).default([]),
   /** 응답 언어 (ISO 639-1 코드, 예: "ko"=한국어, "en"=영어) */
   locale: z.string().default("ko"),
   /** 응답 톤/스타일 — normal, cute, senior, friend, mentor, minimal */

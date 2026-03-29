@@ -44,7 +44,7 @@ const CONTENT_SIZE_LIMIT = 50_000;
 /** 리다이렉트 최대 횟수 — 무한 리다이렉트 방지 */
 const MAX_REDIRECTS = 5;
 /** HTTP User-Agent 헤더 — 서버에 요청 주체를 알림 */
-const USER_AGENT = "dbcode/1.0 (https://github.com/anthropics/dbcode)";
+const USER_AGENT = "dhelix/1.0 (https://github.com/anthropics/dhelix)";
 
 /** URL → 응답 캐시 저장소 (Map — 삽입 순서를 유지하여 LRU 방식 제거에 활용) */
 const responseCache = new Map<string, CacheEntry>();

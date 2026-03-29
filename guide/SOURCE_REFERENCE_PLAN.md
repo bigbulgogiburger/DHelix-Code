@@ -1,7 +1,7 @@
 # Source Reference 문서화 계획
 
 > 작성일: 2026-03-21
-> dbcode 프로젝트의 모든 핵심 TypeScript 모듈을 초보자도 이해할 수 있도록 구조화된 문서로 작성하는 계획입니다.
+> dhelix 프로젝트의 모든 핵심 TypeScript 모듈을 초보자도 이해할 수 있도록 구조화된 문서로 작성하는 계획입니다.
 
 ---
 
@@ -206,7 +206,7 @@ graph TD
             CFG_SCH["schema.ts<br/>Zod 검증"]
         end
         subgraph INSTR["Instructions"]
-            INSTR_LOAD["loader.ts<br/>6단계 DBCODE.md 로딩"]
+            INSTR_LOAD["loader.ts<br/>6단계 DHELIX.md 로딩"]
             INSTR_PARSE["parser.ts<br/>import 구문 해석"]
             INSTR_PATH["path-matcher.ts<br/>경로 조건부 규칙"]
         end

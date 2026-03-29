@@ -656,7 +656,7 @@ export default function AnthropicProviderPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 HTTP 529는 Anthropic 전용 상태 코드로, 서버 과부하를 의미합니다. 표준 HTTP에는 없는
-                코드이며, dbcode에서는 429(Rate Limit)와 동일하게 최대 5회 재시도하며 더 긴
+                코드이며, dhelix에서는 429(Rate Limit)와 동일하게 최대 5회 재시도하며 더 긴
                 백오프(5초 기본)를 적용합니다.
               </p>
             </div>

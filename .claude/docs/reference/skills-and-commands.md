@@ -5,8 +5,8 @@
 ## Skills System
 
 - Skills loaded from 4 directories:
-  - `.dbcode/commands/`, `.dbcode/skills/` (project-level)
-  - `~/.dbcode/commands/`, `~/.dbcode/skills/` (user-level)
+  - `.dhelix/commands/`, `.dhelix/skills/` (project-level)
+  - `~/.dhelix/commands/`, `~/.dhelix/skills/` (user-level)
 - `SkillManager` builds system prompt section listing available skills
 - User-invocable skills become `/name` slash commands via `command-bridge.ts`
 
@@ -17,7 +17,7 @@
 | `$ARGUMENTS`           | 전체 인자 문자열  |
 | `$ARGUMENTS[N]`        | N번째 인자        |
 | `$N`                   | N번째 인자 (축약) |
-| `${DBCODE_SESSION_ID}` | 현재 세션 ID      |
+| `${DHELIX_SESSION_ID}` | 현재 세션 ID      |
 
 ### Skill File Structure
 
@@ -86,7 +86,7 @@ Skill prompt content with $ARGUMENTS substitution...
 | `/batch`    | 배치 작업 실행            |
 | `/simplify` | 코드 단순화 리뷰          |
 | `/plan`     | Plan 모드 (실행 전 확인)  |
-| `/init`     | 프로젝트에 DBCODE.md 생성 |
+| `/init`     | 프로젝트에 DHELIX.md 생성 |
 
 ### Export & Copy
 
@@ -144,7 +144,7 @@ Session analytics dashboard — displays:
 
 ## Input History
 
-- Persisted to `~/.dbcode/input-history.json` (survives restarts)
+- Persisted to `~/.dhelix/input-history.json` (survives restarts)
 - Up/Down arrow keys navigate history across sessions
 - Max 500 entries, deduplication on insert (most recent wins)
 - Auto-saves on every new input

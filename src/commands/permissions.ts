@@ -1,7 +1,7 @@
 /**
  * /permissions 명령어 핸들러 — 영구 권한 규칙 관리
  *
- * dbcode의 도구(tool) 사용 권한을 세밀하게 제어합니다.
+ * dhelix의 도구(tool) 사용 권한을 세밀하게 제어합니다.
  *
  * 권한 시스템이란? LLM이 파일 쓰기, 명령 실행 등의 도구를 호출할 때
  * 사용자의 허가가 필요한지 여부를 결정하는 보안 메커니즘입니다.
@@ -17,7 +17,7 @@
  *   /permissions remove <패턴>    — 규칙 제거
  *   /permissions reset            — 모든 규칙 초기화
  *
- * 규칙은 ~/.dbcode/settings.json의 permissions 섹션에 영구 저장됩니다.
+ * 규칙은 ~/.dhelix/settings.json의 permissions 섹션에 영구 저장됩니다.
  */
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -26,7 +26,7 @@ import { type PermissionMode } from "../permissions/types.js";
 import { getModeDescription } from "../permissions/modes.js";
 import { type SlashCommand, type CommandResult, type CommandContext } from "./registry.js";
 
-/** 전역 설정 파일 경로 (~/.dbcode/settings.json) */
+/** 전역 설정 파일 경로 (~/.dhelix/settings.json) */
 const SETTINGS_PATH = join(CONFIG_DIR, "settings.json");
 
 /**

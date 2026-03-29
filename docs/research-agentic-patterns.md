@@ -1,6 +1,6 @@
 # Agentic Coding Patterns & Frameworks Research
 
-> Research for dbcode architecture decisions
+> Research for dhelix architecture decisions
 > Date: 2026-03-05
 
 ---
@@ -17,7 +17,7 @@
 8. [Parallel Tool Execution](#8-parallel-tool-execution)
 9. [Code Editing Algorithms](#9-code-editing-algorithms)
 10. [Prompt Engineering for Coding Agents](#10-prompt-engineering-for-coding-agents)
-11. [Recommendations for dbcode](#11-recommendations-for-dbcode)
+11. [Recommendations for dhelix](#11-recommendations-for-dhelix)
 
 ---
 
@@ -58,7 +58,7 @@ The dominant pattern for AI coding agents. The agent alternates between reasonin
 - Risk of "wandering" without clear direction
 - Token-expensive due to interleaved reasoning
 
-**Relevance to dbcode:** HIGH - This should be the primary loop pattern. Claude Code uses this exact pattern and it's proven at scale.
+**Relevance to dhelix:** HIGH - This should be the primary loop pattern. Claude Code uses this exact pattern and it's proven at scale.
 
 ### 1.2 Plan-and-Execute
 
@@ -97,7 +97,7 @@ The agent first creates a structured plan, then executes steps sequentially, tra
 - Plans may become stale as codebase changes during execution
 - Requires replanning capability when steps fail
 
-**Relevance to dbcode:** MEDIUM-HIGH - Useful as a "mode" for complex tasks. Should be available but not the default for simple questions.
+**Relevance to dhelix:** MEDIUM-HIGH - Useful as a "mode" for complex tasks. Should be available but not the default for simple questions.
 
 ### 1.3 Reflection / Self-Critique
 
@@ -132,7 +132,7 @@ The agent generates an output, then evaluates its own work before presenting it.
 - Latency increases with each reflection round
 - Risk of over-optimization or infinite loops
 
-**Relevance to dbcode:** MEDIUM - Valuable for code generation but expensive. Best used selectively (e.g., when generating new files or complex logic, not for simple edits).
+**Relevance to dhelix:** MEDIUM - Valuable for code generation but expensive. Best used selectively (e.g., when generating new files or complex logic, not for simple edits).
 
 ### 1.4 Tree of Thoughts (ToT)
 
@@ -153,13 +153,13 @@ Explores multiple reasoning paths in parallel before selecting the best one.
 **Pros:** Better for problems with multiple viable approaches
 **Cons:** Very expensive, high latency
 
-**Relevance to dbcode:** LOW - Overkill for most coding tasks. May be useful for architectural decisions but not practical for a CLI tool's primary loop.
+**Relevance to dhelix:** LOW - Overkill for most coding tasks. May be useful for architectural decisions but not practical for a CLI tool's primary loop.
 
-### 1.5 Pattern Recommendation for dbcode
+### 1.5 Pattern Recommendation for dhelix
 
 ```
 ┌─────────────────────────────────────────────────┐
-│  dbcode Recommended Hybrid Pattern              │
+│  dhelix Recommended Hybrid Pattern              │
 │                                                 │
 │  User Input                                     │
 │      │                                          │
@@ -211,7 +211,7 @@ Explores multiple reasoning paths in parallel before selecting the best one.
 - Tool results feed directly back into conversation
 - User can inject instructions mid-execution ("real-time steering")
 
-**Lessons for dbcode:**
+**Lessons for dhelix:**
 
 - Simplicity wins: a single loop with good tools beats complex orchestration
 - Project-level memory files are intuitive and version-controllable
@@ -248,7 +248,7 @@ Explores multiple reasoning paths in parallel before selecting the best one.
 - Git-native: Every change is a commit, enabling easy rollback
 - User manually adds files to chat context
 
-**Lessons for dbcode:**
+**Lessons for dhelix:**
 
 - Repository mapping is essential for large codebases
 - The architect/editor split is proven effective
@@ -290,7 +290,7 @@ Explores multiple reasoning paths in parallel before selecting the best one.
 - Modular: Agent, Tools, Workspace, Server are separate packages
 - 72% resolution rate on SWE-Bench Verified (Claude Sonnet 4.5)
 
-**Lessons for dbcode:**
+**Lessons for dhelix:**
 
 - Event sourcing enables replay, debugging, and recovery
 - Stateless agents are easier to test and reason about
@@ -308,7 +308,7 @@ Explores multiple reasoning paths in parallel before selecting the best one.
 - Structured search and edit operations
 - Focused on decomposing issues into actionable steps
 
-**Lessons for dbcode:**
+**Lessons for dhelix:**
 
 - Specialized tools designed for LLMs outperform generic CLI wrappers
 - The interface the agent uses matters as much as the model
@@ -385,7 +385,7 @@ MCP is an open standard for connecting LLMs to external tools and data sources.
 └────────────────────────────────────────────────┘
 ```
 
-**Relevance to dbcode:** HIGH - MCP support should be a core feature, enabling users to extend dbcode with custom tools without modifying dbcode itself.
+**Relevance to dhelix:** HIGH - MCP support should be a core feature, enabling users to extend dhelix with custom tools without modifying dhelix itself.
 
 ---
 
@@ -433,7 +433,7 @@ MCP is an open standard for connecting LLMs to external tools and data sources.
 
 ### 4.3 Conversation Persistence
 
-For a CLI tool like dbcode:
+For a CLI tool like dhelix:
 
 - **Session state**: Serialize conversation to disk (JSON/SQLite)
 - **Resume capability**: Allow users to continue previous sessions
@@ -497,7 +497,7 @@ Based on Anthropic's research and Lance Martin's context engineering framework:
 | Selective file loading | Only load files the agent requests                   | Aider, Claude Code |
 | Knowledge graph        | Index code relationships for retrieval               | Windsurf           |
 
-### 5.4 Recommendation for dbcode
+### 5.4 Recommendation for dhelix
 
 Implement a **layered context strategy**:
 
@@ -613,7 +613,7 @@ From "Building Effective Agents":
 5. **Orchestrator-Workers**: Dynamic task decomposition and delegation
 6. **Evaluator-Optimizer**: Generate-evaluate-refine loop
 
-### 7.5 Recommendation for dbcode
+### 7.5 Recommendation for dhelix
 
 **Build custom, not framework-dependent.** Use a simple agentic loop inspired by Claude Code's architecture:
 
@@ -798,7 +798,7 @@ Two-step process:
 **Pros:** Separates reasoning from application, handles complex merges
 **Cons:** Requires training a specialized model
 
-### 9.7 Recommendation for dbcode
+### 9.7 Recommendation for dhelix
 
 Implement **Search/Replace as primary** with fallbacks:
 
@@ -861,7 +861,7 @@ For large files: Require search/replace
 | Format specification | XML tags, markdown headers                 | Structured outputs              |
 | Temperature control  | Lower for code, higher for brainstorming   | Per-task optimization           |
 
-### 10.3 Prompt Composition for dbcode
+### 10.3 Prompt Composition for dhelix
 
 ```
 System prompt layers:
@@ -885,13 +885,13 @@ Remaining for conversation: Model-dependent
 
 ---
 
-## 11. Recommendations for dbcode
+## 11. Recommendations for dhelix
 
 ### 11.1 Core Architecture
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│  dbcode Recommended Architecture                             │
+│  dhelix Recommended Architecture                             │
 │                                                              │
 │  ┌─────────────────────────────────────────────────────────┐ │
 │  │                    CLI Layer                             │ │

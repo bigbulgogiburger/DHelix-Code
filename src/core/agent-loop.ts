@@ -52,7 +52,7 @@ import { type DualModelRouter, detectPhase } from "../llm/dual-model-router.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 
 const trace = (tag: string, msg: string) => {
-  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+  if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
 };
 
 /**

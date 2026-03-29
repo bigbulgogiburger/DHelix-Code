@@ -55,7 +55,7 @@ export const ReadGroupBlock = React.memo(function ReadGroupBlock({
     <Box flexDirection="column" marginLeft={2}>
       {/* Header */}
       <Box>
-        <Text bold color="blue">
+        <Text bold color="cyan">
           Read {count} {fileWord}
         </Text>
       </Box>

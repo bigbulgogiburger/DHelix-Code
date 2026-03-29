@@ -329,7 +329,7 @@ export default function ToolBashExecPage() {
               {"\n"}
               <span className="cm">{"// PID: 12345"}</span>
               {"\n"}
-              <span className="cm">{"// Output file: /tmp/dbcode-bg-12345.log"}</span>
+              <span className="cm">{"// Output file: /tmp/dhelix-bg-12345.log"}</span>
             </CodeBlock>
 
             <Callout type="warn" icon="!">
@@ -587,7 +587,7 @@ export default function ToolBashExecPage() {
                 <code className="text-cyan-600">bash_output</code> 도구로 백그라운드 프로세스의
                 출력을 확인하고,
                 <code className="text-cyan-600"> kill_shell</code> 도구로 프로세스를 종료할 수
-                있습니다. 출력은 <code className="text-cyan-600">/tmp/dbcode-bg-{"{PID}"}.log</code>{" "}
+                있습니다. 출력은 <code className="text-cyan-600">/tmp/dhelix-bg-{"{PID}"}.log</code>{" "}
                 파일에도 저장됩니다.
               </p>
             </div>

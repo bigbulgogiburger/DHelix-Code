@@ -42,7 +42,7 @@ export default function PermissionSessionStorePage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                dbcode는 AI가 도구를 실행하기 전에 사용자에게 &quot;이 작업을
+                dhelix는 AI가 도구를 실행하기 전에 사용자에게 &quot;이 작업을
                 허용하시겠습니까?&quot;라고 묻습니다. 그런데 매번 같은 도구를 쓸 때마다 반복적으로
                 물어보면 사용자 경험이 나빠집니다.
                 <code className="text-cyan-600">SessionApprovalStore</code>는 이 문제를 해결합니다
@@ -72,7 +72,7 @@ export default function PermissionSessionStorePage() {
                 기본적으로 메모리에만 존재하므로 프로세스가 종료되면 사라집니다. 하지만{" "}
                 <code className="text-cyan-600">save()</code>/
                 <code className="text-cyan-600">load()</code>를 호출하면{" "}
-                <code className="text-cyan-600">~/.dbcode/session-approvals.json</code> 파일에
+                <code className="text-cyan-600">~/.dhelix/session-approvals.json</code> 파일에
                 저장/복원하여 재시작 후에도 이전 승인을 이어서 사용할 수 있습니다.
               </p>
             </div>
@@ -258,7 +258,7 @@ export default function PermissionSessionStorePage() {
             <h4 className="text-sm font-bold text-gray-900 mb-2 mt-6">save()</h4>
             <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
               현재 승인 상태를 디스크에 저장합니다. 저장 경로는{" "}
-              <code className="text-cyan-600">~/.dbcode/session-approvals.json</code>이며, Set의
+              <code className="text-cyan-600">~/.dhelix/session-approvals.json</code>이며, Set의
               내용을 JSON 배열로 직렬화합니다.
               <strong>최선 노력(best-effort)</strong> 방식이므로, 저장에 실패해도 에러를 던지지
               않습니다. 세션 데이터는 유실되어도 사용자가 다시 승인하면 되므로 안전합니다.
@@ -488,7 +488,7 @@ export default function PermissionSessionStorePage() {
               {"\n"}
               <span className="prop">sessionStore</span>.<span className="fn">save</span>();
               {"\n"}
-              <span className="cm">{"// → ~/.dbcode/session-approvals.json에 저장"}</span>
+              <span className="cm">{"// → ~/.dhelix/session-approvals.json에 저장"}</span>
               {"\n"}
               <span className="cm">
                 {'// → ["file_read:/src/a.ts", "file_read", "Bash"] 형태의 JSON 배열'}
@@ -773,7 +773,7 @@ export default function PermissionSessionStorePage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 <code className="text-cyan-600">clear()</code>는 메모리의 Set만 비웁니다. 디스크의{" "}
-                <code className="text-cyan-600">~/.dbcode/session-approvals.json</code>은
+                <code className="text-cyan-600">~/.dhelix/session-approvals.json</code>은
                 그대로입니다.
                 <code className="text-cyan-600">load()</code>를 다시 호출하면 파일에서 복원됩니다.
                 <strong>해결:</strong> <code className="text-cyan-600">clear()</code> 직후

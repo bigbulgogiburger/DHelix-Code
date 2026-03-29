@@ -391,7 +391,7 @@ function validateResponseContains(
 ## Evaluation Report Template (Conversation Quality)
 
 ```markdown
-# dbcode Conversation Quality Report
+# dhelix Conversation Quality Report
 
 **Date:** {DATE}
 **Model:** {MODEL_NAME}

@@ -57,12 +57,12 @@ export default function PermissionPersistentStorePage() {
               <ul className="list-disc list-inside space-y-1 ml-1">
                 <li>
                   <strong>project</strong> &mdash; 프로젝트별 설정 (
-                  <code className="text-cyan-600">{"{프로젝트}/.dbcode/settings.json"}</code>). 이
+                  <code className="text-cyan-600">{"{프로젝트}/.dhelix/settings.json"}</code>). 이
                   프로젝트에서만 적용됩니다.
                 </li>
                 <li>
                   <strong>user</strong> &mdash; 사용자 전체 설정 (
-                  <code className="text-cyan-600">~/.dbcode/settings.json</code>). 모든 프로젝트에서
+                  <code className="text-cyan-600">~/.dhelix/settings.json</code>). 모든 프로젝트에서
                   적용됩니다.
                 </li>
               </ul>
@@ -97,8 +97,8 @@ export default function PermissionPersistentStorePage() {
   PS["PersistentPermissionStore<br/><small>persistent-store.ts</small>"]
   AL["AuditLogger<br/><small>audit-log.ts</small>"]
   WC["wildcard.ts<br/><small>패턴 파싱/매칭</small>"]
-  PROJ[".dbcode/settings.json<br/><small>프로젝트 범위</small>"]
-  USER["~/.dbcode/settings.json<br/><small>사용자 범위</small>"]
+  PROJ[".dhelix/settings.json<br/><small>프로젝트 범위</small>"]
+  USER["~/.dhelix/settings.json<br/><small>사용자 범위</small>"]
 
   PM -->|"1. 세션 캐시"| SS
   PM -->|"2. 영구 규칙 조회"| PS
@@ -172,7 +172,7 @@ export default function PermissionPersistentStorePage() {
                   name: "scope",
                   type: '"project" | "user"',
                   required: true,
-                  desc: "프로젝트 범위(.dbcode/settings.json) 또는 사용자 범위(~/.dbcode/settings.json)",
+                  desc: "프로젝트 범위(.dhelix/settings.json) 또는 사용자 범위(~/.dhelix/settings.json)",
                 },
               ]}
             />
@@ -493,7 +493,7 @@ export default function PermissionPersistentStorePage() {
               <span className="cm">{"// 이 프로젝트에서만 적용"}</span>
               {"\n"});
               {"\n"}
-              <span className="cm">{"// → .dbcode/settings.json에 저장됨:"}</span>
+              <span className="cm">{"// → .dhelix/settings.json에 저장됨:"}</span>
               {"\n"}
               <span className="cm">
                 {'// { "permissions": { "allow": ["file_read"], "deny": [] } }'}
@@ -514,7 +514,7 @@ export default function PermissionPersistentStorePage() {
               <span className="cm">{"// 모든 프로젝트에서 적용"}</span>
               {"\n"});
               {"\n"}
-              <span className="cm">{"// → ~/.dbcode/settings.json에 저장됨:"}</span>
+              <span className="cm">{"// → ~/.dhelix/settings.json에 저장됨:"}</span>
               {"\n"}
               <span className="cm">
                 {'// { "permissions": { "allow": ["Bash(npm *)"], "deny": [] } }'}
@@ -928,7 +928,7 @@ export default function PermissionPersistentStorePage() {
                 <code className="text-cyan-600">loadRules()</code>는 매 호출마다 파일을 다시
                 읽으므로 직접 수정은 즉시 반영됩니다. 하지만 Permission Manager가 세션 저장소에
                 결과를 캐시하고 있을 수 있습니다. 이 경우 세션 저장소의{" "}
-                <code className="text-cyan-600">clear()</code>도 호출하거나 dbcode를 재시작하세요.
+                <code className="text-cyan-600">clear()</code>도 호출하거나 dhelix를 재시작하세요.
               </p>
             </div>
 

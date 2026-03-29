@@ -72,7 +72,7 @@ describe.skipIf(!hasApiKey)("E2E Smoke Test", () => {
         if (params.path.includes("package.json")) {
           return {
             output: JSON.stringify(
-              { name: "dbcode", version: "0.1.0", description: "CLI AI coding assistant" },
+              { name: "dhelix", version: "0.1.0", description: "CLI AI coding assistant" },
               null,
               2,
             ),
@@ -114,6 +114,6 @@ describe.skipIf(!hasApiKey)("E2E Smoke Test", () => {
     // Final message should contain the project name
     const lastMsg = result.messages[result.messages.length - 1];
     expect(lastMsg.role).toBe("assistant");
-    expect(lastMsg.content.toLowerCase()).toContain("dbcode");
+    expect(lastMsg.content.toLowerCase()).toContain("dhelix");
   }, 60_000);
 });

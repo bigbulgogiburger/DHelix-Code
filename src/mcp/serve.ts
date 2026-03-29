@@ -1,9 +1,9 @@
 /**
- * MCP 서버 — dbcode의 내부 도구를 MCP 프로토콜로 외부에 노출하는 모듈
+ * MCP 서버 — dhelix의 내부 도구를 MCP 프로토콜로 외부에 노출하는 모듈
  *
- * 이 모듈은 dbcode 자체를 MCP 서버로 동작시킵니다.
+ * 이 모듈은 dhelix 자체를 MCP 서버로 동작시킵니다.
  * 즉, 다른 MCP 클라이언트(Claude Code, 다른 AI 에이전트 등)가
- * dbcode에 연결하여 dbcode의 도구를 사용할 수 있게 합니다.
+ * dhelix에 연결하여 dhelix의 도구를 사용할 수 있게 합니다.
  *
  * 통신 방식:
  * - stdin/stdout을 통한 JSON-RPC 2.0 프로토콜
@@ -72,7 +72,7 @@ const PROTOCOL_VERSION = "2024-11-05";
  * MCP 서버 설정
  */
 export interface MCPServeConfig {
-  /** 서버 이름 (기본: "dbcode") */
+  /** 서버 이름 (기본: "dhelix") */
   readonly name?: string;
   /** 서버 버전 (기본: 상수에서 가져옴) */
   readonly version?: string;
@@ -136,10 +136,10 @@ function createErrorResponse(
 }
 
 /**
- * MCP 서버 — dbcode의 내부 도구를 MCP 도구로 노출합니다.
+ * MCP 서버 — dhelix의 내부 도구를 MCP 도구로 노출합니다.
  *
  * 다른 MCP 클라이언트(Claude Code, AI 에이전트 등)가 이 서버에 연결하여
- * dbcode의 도구를 사용할 수 있습니다.
+ * dhelix의 도구를 사용할 수 있습니다.
  *
  * 사용 방법:
  * ```typescript
@@ -173,7 +173,7 @@ export class MCPServer {
   private readline: ReadlineInterface | null = null;
 
   constructor(config: MCPServeConfig) {
-    this.serverName = config.name ?? "dbcode";
+    this.serverName = config.name ?? "dhelix";
     this.serverVersion = config.version ?? VERSION;
     this.toolRegistry = config.toolRegistry;
     this.workingDirectory = config.workingDirectory ?? process.cwd();
@@ -394,7 +394,7 @@ export class MCPServer {
   /**
    * tools/list 요청을 처리합니다 — 노출된 모든 도구의 목록을 반환합니다.
    *
-   * 도구 정의를 dbcode 내부 형식에서 MCP 형식으로 변환합니다.
+   * 도구 정의를 dhelix 내부 형식에서 MCP 형식으로 변환합니다.
    * 커서 기반 페이지네이션을 지원하지만, 현재는 모든 도구를 한 번에 반환합니다.
    *
    * @param id - 요청 ID
@@ -409,7 +409,7 @@ export class MCPServer {
     const allTools = this.toolRegistry.getAll();
     const exposedTools = allTools.filter((t) => this.exposedToolNames.has(t.name));
 
-    // dbcode 도구 정의 → MCP 도구 정의 변환
+    // dhelix 도구 정의 → MCP 도구 정의 변환
     const mcpTools: readonly MCPToolDefinition[] = exposedTools.map((tool) =>
       convertToolDefToMCP(tool),
     );
@@ -575,12 +575,12 @@ function buildExposedToolSet(config: MCPServeConfig): ReadonlySet<string> {
 }
 
 /**
- * dbcode 내부 도구 정의를 MCP 도구 형식으로 변환합니다.
+ * dhelix 내부 도구 정의를 MCP 도구 형식으로 변환합니다.
  *
  * Zod 스키마를 JSON Schema로 변환하여 MCP 클라이언트가
  * 도구의 입력 형식을 이해할 수 있게 합니다.
  *
- * @param tool - dbcode 내부 도구 정의
+ * @param tool - dhelix 내부 도구 정의
  * @returns MCP 도구 정의
  */
 function convertToolDefToMCP(tool: {

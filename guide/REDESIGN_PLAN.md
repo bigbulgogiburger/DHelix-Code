@@ -129,7 +129,7 @@
 
 ```
 ┌──────────────────────────────────────────────────┐
-│  dbcode Guide          Deep Dive  Source Ref  🌙  │
+│  dhelix Guide          Deep Dive  Source Ref  🌙  │
 ├─────────────┬────────────────────────────────────┤
 │             │                                    │
 │  LAYER 1    │  📄 agent-loop.ts                  │
@@ -139,7 +139,7 @@
 │  ├ agent-loop│  개요  레퍼런스  사용법  내부구현    │
 │  ├ context-  │  ──────────────────────────────── │
 │  ├ circuit-  │                                    │
-│  ├ recovery- │  Agent Loop는 dbcode의 심장입니다.  │
+│  ├ recovery- │  Agent Loop는 dhelix의 심장입니다.  │
 │  └ ...      │  사용자 입력을 받아 LLM을 호출하고,  │
 │             │  도구를 실행하고, 결과를 피드백하는   │
 │  LAYER 3    │  ReAct 패턴의 메인 실행 루프입니다.  │
@@ -228,7 +228,7 @@
 
 변경 (Spring.io 스타일):
 - 화이트 배경 + border-bottom
-- 좌측: dbcode Guide 로고 (녹색 아이콘 + 텍스트)
+- 좌측: dhelix Guide 로고 (녹색 아이콘 + 텍스트)
 - 중앙: Deep Dive | Source Reference 탭 (밑줄 활성)
 - 우측: GitHub 링크 + 다크모드 토글
 - 서브 링크 제거 → 사이드바로 이동

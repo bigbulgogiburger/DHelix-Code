@@ -286,7 +286,7 @@ describe("Rehydration strategies", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-rehydrate-gc-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-rehydrate-gc-"));
   });
 
   afterEach(async () => {

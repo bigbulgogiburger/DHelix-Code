@@ -9,9 +9,9 @@
  * 패턴을 학습하면, 다음 세션에서도 그 지식을 활용할 수 있습니다.
  *
  * 메모리 스코프(범위):
- * - user: 사용자 전역 (~/.dbcode/agent-memory/) — 모든 프로젝트에서 공유
- * - project: 프로젝트 단위 (.dbcode/agent-memory/) — 해당 프로젝트에서만 사용
- * - local: 로컬 전용 (.dbcode/agent-memory-local/) — Git에 커밋하지 않는 개인 메모리
+ * - user: 사용자 전역 (~/.dhelix/agent-memory/) — 모든 프로젝트에서 공유
+ * - project: 프로젝트 단위 (.dhelix/agent-memory/) — 해당 프로젝트에서만 사용
+ * - local: 로컬 전용 (.dhelix/agent-memory-local/) — Git에 커밋하지 않는 개인 메모리
  */
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
@@ -71,20 +71,20 @@ export class AgentMemoryManager {
   /**
    * 스코프에 따른 메모리 디렉토리 경로를 반환합니다.
    *
-   * - user:    ~/.dbcode/agent-memory/{agent-name}/    (사용자 전역)
-   * - project: .dbcode/agent-memory/{agent-name}/      (프로젝트 단위, Git 추적 가능)
-   * - local:   .dbcode/agent-memory-local/{agent-name}/ (로컬 전용, Git 무시)
+   * - user:    ~/.dhelix/agent-memory/{agent-name}/    (사용자 전역)
+   * - project: .dhelix/agent-memory/{agent-name}/      (프로젝트 단위, Git 추적 가능)
+   * - local:   .dhelix/agent-memory-local/{agent-name}/ (로컬 전용, Git 무시)
    *
    * @returns 메모리 디렉토리의 절대 경로
    */
   getMemoryDir(): string {
     switch (this.scope) {
       case "user":
-        return join(homedir(), ".dbcode", "agent-memory", this.agentName);
+        return join(homedir(), ".dhelix", "agent-memory", this.agentName);
       case "project":
-        return join(this.workingDirectory, ".dbcode", "agent-memory", this.agentName);
+        return join(this.workingDirectory, ".dhelix", "agent-memory", this.agentName);
       case "local":
-        return join(this.workingDirectory, ".dbcode", "agent-memory-local", this.agentName);
+        return join(this.workingDirectory, ".dhelix", "agent-memory-local", this.agentName);
     }
   }
 

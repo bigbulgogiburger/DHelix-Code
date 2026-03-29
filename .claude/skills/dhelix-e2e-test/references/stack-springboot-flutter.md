@@ -4,7 +4,7 @@
 
 Mobile-first application with Spring Boot REST API and Flutter (Dart) mobile client.
 
-## DBCODE.md Template
+## DHELIX.md Template
 
 ```markdown
 # Habit Tracker - Spring Boot + Flutter
@@ -43,7 +43,7 @@ mobile/ # Flutter app
 
 ## Turn Definitions (9 turns)
 
-### Turn 0: /init — DBCODE.md for Habit Tracker
+### Turn 0: /init — DHELIX.md for Habit Tracker
 
 ### Turn 1: Backend scaffold (Gradle, dependencies, standard response wrapper)
 
@@ -62,4 +62,4 @@ mobile/ # Flutter app
 Backend: Controller + Service tests
 Flutter: Widget tests + unit tests for providers and services
 
-### Turn 8: DBCODE.md compliance check
+### Turn 8: DHELIX.md compliance check

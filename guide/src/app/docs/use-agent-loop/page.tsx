@@ -42,7 +42,7 @@ export default function UseAgentLoopPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">useAgentLoop</code>은 dbcode CLI 애플리케이션의
+                <code className="text-cyan-600">useAgentLoop</code>은 dhelix CLI 애플리케이션의
                 심장부입니다.
                 <code className="text-cyan-600">App.tsx</code> 단 한 곳에서만 호출되며, 사용자가
                 입력한 메시지를 받아서 LLM에 전달하고, 도구를 실행하고, 결과를 대화 히스토리에
@@ -836,7 +836,7 @@ export default function UseAgentLoopPage() {
                 처리를 중단합니다.
               </p>
               <p>
-                <strong className="text-gray-900">[4]</strong> 프로젝트 지침(DBCODE.md), 스킬
+                <strong className="text-gray-900">[4]</strong> 프로젝트 지침(DHELIX.md), 스킬
                 프롬프트, 자동 메모리, 레포맵을 조합하여 시스템 프롬프트를 빌드합니다.
               </p>
               <p>

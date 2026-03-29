@@ -43,7 +43,7 @@ export default function CmdPermissionsPage() {
               <p>
                 <code className="text-cyan-600">/permissions</code>는 LLM이 파일 쓰기, 명령 실행
                 등의 도구(tool)를 호출할 때 자동으로 허용하거나 거부할 규칙을 관리합니다. 규칙은{" "}
-                <code className="text-cyan-600">~/.dbcode/settings.json</code>에 영구 저장되어
+                <code className="text-cyan-600">~/.dhelix/settings.json</code>에 영구 저장되어
                 세션을 재시작해도 유지됩니다.
               </p>
               <p>
@@ -68,7 +68,7 @@ export default function CmdPermissionsPage() {
   USER["사용자 입력<br/><small>/permissions [sub] [pattern]</small>"]
   REG["Command Registry<br/><small>registry.ts</small>"]
   PERM["permissionsCommand<br/><small>permissions.ts</small>"]
-  SETTINGS["settings.json<br/><small>~/.dbcode/settings.json</small>"]
+  SETTINGS["settings.json<br/><small>~/.dhelix/settings.json</small>"]
   MODES["Permission Modes<br/><small>modes.ts</small>"]
   ENGINE["Permission Engine<br/><small>permission-manager.ts</small>"]
 
@@ -220,7 +220,7 @@ export default function CmdPermissionsPage() {
             <h4 className="text-sm font-bold text-gray-900 mb-3 mt-8">주의사항 (Caveats)</h4>
             <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
               <li>
-                규칙은 <code className="text-cyan-600">~/.dbcode/settings.json</code>에 저장되므로
+                규칙은 <code className="text-cyan-600">~/.dhelix/settings.json</code>에 저장되므로
                 모든 프로젝트에서 전역으로 적용됩니다. 프로젝트별 규칙은 지원하지 않습니다.
               </li>
               <li>
@@ -235,7 +235,7 @@ export default function CmdPermissionsPage() {
               </li>
               <li>
                 <code className="text-cyan-600">settings.json</code> 파일이 없으면 자동 생성됩니다.
-                디렉토리(<code className="text-cyan-600">~/.dbcode</code>)도 함께 생성됩니다.
+                디렉토리(<code className="text-cyan-600">~/.dhelix</code>)도 함께 생성됩니다.
               </li>
             </ul>
           </section>
@@ -574,9 +574,9 @@ export default function CmdPermissionsPage() {
                 &quot;settings.json을 직접 편집해도 되나요?&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                네, <code className="text-cyan-600">~/.dbcode/settings.json</code>을 직접 편집해도
+                네, <code className="text-cyan-600">~/.dhelix/settings.json</code>을 직접 편집해도
                 됩니다. 다만 JSON 형식이 올바라야 하며, permissions 섹션의 allow/deny 배열에
-                문자열만 넣어야 합니다. 편집 후 dbcode를 재시작하면 변경사항이 적용됩니다.
+                문자열만 넣어야 합니다. 편집 후 dhelix를 재시작하면 변경사항이 적용됩니다.
               </p>
             </div>
 

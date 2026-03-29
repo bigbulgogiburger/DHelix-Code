@@ -43,7 +43,7 @@ export default function InstructionPathMatcherPage() {
               <span>{"📦"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
-              <code className="text-cyan-600 text-xs">.dbcode/rules/</code> 디렉토리의 규칙 파일에
+              <code className="text-cyan-600 text-xs">.dhelix/rules/</code> 디렉토리의 규칙 파일에
               프론트매터로 <strong className="text-gray-900">경로 패턴</strong>을 지정하면, 해당
               경로에서 작업할 때만 해당 규칙이 시스템 프롬프트에 포함됩니다. 예를 들어,{" "}
               <code className="text-cyan-600 text-xs">src/components/**</code> 패턴을 지정하면 React
@@ -443,12 +443,12 @@ export default function InstructionPathMatcherPage() {
               규칙 파일 작성 예시
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
-              <code className="text-cyan-600 text-xs">.dbcode/rules/</code> 디렉토리에 프론트매터로
+              <code className="text-cyan-600 text-xs">.dhelix/rules/</code> 디렉토리에 프론트매터로
               경로 패턴을 지정한 규칙 파일을 만들면, 해당 경로에서 작업할 때만 규칙이 적용됩니다.
             </p>
 
             <CodeBlock>
-              <span className="text-[#8b949e]">{"# .dbcode/rules/frontend.md"}</span>
+              <span className="text-[#8b949e]">{"# .dhelix/rules/frontend.md"}</span>
               {"\n"}
               <span className="text-[#8b949e]">{"---"}</span>
               {"\n"}
@@ -754,13 +754,13 @@ export default function InstructionPathMatcherPage() {
                   name: "instructions/parser.ts",
                   slug: "instruction-parser",
                   relation: "sibling",
-                  desc: "DBCODE.md @import 파싱 — 같은 instructions 모듈",
+                  desc: "DHELIX.md @import 파싱 — 같은 instructions 모듈",
                 },
                 {
                   name: "instructions/loader.ts",
                   slug: "instruction-loader",
                   relation: "parent",
-                  desc: "6단계 DBCODE.md 로딩 체인 — path-matcher를 내부적으로 사용",
+                  desc: "6단계 DHELIX.md 로딩 체인 — path-matcher를 내부적으로 사용",
                 },
                 {
                   name: "core/prompt-builder.ts",

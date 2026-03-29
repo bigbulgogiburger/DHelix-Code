@@ -1,12 +1,12 @@
-# Replace dbcode CLI Logo
+# Replace dhelix CLI Logo
 
-Replace the dbcode CLI startup logo with a new image. Converts any image to Unicode block character art using `chafa`, then updates `src/cli/components/Logo.tsx`.
+Replace the dhelix CLI startup logo with a new image. Converts any image to Unicode block character art using `chafa`, then updates `src/cli/components/Logo.tsx`.
 
 ## Prerequisites
 
 - `chafa` must be installed (`brew install chafa`)
 - Python 3 must be available
-- The parser script at `/tmp/dbcode-logo/generate_logo_tsx.py` (will be auto-created if missing)
+- The parser script at `/tmp/dhelix-logo/generate_logo_tsx.py` (will be auto-created if missing)
 
 ## Steps
 
@@ -21,7 +21,7 @@ The default logo size is **20 columns** (matches the original doge logo dimensio
 ### 3. Generate Unicode art with chafa
 
 ```bash
-TERM=xterm-256color chafa --format symbols --symbols block --size <SIZE> --color-space rgb "<IMAGE_PATH>" > /tmp/dbcode-logo/logo-output.txt
+TERM=xterm-256color chafa --format symbols --symbols block --size <SIZE> --color-space rgb "<IMAGE_PATH>" > /tmp/dhelix-logo/logo-output.txt
 ```
 
 Key chafa options:
@@ -36,7 +36,7 @@ Key chafa options:
 Create the parser script if it doesn't exist, then run:
 
 ```bash
-python3 /tmp/dbcode-logo/generate_logo_tsx.py /tmp/dbcode-logo/logo-output.txt
+python3 /tmp/dhelix-logo/generate_logo_tsx.py /tmp/dhelix-logo/logo-output.txt
 ```
 
 The parser script (`generate_logo_tsx.py`) does:
@@ -86,9 +86,9 @@ Generate an HTML preview and open it:
 # Generate HTML that renders the ANSI art in a browser
 python3 -c "
 # ... convert ANSI to HTML spans with inline color styles ...
-# Save to /tmp/dbcode-logo-preview.html
+# Save to /tmp/dhelix-logo-preview.html
 "
-open /tmp/dbcode-logo-preview.html
+open /tmp/dhelix-logo-preview.html
 ```
 
 This lets the user see the exact terminal rendering in their browser, since raw ANSI codes don't display in Claude Code's output.

@@ -1,8 +1,8 @@
 /**
  * /memory 명령어 핸들러 — 프로젝트 메모리 파일 관리
  *
- * 메모리(memory)란? dbcode가 세션 간에 기억해야 할 정보를 저장하는
- * 마크다운 파일 시스템입니다. .dbcode/memory/ 디렉토리에 저장됩니다.
+ * 메모리(memory)란? dhelix가 세션 간에 기억해야 할 정보를 저장하는
+ * 마크다운 파일 시스템입니다. .dhelix/memory/ 디렉토리에 저장됩니다.
  *
  * 메모리의 용도:
  *   - 프로젝트별 규칙이나 패턴 기록
@@ -509,7 +509,7 @@ async function handleSearch(
  */
 export const memoryCommand: SlashCommand = {
   name: "memory",
-  description: "View, edit, and manage project memory files (.dbcode/memory/)",
+  description: "View, edit, and manage project memory files (.dhelix/memory/)",
   usage: "/memory [view|edit|delete|status|topics|search] [name] [content]",
 
   async execute(args, context) {

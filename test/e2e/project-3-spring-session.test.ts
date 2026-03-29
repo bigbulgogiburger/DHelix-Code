@@ -1,7 +1,7 @@
 /**
  * E2E Multi-turn Session Test: Java Spring Boot API (Gradle)
  *
- * Uses dbcode's agent-loop to build a Spring Boot microservice incrementally
+ * Uses dhelix's agent-loop to build a Spring Boot microservice incrementally
  * across multiple conversation turns. Uses Gradle instead of Maven since
  * Maven is not installed on this system.
  */

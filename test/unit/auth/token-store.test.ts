@@ -12,7 +12,7 @@ describe("token-store", () => {
 
   describe("resolveToken", () => {
     it("should return undefined when no token configured", async () => {
-      delete process.env.DBCODE_API_KEY;
+      delete process.env.DHELIX_API_KEY;
       delete process.env.OPENAI_API_KEY;
       const token = await resolveToken();
       // Could be undefined or from file, depending on environment
@@ -20,8 +20,8 @@ describe("token-store", () => {
       expect(token === undefined || token.source !== undefined).toBe(true);
     });
 
-    it("should resolve DBCODE_API_KEY from env", async () => {
-      process.env.DBCODE_API_KEY = "test-key-123";
+    it("should resolve DHELIX_API_KEY from env", async () => {
+      process.env.DHELIX_API_KEY = "test-key-123";
       const token = await resolveToken();
       expect(token).toBeDefined();
       expect(token!.config.token).toBe("test-key-123");
@@ -29,7 +29,7 @@ describe("token-store", () => {
     });
 
     it("should resolve OPENAI_API_KEY from env as fallback", async () => {
-      delete process.env.DBCODE_API_KEY;
+      delete process.env.DHELIX_API_KEY;
       process.env.OPENAI_API_KEY = "openai-key-456";
       const token = await resolveToken();
       expect(token).toBeDefined();
@@ -37,11 +37,11 @@ describe("token-store", () => {
       expect(token!.source).toBe("environment");
     });
 
-    it("should prefer DBCODE_API_KEY over OPENAI_API_KEY", async () => {
-      process.env.DBCODE_API_KEY = "dbcode-key";
+    it("should prefer DHELIX_API_KEY over OPENAI_API_KEY", async () => {
+      process.env.DHELIX_API_KEY = "dhelix-key";
       process.env.OPENAI_API_KEY = "openai-key";
       const token = await resolveToken();
-      expect(token!.config.token).toBe("dbcode-key");
+      expect(token!.config.token).toBe("dhelix-key");
     });
   });
 });
@@ -54,7 +54,7 @@ describe("TokenManager", () => {
   });
 
   it("should cache resolved token", async () => {
-    process.env.DBCODE_API_KEY = "cached-key";
+    process.env.DHELIX_API_KEY = "cached-key";
     const manager = new TokenManager();
 
     const first = await manager.getToken();
@@ -63,13 +63,13 @@ describe("TokenManager", () => {
   });
 
   it("should clear cache", async () => {
-    process.env.DBCODE_API_KEY = "key1";
+    process.env.DHELIX_API_KEY = "key1";
     const manager = new TokenManager();
 
     await manager.getToken();
     manager.clearCache();
 
-    process.env.DBCODE_API_KEY = "key2";
+    process.env.DHELIX_API_KEY = "key2";
     const token = await manager.getToken();
     expect(token!.config.token).toBe("key2");
   });
@@ -85,7 +85,7 @@ describe("TokenManager", () => {
   });
 
   it("should build bearer auth headers", async () => {
-    process.env.DBCODE_API_KEY = "test-bearer";
+    process.env.DHELIX_API_KEY = "test-bearer";
     const manager = new TokenManager();
     manager.clearCache();
     const headers = await manager.getAuthHeaders();
@@ -93,7 +93,7 @@ describe("TokenManager", () => {
   });
 
   it("should return empty headers when no token", async () => {
-    delete process.env.DBCODE_API_KEY;
+    delete process.env.DHELIX_API_KEY;
     delete process.env.OPENAI_API_KEY;
     const manager = new TokenManager();
     manager.clearCache();
@@ -103,7 +103,7 @@ describe("TokenManager", () => {
   });
 
   it("should build api-key auth headers", async () => {
-    process.env.DBCODE_API_KEY = "test-api-key";
+    process.env.DHELIX_API_KEY = "test-api-key";
     const manager = new TokenManager();
     manager.clearCache();
 
@@ -185,9 +185,9 @@ describe("saveToken error handling", () => {
 
 describe("resolveToken - file fallback", () => {
   it("should fall back to credentials file when no env vars", async () => {
-    const originalDbcode = process.env.DBCODE_API_KEY;
+    const originalDhelix = process.env.DHELIX_API_KEY;
     const originalOpenai = process.env.OPENAI_API_KEY;
-    delete process.env.DBCODE_API_KEY;
+    delete process.env.DHELIX_API_KEY;
     delete process.env.OPENAI_API_KEY;
 
     // First save a token to the file
@@ -202,14 +202,14 @@ describe("resolveToken - file fallback", () => {
     }
 
     // Restore env
-    if (originalDbcode) process.env.DBCODE_API_KEY = originalDbcode;
+    if (originalDhelix) process.env.DHELIX_API_KEY = originalDhelix;
     if (originalOpenai) process.env.OPENAI_API_KEY = originalOpenai;
   });
 
   it("should handle invalid credentials file data", async () => {
-    const originalDbcode = process.env.DBCODE_API_KEY;
+    const originalDhelix = process.env.DHELIX_API_KEY;
     const originalOpenai = process.env.OPENAI_API_KEY;
-    delete process.env.DBCODE_API_KEY;
+    delete process.env.DHELIX_API_KEY;
     delete process.env.OPENAI_API_KEY;
 
     // Save a token with empty string — the loadFromFile should return undefined
@@ -229,14 +229,14 @@ describe("resolveToken - file fallback", () => {
     expect(token === undefined || token.source !== undefined).toBe(true);
 
     // Restore env
-    if (originalDbcode) process.env.DBCODE_API_KEY = originalDbcode;
+    if (originalDhelix) process.env.DHELIX_API_KEY = originalDhelix;
     if (originalOpenai) process.env.OPENAI_API_KEY = originalOpenai;
   });
 
   it("should handle corrupt credentials file (invalid JSON)", async () => {
-    const originalDbcode = process.env.DBCODE_API_KEY;
+    const originalDhelix = process.env.DHELIX_API_KEY;
     const originalOpenai = process.env.OPENAI_API_KEY;
-    delete process.env.DBCODE_API_KEY;
+    delete process.env.DHELIX_API_KEY;
     delete process.env.OPENAI_API_KEY;
 
     const { CONFIG_DIR } = await import("../../../src/constants.js");
@@ -252,14 +252,14 @@ describe("resolveToken - file fallback", () => {
     expect(token === undefined || token.source !== undefined).toBe(true);
 
     // Restore env
-    if (originalDbcode) process.env.DBCODE_API_KEY = originalDbcode;
+    if (originalDhelix) process.env.DHELIX_API_KEY = originalDhelix;
     if (originalOpenai) process.env.OPENAI_API_KEY = originalOpenai;
   });
 
   it("should handle credentials file with no token field", async () => {
-    const originalDbcode = process.env.DBCODE_API_KEY;
+    const originalDhelix = process.env.DHELIX_API_KEY;
     const originalOpenai = process.env.OPENAI_API_KEY;
-    delete process.env.DBCODE_API_KEY;
+    delete process.env.DHELIX_API_KEY;
     delete process.env.OPENAI_API_KEY;
 
     const { CONFIG_DIR } = await import("../../../src/constants.js");
@@ -275,7 +275,7 @@ describe("resolveToken - file fallback", () => {
     expect(token === undefined || token.source !== undefined).toBe(true);
 
     // Restore env
-    if (originalDbcode) process.env.DBCODE_API_KEY = originalDbcode;
+    if (originalDhelix) process.env.DHELIX_API_KEY = originalDhelix;
     if (originalOpenai) process.env.OPENAI_API_KEY = originalOpenai;
   });
 });

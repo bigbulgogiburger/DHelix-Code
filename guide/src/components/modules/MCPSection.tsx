@@ -12,7 +12,7 @@ const mcpLifecycleChart = `sequenceDiagram
     participant SCOPE as ScopeManager<br/>local>project>user 설정 병합
     participant CLIENT as MCPClient<br/>개별 MCP 서버 연결 담당
     participant SERVER as External Server<br/>외부 MCP 서버 프로세스
-    participant BRIDGE as ToolBridge<br/>MCP 도구를 dbcode 도구로 변환
+    participant BRIDGE as ToolBridge<br/>MCP 도구를 dhelix 도구로 변환
     participant REG as ToolRegistry<br/>도구 등록 저장소
 
     APP->>MGR: connectAll() — 모든 MCP 서버 연결 시작
@@ -50,21 +50,21 @@ const transports = [
 const scopes = [
   {
     name: "Local (최우선)",
-    path: ".dbcode/mcp-local.json",
+    path: ".dhelix/mcp-local.json",
     icon: "🔒",
     color: "border-t-red-600",
     desc: "개인 전용 설정. .gitignore에 포함. API 키가 들어간 서버 설정에 사용.",
   },
   {
     name: "Project",
-    path: ".dbcode/mcp.json",
+    path: ".dhelix/mcp.json",
     icon: "👥",
     color: "border-t-blue-600",
     desc: "팀 공유 설정. Git에 커밋. 팀원 모두 같은 MCP 서버를 사용하도록.",
   },
   {
     name: "User (전역)",
-    path: "~/.dbcode/mcp-servers.json",
+    path: "~/.dhelix/mcp-servers.json",
     icon: "🌐",
     color: "border-t-emerald-600",
     desc: "모든 프로젝트에 적용되는 전역 MCP 서버 설정.",

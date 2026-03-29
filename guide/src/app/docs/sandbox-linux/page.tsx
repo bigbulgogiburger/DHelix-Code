@@ -490,7 +490,7 @@ export default function SandboxLinuxPage() {
                 </li>
                 <li>
                   <strong>홈 디렉토리 읽기 전용:</strong> .config, .npm, .cache, .nvm, .volta,
-                  .rustup, .cargo, .dbcode, .claude, .git (--ro-bind-try)
+                  .rustup, .cargo, .dhelix, .claude, .git (--ro-bind-try)
                 </li>
               </ul>
               <p className="mt-3 text-amber-600">

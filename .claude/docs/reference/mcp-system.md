@@ -4,16 +4,16 @@
 
 ## 개요
 
-MCP(Model Context Protocol)는 LLM에게 외부 도구와 데이터 소스를 표준 프로토콜(JSON-RPC 2.0)로 연결하는 시스템입니다. dbcode는 MCP 클라이언트로서 외부 MCP 서버에 연결하고, 서버가 제공하는 도구를 내부 도구처럼 사용합니다.
+MCP(Model Context Protocol)는 LLM에게 외부 도구와 데이터 소스를 표준 프로토콜(JSON-RPC 2.0)로 연결하는 시스템입니다. dhelix는 MCP 클라이언트로서 외부 MCP 서버에 연결하고, 서버가 제공하는 도구를 내부 도구처럼 사용합니다.
 
 ## 아키텍처
 
 ```mermaid
 graph TD
     subgraph Config["3-Scope Configuration"]
-        LOCAL[".dbcode/mcp-local.json<br/>(gitignored, 개인)"]
-        PROJECT[".dbcode/mcp.json<br/>(git, 팀 공유)"]
-        USER["~/.dbcode/mcp-servers.json<br/>(글로벌)"]
+        LOCAL[".dhelix/mcp-local.json<br/>(gitignored, 개인)"]
+        PROJECT[".dhelix/mcp.json<br/>(git, 팀 공유)"]
+        USER["~/.dhelix/mcp-servers.json<br/>(글로벌)"]
     end
     subgraph Manager["MCP Manager"]
         SCOPE[ScopeManager<br/>local > project > user]
@@ -46,9 +46,9 @@ graph TD
 
 | 스코프  | 파일                         | 용도                        | Git        |
 | ------- | ---------------------------- | --------------------------- | ---------- |
-| local   | `.dbcode/mcp-local.json`     | API 키가 필요한 개인 서버   | .gitignore |
-| project | `.dbcode/mcp.json`           | 팀이 공유하는 서버          | 커밋       |
-| user    | `~/.dbcode/mcp-servers.json` | 모든 프로젝트에서 쓰는 서버 | N/A        |
+| local   | `.dhelix/mcp-local.json`     | API 키가 필요한 개인 서버   | .gitignore |
+| project | `.dhelix/mcp.json`           | 팀이 공유하는 서버          | 커밋       |
+| user    | `~/.dhelix/mcp-servers.json` | 모든 프로젝트에서 쓰는 서버 | N/A        |
 
 파일 형식 (모든 스코프 동일):
 
@@ -81,11 +81,11 @@ graph TD
 `/mcp list` 출력 예시:
 
 ```
-  user (~/.dbcode/mcp-servers.json)
+  user (~/.dhelix/mcp-servers.json)
     * playwright: npx @playwright/mcp@latest
       3 tools | connected
 
-  project (.dbcode/mcp.json)
+  project (.dhelix/mcp.json)
     - postgres: pg-mcp --port 5432
       not connected
 ```
@@ -100,7 +100,7 @@ graph TD
 
 ## MCP Tool Bridge
 
-MCP 서버의 도구가 dbcode에 등록되는 과정:
+MCP 서버의 도구가 dhelix에 등록되는 과정:
 
 1. `MCPManager.connectAll()` → 모든 설정된 서버에 병렬 연결
 2. `MCPClient.connect()` → JSON-RPC `initialize` → `tools/list` 호출

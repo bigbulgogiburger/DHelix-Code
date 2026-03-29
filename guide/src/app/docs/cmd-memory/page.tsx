@@ -42,9 +42,9 @@ export default function CmdMemoryPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">/memory</code>는 dbcode가 세션 사이에 기억해야 할
+                <code className="text-cyan-600">/memory</code>는 dhelix가 세션 사이에 기억해야 할
                 정보를 저장하고 관리하는 명령어입니다. 프로젝트별 규칙, 이전 세션에서 발견한 사항,
-                자주 참조하는 정보를 <code className="text-cyan-600">.dbcode/memory/</code>{" "}
+                자주 참조하는 정보를 <code className="text-cyan-600">.dhelix/memory/</code>{" "}
                 디렉토리에 마크다운 파일로 영구 저장합니다.
               </p>
               <p>
@@ -73,7 +73,7 @@ export default function CmdMemoryPage() {
   STATUS["status<br/><small>프로젝트/전역 상태</small>"]
   TOPICS["topics<br/><small>토픽 파일 목록</small>"]
   SEARCH["search<br/><small>전체 텍스트 검색</small>"]
-  FS[".dbcode/memory/<br/><small>마크다운 파일 저장소</small>"]
+  FS[".dhelix/memory/<br/><small>마크다운 파일 저장소</small>"]
 
   CMD --> ROUTER
   ROUTER --> LIST
@@ -96,7 +96,7 @@ export default function CmdMemoryPage() {
 
             <Callout type="info" icon="💡">
               <strong>비유:</strong> /memory는 프로젝트의 &quot;노트북&quot;입니다. 각 세션에서
-              발견한 중요한 정보를 적어두면, 다음 세션에서 dbcode가 그 노트를 읽고 이전 맥락을
+              발견한 중요한 정보를 적어두면, 다음 세션에서 dhelix가 그 노트를 읽고 이전 맥락을
               이해한 채로 작업을 시작합니다.
             </Callout>
           </section>
@@ -277,7 +277,7 @@ export default function CmdMemoryPage() {
               {"\n"}
               <span className="cm">{"// 출력 예시:"}</span>
               {"\n"}
-              <span className="cm">{"// Memory files (.dbcode/memory/):"}</span>
+              <span className="cm">{"// Memory files (.dhelix/memory/):"}</span>
               {"\n"}
               <span className="cm">
                 {"//   MEMORY.md                       42 lines     1.2KB"}
@@ -386,11 +386,11 @@ export default function CmdMemoryPage() {
               <p className="mb-3">메모리는 두 가지 스코프로 나뉩니다:</p>
               <ul className="list-disc list-inside space-y-1.5 text-gray-600">
                 <li>
-                  <strong>프로젝트 메모리:</strong> <code>.dbcode/memory/</code> &mdash; 해당
+                  <strong>프로젝트 메모리:</strong> <code>.dhelix/memory/</code> &mdash; 해당
                   프로젝트에서만 유효. git으로 팀과 공유 가능.
                 </li>
                 <li>
-                  <strong>전역 메모리:</strong> <code>~/.dbcode/memory/</code> &mdash; 모든
+                  <strong>전역 메모리:</strong> <code>~/.dhelix/memory/</code> &mdash; 모든
                   프로젝트에서 참조. 개인 글로벌 규칙 저장용.
                 </li>
               </ul>
@@ -578,7 +578,7 @@ export default function CmdMemoryPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 <code>/memory</code> 명령어는 프로젝트 메모리만 편집합니다. 전역 메모리는{" "}
-                <code>~/.dbcode/memory/</code> 디렉토리에 직접 마크다운 파일을 생성하거나 편집하면
+                <code>~/.dhelix/memory/</code> 디렉토리에 직접 마크다운 파일을 생성하거나 편집하면
                 됩니다. <code>/memory status</code>로 전역 메모리의 상태를 확인할 수 있습니다.
               </p>
             </div>

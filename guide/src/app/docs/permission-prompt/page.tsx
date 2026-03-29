@@ -55,7 +55,7 @@ export default function PermissionPromptPage() {
                 <code className="text-cyan-600">&quot;Deny&quot;</code>(거부)입니다.
               </p>
               <p>
-                이 컴포넌트는 dbcode의 권한 시스템에서 사용자 인터페이스 부분을 담당합니다. 권한
+                이 컴포넌트는 dhelix의 권한 시스템에서 사용자 인터페이스 부분을 담당합니다. 권한
                 관리의 비즈니스 로직은 <code className="text-cyan-600">permission-manager.ts</code>
                 에, 권한 모드 설정은 <code className="text-cyan-600">permission-modes.ts</code>에
                 있으며, 이 컴포넌트는 순수하게 UI 표시와 사용자 입력 수신만 담당합니다.

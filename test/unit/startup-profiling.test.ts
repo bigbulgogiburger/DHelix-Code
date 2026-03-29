@@ -1,32 +1,32 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 
 describe("startup profiling", () => {
-  const originalEnv = process.env.DBCODE_VERBOSE;
+  const originalEnv = process.env.DHELIX_VERBOSE;
 
   afterEach(() => {
     if (originalEnv === undefined) {
-      delete process.env.DBCODE_VERBOSE;
+      delete process.env.DHELIX_VERBOSE;
     } else {
-      process.env.DBCODE_VERBOSE = originalEnv;
+      process.env.DHELIX_VERBOSE = originalEnv;
     }
   });
 
-  it("should not output profiling when DBCODE_VERBOSE is not set", async () => {
-    delete process.env.DBCODE_VERBOSE;
+  it("should not output profiling when DHELIX_VERBOSE is not set", async () => {
+    delete process.env.DHELIX_VERBOSE;
     const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
 
     // The profiling is inline in index.ts at module scope.
-    // We can verify that when DBCODE_VERBOSE is unset, no [startup] output appears
+    // We can verify that when DHELIX_VERBOSE is unset, no [startup] output appears
     // by checking the logic directly:
-    const verbose = !!process.env.DBCODE_VERBOSE;
+    const verbose = !!process.env.DHELIX_VERBOSE;
     expect(verbose).toBe(false);
 
     stderrSpy.mockRestore();
   });
 
-  it("should have DBCODE_VERBOSE truthy when env var is set", () => {
-    process.env.DBCODE_VERBOSE = "1";
-    const verbose = !!process.env.DBCODE_VERBOSE;
+  it("should have DHELIX_VERBOSE truthy when env var is set", () => {
+    process.env.DHELIX_VERBOSE = "1";
+    const verbose = !!process.env.DHELIX_VERBOSE;
     expect(verbose).toBe(true);
   });
 

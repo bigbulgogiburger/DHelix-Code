@@ -402,7 +402,7 @@ export default function ImportHintPage() {
                 <p className="text-[13px] text-gray-600">
                   <code className="text-cyan-600">export default</code>가 있으면{" "}
                   <code className="text-cyan-600">&quot;default&quot;</code>라는 심볼로 추가됩니다.
-                  하지만 dbcode 프로젝트는 default export를 사용하지 않으므로 일반적으로 이 경우는
+                  하지만 dhelix 프로젝트는 default export를 사용하지 않으므로 일반적으로 이 경우는
                   발생하지 않습니다.
                 </p>
               </div>

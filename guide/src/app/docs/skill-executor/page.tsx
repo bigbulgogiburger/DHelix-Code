@@ -61,7 +61,7 @@ export default function SkillExecutorPage() {
               titleColor="orange"
               chart={`flowchart LR
   INPUT["📄 스킬 본문\\n+ SkillContext"]
-  STEP1["1️⃣ 변수 치환\\n$ARGUMENTS, $0, $1\\n${"${DBCODE_*}"}"]
+  STEP1["1️⃣ 변수 치환\\n$ARGUMENTS, $0, $1\\n${"${DHELIX_*}"}"]
   STEP2["2️⃣ 동적 컨텍스트\\n${"`!git status`"}\\n→ 셸 실행 결과"]
   STEP3["3️⃣ 결과 조립\\nprompt + model\\n+ fork + tools"]
   OUTPUT["✅ SkillExecutionResult\\nLLM 전송 준비 완료"]
@@ -105,7 +105,7 @@ export default function SkillExecutorPage() {
                 </div>
                 <div className="flex gap-3">
                   <span className="text-emerald-600 font-bold shrink-0 w-36">
-                    <code className="text-xs">{"${DBCODE_*}"}</code>
+                    <code className="text-xs">{"${DHELIX_*}"}</code>
                   </span>
                   <span>세션 ID, 스킬 디렉토리, 프로젝트 디렉토리 환경 변수</span>
                 </div>
@@ -445,9 +445,9 @@ export default function SkillExecutorPage() {
   BODY["원본 본문"] --> V1["$ARGUMENTS 치환\\n(뒤에 [ 없는 경우만)"]
   V1 --> V2["$ARGUMENTS[N] 치환\\n배열 인덱스 접근"]
   V2 --> V3["$0, $1, $2... 치환\\n위치별 인자"]
-  V3 --> V4["${"${DBCODE_SESSION_ID}"} 치환"]
-  V4 --> V5["${"${DBCODE_SKILL_DIR}"} 치환"]
-  V5 --> V6["${"${DBCODE_PROJECT_DIR}"} 치환"]
+  V3 --> V4["${"${DHELIX_SESSION_ID}"} 치환"]
+  V4 --> V5["${"${DHELIX_SKILL_DIR}"} 치환"]
+  V5 --> V6["${"${DHELIX_PROJECT_DIR}"} 치환"]
   V6 --> DONE["치환 완료된 본문"]
 
   style BODY fill:#f1f5f9,stroke:#f59e0b,color:#1e293b

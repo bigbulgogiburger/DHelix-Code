@@ -91,7 +91,7 @@ async function resolveUrlMention(mention: ParsedMention): Promise<ResolvedMentio
 
     const response = await fetch(mention.value, {
       signal: controller.signal,
-      headers: { "User-Agent": "dbcode/0.1.0" },
+      headers: { "User-Agent": "dhelix/0.1.0" },
     });
 
     clearTimeout(timer);

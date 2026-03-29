@@ -1,34 +1,34 @@
 ---
-name: dbcode-e2e-test
+name: dhelix-e2e-test
 disabled: true
 description: |
-  E2E validation skill for the dbcode CLI AI coding assistant. Two test modes:
+  E2E validation skill for the dhelix CLI AI coding assistant. Two test modes:
   (1) Project E2E — multi-turn tests creating real projects across 5+ tech stacks, validating
-  builds, 80% coverage, and DBCODE.md compliance.
+  builds, 80% coverage, and DHELIX.md compliance.
   (2) Conversation Quality — multi-turn tests verifying context retention, tool call coherence,
   error recovery, instruction adherence, progressive complexity, and contradiction handling.
 
-  Use this skill when: running E2E tests for dbcode, validating coding ability across tech stacks,
-  testing multi-turn conversation quality, verifying /init and DBCODE.md system, benchmarking
-  dbcode against real-world project creation, or evaluating conversation quality after model/prompt changes.
+  Use this skill when: running E2E tests for dhelix, validating coding ability across tech stacks,
+  testing multi-turn conversation quality, verifying /init and DHELIX.md system, benchmarking
+  dhelix against real-world project creation, or evaluating conversation quality after model/prompt changes.
 ---
 
-# dbcode E2E & Conversation Quality Validation Skill
+# dhelix E2E & Conversation Quality Validation Skill
 
 ## Purpose
 
 Two validation modes:
 
-1. **Project E2E** — Validate that dbcode can create real-world projects through multi-turn conversations
+1. **Project E2E** — Validate that dhelix can create real-world projects through multi-turn conversations
    (initialization, implementation, building, testing, 80%+ coverage).
-2. **Conversation Quality** — Validate dbcode's multi-turn conversation capabilities
+2. **Conversation Quality** — Validate dhelix's multi-turn conversation capabilities
    (context retention, tool call coherence, error recovery, instruction adherence, contradiction handling).
 
 ## CRITICAL: Role Separation — You Are the Observer, Not the Builder
 
 This is the most important principle of this entire skill. Read it carefully.
 
-**dbcode** is the system under test. It has an agent loop (`runAgentLoop()`) that calls an LLM,
+**dhelix** is the system under test. It has an agent loop (`runAgentLoop()`) that calls an LLM,
 which then uses tools (file_write, bash_exec, etc.) to create project code. The E2E test validates
 that this agent loop can produce working projects.
 
@@ -42,15 +42,15 @@ that this agent loop can produce working projects.
 
 - Directly create project files (no writing Java, Kotlin, TypeScript, Dart, HTML, CSS, etc. into the test-projects/ directory)
 - Directly run build commands on the project (no `./gradlew build`, `npm run build` yourself)
-- Directly fix code that dbcode generated (if it fails, that's a valid test failure)
-- Write any file inside `test-projects/` yourself — every file there must come from dbcode's agent loop
+- Directly fix code that dhelix generated (if it fails, that's a valid test failure)
+- Write any file inside `test-projects/` yourself — every file there must come from dhelix's agent loop
 
 Think of it like this: you're a QA engineer writing a test script. You write the test,
-press "run", and watch. If the software under test (dbcode) fails to produce working code,
+press "run", and watch. If the software under test (dhelix) fails to produce working code,
 you report the failure — you don't jump in and fix the code yourself. That would defeat
 the entire purpose of the test.
 
-### What Goes in the Test File vs What dbcode Does
+### What Goes in the Test File vs What dhelix Does
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -59,7 +59,7 @@ the entire purpose of the test.
 │  test/e2e/project-N-session.test.ts                     │
 │  ├── Import runAgentLoop, tools, config                 │
 │  ├── Define turn prompts (user messages)                │
-│  ├── Set up event monitoring (DBCODE.md reads)          │
+│  ├── Set up event monitoring (DHELIX.md reads)          │
 │  ├── Call sendTurn() for each turn                      │
 │  ├── Assert file existence, build success, coverage     │
 │  └── Generate session report                            │
@@ -69,14 +69,14 @@ the entire purpose of the test.
                          │
                          ▼ triggers
 ┌─────────────────────────────────────────────────────────┐
-│ DBCODE (runAgentLoop) does this:                        │
+│ DHELIX (runAgentLoop) does this:                        │
 │                                                         │
 │  Inside the test, runAgentLoop() calls the LLM which:   │
 │  ├── Reads the user prompt                              │
 │  ├── Decides which tools to call                        │
 │  ├── Calls file_write to create project files           │
 │  ├── Calls bash_exec to run builds/tests                │
-│  ├── Reads DBCODE.md for conventions                    │
+│  ├── Reads DHELIX.md for conventions                    │
 │  └── Produces all project code autonomously             │
 │                                                         │
 │  Output: test-projects/{stack-name}/ with all files     │
@@ -89,9 +89,9 @@ Once `npx vitest run` completes, you CAN:
 
 - Read generated files to inspect quality (for the report)
 - Run build/test commands to verify results (for double-checking)
-- Analyze DBCODE.md compliance by reading what dbcode produced
+- Analyze DHELIX.md compliance by reading what dhelix produced
 
-But you must NOT modify any files dbcode generated. If something is wrong,
+But you must NOT modify any files dhelix generated. If something is wrong,
 report it as a test finding — don't fix it.
 
 ---
@@ -102,7 +102,7 @@ The tests are designed to catch real failure modes:
 
 - Can the agent maintain context across 8-12 turns?
 - Does it produce code that actually compiles and passes tests?
-- Does it respect DBCODE.md project instructions?
+- Does it respect DHELIX.md project instructions?
 - Can it handle diverse tech stacks (JVM, Node, Flutter)?
 - Does it achieve meaningful test coverage, not just token tests?
 
@@ -169,8 +169,8 @@ test/e2e/
 ├── project-*-session.test.ts           # Project E2E tests (YOU write these)
 ├── conversation-quality-*.test.ts      # Conversation quality tests (YOU write these)
 test-projects/
-├── {stack-name}/                       # Project E2E output (DBCODE writes these)
-├── conversation-quality-{N}/           # Conversation quality output (DBCODE writes these)
+├── {stack-name}/                       # Project E2E output (DHELIX writes these)
+├── conversation-quality-{N}/           # Conversation quality output (DHELIX writes these)
 references/
 ├── stack-*.md                          # Per-stack turn definitions & expectations
 ├── conversation-quality.md             # Conversation quality scenarios & metrics
@@ -204,7 +204,7 @@ You generate a vitest test file. This file is the ONLY thing you write.
 Read `references/test-harness.md` for the complete harness template.
 
 The test file calls `runAgentLoop()` with user prompts and asserts on the results.
-All actual project creation happens inside `runAgentLoop()` — the LLM inside dbcode
+All actual project creation happens inside `runAgentLoop()` — the LLM inside dhelix
 decides what files to create, what commands to run, and how to structure the project.
 
 ```typescript
@@ -213,7 +213,7 @@ import { runAgentLoop, type AgentLoopConfig } from "../../src/core/agent-loop.js
 // ... other imports from test-harness.md
 ```
 
-### Step 3: Run the Test (Don't Do dbcode's Job)
+### Step 3: Run the Test (Don't Do dhelix's Job)
 
 After generating the test file, run it:
 
@@ -222,9 +222,9 @@ npx vitest run test/e2e/project-N-session.test.ts
 ```
 
 Then WAIT. The test will take 10-30 minutes depending on the stack.
-dbcode's agent loop will autonomously:
+dhelix's agent loop will autonomously:
 
-- Create DBCODE.md
+- Create DHELIX.md
 - Scaffold the project
 - Implement features
 - Run builds
@@ -236,19 +236,19 @@ You observe the vitest output and report results.
 ### Step 4: Mandatory Turn Structure
 
 Every test session MUST include these turns in order. These are the USER PROMPTS
-inside the test file — dbcode receives them and acts on them autonomously.
+inside the test file — dhelix receives them and acts on them autonomously.
 
 #### Turn 0: /init (MANDATORY FIRST TURN)
 
 ```
-"Run /init to initialize this project. Create a DBCODE.md that describes a {STACK_NAME}
+"Run /init to initialize this project. Create a DHELIX.md that describes a {STACK_NAME}
 project with the following conventions: {CONVENTIONS}. Include build commands, test
 commands, code style rules, and directory structure."
 ```
 
 **Assertions (in the test file):**
 
-- `DBCODE.md` exists at project root
+- `DHELIX.md` exists at project root
 - Contains project name, stack info, build/test commands
 
 #### Turn 1: Project Scaffolding
@@ -256,7 +256,7 @@ commands, code style rules, and directory structure."
 ```
 "Create the project structure for a {PROJECT_TYPE} application.
 Set up {BUILD_TOOL} with all necessary dependencies.
-Follow the conventions in DBCODE.md."
+Follow the conventions in DHELIX.md."
 ```
 
 **Assertions:**
@@ -272,10 +272,10 @@ Each turn adds one feature. Be specific about requirements:
 "Implement {FEATURE} with the following requirements:
 - {REQUIREMENT_1}
 - {REQUIREMENT_2}
-Refer to DBCODE.md for coding conventions."
+Refer to DHELIX.md for coding conventions."
 ```
 
-The phrase "Refer to DBCODE.md" forces the agent to re-read project instructions.
+The phrase "Refer to DHELIX.md" forces the agent to re-read project instructions.
 
 #### Turn 7: Build Validation (MANDATORY)
 
@@ -300,30 +300,30 @@ Fix any failing tests."
 - Tests pass (no failures)
 - Coverage report shows >= 80%
 
-#### Turn 9: DBCODE.md Compliance Check (MANDATORY)
+#### Turn 9: DHELIX.md Compliance Check (MANDATORY)
 
 ```
-"Review the project against DBCODE.md conventions. List any violations and fix them."
+"Review the project against DHELIX.md conventions. List any violations and fix them."
 ```
 
 **Assertions:**
 
-- Agent reads DBCODE.md (verify via event tracking)
+- Agent reads DHELIX.md (verify via event tracking)
 
-### Step 5: DBCODE.md Reference Monitoring
+### Step 5: DHELIX.md Reference Monitoring
 
-Track whether dbcode reads DBCODE.md during the session. This is implemented
+Track whether dhelix reads DHELIX.md during the session. This is implemented
 in the test harness via event listeners:
 
 ```typescript
 events.on("tool:start", ({ name, args }) => {
-  if (name === "file_read" && args?.file_path?.toString().includes("DBCODE.md")) {
-    dbcodeReads.push(`Turn ${currentTurn}`);
+  if (name === "file_read" && args?.file_path?.toString().includes("DHELIX.md")) {
+    dhelixReads.push(`Turn ${currentTurn}`);
   }
 });
 
 // After session:
-expect(dbcodeReads.length).toBeGreaterThanOrEqual(2);
+expect(dhelixReads.length).toBeGreaterThanOrEqual(2);
 ```
 
 ### Step 6: Evaluation Criteria
@@ -337,7 +337,7 @@ After the test completes, evaluate the results:
 | Build Success   | 100%   | `validateBuild()` exit code      |
 | Test Pass Rate  | 100%   | Parse test runner output         |
 | Test Coverage   | >= 80% | Parse coverage report            |
-| DBCODE.md Reads | >= 2   | Event monitoring count           |
+| DHELIX.md Reads | >= 2   | Event monitoring count           |
 | Turn Completion | 100%   | All turns complete without error |
 | Iterations/Turn | < 25   | `result.iterations` per turn     |
 
@@ -350,7 +350,7 @@ After the test completes, you may read the generated files to assess:
 | Code Quality         |              | Idiomatic patterns, no copy-paste smell     |
 | Architecture         |              | Proper separation of concerns, layering     |
 | Test Quality         |              | Meaningful assertions, edge cases covered   |
-| DBCODE.md Compliance |              | Actually follows declared conventions       |
+| DHELIX.md Compliance |              | Actually follows declared conventions       |
 | Error Recovery       |              | Handles build/test failures gracefully      |
 | Context Retention    |              | References earlier turns, no contradictions |
 
@@ -359,7 +359,7 @@ After the test completes, you may read the generated files to assess:
 After running all stacks, produce a markdown report:
 
 ```markdown
-# dbcode E2E Validation Report
+# dhelix E2E Validation Report
 
 **Date:** {DATE}
 **Model:** {MODEL_NAME}
@@ -367,7 +367,7 @@ After running all stacks, produce a markdown report:
 
 ## Summary
 
-| Stack      | Build | Tests | Coverage | DBCODE Refs | Score |
+| Stack      | Build | Tests | Coverage | DHELIX Refs | Score |
 | ---------- | ----- | ----- | -------- | ----------- | ----- |
 | Spring+JSP | PASS  | 12/12 | 85%      | 3           | 4.2/5 |
 | ...        | ...   | ...   | ...      | ...         | ...   |
@@ -378,7 +378,7 @@ After running all stacks, produce a markdown report:
 
 - **Turns:** {N} completed / {N} total
 - **Total Iterations:** {N}
-- **DBCODE.md References:** {list of turns}
+- **DHELIX.md References:** {list of turns}
 - **Build Output:** {summary}
 - **Coverage Report:** {summary}
 - **Issues Found:** {list}
@@ -437,7 +437,7 @@ const E2E_CONFIG = {
   buildTimeout: 120_000, // 2 minutes for builds
   testTimeout: 120_000, // 2 minutes for tests
   minCoverage: 80, // 80% minimum
-  minDbcodeReads: 2, // Must read DBCODE.md at least twice
+  minDbcodeReads: 2, // Must read DHELIX.md at least twice
 };
 ```
 
@@ -463,7 +463,7 @@ The test harness writes this file after every turn completes:
   "status": "running",
   "iterations": 12,
   "totalIterations": 38,
-  "dbcodeReads": 2,
+  "dhelixReads": 2,
   "lastToolCall": "file_write",
   "filesCreated": 15,
   "errors": [],
@@ -491,7 +491,7 @@ function writeProgress(turnName: string, status: "running" | "completed" | "fail
         turnName,
         status,
         iterations: metrics.totalIterations,
-        dbcodeReads: metrics.dbcodeReads.length,
+        dhelixReads: metrics.dhelixReads.length,
         lastToolCall: metrics.toolCalls.at(-1)?.tool ?? "none",
         filesCreated: 0, // optionally count with glob
         errors: metrics.errors,
@@ -514,7 +514,7 @@ After launching the test in the background:
 2. Every ~30 seconds, read the progress file:
    Read test-projects/{stack-name}/.e2e-progress.json
 3. Report to user:
-   "Turn 3/9: Implement Task REST API — 12 iterations so far, 2 DBCODE.md reads, 15 files created"
+   "Turn 3/9: Implement Task REST API — 12 iterations so far, 2 DHELIX.md reads, 15 files created"
 4. Repeat until the background task completes
 5. Read final vitest output and report results
 ```
@@ -554,7 +554,7 @@ If the status is "failed", report the error immediately rather than waiting.
 8. Produce a conversation quality report (see `references/conversation-quality.md` report template)
 
 Remember: You NEVER touch `test-projects/` with write operations. All files there
-are created by dbcode's agent loop.
+are created by dhelix's agent loop.
 
 ## Quick Reference
 

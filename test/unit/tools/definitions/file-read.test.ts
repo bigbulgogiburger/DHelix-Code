@@ -20,7 +20,7 @@ describe("file_read tool", () => {
   it("should read a file with line numbers", async () => {
     const result = await fileReadTool.execute({ path: "package.json" }, context);
     expect(result.isError).toBe(false);
-    expect(result.output).toContain("dbcode");
+    expect(result.output).toContain("dhelix");
     expect(result.output).toMatch(/^\s+1 \|/m);
   });
 

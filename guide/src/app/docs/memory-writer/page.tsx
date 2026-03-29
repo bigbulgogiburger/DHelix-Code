@@ -493,7 +493,7 @@ export default function MemoryWriterPage() {
                   </p>
                   <p>
                     <strong className="text-gray-900">원인 2:</strong> 파일 시스템 권한 문제.
-                    <code className="text-cyan-600 text-xs"> ~/.dbcode/projects/</code> 디렉토리의
+                    <code className="text-cyan-600 text-xs"> ~/.dhelix/projects/</code> 디렉토리의
                     쓰기 권한을 확인하세요.
                   </p>
                 </div>

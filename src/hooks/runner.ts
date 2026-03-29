@@ -109,7 +109,7 @@ function matchesRule(rule: HookRule, payload: HookEventPayload): boolean {
  * 1. 명령어 템플릿의 변수를 치환
  * 2. 셸 명령어를 자식 프로세스로 실행
  * 3. 이벤트 페이로드를 JSON으로 stdin에 전달
- * 4. 환경 변수로 DBCODE_EVENT, DBCODE_TOOL_NAME 등을 설정
+ * 4. 환경 변수로 DHELIX_EVENT, DHELIX_TOOL_NAME 등을 설정
  *
  * 종료 코드 의미:
  * - 0: 통과
@@ -137,10 +137,10 @@ async function executeCommandHandler(
         // 환경 변수로 이벤트 정보를 전달 — 스크립트에서 활용 가능
         env: {
           ...process.env,
-          DBCODE_EVENT: payload.event,
-          DBCODE_TOOL_NAME: payload.toolCall?.name ?? "",
-          DBCODE_FILE_PATH: payload.filePath ?? "",
-          DBCODE_SESSION_ID: payload.sessionId ?? "",
+          DHELIX_EVENT: payload.event,
+          DHELIX_TOOL_NAME: payload.toolCall?.name ?? "",
+          DHELIX_FILE_PATH: payload.filePath ?? "",
+          DHELIX_SESSION_ID: payload.sessionId ?? "",
         },
       },
       (error, stdout, stderr) => {
@@ -239,8 +239,8 @@ async function executeHttpHandler(
  * prompt 타입 훅 핸들러를 실행합니다.
  *
  * 사용자에게 확인 프롬프트를 표시합니다.
- * - CI 모드(DBCODE_HOOK_AUTO_APPROVE=true): 자동 승인
- * - DBCODE_HOOK_REJECT=true: 자동 거부 (차단)
+ * - CI 모드(DHELIX_HOOK_AUTO_APPROVE=true): 자동 승인
+ * - DHELIX_HOOK_REJECT=true: 자동 거부 (차단)
  * - 그 외: 프롬프트 메시지만 보고 통과
  *
  * @param handler - prompt 핸들러 설정
@@ -254,7 +254,7 @@ async function executePromptHandler(
   // 변수 보간 적용
   const message = interpolateVariables(handler.promptMessage, payload);
   // CI 환경에서 자동 승인 여부 확인
-  const isAutoApprove = process.env.DBCODE_HOOK_AUTO_APPROVE === "true";
+  const isAutoApprove = process.env.DHELIX_HOOK_AUTO_APPROVE === "true";
 
   if (isAutoApprove) {
     return {
@@ -267,8 +267,8 @@ async function executePromptHandler(
   }
 
   // 인터랙티브 모드: 프롬프트 메시지를 보고합니다.
-  // DBCODE_HOOK_REJECT 환경 변수가 "true"이면 거부(차단)로 처리
-  const isRejected = process.env.DBCODE_HOOK_REJECT === "true";
+  // DHELIX_HOOK_REJECT 환경 변수가 "true"이면 거부(차단)로 처리
+  const isRejected = process.env.DHELIX_HOOK_REJECT === "true";
 
   if (isRejected) {
     return {

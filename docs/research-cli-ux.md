@@ -1,4 +1,4 @@
-# CLI UX/DX Patterns Research for dbcode
+# CLI UX/DX Patterns Research for dhelix
 
 > Research Date: 2026-03-05
 > Scope: Terminal UI, Streaming, Interaction patterns for a cross-platform AI coding assistant CLI
@@ -47,7 +47,7 @@
 
 ### Recommendation: **Ink (React for CLI)**
 
-**Why Ink is the best choice for dbcode:**
+**Why Ink is the best choice for dhelix:**
 
 1. **React mental model**: Component-based architecture maps perfectly to a chat UI with streaming messages, tool status panels, and input areas. Developers already know React.
 
@@ -209,7 +209,7 @@ function StreamingMessage({ stream }: { stream: AsyncIterable<string> }) {
 - **Input limitations**: Single-line input is frustrating for complex prompts
 - **Slow startup**: CLI tools should start in < 500ms
 
-### Key UX Principles for dbcode
+### Key UX Principles for dhelix
 
 1. **Action-first**: Show what you're doing, not what you're thinking
 2. **Progressive disclosure**: Collapsed details expandable on demand
@@ -350,7 +350,7 @@ Color coding:
 | **listr2**       | 8M             | Multiple       | ~200KB | Multi-task trees, concurrent | Yes     |
 | **ink-spinner**  | 200K           | Ink peer dep   | ~5KB   | Ink-native component         | Yes     |
 
-### Recommendation for dbcode
+### Recommendation for dhelix
 
 **Primary**: `ink-spinner` for Ink-native integration
 **Multi-task**: Custom Ink component using `cli-spinners` frame data
@@ -405,7 +405,7 @@ Color coding:
 ### Multi-Line Input Design
 
 ```
-  ╭─ dbcode ──────────────────────────────────╮
+  ╭─ dhelix ──────────────────────────────────╮
   │ > Refactor the parser module to use       │
   │   the visitor pattern instead of the      │
   │   switch statement. Make sure to:         │
@@ -465,7 +465,7 @@ interface Keybinding {
 }
 ```
 
-### Default Keybindings for dbcode
+### Default Keybindings for dhelix
 
 | Key           | Context       | Action                          |
 | ------------- | ------------- | ------------------------------- |
@@ -524,7 +524,7 @@ useInput(
 ### Architecture
 
 ```
-~/.dbcode/
+~/.dhelix/
   sessions/
     <project-hash>/
       session-<id>.jsonl        # Conversation history
@@ -559,7 +559,7 @@ Each line is a JSON object:
 ### Resume UX Flow
 
 ```
-  dbcode v0.1.0
+  dhelix v0.1.0
 
   ┌─ Resume Session? ──────────────────────────┐
   │                                             │
@@ -831,7 +831,7 @@ const symbols =
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                         dbcode CLI                              │
+│                         dhelix CLI                              │
 ├─────────────────────────────────────────────────────────────────┤
 │  ┌──────────────┐  ┌──────────────┐  ┌────────────────────┐    │
 │  │  Input Layer  │  │  Output Layer │  │   State Manager    │    │
@@ -864,7 +864,7 @@ const symbols =
 ### Main Chat Interface
 
 ```
-  ┌─ dbcode ──────────────────────────────────── model: opus-4 ──┐
+  ┌─ dhelix ──────────────────────────────────── model: opus-4 ──┐
   │                                                               │
   │  You: Refactor the auth module to use JWT tokens              │
   │                                                               │
@@ -942,7 +942,7 @@ const symbols =
 ### Session Resume Screen
 
 ```
-  dbcode v0.1.0 - AI Coding Assistant
+  dhelix v0.1.0 - AI Coding Assistant
 
   Recent sessions for ~/projects/myapp:
 
@@ -987,7 +987,7 @@ const symbols =
 | Diff Display        | **diff (compute) + custom Ink component (render)**      | Full control over terminal rendering                                         |
 | Input System        | **Ink useInput + custom multi-line**                    | Cross-platform, extensible                                                   |
 | Session Storage     | **JSONL files**                                         | Append-only, human-readable, easy resume/fork                                |
-| Config              | **cosmiconfig**                                         | Standard discovery (package.json, .dbcoderc, etc.)                           |
+| Config              | **cosmiconfig**                                         | Standard discovery (package.json, .dhelixrc, etc.)                           |
 
 ### Cross-Platform Confidence Score
 

@@ -4,7 +4,7 @@ import { unlinkSync } from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
-const PERSIST_PATH = join(homedir(), ".dbcode", "session-approvals.json");
+const PERSIST_PATH = join(homedir(), ".dhelix", "session-approvals.json");
 
 function cleanupPersistFile(): void {
   try {

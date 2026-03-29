@@ -9,16 +9,16 @@
 
 ## 1. 문제 요약
 
-사용자가 `/model` 슬래시 명령으로 모델을 변경한 후 dbcode를 종료하고 재시작하면,
+사용자가 `/model` 슬래시 명령으로 모델을 변경한 후 dhelix를 종료하고 재시작하면,
 선택한 모델이 아닌 **환경변수에 설정된 기본 모델**로 되돌아간다.
 
 ### 재현 시나리오
 
 ```
-1. dbcode 시작 (기본 모델: MiniMax-M2.5 via LOCAL_MODEL 환경변수)
+1. dhelix 시작 (기본 모델: MiniMax-M2.5 via LOCAL_MODEL 환경변수)
 2. /model gpt-4o 실행 → 모델 변경 성공, config.json에 저장됨
-3. dbcode 종료 (Ctrl+D)
-4. dbcode 재시작
+3. dhelix 종료 (Ctrl+D)
+4. dhelix 재시작
 5. 결과: MiniMax-M2.5로 되돌아감 (gpt-4o가 아님)
 ```
 
@@ -42,8 +42,8 @@
 
 ```
 Level 1: 기본값 (defaults.ts)       → model: "gpt-4o-mini"
-Level 2: 사용자 설정 (~/.dbcode/config.json) → model: "gpt-4o"  ← /model이 저장한 값
-Level 3: 프로젝트 설정 (.dbcode/config.json) → (없음)
+Level 2: 사용자 설정 (~/.dhelix/config.json) → model: "gpt-4o"  ← /model이 저장한 값
+Level 3: 프로젝트 설정 (.dhelix/config.json) → (없음)
 Level 4: 환경변수 (LOCAL_MODEL, OPENAI_MODEL) → model: "MiniMax-M2.5"  ← 이것이 Level 2를 덮어씀!
 Level 5: CLI 플래그 (--model)        → (없음)
 ```
@@ -63,7 +63,7 @@ if (Object.keys(envConfig).length > 0) {
 `loadEnvConfig()` (`src/config/loader.ts:56-100`):
 
 ```typescript
-// 모델명 결정: LOCAL_MODEL > DBCODE_MODEL > OPENAI_MODEL > 기본값
+// 모델명 결정: LOCAL_MODEL > DHELIX_MODEL > OPENAI_MODEL > 기본값
 if (process.env.LOCAL_MODEL) {
   llm.model = process.env.LOCAL_MODEL; // ← 항상 환경변수가 승리
 }
@@ -134,11 +134,11 @@ async function persistModelChoice(model: string): Promise<void> {
 | **Aider**       | `.aider.conf.yml`            | 사전 편집 (런타임 비영속) | CLI > CWD > Git root > Home            |
 | **Cursor**      | SQLite `state.vscdb`         | UI 변경 즉시              | 단일 레벨                              |
 | **Continue**    | `config.yaml`                | 파일 편집                 | 단일 레벨                              |
-| **dbcode**      | `~/.dbcode/config.json`      | /model 즉시 (정상)        | 환경변수가 사용자 설정 덮어씀 (버그)   |
+| **dhelix**      | `~/.dhelix/config.json`      | /model 즉시 (정상)        | 환경변수가 사용자 설정 덮어씀 (버그)   |
 
 ### 핵심 인사이트
 
-- **Claude Code**: 사용자 명시 설정 > 환경변수 (dbcode와 반대)
+- **Claude Code**: 사용자 명시 설정 > 환경변수 (dhelix와 반대)
 - **Aider**: 환경변수 `AIDER_MODEL`이 config보다 높지만, 런타임 `/model`은 영속화 안 함
 - **공통 함정**: "환경변수 override blindness" — 사용자가 `.env`에 설정한 것을 잊고 `/model`이 안 되는 것처럼 느낌
 
@@ -171,7 +171,7 @@ if (Object.keys(envConfig).length > 0) {
 const projectConfig = await loadProjectConfig();
 merged = deepMerge(merged, projectConfig);
 
-// Level 4: 사용자 설정 (~/.dbcode/config.json) — 환경변수보다 높음
+// Level 4: 사용자 설정 (~/.dhelix/config.json) — 환경변수보다 높음
 const userConfig = await loadUserConfig();
 merged = deepMerge(merged, userConfig);
 
@@ -188,7 +188,7 @@ merged = deepMerge(merged, cliOverrides);
 config 로딩 시 explicit 플래그가 있으면 환경변수를 무시.
 
 ```typescript
-// ~/.dbcode/config.json
+// ~/.dhelix/config.json
 {
   "llm": {
     "model": "gpt-4o",
@@ -274,15 +274,15 @@ export async function loadConfig(cliOverrides?: Partial<AppConfig>): Promise<Res
     merged = deepMerge(merged, envConfig as Record<string, unknown>);
   }
 
-  // Level 3: 프로젝트 설정 (.dbcode/config.json)
-  const projectConfigPath = joinPath(process.cwd(), ".dbcode", "config.json");
+  // Level 3: 프로젝트 설정 (.dhelix/config.json)
+  const projectConfigPath = joinPath(process.cwd(), ".dhelix", "config.json");
   try {
     const raw = await readFile(projectConfigPath, "utf-8");
     const projectConfig = JSON.parse(raw);
     merged = deepMerge(merged, projectConfig);
   } catch { /* 없으면 무시 */ }
 
-  // Level 4: 사용자 설정 (~/.dbcode/config.json) — 환경변수보다 높음!
+  // Level 4: 사용자 설정 (~/.dhelix/config.json) — 환경변수보다 높음!
   const userConfigPath = joinPath(CONFIG_DIR, "config.json");
   try {
     const raw = await readFile(userConfigPath, "utf-8");
@@ -381,7 +381,7 @@ if (sessionId) {
 1. **기존 `.env` 사용자**: `LOCAL_MODEL=MiniMax-M2.5`를 `.env`에 설정한 사용자는,
    `/model`로 변경 후 재시작하면 이제 변경된 모델이 유지됨 (이전에는 `.env`가 우선)
 2. **알림 필요**: 첫 실행 시 "Config priority changed" 로그 메시지 출력 권장
-3. **하위 호환성**: `~/.dbcode/config.json`이 없는 기존 사용자는 환경변수가 그대로 적용됨 (영향 없음)
+3. **하위 호환성**: `~/.dhelix/config.json`이 없는 기존 사용자는 환경변수가 그대로 적용됨 (영향 없음)
 
 ### 테스트 매트릭스
 

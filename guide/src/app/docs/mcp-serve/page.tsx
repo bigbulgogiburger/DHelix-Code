@@ -25,7 +25,7 @@ export default function MCPServePage() {
               <LayerBadge layer="infra" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              dbcode 자체를 MCP 서버로 실행하여 외부 클라이언트가 dbcode의 도구를 사용할 수 있게
+              dhelix 자체를 MCP 서버로 실행하여 외부 클라이언트가 dhelix의 도구를 사용할 수 있게
               하는 모듈입니다.
             </p>
           </div>
@@ -42,9 +42,9 @@ export default function MCPServePage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">MCPServer</code>는 dbcode의 내부 도구를 MCP
+                <code className="text-cyan-600">MCPServer</code>는 dhelix의 내부 도구를 MCP
                 프로토콜로 외부에 노출합니다. 다른 MCP 클라이언트(Claude Code, AI 에이전트 등)가
-                dbcode에 연결하여 Read, Grep, Glob 같은 도구를 직접 사용할 수 있게 합니다.
+                dhelix에 연결하여 Read, Grep, Glob 같은 도구를 직접 사용할 수 있게 합니다.
               </p>
               <p>
                 stdin/stdout을 통한 JSON-RPC 2.0 프로토콜로 통신하며,
@@ -56,8 +56,8 @@ export default function MCPServePage() {
                 노출합니다.
               </p>
               <p>
-                dbcode를 MCP 서버로 실행하면, dbcode의 강력한 도구 세트를 다른 AI 에이전트에서도
-                활용할 수 있습니다. 예를 들어, Claude Code에서 dbcode의 코드 검색 도구를 MCP를 통해
+                dhelix를 MCP 서버로 실행하면, dhelix의 강력한 도구 세트를 다른 AI 에이전트에서도
+                활용할 수 있습니다. 예를 들어, Claude Code에서 dhelix의 코드 검색 도구를 MCP를 통해
                 사용할 수 있습니다.
               </p>
             </div>
@@ -86,7 +86,7 @@ export default function MCPServePage() {
             />
 
             <Callout type="info" icon="💡">
-              <strong>비유:</strong> 레스토랑 주방을 떠올리세요. dbcode는 주방(도구 보유),
+              <strong>비유:</strong> 레스토랑 주방을 떠올리세요. dhelix는 주방(도구 보유),
               MCPServer는 서빙 카운터(외부에 도구를 노출), 외부 MCP 클라이언트는 주문을 넣는
               손님입니다. 손님은 메뉴(tools/list)를 보고 주문(tools/call)하면 요리(도구 실행 결과)를
               받습니다.
@@ -150,7 +150,7 @@ export default function MCPServePage() {
                   name: "name",
                   type: "string",
                   required: false,
-                  desc: '서버 이름 (기본: "dbcode")',
+                  desc: '서버 이름 (기본: "dhelix")',
                 },
                 {
                   name: "version",
@@ -199,7 +199,7 @@ export default function MCPServePage() {
               class MCPServer
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
-              dbcode의 내부 도구를 MCP 도구로 노출하는 서버 클래스입니다.
+              dhelix의 내부 도구를 MCP 도구로 노출하는 서버 클래스입니다.
             </p>
 
             {/* Constructor */}
@@ -301,7 +301,7 @@ export default function MCPServePage() {
               기본 사용법 &mdash; MCP 서버 시작
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
-              dbcode를 MCP 서버로 실행하여 외부 클라이언트의 연결을 대기합니다.
+              dhelix를 MCP 서버로 실행하여 외부 클라이언트의 연결을 대기합니다.
             </p>
             <CodeBlock>
               <span className="kw">const</span> <span className="prop">server</span> ={" "}
@@ -364,7 +364,7 @@ export default function MCPServePage() {
               {"  "}
               <span className="str">&quot;serverInfo&quot;</span>: {"{"}{" "}
               <span className="str">&quot;name&quot;</span>:{" "}
-              <span className="str">&quot;dbcode&quot;</span>,{" "}
+              <span className="str">&quot;dhelix&quot;</span>,{" "}
               <span className="str">&quot;version&quot;</span>:{" "}
               <span className="str">&quot;...&quot;</span> {"}"}
               {"\n"}
@@ -591,7 +591,7 @@ export default function MCPServePage() {
                 catch하여 <code className="text-cyan-600">isError: true</code>로 반환합니다.
               </p>
               <p>
-                <strong className="text-gray-900">[4]</strong> dbcode 내부 결과를 MCP{" "}
+                <strong className="text-gray-900">[4]</strong> dhelix 내부 결과를 MCP{" "}
                 <code className="text-cyan-600">MCPToolCallResult</code> 형식으로 변환합니다.
               </p>
             </div>

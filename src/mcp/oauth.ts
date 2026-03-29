@@ -16,7 +16,7 @@
  * - 액세스 토큰이 만료되면 리프레시 토큰으로 자동 갱신
  * - 리프레시 토큰이 없으면 재인증 필요
  *
- * 토큰 저장 위치: ~/.dbcode/oauth-tokens/{서버이름}.json
+ * 토큰 저장 위치: ~/.dhelix/oauth-tokens/{서버이름}.json
  */
 import { createServer, type Server } from "node:http";
 import { readFile, writeFile, mkdir, unlink } from "node:fs/promises";
@@ -82,7 +82,7 @@ const EXPIRY_BUFFER_MS = 60_000;
 const CALLBACK_TIMEOUT_MS = 300_000;
 
 /** 토큰 저장 디렉토리 경로 */
-const TOKEN_STORAGE_DIR = join(homedir(), ".dbcode", "oauth-tokens");
+const TOKEN_STORAGE_DIR = join(homedir(), ".dhelix", "oauth-tokens");
 
 /**
  * MCP 서버에 대한 OAuth 2.0 인증 흐름을 관리합니다.
@@ -308,7 +308,7 @@ export class MCPOAuthManager {
   /**
    * 토큰을 디스크에 JSON 파일로 저장합니다.
    *
-   * 저장 경로: ~/.dbcode/oauth-tokens/{서버이름}.json
+   * 저장 경로: ~/.dhelix/oauth-tokens/{서버이름}.json
    * 디렉토리가 없으면 자동 생성합니다.
    *
    * @param serverName - MCP 서버 이름 (파일명으로 사용)

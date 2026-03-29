@@ -23,17 +23,17 @@ describe("MCPScopeManager", () => {
   describe("getConfigPath", () => {
     it("should return correct path for local scope", () => {
       const manager = new MCPScopeManager(workDir);
-      expect(manager.getConfigPath("local")).toBe(join(workDir, ".dbcode", "mcp-local.json"));
+      expect(manager.getConfigPath("local")).toBe(join(workDir, ".dhelix", "mcp-local.json"));
     });
 
     it("should return correct path for project scope", () => {
       const manager = new MCPScopeManager(workDir);
-      expect(manager.getConfigPath("project")).toBe(join(workDir, ".dbcode", "mcp.json"));
+      expect(manager.getConfigPath("project")).toBe(join(workDir, ".dhelix", "mcp.json"));
     });
 
     it("should return correct path for user scope", () => {
       const manager = new MCPScopeManager(workDir);
-      expect(manager.getConfigPath("user")).toBe(join(homedir(), ".dbcode", "mcp-servers.json"));
+      expect(manager.getConfigPath("user")).toBe(join(homedir(), ".dhelix", "mcp-servers.json"));
     });
   });
 

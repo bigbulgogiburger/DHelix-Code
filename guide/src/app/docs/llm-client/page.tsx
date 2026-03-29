@@ -839,7 +839,7 @@ export default function LLMClientPage() {
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
                 API 키가 올바른지 확인하세요. 환경변수{" "}
                 <code className="text-cyan-600">OPENAI_API_KEY</code> 또는
-                <code className="text-cyan-600">DBCODE_API_KEY</code>가 설정되어 있어야 합니다.
+                <code className="text-cyan-600">DHELIX_API_KEY</code>가 설정되어 있어야 합니다.
               </p>
               <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
                 <li>API 키가 만료되었거나 취소된 경우에도 이 에러가 발생합니다.</li>

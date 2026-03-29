@@ -51,7 +51,7 @@ Never store tool messages without a preceding assistant message containing match
 - **Layer 2 — Structured summarization**: 83.5% 임계값. 보존: user intent, key decisions, files touched, errors, next steps
 - **Layer 3 — Post-compaction rehydration**: 압축 후 최근 5개 파일 재읽기 → LLM에게 최신 상태 제공
 - **Adaptive GC**: 컨텍스트 소비 속도 기반 동적 압축 주기 조정
-- **Cold storage 경로**: `~/.dbcode/projects/{hash}/cold-storage/` (24h TTL)
+- **Cold storage 경로**: `~/.dhelix/projects/{hash}/cold-storage/` (24h TTL)
 
 ## Recovery Strategies
 
@@ -72,7 +72,7 @@ graph TD
     SPAWN --> EXPLORE[Explore Agent]
     SPAWN --> PLAN[Plan Agent]
     SPAWN --> GENERAL[General Agent]
-    SPAWN --> CUSTOM[Custom Agent .dbcode/agents/*.md]
+    SPAWN --> CUSTOM[Custom Agent .dhelix/agents/*.md]
     SPAWN --> TEAM[Team Manager]
     TEAM --> T1[Worker 1]
     TEAM --> T2[Worker 2]

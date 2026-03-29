@@ -25,7 +25,7 @@ export default function AppEntryPage() {
               <LayerBadge layer="cli" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              dbcode CLI 애플리케이션의 최상위 루트 컴포넌트입니다. 모든 훅과 하위 컴포넌트를
+              dhelix CLI 애플리케이션의 최상위 루트 컴포넌트입니다. 모든 훅과 하위 컴포넌트를
               조합하여 하나의 통합 터미널 인터페이스를 구성합니다.
             </p>
           </div>
@@ -405,7 +405,7 @@ export default function AppEntryPage() {
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
               App은 <code className="text-cyan-600">useKeybindings</code> 훅을 통해 키보드 단축키를
               등록합니다. 사용자 설정(
-              <code className="text-cyan-600">~/.dbcode/keybindings.json</code>)과 기본값을 병합하여
+              <code className="text-cyan-600">~/.dhelix/keybindings.json</code>)과 기본값을 병합하여
               최종 키바인딩을 구성합니다.
             </p>
             <CodeBlock>

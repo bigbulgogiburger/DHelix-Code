@@ -91,7 +91,7 @@ export interface AgentToolDeps {
   readonly events?: AppEventEmitter;
   /** 응답 언어 로케일 (예: "ko", "en") — 서브에이전트 프롬프트 언어 설정 */
   readonly locale?: string;
-  /** 프로젝트 지시사항 (DBCODE.md 내용) — 서브에이전트가 프로젝트 컨벤션을 따르도록 */
+  /** 프로젝트 지시사항 (DHELIX.md 내용) — 서브에이전트가 프로젝트 컨벤션을 따르도록 */
   readonly projectInstructions?: string;
   /** 응답 톤/스타일 (예: "normal", "cute", "senior") */
   readonly tone?: string;

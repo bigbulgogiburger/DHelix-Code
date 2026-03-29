@@ -47,9 +47,9 @@ describe("executeSkill", () => {
     expect(result.prompt).toBe("Arg0: arg1, Arg1: arg2");
   });
 
-  it("should interpolate DBCODE env variables", async () => {
+  it("should interpolate DHELIX env variables", async () => {
     const skill = makeSkill({
-      body: "Session: ${DBCODE_SESSION_ID}, Dir: ${DBCODE_PROJECT_DIR}",
+      body: "Session: ${DHELIX_SESSION_ID}, Dir: ${DHELIX_PROJECT_DIR}",
     });
     const result = await executeSkill(
       skill,
@@ -129,8 +129,8 @@ describe("executeSkill", () => {
     expect(result.prompt).toBe("First: ");
   });
 
-  it("should interpolate DBCODE_SKILL_DIR", async () => {
-    const skill = makeSkill({ body: "Dir: ${DBCODE_SKILL_DIR}" });
+  it("should interpolate DHELIX_SKILL_DIR", async () => {
+    const skill = makeSkill({ body: "Dir: ${DHELIX_SKILL_DIR}" });
     const result = await executeSkill(skill, makeContext({ skillDir: "/skills" }));
     expect(result.prompt).toBe("Dir: /skills");
   });

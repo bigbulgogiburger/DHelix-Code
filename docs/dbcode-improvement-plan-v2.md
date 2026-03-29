@@ -1,4 +1,4 @@
-# dbcode 개선 개발 기획서 v2
+# dhelix 개선 개발 기획서 v2
 
 > **작성일**: 2026-03-07
 > **참조 기준**: Anthropic Claude Code (설치된 버전)
@@ -21,7 +21,7 @@
 
 ## 1. Executive Summary
 
-dbcode는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 있으나, 실 사용 테스트에서 다음의 핵심 문제가 발견됨:
+dhelix는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 있으나, 실 사용 테스트에서 다음의 핵심 문제가 발견됨:
 
 | 구분 | 문제                                                    | 심각도   | 상태          |
 | ---- | ------------------------------------------------------- | -------- | ------------- |
@@ -31,7 +31,7 @@ dbcode는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 
 | P1   | Slash menu 스크롤 뷰포트 미지원 (전체 목록 한번에 표시) | High     | 미수정        |
 | P1   | Enter 키 newline으로 동작                               | High     | **수정 완료** |
 | P2   | E2E 테스트 안정성 (타임아웃, 레이트리밋)                | Medium   | 미수정        |
-| P2   | DBCODE.md 자동 참조 부재                                | Medium   | 미수정        |
+| P2   | DHELIX.md 자동 참조 부재                                | Medium   | 미수정        |
 
 ---
 
@@ -81,7 +81,7 @@ dbcode는 현재 기본적인 CLI AI 코딩 어시스턴트 기능을 갖추고 
 // src/commands/init.ts 에 추가
 export const initCommand: SlashCommand = {
   name: "init",
-  description: "Initialize dbcode project (creates DBCODE.md, .dbcode/ directory)",
+  description: "Initialize dhelix project (creates DHELIX.md, .dhelix/ directory)",
   usage: "/init",
   execute: async (_args, context) => {
     const result = await initProject(context.workingDirectory);
@@ -101,7 +101,7 @@ export const initCommand: SlashCommand = {
 
 ### 3.1 현재 상태 vs Claude Code
 
-| 기능                                | Claude Code           | dbcode        | Gap       |
+| 기능                                | Claude Code           | dhelix        | Gap       |
 | ----------------------------------- | --------------------- | ------------- | --------- |
 | 등록된 명령어 수                    | 70+                   | 22            | 확장 필요 |
 | 실시간 필터링                       | O                     | X             | **필수**  |
@@ -261,7 +261,7 @@ function SlashCommandMenu({ commands, prefix, ... }) {
 
 ### 3.5 누락 명령어 추가 계획
 
-Claude Code에 있으나 dbcode에 없는 주요 명령어:
+Claude Code에 있으나 dhelix에 없는 주요 명령어:
 
 | 명령어            | 설명                 | 우선순위  |
 | ----------------- | -------------------- | --------- |
@@ -312,7 +312,7 @@ Spring Boot + React E2E 테스트 (9턴) 결과: **5 pass / 4 fail**
 
 | 턴  | 이름                 | 결과 | 원인                                           |
 | --- | -------------------- | ---- | ---------------------------------------------- |
-| 0   | DBCODE.md 초기화     | PASS |                                                |
+| 0   | DHELIX.md 초기화     | PASS |                                                |
 | 1   | Backend scaffold     | FAIL | `gradle init` 사용 → 예상과 다른 디렉토리 구조 |
 | 2   | REST API             | PASS |                                                |
 | 3   | Frontend scaffold    | PASS |                                                |
@@ -320,20 +320,20 @@ Spring Boot + React E2E 테스트 (9턴) 결과: **5 pass / 4 fail**
 | 5   | Integration          | PASS |                                                |
 | 6   | Build validation     | FAIL | Turn 1 구조 문제의 연쇄 효과                   |
 | 7   | Tests + coverage     | FAIL | 300초 타임아웃 (Gradle 테스트 느림)            |
-| 8   | DBCODE.md compliance | FAIL | OpenAI 429 레이트 리밋 (65회 API 호출 후)      |
+| 8   | DHELIX.md compliance | FAIL | OpenAI 429 레이트 리밋 (65회 API 호출 후)      |
 
-### 5.2 DBCODE.md 자동 참조 부재
+### 5.2 DHELIX.md 자동 참조 부재
 
-**심각한 문제**: E2E 세션 동안 DBCODE.md를 **한 번도 읽지 않았음** (`metrics.dbcodeReads: 0`).
+**심각한 문제**: E2E 세션 동안 DHELIX.md를 **한 번도 읽지 않았음** (`metrics.dhelixReads: 0`).
 
-프롬프트에 "Refer to DBCODE.md"라고 명시해도 agent가 자발적으로 file_read를 호출하지 않는 경우가 있음.
+프롬프트에 "Refer to DHELIX.md"라고 명시해도 agent가 자발적으로 file_read를 호출하지 않는 경우가 있음.
 
 **수정 방안**:
 
-1. **시스템 프롬프트에 DBCODE.md 내용 삽입**: `buildSystemPrompt()`에서 DBCODE.md가 존재하면 내용을 자동으로 시스템 프롬프트에 포함
-2. **이미 `projectInstructions` 기능 존재** — `loadInstructions()`가 DBCODE.md를 읽어서 `buildSystemPrompt()`에 전달하고 있음
+1. **시스템 프롬프트에 DHELIX.md 내용 삽입**: `buildSystemPrompt()`에서 DHELIX.md가 존재하면 내용을 자동으로 시스템 프롬프트에 포함
+2. **이미 `projectInstructions` 기능 존재** — `loadInstructions()`가 DHELIX.md를 읽어서 `buildSystemPrompt()`에 전달하고 있음
 3. **문제**: E2E 테스트의 `buildSystemPrompt()` 호출에서 `projectInstructions`를 전달하지 않음
-4. **E2E 테스트 수정**: `sendTurn()` 전에 DBCODE.md를 읽어서 `systemPrompt`에 포함
+4. **E2E 테스트 수정**: `sendTurn()` 전에 DHELIX.md를 읽어서 `systemPrompt`에 포함
 
 ### 5.3 Agent Loop 개선 사항
 
@@ -365,7 +365,7 @@ test/e2e/project-6-springboot-react-session.test.ts
 | Turn 1에서 `gradle init` 사용 → 비표준 구조 | 프롬프트에 "Do NOT use gradle init. Write build.gradle.kts manually." 명시 |
 | Turn 7 타임아웃 300초                       | 빌드+테스트 턴은 600초로 증가                                              |
 | Turn 8 레이트 리밋 429                      | config에 `retryOn429: true, maxRetries: 3` 추가 (agent-loop 수정 필요)     |
-| DBCODE.md 미참조                            | `projectInstructions`를 시스템 프롬프트에 포함                             |
+| DHELIX.md 미참조                            | `projectInstructions`를 시스템 프롬프트에 포함                             |
 | 메트릭에 args 누락                          | `toolCalls` 배열에 `args` 필드 추가 (이미 test-harness.md에 있으나 미적용) |
 
 ### 6.3 추가 스택 테스트 계획
@@ -384,7 +384,7 @@ test/e2e/project-6-springboot-react-session.test.ts
 
 ### 7.1 Core Features
 
-| 기능                     | Claude Code | dbcode         | Gap 수준 |
+| 기능                     | Claude Code | dhelix         | Gap 수준 |
 | ------------------------ | ----------- | -------------- | -------- |
 | Slash commands           | 70+         | 22             | Medium   |
 | `/init` (CLAUDE.md 생성) | O           | X (CLI만 가능) | High     |
@@ -400,7 +400,7 @@ test/e2e/project-6-springboot-react-session.test.ts
 
 ### 7.2 UX Features
 
-| 기능              | Claude Code | dbcode        | Gap 수준  |
+| 기능              | Claude Code | dhelix        | Gap 수준  |
 | ----------------- | ----------- | ------------- | --------- |
 | Activity Feed     | O           | O (신규 구현) | 동일      |
 | 도구 실행 표시    | 상세        | 기본          | Medium    |
@@ -413,10 +413,10 @@ test/e2e/project-6-springboot-react-session.test.ts
 
 ### 7.3 Developer Experience
 
-| 기능                | Claude Code                      | dbcode                  | Gap 수준 |
+| 기능                | Claude Code                      | dhelix                  | Gap 수준 |
 | ------------------- | -------------------------------- | ----------------------- | -------- |
-| CLAUDE.md/DBCODE.md | 자동 로드 + 시스템 프롬프트 삽입 | 자동 로드 (구현됨)      | 동일     |
-| .claude/rules/      | O                                | .dbcode/rules/ (구현됨) | 동일     |
+| CLAUDE.md/DHELIX.md | 자동 로드 + 시스템 프롬프트 삽입 | 자동 로드 (구현됨)      | 동일     |
+| .claude/rules/      | O                                | .dhelix/rules/ (구현됨) | 동일     |
 | Hooks 시스템        | O                                | O                       | 동일     |
 | Skills 시스템       | O                                | 미구현                  | High     |
 | Git 통합            | O                                | bash_exec로 가능        | Low      |
@@ -454,7 +454,7 @@ test/e2e/project-6-springboot-react-session.test.ts
 - [ ] **P1**: E2E 테스트 프롬프트 개선
   - Turn 1: "Do NOT use gradle init" 명시
   - Turn 7: 타임아웃 600초로 증가
-  - 시스템 프롬프트에 DBCODE.md 내용 자동 포함
+  - 시스템 프롬프트에 DHELIX.md 내용 자동 포함
 - [ ] **P1**: 붙여넣기 입력 검증 (multi-char input handling)
 
 ### Phase 3: UX Enhancement (1-2주)

@@ -31,7 +31,7 @@ export function Navigation() {
           href="/"
           className="flex items-center gap-0 text-xl tracking-tight no-underline hover:no-underline"
         >
-          <span className="font-bold text-indigo-600">dbcode</span>
+          <span className="font-bold text-indigo-600">dhelix</span>
           <span className="font-normal text-text-muted" style={{ marginLeft: "6px" }}>
             Guide
           </span>

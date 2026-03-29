@@ -462,7 +462,7 @@ export class ContextManager {
   /**
    * Layer 2 + 3: Full compaction with structured summarization and rehydration.
    * Preserves system prompts and recent turns.
-   * Re-reads DBCODE.md from disk to pick up any changes made during the session.
+   * Re-reads DHELIX.md from disk to pick up any changes made during the session.
    * Returns compacted messages and a summary of what was removed.
    */
   async compact(
@@ -476,7 +476,7 @@ export class ContextManager {
     this.compactionCount++;
     this.lastCompactionAt = new Date().toISOString();
 
-    // Re-read DBCODE.md from disk to pick up changes made during session
+    // Re-read DHELIX.md from disk to pick up changes made during session
     const freshSystemMessage = await this.reloadSystemPrompt();
 
     // Separate system messages from conversation messages

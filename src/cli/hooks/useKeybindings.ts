@@ -2,7 +2,7 @@
  * useKeybindings.ts — 키보드 단축키 시스템
  *
  * 커스터마이징 가능한 키바인딩 시스템을 구현합니다.
- * 기본 단축키가 정의되어 있고, 사용자가 ~/.dbcode/keybindings.json으로
+ * 기본 단축키가 정의되어 있고, 사용자가 ~/.dhelix/keybindings.json으로
  * 키 매핑을 변경할 수 있습니다.
  *
  * 기본 단축키:
@@ -47,7 +47,7 @@ export interface KeybindingConfig {
   readonly action: string;
 }
 
-/** ~/.dbcode/keybindings.json 파일의 형식 */
+/** ~/.dhelix/keybindings.json 파일의 형식 */
 export interface KeybindingsFile {
   readonly bindings: Record<string, string>;
 }
@@ -136,7 +136,7 @@ export function formatKeyCombo(combo: {
 }
 
 /**
- * ~/.dbcode/keybindings.json에서 키바인딩 설정을 로드합니다.
+ * ~/.dhelix/keybindings.json에서 키바인딩 설정을 로드합니다.
  *
  * 두 가지 형식을 지원합니다:
  * - 새 형식: { "bindings": { "escape": "cancel", ... } }
@@ -147,7 +147,7 @@ export function formatKeyCombo(combo: {
  * @returns 키 조합 → 액션 이름의 레코드
  */
 export function loadKeybindingConfig(): Readonly<Record<string, string>> {
-  const configPath = join(homedir(), ".dbcode", "keybindings.json");
+  const configPath = join(homedir(), ".dhelix", "keybindings.json");
   try {
     const content = readFileSync(configPath, "utf-8");
     const parsed = JSON.parse(content) as unknown;
@@ -316,5 +316,5 @@ export function useKeybindings(bindings: readonly Keybinding[], isActive = true)
   useInput(handleInput, { isActive });
 }
 
-/** 키바인딩 설정 파일 경로 — ~/.dbcode/keybindings.json */
-export const KEYBINDINGS_CONFIG_PATH = join(homedir(), ".dbcode", "keybindings.json");
+/** 키바인딩 설정 파일 경로 — ~/.dhelix/keybindings.json */
+export const KEYBINDINGS_CONFIG_PATH = join(homedir(), ".dhelix", "keybindings.json");

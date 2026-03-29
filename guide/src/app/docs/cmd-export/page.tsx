@@ -265,7 +265,7 @@ export default function CmdExportPage() {
               <span className="str">/export</span>
               {"\n"}
               <span className="cm">
-                {"// → Conversation exported to: dbcode-conversation-2025-01-15T14-30-00.md"}
+                {"// → Conversation exported to: dhelix-conversation-2025-01-15T14-30-00.md"}
               </span>
               {"\n"}
               {"\n"}
@@ -299,7 +299,7 @@ export default function CmdExportPage() {
             <CodeBlock>
               <span className="cm">{"# 1. 메타데이터 테이블"}</span>
               {"\n"}
-              <span className="prop"># dbcode Conversation Export</span>
+              <span className="prop"># dhelix Conversation Export</span>
               {"\n"}| Field | Value |{"\n"}| Date | 2025-01-15T14:30:00Z |{"\n"}| Model | gpt-4o |
               {"\n"}| Session | abc-123 |{"\n"}| Version | v0.5.0 |{"\n"}| Platform | darwin (arm64)
               |{"\n"}| Directory | /Users/dev/project |{"\n"}

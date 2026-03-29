@@ -4,7 +4,7 @@
 
 Full-stack application with Spring Boot API and Vue 3 Composition API frontend.
 
-## DBCODE.md Template
+## DHELIX.md Template
 
 ```markdown
 # Expense Tracker - Spring Boot + Vue 3
@@ -33,7 +33,7 @@ Full-stack application with Spring Boot API and Vue 3 Composition API frontend.
 
 ### Turn 0: /init
 
-Create DBCODE.md for Expense Tracker with above stack.
+Create DHELIX.md for Expense Tracker with above stack.
 
 ### Turn 1: Backend project scaffold (Maven, dependencies, application.yml)
 
@@ -51,4 +51,4 @@ Fields: id, amount, description, category (ManyToOne), date, type (INCOME/EXPENS
 
 ### Turn 7: Tests + 80% coverage (both backend and frontend)
 
-### Turn 8: DBCODE.md compliance review
+### Turn 8: DHELIX.md compliance review

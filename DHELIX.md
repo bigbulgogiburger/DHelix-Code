@@ -1,6 +1,6 @@
-# DBCODE.md
+# DHELIX.md
 
-This file provides guidance to dbcode (AI coding assistant) when working with code in this repository.
+This file provides guidance to dhelix (AI coding assistant) when working with code in this repository.
 
 ## Build / Test / Lint commands
 
@@ -16,8 +16,8 @@ This file provides guidance to dbcode (AI coding assistant) when working with co
 - **Entry point & CLI wiring:** `src/index.ts` boots Commander; commands live under `src/commands/*`, are registered via `commands/registry.ts`, and rely on shared `CommandTool` factories from `tools/registry.ts`. CLI flags feed `config/loader.ts`, `hooks`, and `skill` loading before running the agent loop.
 - **Core agent stack:** `src/core` contains the agent loop (`agent-loop.ts`), context manager (`context-manager.ts`), checkpoint/session managers, guardrail hooks, and telemetry. The loop orchestrates LLM calls (via clients in `src/llm/`), tool extraction (`tools/executor.ts`), permissions (`permissions/manager.ts`), and auto-checkpointing before tool execution.
 - **Tool abstraction:** `src/tools/definitions/*` define each permitted tool (file I/O, bash, glob/grep, network, helper tools such as `agent` and `todo-write`). Tools register with `ToolRegistry` so the agent loop can find, validate, and execute them consistently. Tool calls flow through strategies defined in `src/llm/tool-call-strategy.ts` to decide synchronous vs. contextual execution.
-- **Configuration & hooks:** `src/config/loader.ts` resolves CLI overrides + dotenv, feeding into hook runners (`hooks/loader.ts`, `hooks/runner.ts`). Hooks (SessionStart, etc.) live alongside permission and telemetry events. `SkillManager` (under `src/skills/manager.ts`) loads optional `.dbcode/commands/`/`skills` extensions, keeping command discovery extensible.
-- **Session/persistence:** `ContextManager` + `SessionManager` keep message logs, cold storage, compaction, checkpoints, and session metadata in `~/.dbcode/sessions/`. Auto-compaction steps are documented in `CORE_ARCHITECTURE_ANALYSIS.md` – cold storage for tool outputs, summaries at ~83.5% context, and rehydration for hot files. Agents use abort-aware loops with `UsageAggregator` metrics and guardrail filtering before streaming or non-streaming LLM calls.
+- **Configuration & hooks:** `src/config/loader.ts` resolves CLI overrides + dotenv, feeding into hook runners (`hooks/loader.ts`, `hooks/runner.ts`). Hooks (SessionStart, etc.) live alongside permission and telemetry events. `SkillManager` (under `src/skills/manager.ts`) loads optional `.dhelix/commands/`/`skills` extensions, keeping command discovery extensible.
+- **Session/persistence:** `ContextManager` + `SessionManager` keep message logs, cold storage, compaction, checkpoints, and session metadata in `~/.dhelix/sessions/`. Auto-compaction steps are documented in `CORE_ARCHITECTURE_ANALYSIS.md` – cold storage for tool outputs, summaries at ~83.5% context, and rehydration for hot files. Agents use abort-aware loops with `UsageAggregator` metrics and guardrail filtering before streaming or non-streaming LLM calls.
 
 ## Code style conventions
 
@@ -31,5 +31,5 @@ This file provides guidance to dbcode (AI coding assistant) when working with co
 - **Commander + Ink CLI:** The CLI relies on `commander` for command parsing and `ink`/React for terminal UI components in `src/cli/`. Headless mode (`--print`, `--output-format`) bypasses interactive UI when needed.
 - **LLM tooling & strategy:** `OpenAICompatibleClient` and `ResponsesAPIClient` in `src/llm/` encapsulate API calls. Tool call strategy selection (sync vs streaming) is abstracted in `src/llm/tool-call-strategy.ts` and is consumed by `AgentLoop` to balance LLM replies and tool invocations.
 - **Session-aware autopilot:** Context + session managers collaborate with guardrails and checkpointing to support `/rewind`, `/compact`, `memory`, MCP transport layers, and auto-checkpointing mentioned in `CORE_ARCHITECTURE_ANALYSIS.md`. Guardrails live under `src/guardrails` (input/output filtering), while `telemetry` events trace key states.
-- **Extensible skills/perms/hooks:** `SkillManager` unlocks custom commands in `.dbcode/commands` and `~/.dbcode/commands`; permission scopes set via `PermissionManager` allow per-tool approval workflows. Hooks (`HookRunner`) fire at SessionStart/ToolCall/etc. to let configs or external scripts react to state changes.
-- **Packaging & deployment:** Bundling is handled by `tsup` (entry `src/index.ts`, emits `dist/index.js`). The CLI is published via the `bin/dbcode.mjs` entry point, relying on Node.js 20+ features and `type: module`. DBCODE.md is the canonical instructions file the CLI consumes at runtime to understand project-specific policies.
+- **Extensible skills/perms/hooks:** `SkillManager` unlocks custom commands in `.dhelix/commands` and `~/.dhelix/commands`; permission scopes set via `PermissionManager` allow per-tool approval workflows. Hooks (`HookRunner`) fire at SessionStart/ToolCall/etc. to let configs or external scripts react to state changes.
+- **Packaging & deployment:** Bundling is handled by `tsup` (entry `src/index.ts`, emits `dist/index.js`). The CLI is published via the `bin/dhelix.mjs` entry point, relying on Node.js 20+ features and `type: module`. DHELIX.md is the canonical instructions file the CLI consumes at runtime to understand project-specific policies.

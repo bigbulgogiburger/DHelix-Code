@@ -107,7 +107,7 @@ export function setupNotificationTriggers(
       const seconds = Math.round(elapsed / 1000);
       // void: Promise를 의도적으로 무시 — 이벤트 핸들러에서 await하면 안 됨
       void sendNotification({
-        title: "dbcode",
+        title: "dhelix",
         message: `Task completed in ${seconds}s`,
         sound: config.sound,
       });
@@ -121,7 +121,7 @@ export function setupNotificationTriggers(
   const onLLMError = ({ error }: { error: Error }): void => {
     // fire-and-forget: 결과를 기다리지 않음
     void sendNotification({
-      title: "dbcode — Error",
+      title: "Dhelix Code — Error",
       message: error.message.slice(0, 200),
       sound: config.sound,
     });

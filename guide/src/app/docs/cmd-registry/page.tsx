@@ -42,7 +42,7 @@ export default function CmdRegistryPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">registry.ts</code>는 dbcode의 슬래시 명령어 시스템의
+                <code className="text-cyan-600">registry.ts</code>는 dhelix의 슬래시 명령어 시스템의
                 기반을 제공하는 모듈입니다. 명령어의 타입 정의(SlashCommand, CommandResult,
                 CommandContext), 에러 클래스(CommandError), 그리고 명령어를 등록/조회/실행하는
                 레지스트리 클래스(CommandRegistry)를 모두 포함하고 있습니다.

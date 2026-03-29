@@ -6,7 +6,7 @@ Hybrid mobile app using Flutter WebView to embed a Spring Boot served web applic
 The Spring Boot backend serves both REST API and Thymeleaf HTML pages.
 Flutter wraps the web app in a WebView with native bridge for device features.
 
-## DBCODE.md Template
+## DHELIX.md Template
 
 ```markdown
 # Smart Notes - Flutter WebView + Spring Boot
@@ -59,7 +59,7 @@ mobile/
 
 ## Turn Definitions (10 turns)
 
-### Turn 0: /init — DBCODE.md for Smart Notes
+### Turn 0: /init — DHELIX.md for Smart Notes
 
 ### Turn 1: Backend scaffold (Gradle, Spring Boot + Thymeleaf + Web + JPA + H2)
 
@@ -82,4 +82,4 @@ mobile/
 Backend: MockMvc for both page and API controllers, service tests
 Flutter: WebView widget test, bridge handler tests
 
-### Turn 10: DBCODE.md compliance review
+### Turn 10: DHELIX.md compliance review

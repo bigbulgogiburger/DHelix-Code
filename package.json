@@ -1,10 +1,10 @@
 {
-  "name": "dbcode",
-  "version": "0.1.0",
+  "name": "dhelix",
+  "version": "0.2.0",
   "description": "CLI AI coding assistant for local/external LLMs",
   "type": "module",
   "bin": {
-    "dbcode": "./bin/dbcode.mjs"
+    "dhelix": "./bin/dhelix.mjs"
   },
   "exports": {
     ".": "./dist/index.js"

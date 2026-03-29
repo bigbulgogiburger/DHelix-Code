@@ -1,17 +1,17 @@
 {
-  "skill_name": "dbcode-e2e-test",
+  "skill_name": "dhelix-e2e-test",
   "evals": [
     {
       "id": 1,
       "mode": "project-e2e",
-      "prompt": "dbcode E2E 테스트를 실행해줘. Stack 2 (Spring Boot + React)로 Task Board 프로젝트를 멀티턴으로 만들어줘. /init으로 시작하고, DBCODE.md 규칙을 따르는지 확인해줘. 빌드와 테스트 커버리지 80% 이상 달성해야 해.",
-      "expected_output": "9-turn multi-turn session creating a Spring Boot + React Task Board app with passing build, 80%+ test coverage, and verified DBCODE.md compliance",
+      "prompt": "dhelix E2E 테스트를 실행해줘. Stack 2 (Spring Boot + React)로 Task Board 프로젝트를 멀티턴으로 만들어줘. /init으로 시작하고, DHELIX.md 규칙을 따르는지 확인해줘. 빌드와 테스트 커버리지 80% 이상 달성해야 해.",
+      "expected_output": "9-turn multi-turn session creating a Spring Boot + React Task Board app with passing build, 80%+ test coverage, and verified DHELIX.md compliance",
       "files": [],
       "assertions": [
         {
-          "name": "dbcode_md_created",
+          "name": "dhelix_md_created",
           "type": "file_exists",
-          "description": "DBCODE.md file is created in project root after /init turn"
+          "description": "DHELIX.md file is created in project root after /init turn"
         },
         {
           "name": "build_success_backend",
@@ -29,9 +29,9 @@
           "description": "Test coverage is >= 80% for both backend and frontend"
         },
         {
-          "name": "dbcode_read_count",
+          "name": "dhelix_read_count",
           "type": "numeric_threshold",
-          "description": "DBCODE.md is read by the agent at least 2 times during the session"
+          "description": "DHELIX.md is read by the agent at least 2 times during the session"
         },
         {
           "name": "all_turns_complete",
@@ -43,8 +43,8 @@
     {
       "id": 2,
       "mode": "project-e2e",
-      "prompt": "Stack 1 (Spring MVC + JSP + JavaScript)로 Todo Manager를 만드는 E2E 테스트를 실행해줘. DBCODE.md에 JSP에서 scriptlet 사용 금지를 명시하고, 실제로 지켜지는지 확인해줘. 테스트 커버리지 80% 필수.",
-      "expected_output": "9-turn session creating Spring MVC + JSP Todo Manager. No scriptlets in JSP files. JaCoCo coverage >= 80%. DBCODE.md conventions verified.",
+      "prompt": "Stack 1 (Spring MVC + JSP + JavaScript)로 Todo Manager를 만드는 E2E 테스트를 실행해줘. DHELIX.md에 JSP에서 scriptlet 사용 금지를 명시하고, 실제로 지켜지는지 확인해줘. 테스트 커버리지 80% 필수.",
+      "expected_output": "9-turn session creating Spring MVC + JSP Todo Manager. No scriptlets in JSP files. JaCoCo coverage >= 80%. DHELIX.md conventions verified.",
       "files": [],
       "assertions": [
         {
@@ -53,9 +53,9 @@
           "description": "No <% %> scriptlet tags found in any .jsp file"
         },
         {
-          "name": "dbcode_md_created",
+          "name": "dhelix_md_created",
           "type": "file_exists",
-          "description": "DBCODE.md exists with scriptlet prohibition rule"
+          "description": "DHELIX.md exists with scriptlet prohibition rule"
         },
         {
           "name": "maven_build_success",
@@ -72,7 +72,7 @@
     {
       "id": 3,
       "mode": "project-e2e",
-      "prompt": "Flutter WebView + Spring Boot (Stack 5)로 Smart Notes 앱을 멀티턴으로 만들어줘. /init 필수, DBCODE.md에 JavaScript bridge 규칙 명시. 백엔드는 Thymeleaf + REST API 둘 다. 빌드 성공 + 80% 커버리지.",
+      "prompt": "Flutter WebView + Spring Boot (Stack 5)로 Smart Notes 앱을 멀티턴으로 만들어줘. /init 필수, DHELIX.md에 JavaScript bridge 규칙 명시. 백엔드는 Thymeleaf + REST API 둘 다. 빌드 성공 + 80% 커버리지.",
       "expected_output": "10-turn session creating Flutter WebView + Spring Boot Smart Notes app. Both Thymeleaf pages and REST API. JavaScript bridge working. Build passes, coverage >= 80%.",
       "files": [],
       "assertions": [

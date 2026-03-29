@@ -5,7 +5,7 @@
 Modern full-stack application with Spring Boot REST API backend and React TypeScript frontend.
 Monorepo structure with separate backend/ and frontend/ directories.
 
-## DBCODE.md Template
+## DHELIX.md Template
 
 ```markdown
 # Task Board - Spring Boot + React
@@ -55,7 +55,7 @@ frontend/
 ### Turn 0: /init
 
 ```
-Run /init to initialize this project. Create a DBCODE.md for a Task Board application using
+Run /init to initialize this project. Create a DHELIX.md for a Task Board application using
 Spring Boot 3.2 (Gradle Kotlin DSL, Java 17, H2, Spring Data JPA) as backend and
 React 18 (TypeScript 5, Vite, Tailwind CSS) as frontend. Monorepo with backend/ and frontend/.
 Testing: JUnit 5 + JaCoCo (backend), Vitest + React Testing Library (frontend). Target 80% coverage.
@@ -67,7 +67,7 @@ Testing: JUnit 5 + JaCoCo (backend), Vitest + React Testing Library (frontend). 
 Create the backend/ directory with Spring Boot 3.2 Gradle project. Include dependencies:
 spring-boot-starter-web, spring-boot-starter-data-jpa, h2, lombok.
 Add JaCoCo plugin with 80% minimum coverage. Create application.yml with H2 config.
-Follow DBCODE.md directory structure exactly.
+Follow DHELIX.md directory structure exactly.
 ```
 
 ### Turn 2: Backend API
@@ -76,7 +76,7 @@ Follow DBCODE.md directory structure exactly.
 Implement REST API for Task entity with fields: id, title, description, status (enum: TODO/IN_PROGRESS/DONE),
 priority (enum: LOW/MEDIUM/HIGH), createdAt, updatedAt.
 Create full CRUD endpoints under /api/v1/tasks with DTOs.
-Refer to DBCODE.md — use @RestController, not @Controller.
+Refer to DHELIX.md — use @RestController, not @Controller.
 ```
 
 ### Turn 3: Frontend Scaffold
@@ -85,16 +85,16 @@ Refer to DBCODE.md — use @RestController, not @Controller.
 Create frontend/ with Vite + React + TypeScript. Install dependencies:
 react, react-dom, tailwindcss, @types/react. Configure TypeScript strict mode.
 Set up Vitest + React Testing Library. Proxy /api to backend (vite.config.ts).
-Follow DBCODE.md directory structure.
+Follow DHELIX.md directory structure.
 ```
 
 ### Turn 4: Frontend Components
 
 ```
 Build the Task Board UI: TaskList, TaskCard, TaskForm, StatusFilter components.
-Use Tailwind CSS for styling (no CSS modules per DBCODE.md).
+Use Tailwind CSS for styling (no CSS modules per DHELIX.md).
 Create typed API client in services/ using fetch wrapper.
-Functional components only as specified in DBCODE.md.
+Functional components only as specified in DHELIX.md.
 ```
 
 ### Turn 5: Frontend State + Integration
@@ -123,10 +123,10 @@ Frontend: Vitest tests for components, hooks, and API client.
 Run: backend: ./gradlew test jacocoTestReport, frontend: npx vitest run --coverage
 ```
 
-### Turn 8: DBCODE.md Review
+### Turn 8: DHELIX.md Review
 
 ```
-Review the entire project against DBCODE.md. Check:
+Review the entire project against DHELIX.md. Check:
 1. REST endpoints under /api/v1/
 2. Functional components only
 3. TypeScript strict mode

@@ -1,7 +1,7 @@
 # Claude Code 피드백 시스템 심층 분석
 
 > **Date**: 2026-03-15
-> **Scope**: Claude Code 터미널 UI의 모든 피드백 유형 vs dbcode 구현 상태
+> **Scope**: Claude Code 터미널 UI의 모든 피드백 유형 vs dhelix 구현 상태
 > **Components**: 22개 컴포넌트, 3,466 LOC
 
 ---
@@ -47,7 +47,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 커서        | `▌` (U+258C) — 스트리밍 중 gray로 깜빡임           |
 | 코드 블록   | ``` 쌍 카운트로 미완성 감지 → 원시 텍스트 유지     |
 | 최적화      | React.memo, useMemo로 리렌더링 최소화              |
-| dbcode 상태 | ✅ 구현 완료 — `assistant:` 접두어 제거 완료       |
+| dhelix 상태 | ✅ 구현 완료 — `assistant:` 접두어 제거 완료       |
 
 #### Intermediate Text (중간 메시지)
 
@@ -63,7 +63,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 아이콘        | `⏺` (U+23FA) — **cyan** 색상                           |
 | 시점          | `agent:assistant-message` 이벤트의 `isFinal=false`일 때 |
 | 프롬프트 의존 | 시스템 프롬프트 Communication style 섹션이 LLM에게 지시 |
-| dbcode 상태   | ✅ 구현 완료 — 렌더링 + 시스템 프롬프트 규칙            |
+| dhelix 상태   | ✅ 구현 완료 — 렌더링 + 시스템 프롬프트 규칙            |
 
 ---
 
@@ -142,7 +142,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | ask_user    | Asking        | Ask       | **yellow**  |
 | kill_shell  | Terminating   | Kill      | **red**     |
 
-| dbcode 상태 | ✅ 4가지 상태 + 12개 도구 디스플레이 완전 구현 |
+| dhelix 상태 | ✅ 4가지 상태 + 12개 도구 디스플레이 완전 구현 |
 | ----------- | ---------------------------------------------- |
 
 ---
@@ -168,7 +168,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 선택 옵션   | Allow once / Allow for session / Deny — `←→` 탐색, `Enter` 확인     |
 | 선택 UI     | 선택됨 = **cyan + bold + underline + `▸`**, 미선택 = **gray + dim** |
 | 3가지 응답  | `"yes"` (1회), `"always"` (세션 전체), `"no"` (거부)                |
-| dbcode 상태 | ✅ 완전 구현                                                        |
+| dhelix 상태 | ✅ 완전 구현                                                        |
 
 #### Ask User Question (에이전트 질문)
 
@@ -183,7 +183,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 선택지      | 선택지가 있으면 `SelectList` 컴포넌트로 렌더링                     |
 | 대기 방식   | 이벤트 기반 Promise 대기 (`ask_user:prompt` / `ask_user:response`) |
 | AbortSignal | Esc 키로 취소 가능                                                 |
-| dbcode 상태 | ✅ 구현 완료 (이번 세션에서 리팩토링)                              |
+| dhelix 상태 | ✅ 구현 완료 (이번 세션에서 리팩토링)                              |
 
 #### Select List (대화형 선택)
 
@@ -202,7 +202,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 탐색        | `↑↓` 이동, `Enter` 선택, `Esc` 취소                  |
 | 스크롤      | maxVisible (기본 8) 초과 시 `↑ more` / `↓ more` 표시 |
 | 선택 UI     | **cyan + bold + `▸`**                                |
-| dbcode 상태 | ✅ 완전 구현                                         |
+| dhelix 상태 | ✅ 완전 구현                                         |
 
 ---
 
@@ -221,7 +221,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 메시지        | 26개 한국어 메시지 중 랜덤 1회 선택 (순환 없음) |
 | 메타 정보     | `(경과시간 · ↓ 토큰수)` — dimColor              |
 | 표시 조건     | `isProcessing && !isStreamingFinal`             |
-| dbcode 상태   | ✅ 구현 완료 (이번 세션에서 개선)               |
+| dhelix 상태   | ✅ 구현 완료 (이번 세션에서 개선)               |
 
 #### Thinking Block (확장 사고)
 
@@ -239,7 +239,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 스피너      | ASCII `\|/-\\` 회전, 200ms (스트리밍 중에만) |
 | 토큰        | `toLocaleString()` 포맷                      |
 | 최대 표시   | 펼침 시 20줄까지                             |
-| dbcode 상태 | ✅ 완전 구현                                 |
+| dhelix 상태 | ✅ 완전 구현                                 |
 
 #### Retry Countdown (재시도 카운트다운)
 
@@ -252,7 +252,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 파일        | `RetryCountdown.tsx` (52 LOC)  |
 | 아이콘      | `⏳` (U+23F3) — dimColor       |
 | 카운트      | 1초 간격, 0 이하이면 자동 소멸 |
-| dbcode 상태 | ✅ 완전 구현                   |
+| dhelix 상태 | ✅ 완전 구현                   |
 
 #### Status Bar (하단 상태 바)
 
@@ -270,7 +270,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 | 비용        | `$0.12` (cyan, 2자리 소수)                                   |
 | 태그        | `[Default]` green, `[Verbose]` yellow, `[Thinking]` cyan     |
 | 테두리      | 사용률 80% 초과 시 **red**으로 변경                          |
-| dbcode 상태 | ✅ 완전 구현                                                 |
+| dhelix 상태 | ✅ 완전 구현                                                 |
 
 ---
 
@@ -296,7 +296,7 @@ LLM이 최종 답변을 스트리밍할 때 표시되는 텍스트.
 
 | 파일        | `ErrorBanner.tsx` (123 LOC) |
 | ----------- | --------------------------- |
-| dbcode 상태 | ✅ 완전 구현                |
+| dhelix 상태 | ✅ 완전 구현                |
 
 #### Notification (알림 배너)
 
@@ -309,7 +309,7 @@ Permission mode: Plan
 | 색상        | **yellow**                                                        |
 | 지속시간    | 2초 후 자동 소멸 (`setTimeout`)                                   |
 | 트리거      | 키보드 단축키 (Shift+Tab 모드, Ctrl+O 상세, Alt+T 사고, Esc 취소) |
-| dbcode 상태 | ✅ 완전 구현                                                      |
+| dhelix 상태 | ✅ 완전 구현                                                      |
 
 #### Inline Error (인라인 에러)
 
@@ -318,13 +318,13 @@ Permission mode: Plan
 | 색상        | **red**                           |
 | 위치        | ActivityFeed 내, `marginLeft={2}` |
 | 시점        | 비치명적 에러 (활동 피드에 삽입)  |
-| dbcode 상태 | ✅ 구현                           |
+| dhelix 상태 | ✅ 구현                           |
 
 ---
 
 ### 2.6 보조 UI (10종)
 
-| 컴포넌트                | 파일                     | LOC | 역할                                                         | dbcode |
+| 컴포넌트                | 파일                     | LOC | 역할                                                         | dhelix |
 | ----------------------- | ------------------------ | --- | ------------------------------------------------------------ | ------ |
 | **UserInput**           | `UserInput.tsx`          | 528 | 전체 readline 에뮬레이션 — Tab 완성, @멘션, 다중줄, 히스토리 | ✅     |
 | **SlashCommandMenu**    | `SlashCommandMenu.tsx`   | 149 | `/` 입력 시 명령어 자동완성 메뉴                             | ✅     |
@@ -417,7 +417,7 @@ Permission mode: Plan
 
 ---
 
-## 6. dbcode 구현 상태 총괄
+## 6. dhelix 구현 상태 총괄
 
 ### 완전 구현 (22/26)
 

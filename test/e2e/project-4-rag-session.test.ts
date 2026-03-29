@@ -1,7 +1,7 @@
 /**
  * E2E Multi-turn Session Test: Node.js + RAG System
  *
- * Uses dbcode's agent-loop to build a RAG (Retrieval-Augmented Generation) system
+ * Uses dhelix's agent-loop to build a RAG (Retrieval-Augmented Generation) system
  * incrementally across multiple conversation turns.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";

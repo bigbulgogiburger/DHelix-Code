@@ -1,7 +1,7 @@
 /**
  * 훅 설정 로더 — settings.json에서 훅 설정을 읽고 검증(validation)하는 모듈
  *
- * .dbcode/settings.json 파일의 "hooks" 키에서 훅 설정을 로드하고,
+ * .dhelix/settings.json 파일의 "hooks" 키에서 훅 설정을 로드하고,
  * Zod 스키마를 사용하여 설정 값의 유효성을 엄격하게 검증합니다.
  *
  * 검증 항목:
@@ -10,7 +10,7 @@
  * - 핸들러 타입별 discriminatedUnion(구분된 합집합)으로 타입 안전성 보장
  *
  * @example
- * const config = await loadHookConfig("/path/to/.dbcode");
+ * const config = await loadHookConfig("/path/to/.dhelix");
  * // config: { PostToolUse: [{ matcher: "file_edit", hooks: [...] }] }
  *
  * @example
@@ -143,12 +143,12 @@ export function parseHookConfig(raw: unknown): HookConfig {
 }
 
 /**
- * .dbcode/settings.json 파일에서 훅 설정을 로드합니다.
+ * .dhelix/settings.json 파일에서 훅 설정을 로드합니다.
  * 파일의 "hooks" 키에서 훅 설정을 읽어 검증된 HookConfig를 반환합니다.
  *
  * 파일이 없거나 "hooks" 키가 없으면 빈 설정({})을 반환합니다.
  *
- * @param settingsDir - settings.json이 있는 디렉토리 경로 (예: ".dbcode")
+ * @param settingsDir - settings.json이 있는 디렉토리 경로 (예: ".dhelix")
  * @returns 검증된 훅 설정 객체
  * @throws HookLoadError - 파일 파싱 실패 또는 설정 검증 실패 시
  */

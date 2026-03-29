@@ -87,7 +87,7 @@ const HOME_READONLY_PATHS: readonly string[] = [
   ".volta",
   ".rustup",
   ".cargo",
-  ".dbcode",
+  ".dhelix",
   ".claude",
   ".git",
 ];

@@ -43,7 +43,7 @@ export default function MessageTypesPage() {
 
             <div className="text-[14px] text-gray-600 leading-[1.85] space-y-4">
               <p>
-                <code className="text-cyan-600 text-[13px]">message-types.ts</code>는 dbcode
+                <code className="text-cyan-600 text-[13px]">message-types.ts</code>는 dhelix
                 전체에서 사용하는{" "}
                 <strong className="text-gray-900">채팅 메시지의 설계도</strong>입니다. 모든 LLM
                 호출, 컨텍스트 관리, 도구 실행 결과 전달에서 이 타입들이 사용됩니다.

@@ -58,7 +58,7 @@ export default function ContextManagerPage() {
 
             <div className="text-[14px] text-gray-600 leading-relaxed mb-6 space-y-3">
               <p>
-                ContextManager는 dbcode의{" "}
+                ContextManager는 dhelix의{" "}
                 <strong className="text-gray-900">가장 중요한 Core 모듈</strong> 중 하나입니다.
                 Agent Loop가 매 턴마다 LLM에 메시지를 보내기 전에{" "}
                 <code className="text-cyan-600 text-[13px]">prepare()</code>를 호출하여 컨텍스트
@@ -190,7 +190,7 @@ export default function ContextManagerPage() {
                   name: "workingDirectory",
                   type: "string",
                   required: false,
-                  desc: "DBCODE.md 재로딩을 위한 작업 디렉토리. 기본값: process.cwd()",
+                  desc: "DHELIX.md 재로딩을 위한 작업 디렉토리. 기본값: process.cwd()",
                 },
                 {
                   name: "client",
@@ -965,7 +965,7 @@ ctx.dispose();`}
     L2_CHECK{"needsCompaction()?<br/>usageRatio ≥ 83.5%?"}
     L2_CHECK -->|"No"| GC_CHECK
     L2_CHECK -->|"Yes"| L2["Layer 2: compact()<br/><small>대화 구조화 요약</small>"]
-    L2 --> L2_RELOAD["reloadSystemPrompt()<br/><small>DBCODE.md 최신 로딩</small>"]
+    L2 --> L2_RELOAD["reloadSystemPrompt()<br/><small>DHELIX.md 최신 로딩</small>"]
     L2_RELOAD --> L2_TURNS["identifyTurns()<br/><small>대화를 턴 단위 분리</small>"]
     L2_TURNS --> L2_SPLIT["턴 분류<br/><small>오래된 턴 요약, 최근 보존</small>"]
     L2_SPLIT --> L2_SUMMARY["summarizeWithFallback()<br/><small>LLM 요약 또는 로컬 추출</small>"]

@@ -104,6 +104,6 @@ describe.skipIf(!hasApiKey)("Real OpenAI API Integration", () => {
 
     expect(result.iterations).toBeGreaterThanOrEqual(2);
     const lastMsg = result.messages[result.messages.length - 1];
-    expect(lastMsg.content.toLowerCase()).toContain("dbcode");
+    expect(lastMsg.content.toLowerCase()).toContain("dhelix");
   }, 30000);
 });

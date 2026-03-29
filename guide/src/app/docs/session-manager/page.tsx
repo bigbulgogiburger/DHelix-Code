@@ -66,7 +66,7 @@ export default function SessionManagerPage() {
   APP["App.tsx<br/><small>CLI 진입점</small>"]
   AGENT["Agent Loop<br/><small>agent-loop.ts</small>"]
   SM["SessionManager<br/><small>session-manager.ts</small>"]
-  DISK["Disk Storage<br/><small>~/.dbcode/sessions/</small>"]
+  DISK["Disk Storage<br/><small>~/.dhelix/sessions/</small>"]
   CONV["Conversation<br/><small>conversation.ts</small>"]
 
   APP -->|"세션 생성/복원"| SM
@@ -220,7 +220,7 @@ export default function SessionManagerPage() {
                   name: "sessionsDir",
                   type: "string | undefined",
                   required: false,
-                  desc: "세션 저장 디렉토리 (기본값: ~/.dbcode/sessions/)",
+                  desc: "세션 저장 디렉토리 (기본값: ~/.dhelix/sessions/)",
                 },
               ]}
             />
@@ -555,7 +555,7 @@ export default function SessionManagerPage() {
               디렉토리를 가집니다.
             </p>
             <CodeBlock>
-              <span className="cm">{"~/.dbcode/sessions/"}</span>
+              <span className="cm">{"~/.dhelix/sessions/"}</span>
               {"\n"}
               <span className="prop">{"├── index.json"}</span>
               {"               "}
@@ -711,14 +711,14 @@ export default function SessionManagerPage() {
               </p>
               <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
                 <li>
-                  <strong>다른 프로세스가 잠금을 보유:</strong> 다른 dbcode 인스턴스가 같은 세션에
+                  <strong>다른 프로세스가 잠금을 보유:</strong> 다른 dhelix 인스턴스가 같은 세션에
                   쓰기 중일 수 있습니다. 잠시 기다린 후 재시도하세요.
                 </li>
                 <li>
                   <strong>오래된 잠금 파일:</strong> 이전 프로세스가 비정상 종료되어 잠금이 남아있을
                   수 있습니다. 30초가 지나면 자동으로 제거되지만, 수동으로
                   <code className="text-cyan-600">
-                    ~/.dbcode/sessions/{"{sessionId}"}/.lock
+                    ~/.dhelix/sessions/{"{sessionId}"}/.lock
                   </code>{" "}
                   디렉토리를 삭제해도 됩니다.
                 </li>

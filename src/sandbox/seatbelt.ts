@@ -225,7 +225,7 @@ export async function executeSandboxed(config: SandboxConfig): Promise<{
   });
 
   // 프로파일을 임시 파일로 저장 (고유 이름을 위해 UUID 사용)
-  const profilePath = join(tmpdir(), `dbcode-sandbox-${randomUUID()}.sb`);
+  const profilePath = join(tmpdir(), `dhelix-sandbox-${randomUUID()}.sb`);
   await writeFile(profilePath, profile, "utf-8");
 
   try {

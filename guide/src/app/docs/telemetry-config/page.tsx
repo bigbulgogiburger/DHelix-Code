@@ -50,16 +50,16 @@ export default function TelemetryConfigPage() {
                 기본값이 채워집니다.
               </p>
               <p>
-                두 가지 네이밍 규칙을 지원합니다: dbcode 전용 변수(
-                <code className="text-cyan-600">DBCODE_TELEMETRY_*</code>)와 표준 OpenTelemetry
+                두 가지 네이밍 규칙을 지원합니다: dhelix 전용 변수(
+                <code className="text-cyan-600">DHELIX_TELEMETRY_*</code>)와 표준 OpenTelemetry
                 변수(<code className="text-cyan-600">OTEL_*</code>). 전용 변수가 우선 적용되고,
                 없으면 표준 변수로 폴백합니다.
               </p>
               <p>
                 텔레메트리는 기본적으로 비활성(<code className="text-cyan-600">enabled: false</code>
                 )입니다. 사용자가 명시적으로{" "}
-                <code className="text-cyan-600">DBCODE_TELEMETRY=true</code> 또는{" "}
-                <code className="text-cyan-600">DBCODE_TELEMETRY_ENABLED=true</code>를 설정해야
+                <code className="text-cyan-600">DHELIX_TELEMETRY=true</code> 또는{" "}
+                <code className="text-cyan-600">DHELIX_TELEMETRY_ENABLED=true</code>를 설정해야
                 활성화됩니다.
               </p>
             </div>
@@ -68,7 +68,7 @@ export default function TelemetryConfigPage() {
               title="텔레메트리 설정 로드 흐름"
               titleColor="purple"
               chart={`graph TD
-  ENV["process.env<br/><small>DBCODE_TELEMETRY_*, OTEL_*</small>"]
+  ENV["process.env<br/><small>DHELIX_TELEMETRY_*, OTEL_*</small>"]
   RAW["원시 값 추출<br/><small>undefined 제거</small>"]
   ZOD["Zod telemetryConfigSchema<br/><small>유효성 검사 + 기본값 적용</small>"]
   CONFIG["TelemetryConfig<br/><small>enabled, otlpEndpoint, prometheusPort,<br/>exportIntervalMs, serviceName, serviceVersion,<br/>resourceAttributes</small>"]
@@ -161,7 +161,7 @@ export default function TelemetryConfigPage() {
                   name: "serviceName",
                   type: "string",
                   required: false,
-                  desc: 'OTLP 리소스 서비스 이름. 기본값: "dbcode"',
+                  desc: 'OTLP 리소스 서비스 이름. 기본값: "dhelix"',
                 },
                 {
                   name: "serviceVersion",
@@ -196,21 +196,21 @@ export default function TelemetryConfigPage() {
                 <tbody className="divide-y divide-gray-100">
                   <tr>
                     <td className="p-3">
-                      <code className="text-cyan-600">DBCODE_TELEMETRY</code>
+                      <code className="text-cyan-600">DHELIX_TELEMETRY</code>
                     </td>
                     <td className="p-3 text-gray-600">enabled</td>
                     <td className="p-3 text-gray-500">1순위</td>
                   </tr>
                   <tr>
                     <td className="p-3">
-                      <code className="text-cyan-600">DBCODE_TELEMETRY_ENABLED</code>
+                      <code className="text-cyan-600">DHELIX_TELEMETRY_ENABLED</code>
                     </td>
                     <td className="p-3 text-gray-600">enabled</td>
                     <td className="p-3 text-gray-500">1순위</td>
                   </tr>
                   <tr>
                     <td className="p-3">
-                      <code className="text-cyan-600">DBCODE_TELEMETRY_OTLP_ENDPOINT</code>
+                      <code className="text-cyan-600">DHELIX_TELEMETRY_OTLP_ENDPOINT</code>
                     </td>
                     <td className="p-3 text-gray-600">otlpEndpoint</td>
                     <td className="p-3 text-gray-500">1순위</td>
@@ -224,7 +224,7 @@ export default function TelemetryConfigPage() {
                   </tr>
                   <tr>
                     <td className="p-3">
-                      <code className="text-cyan-600">DBCODE_TELEMETRY_SERVICE_NAME</code>
+                      <code className="text-cyan-600">DHELIX_TELEMETRY_SERVICE_NAME</code>
                     </td>
                     <td className="p-3 text-gray-600">serviceName</td>
                     <td className="p-3 text-gray-500">1순위</td>
@@ -238,21 +238,21 @@ export default function TelemetryConfigPage() {
                   </tr>
                   <tr>
                     <td className="p-3">
-                      <code className="text-cyan-600">DBCODE_TELEMETRY_PROMETHEUS_PORT</code>
+                      <code className="text-cyan-600">DHELIX_TELEMETRY_PROMETHEUS_PORT</code>
                     </td>
                     <td className="p-3 text-gray-600">prometheusPort</td>
                     <td className="p-3 text-gray-500">1순위</td>
                   </tr>
                   <tr>
                     <td className="p-3">
-                      <code className="text-cyan-600">DBCODE_TELEMETRY_EXPORT_INTERVAL_MS</code>
+                      <code className="text-cyan-600">DHELIX_TELEMETRY_EXPORT_INTERVAL_MS</code>
                     </td>
                     <td className="p-3 text-gray-600">exportIntervalMs</td>
                     <td className="p-3 text-gray-500">1순위</td>
                   </tr>
                   <tr>
                     <td className="p-3">
-                      <code className="text-cyan-600">DBCODE_TELEMETRY_SERVICE_VERSION</code>
+                      <code className="text-cyan-600">DHELIX_TELEMETRY_SERVICE_VERSION</code>
                     </td>
                     <td className="p-3 text-gray-600">serviceVersion</td>
                     <td className="p-3 text-gray-500">1순위</td>
@@ -268,8 +268,8 @@ export default function TelemetryConfigPage() {
                 잘못된 URL을 입력하면 Zod 파싱 오류가 발생합니다.
               </li>
               <li>
-                <code className="text-cyan-600">DBCODE_TELEMETRY=true</code>와{" "}
-                <code className="text-cyan-600">DBCODE_TELEMETRY_ENABLED=true</code>는 OR
+                <code className="text-cyan-600">DHELIX_TELEMETRY=true</code>와{" "}
+                <code className="text-cyan-600">DHELIX_TELEMETRY_ENABLED=true</code>는 OR
                 조건입니다. 하나만 설정해도 활성화됩니다.
               </li>
               <li>
@@ -334,26 +334,26 @@ export default function TelemetryConfigPage() {
             <CodeBlock>
               <span className="cm"># 간편 활성화</span>
               {"\n"}
-              <span className="prop">DBCODE_TELEMETRY</span>=<span className="str">true</span>
+              <span className="prop">DHELIX_TELEMETRY</span>=<span className="str">true</span>
               {"\n"}
               {"\n"}
               <span className="cm">
                 # OTLP 엔드포인트 (Grafana Agent, OpenTelemetry Collector 등)
               </span>
               {"\n"}
-              <span className="prop">DBCODE_TELEMETRY_OTLP_ENDPOINT</span>=
+              <span className="prop">DHELIX_TELEMETRY_OTLP_ENDPOINT</span>=
               <span className="str">http://localhost:4318</span>
               {"\n"}
               {"\n"}
               <span className="cm"># 내보내기 간격 30초로 단축</span>
               {"\n"}
-              <span className="prop">DBCODE_TELEMETRY_EXPORT_INTERVAL_MS</span>=
+              <span className="prop">DHELIX_TELEMETRY_EXPORT_INTERVAL_MS</span>=
               <span className="str">30000</span>
               {"\n"}
               {"\n"}
               <span className="cm"># 표준 OTel 변수도 폴백으로 지원</span>
               {"\n"}
-              <span className="prop">OTEL_SERVICE_NAME</span>=<span className="str">my-dbcode</span>
+              <span className="prop">OTEL_SERVICE_NAME</span>=<span className="str">my-dhelix</span>
               {"\n"}
               <span className="prop">OTEL_EXPORTER_OTLP_ENDPOINT</span>=
               <span className="str">http://otel-collector:4318</span>
@@ -400,7 +400,7 @@ export default function TelemetryConfigPage() {
             <Callout type="tip" icon="*">
               <strong>팁:</strong> 표준 OTel 환경 변수(
               <code>OTEL_SERVICE_NAME</code>, <code>OTEL_EXPORTER_OTLP_ENDPOINT</code>)를 이미
-              설정한 환경이라면, <code>DBCODE_TELEMETRY=true</code>만 추가하면 바로 사용할 수
+              설정한 환경이라면, <code>DHELIX_TELEMETRY=true</code>만 추가하면 바로 사용할 수
               있습니다.
             </Callout>
           </section>
@@ -429,7 +429,7 @@ export default function TelemetryConfigPage() {
               titleColor="purple"
               chart={`stateDiagram-v2
   [*] --> 환경변수읽기: process.env 접근
-  환경변수읽기 --> 원시값추출: DBCODE_TELEMETRY_* / OTEL_* 매핑
+  환경변수읽기 --> 원시값추출: DHELIX_TELEMETRY_* / OTEL_* 매핑
   원시값추출 --> undefined제거: Object.fromEntries(filter)
   undefined제거 --> Zod파싱: telemetryConfigSchema.parse(cleaned)
   Zod파싱 --> 유효: 파싱 성공
@@ -452,7 +452,7 @@ export default function TelemetryConfigPage() {
               </span>
               ] ===
               <span className="str">&quot;true&quot;</span> || <span className="prop">env</span>.
-              <span className="prop">DBCODE_TELEMETRY</span> ===
+              <span className="prop">DHELIX_TELEMETRY</span> ===
               <span className="str">&quot;true&quot;</span>
             </CodeBlock>
 
@@ -501,7 +501,7 @@ export default function TelemetryConfigPage() {
                 &quot;ZodError: Invalid url 오류가 발생해요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">DBCODE_TELEMETRY_OTLP_ENDPOINT</code> 또는{" "}
+                <code className="text-cyan-600">DHELIX_TELEMETRY_OTLP_ENDPOINT</code> 또는{" "}
                 <code className="text-cyan-600">OTEL_EXPORTER_OTLP_ENDPOINT</code> 값이 유효한 URL
                 형식이 아닙니다. 반드시 <code className="text-cyan-600">http://hostname:port</code>{" "}
                 형식으로 입력하세요. 끝에 슬래시(/)나 경로를 붙이면 안 됩니다.
@@ -514,7 +514,7 @@ export default function TelemetryConfigPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 기본값은 60000ms(1분)입니다.{" "}
-                <code className="text-cyan-600">DBCODE_TELEMETRY_EXPORT_INTERVAL_MS=10000</code>
+                <code className="text-cyan-600">DHELIX_TELEMETRY_EXPORT_INTERVAL_MS=10000</code>
                 으로 10초로 단축할 수 있습니다. 단, 너무 짧으면 OTLP 엔드포인트에 부하가 증가할 수
                 있습니다.
               </p>
@@ -522,13 +522,13 @@ export default function TelemetryConfigPage() {
 
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h4 className="text-sm font-bold text-amber-600 mb-3">
-                &quot;기존 OTel 환경 변수가 있는데 dbcode 변수도 설정해야 하나요?&quot;
+                &quot;기존 OTel 환경 변수가 있는데 dhelix 변수도 설정해야 하나요?&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 <code className="text-cyan-600">OTEL_EXPORTER_OTLP_ENDPOINT</code>와{" "}
                 <code className="text-cyan-600">OTEL_SERVICE_NAME</code>은 폴백으로 지원됩니다. 이미
                 표준 OTel 변수가 설정된 환경이라면{" "}
-                <code className="text-cyan-600">DBCODE_TELEMETRY=true</code>만 추가하면 됩니다.
+                <code className="text-cyan-600">DHELIX_TELEMETRY=true</code>만 추가하면 됩니다.
               </p>
             </div>
           </section>
@@ -567,7 +567,7 @@ export default function TelemetryConfigPage() {
                   name: "config-loader.ts",
                   slug: "config-loader",
                   relation: "sibling",
-                  desc: "dbcode 메인 설정 로드 — 5계층 계층적 설정 시스템",
+                  desc: "dhelix 메인 설정 로드 — 5계층 계층적 설정 시스템",
                 },
               ]}
             />

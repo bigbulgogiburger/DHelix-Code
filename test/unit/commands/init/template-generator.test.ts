@@ -8,7 +8,7 @@ describe("generateTemplate", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-template-gen-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-template-gen-test-"));
   });
 
   afterEach(async () => {

@@ -1,8 +1,8 @@
-# dbcode 프로젝트 개요
+# dhelix 프로젝트 개요
 
 ## 프로젝트 개요
 
-- 이름: dbcode
+- 이름: dhelix
 - 설명: 로컬 및 외부 LLM을 위한 AI 코딩 어시스턴트 CLI
 - 언어: TypeScript
 - Node.js 버전: >=20.0.0
@@ -30,7 +30,7 @@
 
 ## 사용법
 
-- CLI 실행: `dbcode [options] [command]`
+- CLI 실행: `dhelix [options] [command]`
 - 주요 옵션:
   - `-m, --model <model>`: LLM 모델 이름 지정
   - `-u, --base-url <url>`: OpenAI 호환 API 기본 URL
