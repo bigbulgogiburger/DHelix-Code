@@ -27,6 +27,7 @@ import {
 import { TOOL_TIMEOUTS } from "../../constants.js";
 import { backgroundProcessManager } from "../executor.js";
 import { spawn } from "node:child_process";
+import { sanitizeEnv, getSandboxEnvMode } from "../../sandbox/env-sanitizer.js";
 
 /**
  * 대화형(interactive) 명령 목록 — 터미널 입력이 필요한 명령들
@@ -167,9 +168,24 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
   const shell = await getShellCommand();
   const args = getShellArgs(params.command, shell);
 
+  // 환경변수 정제 — DHELIX_SANDBOX_ENV 모드에 따라 동작
+  // strict: whitelist만 허용, permissive: 비밀 패턴 제거 (기본), off: 기존 동작 유지
+  const sandboxMode = getSandboxEnvMode();
+  const rawEnv = process.env as Record<string, string | undefined>;
+
+  const baseEnv: Record<string, string | undefined> =
+    sandboxMode === "off"
+      ? { ...rawEnv }
+      : sandboxMode === "strict"
+        ? sanitizeEnv(rawEnv, {
+            allowedEnvVars: undefined, // DEFAULT_ALLOWED_VARS를 사용하도록 별도 설정 가능
+            stripSecrets: true,
+          })
+        : sanitizeEnv(rawEnv);
+
   // Windows + Git Bash 환경에서 POSIX 호환을 위한 환경변수 설정
   const env: Record<string, string | undefined> = {
-    ...process.env,
+    ...baseEnv,
     ...(isWindows() && hasGitBash()
       ? {
           MSYS: "winsymlinks:nativestrict", // 심볼릭 링크 호환

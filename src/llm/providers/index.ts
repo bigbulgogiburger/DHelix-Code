@@ -28,3 +28,10 @@ export type { DefaultRegistryOverrides } from "./registry.js";
 
 // 기존 프로바이더
 export { AnthropicProvider } from "./anthropic.js";
+
+// Google Gemini 프로바이더
+export {
+  GoogleGeminiProvider,
+  GOOGLE_GEMINI_MANIFEST,
+  resolveGeminiApiKey,
+} from "./google-gemini.js";

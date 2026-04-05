@@ -32,6 +32,7 @@ import type {
   TokenUsage,
 } from "../provider.js";
 import { LLMError } from "../../utils/error.js";
+import { GOOGLE_GEMINI_MANIFEST } from "./google-gemini.js";
 
 // ─── 기본 프로바이더 매니페스트 ───────────────────────────────────────
 
@@ -222,6 +223,7 @@ export function resolveApiKey(providerId: string): string | undefined {
     anthropic: ["DHELIX_ANTHROPIC_API_KEY", "ANTHROPIC_API_KEY"],
     "openai-compatible": ["DHELIX_OPENAI_API_KEY", "OPENAI_API_KEY"],
     "responses-api": ["DHELIX_OPENAI_API_KEY", "OPENAI_API_KEY"],
+    "google-gemini": ["DHELIX_GOOGLE_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY"],
   };
 
   const keys = envMap[providerId];
@@ -399,6 +401,17 @@ export class ProviderRegistry {
       );
     });
 
+    // Google Gemini 프로바이더 등록
+    registry.register(GOOGLE_GEMINI_MANIFEST, () => {
+      if (overrides.geminiFactory) {
+        return overrides.geminiFactory();
+      }
+      throw new LLMError(
+        "Google Gemini provider factory not configured. " +
+          "Use ProviderRegistry.create({ geminiFactory }) or register manually.",
+      );
+    });
+
     return registry;
   }
 }
@@ -413,4 +426,6 @@ export interface DefaultRegistryOverrides {
   readonly openaiFactory?: ProviderFactory;
   /** Responses API 프로바이더 팩토리 */
   readonly responsesFactory?: ProviderFactory;
+  /** Google Gemini 프로바이더 팩토리 */
+  readonly geminiFactory?: ProviderFactory;
 }
