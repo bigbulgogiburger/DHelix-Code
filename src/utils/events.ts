@@ -205,6 +205,28 @@ export type AppEvents = {
     readonly agentType?: "explore" | "plan" | "general";
     readonly allowedTools?: readonly string[];
   };
+
+  /**
+   * 도구 실행 중 실시간 스트리밍 이벤트 — 장시간 실행 도구가 중간 결과를 발행할 때 사용
+   *
+   * `src/tools/streaming.ts`의 ToolStreamEvent 타입과 동일한 구조입니다.
+   * 순환 의존성을 피하기 위해 인라인으로 정의합니다.
+   *
+   * @see ToolStreamEmitter — 도구에서 이 이벤트를 발행하는 헬퍼 클래스
+   */
+  "tool:stream": {
+    readonly type: "progress" | "chunk" | "warning" | "complete";
+    readonly toolCallId: string;
+    readonly toolName: string;
+    readonly data: string;
+    readonly metadata?: {
+      readonly bytesProcessed?: number;
+      readonly totalBytes?: number;
+      readonly itemsFound?: number;
+      readonly elapsedMs?: number;
+      readonly percentComplete?: number;
+    };
+  };
 };
 
 /**

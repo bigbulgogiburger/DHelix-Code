@@ -2,8 +2,9 @@
  * 세션 관리자(Session Manager) 모듈
  *
  * 대화 세션의 생성, 저장, 복원, 삭제 등 전체 라이프사이클을 관리합니다.
- * 세션 데이터는 JSONL(JSON Lines) 형식으로 저장되며,
- * 파일 잠금(lock)으로 동시 접근 안전성을 보장합니다.
+ * 세션 데이터는 JSONL(JSON Lines) 또는 SQLite 형식으로 저장됩니다.
+ * 저장 백엔드는 환경변수 DHELIX_SESSION_STORE로 선택합니다 (기본: jsonl).
+ * 파일 잠금(lock)으로 동시 접근 안전성을 보장합니다 (JSONL 모드).
  *
  * 주니어 개발자를 위한 설명:
  * - 세션이란? 사용자와 AI 간의 하나의 대화를 의미합니다
@@ -27,6 +28,43 @@ import { randomUUID } from "node:crypto";
 import { type ChatMessage } from "../llm/provider.js";
 import { SESSIONS_DIR } from "../constants.js";
 import { BaseError } from "../utils/error.js";
+import { type SessionStore, type SQLiteSessionStore } from "./session/sqlite-store.js";
+import { StreamingSessionWriter } from "./session/streaming-writer.js";
+
+/**
+ * 세션 저장 백엔드 타입
+ * - jsonl: 기존 JSONL 파일 기반 (기본값)
+ * - sqlite: SQLite 기반 (better-sqlite3)
+ */
+export type SessionStoreType = "jsonl" | "sqlite";
+
+/**
+ * 현재 활성화된 세션 저장 백엔드를 반환합니다.
+ * 환경변수 DHELIX_SESSION_STORE로 설정하며, 기본값은 'jsonl'입니다.
+ *
+ * @returns 'jsonl' 또는 'sqlite'
+ */
+export function getSessionStoreType(): SessionStoreType {
+  const envValue = process.env["DHELIX_SESSION_STORE"];
+  if (envValue === "sqlite") {
+    return "sqlite";
+  }
+  return "jsonl";
+}
+
+/**
+ * SQLite 세션 저장소 인스턴스를 생성합니다.
+ * DB 파일은 세션 디렉토리 내 sessions.db에 위치합니다.
+ *
+ * @param sessionsDir - 세션 저장 디렉토리
+ * @returns SQLiteSessionStore 인스턴스
+ */
+export async function createSqliteStore(sessionsDir: string): Promise<SQLiteSessionStore> {
+  await mkdir(sessionsDir, { recursive: true });
+  const { SQLiteSessionStore: Store } = await import("./session/sqlite-store.js");
+  const dbPath = join(sessionsDir, "sessions.db");
+  return new Store(dbPath);
+}
 
 /** 기본 파일 잠금 획득 타임아웃 (밀리초) */
 const LOCK_TIMEOUT_MS = 5000;
@@ -246,11 +284,78 @@ export class SessionManager {
   /** 세션 데이터가 저장되는 루트 디렉토리 */
   private readonly sessionsDir: string;
 
+  /** SQLite 저장소 인스턴스 (sqlite 모드일 때만 사용) */
+  private sqliteStore: SQLiteSessionStore | null = null;
+
+  /** SQLite streaming writer 캐시 (세션 ID → writer) */
+  private readonly sqliteWriters = new Map<string, StreamingSessionWriter>();
+
+  /** 현재 저장 백엔드 타입 */
+  private readonly storeType: SessionStoreType;
+
   /**
    * @param sessionsDir - 세션 저장 디렉토리 (기본값: ~/.dhelix/sessions/)
+   * @param storeType - 저장 백엔드 타입 (기본값: 환경변수 또는 'jsonl')
    */
-  constructor(sessionsDir?: string) {
+  constructor(sessionsDir?: string, storeType?: SessionStoreType) {
     this.sessionsDir = sessionsDir ?? SESSIONS_DIR;
+    this.storeType = storeType ?? getSessionStoreType();
+  }
+
+  /**
+   * SQLite 저장소를 초기화합니다 (lazy initialization).
+   * 첫 SQLite 작업 시 자동으로 호출됩니다.
+   *
+   * @returns SQLiteSessionStore 인스턴스
+   */
+  private async ensureSqliteStore(): Promise<SQLiteSessionStore> {
+    if (!this.sqliteStore) {
+      this.sqliteStore = await createSqliteStore(this.sessionsDir);
+    }
+    return this.sqliteStore;
+  }
+
+  /**
+   * SQLite 세션의 StreamingSessionWriter를 가져옵니다 (캐시).
+   *
+   * @param sessionId - 세션 ID
+   * @returns StreamingSessionWriter 인스턴스
+   */
+  private async getSqliteWriter(sessionId: string): Promise<StreamingSessionWriter> {
+    let writer = this.sqliteWriters.get(sessionId);
+    if (!writer) {
+      const store = await this.ensureSqliteStore();
+      writer = new StreamingSessionWriter(store.getDatabase(), sessionId);
+      this.sqliteWriters.set(sessionId, writer);
+    }
+    return writer;
+  }
+
+  /**
+   * 현재 사용 중인 저장 백엔드 타입을 반환합니다.
+   */
+  getStoreType(): SessionStoreType {
+    return this.storeType;
+  }
+
+  /**
+   * SQLite 저장소 인스턴스를 직접 반환합니다 (외부 모듈 연동용).
+   * sqlite 모드가 아닌 경우 null을 반환합니다.
+   */
+  async getSqliteStore(): Promise<SessionStore | null> {
+    if (this.storeType !== "sqlite") return null;
+    return this.ensureSqliteStore();
+  }
+
+  /**
+   * 리소스를 정리합니다. SQLite 연결을 닫습니다.
+   */
+  close(): void {
+    if (this.sqliteStore) {
+      this.sqliteStore.close();
+      this.sqliteStore = null;
+    }
+    this.sqliteWriters.clear();
   }
 
   /** 세션 저장 디렉토리가 존재하도록 보장합니다 */
@@ -302,6 +407,18 @@ export class SessionManager {
     readonly model: string;
     readonly name?: string;
   }): Promise<string> {
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const store = await this.ensureSqliteStore();
+      const id = store.createSession({
+        title: options.name ?? "New session",
+        model: options.model,
+        workingDirectory: options.workingDirectory,
+      });
+      return id;
+    }
+
+    // JSONL 모드 (기존 로직)
     await this.ensureDir();
     const id = randomUUID();
     const now = new Date().toISOString();
@@ -339,6 +456,14 @@ export class SessionManager {
    * @param message - 추가할 메시지
    */
   async appendMessage(sessionId: string, message: ChatMessage): Promise<void> {
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const writer = await this.getSqliteWriter(sessionId);
+      writer.appendMessage(message);
+      return;
+    }
+
+    // JSONL 모드 (기존 로직)
     const jsonlLine: JsonlMessage = {
       role: message.role,
       content: message.content,
@@ -374,6 +499,14 @@ export class SessionManager {
   async appendMessages(sessionId: string, messages: readonly ChatMessage[]): Promise<void> {
     if (messages.length === 0) return;
 
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const writer = await this.getSqliteWriter(sessionId);
+      writer.appendMessages(messages);
+      return;
+    }
+
+    // JSONL 모드 (기존 로직)
     const lines = messages.map((message) => {
       const jsonlLine: JsonlMessage = {
         role: message.role,
@@ -407,6 +540,13 @@ export class SessionManager {
    * @throws SessionError - 대화 기록 파싱 실패 시
    */
   async loadMessages(sessionId: string): Promise<readonly ChatMessage[]> {
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const writer = await this.getSqliteWriter(sessionId);
+      return writer.loadMessages();
+    }
+
+    // JSONL 모드 (기존 로직)
     const transcriptFile = this.transcriptPath(sessionId);
     const content = await this.safeReadFile(transcriptFile);
 
@@ -447,6 +587,25 @@ export class SessionManager {
    * @throws SessionError - 세션을 찾을 수 없는 경우
    */
   async getMetadata(sessionId: string): Promise<SessionMetadata> {
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const store = await this.ensureSqliteStore();
+      const session = store.getSession(sessionId);
+      if (!session) {
+        throw new SessionError("Session not found", { sessionId });
+      }
+      return {
+        id: session.id,
+        name: session.title ?? "Untitled",
+        createdAt: session.created_at,
+        lastUsedAt: session.updated_at,
+        workingDirectory: session.working_directory,
+        model: session.model,
+        messageCount: session.message_count,
+      };
+    }
+
+    // JSONL 모드 (기존 로직)
     const metaFile = this.metadataPath(sessionId);
     try {
       const content = await readFile(metaFile, "utf-8");
@@ -463,6 +622,20 @@ export class SessionManager {
    * @returns 세션 인덱스 항목 배열
    */
   async listSessions(): Promise<readonly SessionIndexEntry[]> {
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const store = await this.ensureSqliteStore();
+      const sessions = store.listSessions();
+      return sessions.map((s) => ({
+        id: s.id,
+        name: s.title ?? "Untitled",
+        createdAt: s.created_at,
+        lastUsedAt: s.updated_at,
+        messageCount: s.message_count,
+      }));
+    }
+
+    // JSONL 모드 (기존 로직)
     const indexFile = this.indexPath();
     try {
       const content = await readFile(indexFile, "utf-8");
@@ -493,6 +666,14 @@ export class SessionManager {
    * @param name - 새 이름
    */
   async renameSession(sessionId: string, name: string): Promise<void> {
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const store = await this.ensureSqliteStore();
+      store.updateSession(sessionId, { title: name });
+      return;
+    }
+
+    // JSONL 모드 (기존 로직)
     await withFileLock(this.sessionLockDir(sessionId), async () => {
       await this.updateMetadataUnsafe(sessionId, (meta) => ({
         ...meta,
@@ -561,6 +742,18 @@ export class SessionManager {
    * @throws SessionError - 삭제 실패 시
    */
   async deleteSession(sessionId: string): Promise<void> {
+    // SQLite 모드
+    if (this.storeType === "sqlite") {
+      const store = await this.ensureSqliteStore();
+      const deleted = store.deleteSession(sessionId);
+      if (!deleted) {
+        throw new SessionError("Failed to delete session", { sessionId });
+      }
+      this.sqliteWriters.delete(sessionId);
+      return;
+    }
+
+    // JSONL 모드 (기존 로직)
     const dir = this.sessionDir(sessionId);
 
     // 세션 디렉토리 내 파일들을 먼저 정리한 뒤 디렉토리 삭제
