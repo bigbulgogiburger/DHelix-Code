@@ -42,3 +42,24 @@ export {
   AZURE_OPENAI_MANIFEST,
   resolveAzureApiKey,
 } from "./azure-openai.js";
+
+// AWS Bedrock 프로바이더
+export {
+  AwsBedrockProvider,
+  AWS_BEDROCK_MANIFEST,
+  resolveBedrockCredentials,
+} from "./aws-bedrock.js";
+
+// Mistral AI 프로바이더
+export {
+  MistralProvider,
+  MISTRAL_MANIFEST,
+  resolveMistralApiKey,
+} from "./mistral.js";
+
+// Groq 프로바이더
+export {
+  GroqProvider,
+  GROQ_MANIFEST,
+  resolveGroqApiKey,
+} from "./groq.js";

@@ -34,6 +34,9 @@ import type {
 import { LLMError } from "../../utils/error.js";
 import { GOOGLE_GEMINI_MANIFEST } from "./google-gemini.js";
 import { AZURE_OPENAI_MANIFEST } from "./azure-openai.js";
+import { AWS_BEDROCK_MANIFEST } from "./aws-bedrock.js";
+import { MISTRAL_MANIFEST } from "./mistral.js";
+import { GROQ_MANIFEST } from "./groq.js";
 
 // ─── 기본 프로바이더 매니페스트 ───────────────────────────────────────
 
@@ -424,6 +427,39 @@ export class ProviderRegistry {
       );
     });
 
+    // AWS Bedrock 프로바이더 등록
+    registry.register(AWS_BEDROCK_MANIFEST, () => {
+      if (overrides.awsBedrockFactory) {
+        return overrides.awsBedrockFactory();
+      }
+      throw new LLMError(
+        "AWS Bedrock provider factory not configured. " +
+          "Use ProviderRegistry.create({ awsBedrockFactory }) or register manually.",
+      );
+    });
+
+    // Mistral AI 프로바이더 등록
+    registry.register(MISTRAL_MANIFEST, () => {
+      if (overrides.mistralFactory) {
+        return overrides.mistralFactory();
+      }
+      throw new LLMError(
+        "Mistral provider factory not configured. " +
+          "Use ProviderRegistry.create({ mistralFactory }) or register manually.",
+      );
+    });
+
+    // Groq 프로바이더 등록
+    registry.register(GROQ_MANIFEST, () => {
+      if (overrides.groqFactory) {
+        return overrides.groqFactory();
+      }
+      throw new LLMError(
+        "Groq provider factory not configured. " +
+          "Use ProviderRegistry.create({ groqFactory }) or register manually.",
+      );
+    });
+
     return registry;
   }
 }
@@ -442,4 +478,10 @@ export interface DefaultRegistryOverrides {
   readonly geminiFactory?: ProviderFactory;
   /** Azure OpenAI 프로바이더 팩토리 */
   readonly azureOpenAIFactory?: ProviderFactory;
+  /** AWS Bedrock 프로바이더 팩토리 */
+  readonly awsBedrockFactory?: ProviderFactory;
+  /** Mistral AI 프로바이더 팩토리 */
+  readonly mistralFactory?: ProviderFactory;
+  /** Groq 프로바이더 팩토리 */
+  readonly groqFactory?: ProviderFactory;
 }

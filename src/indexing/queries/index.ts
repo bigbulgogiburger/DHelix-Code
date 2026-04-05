@@ -9,3 +9,7 @@ export { extractPythonSymbols } from "./python.js";
 export { extractGoSymbols } from "./go.js";
 export { extractRustSymbols } from "./rust.js";
 export { extractJavaSymbols } from "./java.js";
+export { extractCppSymbols } from "./cpp.js";
+export { extractCsharpSymbols } from "./csharp.js";
+export { extractSwiftSymbols } from "./swift.js";
+export { extractKotlinSymbols } from "./kotlin.js";
