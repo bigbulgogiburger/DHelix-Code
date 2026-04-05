@@ -35,3 +35,10 @@ export {
   GOOGLE_GEMINI_MANIFEST,
   resolveGeminiApiKey,
 } from "./google-gemini.js";
+
+// Azure OpenAI 프로바이더
+export {
+  AzureOpenAIProvider,
+  AZURE_OPENAI_MANIFEST,
+  resolveAzureApiKey,
+} from "./azure-openai.js";

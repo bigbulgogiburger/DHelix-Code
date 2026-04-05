@@ -33,6 +33,7 @@ import type {
 } from "../provider.js";
 import { LLMError } from "../../utils/error.js";
 import { GOOGLE_GEMINI_MANIFEST } from "./google-gemini.js";
+import { AZURE_OPENAI_MANIFEST } from "./azure-openai.js";
 
 // ─── 기본 프로바이더 매니페스트 ───────────────────────────────────────
 
@@ -412,6 +413,17 @@ export class ProviderRegistry {
       );
     });
 
+    // Azure OpenAI 프로바이더 등록
+    registry.register(AZURE_OPENAI_MANIFEST, () => {
+      if (overrides.azureOpenAIFactory) {
+        return overrides.azureOpenAIFactory();
+      }
+      throw new LLMError(
+        "Azure OpenAI provider factory not configured. " +
+          "Use ProviderRegistry.create({ azureOpenAIFactory }) or register manually.",
+      );
+    });
+
     return registry;
   }
 }
@@ -428,4 +440,6 @@ export interface DefaultRegistryOverrides {
   readonly responsesFactory?: ProviderFactory;
   /** Google Gemini 프로바이더 팩토리 */
   readonly geminiFactory?: ProviderFactory;
+  /** Azure OpenAI 프로바이더 팩토리 */
+  readonly azureOpenAIFactory?: ProviderFactory;
 }
