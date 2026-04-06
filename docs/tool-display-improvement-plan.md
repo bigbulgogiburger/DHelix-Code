@@ -1,6 +1,6 @@
 # Tool Display Improvement Plan
 
-dbcode의 도구 실행 표시를 Claude Code / Codex CLI 수준으로 개선하기 위한 계획.
+dhelix의 도구 실행 표시를 Claude Code / Codex CLI 수준으로 개선하기 위한 계획.
 
 ## 현재 문제
 
@@ -220,7 +220,7 @@ Claude Code는 여러 연속 읽기를 하나로 그룹:
 
 ```
 ⏺ Running npm test (background, PID 12345)
- ⎿ Output: /tmp/dbcode/task-abc.output
+ ⎿ Output: /tmp/dhelix/task-abc.output
 ```
 
 ---
@@ -255,9 +255,9 @@ Claude Code는 여러 연속 읽기를 하나로 그룹:
 
 ---
 
-## 참고: Claude Code vs Codex vs dbcode 비교
+## 참고: Claude Code vs Codex vs dhelix 비교
 
-| Feature          | Claude Code | Codex CLI        | dbcode (현재) | dbcode (목표) |
+| Feature          | Claude Code | Codex CLI        | dhelix (현재) | dhelix (목표) |
 | ---------------- | ----------- | ---------------- | ------------- | ------------- |
 | 파일 경로 표시   | ✅          | ✅               | ❌            | ✅            |
 | 검색 패턴 표시   | ✅          | ✅               | △ (부분)      | ✅            |

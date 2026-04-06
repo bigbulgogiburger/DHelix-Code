@@ -5,17 +5,17 @@ import { join } from "node:path";
 import { homedir } from "node:os";
 
 /**
- * To avoid touching the real ~/.dbcode/settings.json during tests,
+ * To avoid touching the real ~/.dhelix/settings.json during tests,
  * we test pattern validation directly and exercise the command's
  * subcommand parsing/formatting through a temporary settings directory.
  *
- * NOTE: The command reads from CONFIG_DIR (~/. dbcode). For isolated
+ * NOTE: The command reads from CONFIG_DIR (~/. dhelix). For isolated
  * integration testing, we set up a backup/restore mechanism for
  * the real settings file. For pure unit tests we rely on validatePattern
  * and output format assertions.
  */
 
-const settingsDir = join(homedir(), ".dbcode");
+const settingsDir = join(homedir(), ".dhelix");
 const settingsPath = join(settingsDir, "settings.json");
 let originalSettings: string | null = null;
 

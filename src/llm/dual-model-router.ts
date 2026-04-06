@@ -14,6 +14,10 @@
  * - Editor: Claude Sonnet (코드 작성, 실행)
  */
 import type { LLMProvider } from "./provider.js";
+import { TaskClassifier, type ClassificationContext, type TaskClassification } from "./task-classifier.js";
+
+// Re-export TaskClassifier types for convenience
+export type { ClassificationContext, TaskClassification };
 
 /** 듀얼 모델 설정 — Architect/Editor 모델 이름과 라우팅 전략 */
 export interface DualModelConfig {
@@ -61,6 +65,12 @@ export class DualModelRouter {
   /** 현재 작업 단계 — 기본값은 "execute" (가장 빈번한 단계) */
   private currentPhase: TaskPhase = "execute";
 
+  /** 태스크 분류기 — "auto" 전략에서 메시지를 분석하여 단계를 자동 결정 */
+  private readonly classifier: TaskClassifier;
+
+  /** 마지막 분류 결과 — 디버깅 및 로깅 목적으로 보관 */
+  private lastClassification: TaskClassification | undefined;
+
   /**
    * @param config - 듀얼 모델 설정 (모델 이름, 라우팅 전략)
    * @param architectClient - 설계자 모델의 LLM 클라이언트
@@ -70,7 +80,9 @@ export class DualModelRouter {
     private readonly config: DualModelConfig,
     private readonly architectClient: LLMProvider,
     private readonly editorClient: LLMProvider,
-  ) {}
+  ) {
+    this.classifier = new TaskClassifier();
+  }
 
   /**
    * 현재 작업 단계를 변경
@@ -121,40 +133,66 @@ export class DualModelRouter {
       ? { client: this.architectClient, model: this.config.architectModel, role: "architect" }
       : { client: this.editorClient, model: this.config.editorModel, role: "editor" };
   }
+
+  /**
+   * 컨텍스트를 분석하여 적절한 모델을 자동 선택 (routingStrategy: "auto"용)
+   *
+   * TaskClassifier를 사용하여 메시지와 컨텍스트를 분석하고,
+   * 분류된 단계에 따라 Architect 또는 Editor 모델을 반환합니다.
+   *
+   * confidence >= 0.6이면 분류된 단계의 모델을, < 0.6이면 Architect 모델을 사용합니다.
+   * (낮은 신뢰도일 때 Architect를 사용하는 이유: 비용보다 품질이 중요한 안전한 선택)
+   *
+   * @param context - 분류에 사용할 컨텍스트 정보
+   * @returns 선택된 클라이언트, 모델 이름, 역할, 분류 결과
+   */
+  selectModel(context: ClassificationContext): {
+    readonly client: LLMProvider;
+    readonly model: string;
+    readonly role: "architect" | "editor";
+    readonly classification: TaskClassification;
+  } {
+    const classification = this.classifier.classify(context);
+    this.lastClassification = classification;
+
+    // confidence가 낮으면 Architect 모델로 안전하게 폴백
+    if (classification.confidence < 0.6) {
+      this.currentPhase = classification.phase;
+      return {
+        client: this.architectClient,
+        model: this.config.architectModel,
+        role: "architect",
+        classification,
+      };
+    }
+
+    // 분류된 단계로 업데이트하고 해당 단계의 모델 반환
+    this.currentPhase = classification.phase;
+    const { client, model, role } = this.getClientForPhase(classification.phase);
+    return { client, model, role, classification };
+  }
+
+  /**
+   * 마지막 분류 결과를 반환 — 디버깅 및 로깅 목적
+   *
+   * @returns 마지막 TaskClassification 또는 undefined (아직 분류 없음)
+   */
+  getLastClassification(): TaskClassification | undefined {
+    return this.lastClassification;
+  }
 }
 
 /**
- * 계획/분석 단계를 나타내는 키워드 목록
+ * 대화 메시지에서 작업 단계를 자동 감지 — TaskClassifier를 사용한 개선 버전
  *
- * 사용자 메시지에 이 키워드가 포함되면 "plan" 단계로 판단합니다.
- * 한국어와 영어 키워드를 모두 포함합니다.
- */
-const PLAN_KEYWORDS = [
-  "plan", // 계획
-  "설계", // 설계 (한국어)
-  "분석", // 분석 (한국어)
-  "리뷰", // 리뷰 (한국어)
-  "review", // 코드 리뷰
-  "architecture", // 아키텍처 설계
-  "design", // 설계
-  "analyze", // 분석
-  "analyse", // 분석 (영국식)
-  "strategy", // 전략
-  "approach", // 접근 방식
-  "proposal", // 제안
-  "RFC", // Request for Comments — 기술 제안서
-] as const;
-
-/**
- * 대화 메시지에서 작업 단계를 자동 감지
- *
- * 마지막 사용자 메시지에 계획/분석 관련 키워드가 포함되어 있으면
- * "plan" 단계로, 그렇지 않으면 "execute" 단계로 판단합니다.
+ * 기존 단순 키워드 매칭 대신 TaskClassifier를 활용하여
+ * 메시지 내용, 대화 히스토리, 세션 상태를 종합적으로 분석합니다.
  *
  * 이 함수는 routingStrategy가 "auto"일 때 사용됩니다.
+ * 하위 호환성을 위해 기존 시그니처를 유지합니다.
  *
  * @param messages - 대화 메시지 배열
- * @returns 감지된 작업 단계 ("plan" 또는 "execute")
+ * @returns 감지된 작업 단계 ("plan", "execute", 또는 "review")
  */
 export function detectPhase(
   messages: readonly { readonly role: string; readonly content: string }[],
@@ -163,7 +201,22 @@ export function detectPhase(
   const lastUser = [...messages].reverse().find((m) => m.role === "user");
   if (!lastUser) return "execute"; // 사용자 메시지가 없으면 기본값 execute
 
-  const content = typeof lastUser.content === "string" ? lastUser.content.toLowerCase() : "";
-  // 키워드가 하나라도 포함되면 plan, 아니면 execute
-  return PLAN_KEYWORDS.some((k) => content.includes(k)) ? "plan" : "execute";
+  const content = typeof lastUser.content === "string" ? lastUser.content : "";
+
+  // TaskClassifier를 사용하여 분류
+  const classifier = new TaskClassifier();
+  const recentHistory = messages
+    .slice(-5)
+    .map((m) => ({ role: m.role as "user" | "assistant" | "system" | "tool", content: m.content }));
+
+  const context: ClassificationContext = {
+    currentMessage: content,
+    recentHistory,
+    pendingToolCalls: [],
+    sessionPhase: messages.length <= 2 ? "initial" : messages.length <= 10 ? "mid" : "late",
+    fileChangesCount: 0,
+  };
+
+  const result = classifier.classify(context);
+  return result.phase;
 }

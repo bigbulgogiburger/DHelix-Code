@@ -18,7 +18,7 @@ vi.mock("../../../src/core/memory-storage.js", () => ({
   deleteMemoryFile: vi.fn().mockResolvedValue(undefined),
   getMemoryPaths: vi.fn().mockReturnValue({
     projectDir: "/test/project",
-    globalDir: "/home/user/.dbcode/memory",
+    globalDir: "/home/user/.dhelix/memory",
     maxMainLines: 200,
     maxTopicLines: 500,
   }),
@@ -53,7 +53,7 @@ const mockedReadGlobalMemory = vi.mocked(readGlobalMemory);
 function makeStorage(): MemoryConfig {
   return {
     projectDir: "/test/project",
-    globalDir: "/home/user/.dbcode/memory",
+    globalDir: "/home/user/.dhelix/memory",
     maxMainLines: 200,
     maxTopicLines: 500,
   };

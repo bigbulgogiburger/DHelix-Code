@@ -699,7 +699,7 @@ export default function LlmStreamingPage() {
                 도구 호출 청크에 <code className="text-cyan-600">id</code>와
                 <code className="text-cyan-600"> name</code>이 모두 있어야 새 도구 호출로
                 등록됩니다.
-                <code className="text-cyan-600"> DBCODE_VERBOSE=1</code>을 설정하면 DROP된 청크를
+                <code className="text-cyan-600"> DHELIX_VERBOSE=1</code>을 설정하면 DROP된 청크를
                 로그에서 확인할 수 있습니다.
               </p>
             </div>

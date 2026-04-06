@@ -637,7 +637,7 @@ export default function MCPToolFilterPage() {
                   name: "tool-bridge.ts",
                   slug: "mcp-tool-bridge",
                   relation: "sibling",
-                  desc: "필터링된 도구를 dbcode 레지스트리에 등록하는 브리지 모듈",
+                  desc: "필터링된 도구를 dhelix 레지스트리에 등록하는 브리지 모듈",
                 },
                 {
                   name: "mcp-manager.ts",

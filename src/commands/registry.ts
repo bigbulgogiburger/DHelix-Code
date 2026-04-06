@@ -1,7 +1,7 @@
 /**
  * 슬래시 명령어 레지스트리 — 명령어 등록, 조회, 실행을 관리하는 핵심 모듈
  *
- * 이 파일은 dbcode의 슬래시 명령어 시스템의 기반이 되는 타입과 클래스를 정의합니다.
+ * 이 파일은 dhelix의 슬래시 명령어 시스템의 기반이 되는 타입과 클래스를 정의합니다.
  *
  * 주요 구성 요소:
  *   - CommandContext: 명령어 실행에 필요한 세션 정보 (디렉토리, 모델, 메시지 등)
@@ -106,7 +106,7 @@ export interface CommandResult {
     readonly apiKey: string;
     readonly apiKeyHeader?: string;
   };
-  /** true면 프로젝트 설정(DBCODE.md 등)을 디스크에서 다시 로드 */
+  /** true면 프로젝트 설정(DHELIX.md 등)을 디스크에서 다시 로드 */
   readonly refreshInstructions?: boolean;
   /** true면 출력을 사용자 메시지로 LLM에 주입 (/commit, /review 등에서 사용) */
   readonly shouldInjectAsUserMessage?: boolean;

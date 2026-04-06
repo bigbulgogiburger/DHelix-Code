@@ -1,10 +1,10 @@
 /**
  * 경로 기반 조건부 규칙 매칭 모듈 — 작업 디렉토리/파일 경로에 따라 적용할 규칙 결정
  *
- * .dbcode/rules/ 디렉토리의 규칙 파일에 프론트매터로 경로 패턴을 지정하면,
+ * .dhelix/rules/ 디렉토리의 규칙 파일에 프론트매터로 경로 패턴을 지정하면,
  * 해당 경로에서 작업할 때만 해당 규칙이 시스템 프롬프트에 포함됩니다.
  *
- * 예시: .dbcode/rules/frontend.md
+ * 예시: .dhelix/rules/frontend.md
  * ---
  * paths:
  *   - "src/components/**"

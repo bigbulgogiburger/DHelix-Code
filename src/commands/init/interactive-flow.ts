@@ -2,7 +2,7 @@
  * 대화형 초기화 플로우 모듈 — 4단계 인터랙티브 init 모드
  *
  * 기본 /init 명령이 원샷(one-shot) 방식으로 코드베이스를 분석하고
- * DBCODE.md를 바로 생성하는 것과 달리, 이 모듈은 사용자 참여를 통해
+ * DHELIX.md를 바로 생성하는 것과 달리, 이 모듈은 사용자 참여를 통해
  * 4단계 대화형 초기화를 수행합니다.
  *
  * 동작 원리:
@@ -87,12 +87,12 @@ export function parseInteractiveArgs(args: string): InteractiveArgs {
  * // 새 프로젝트 초기화 (디렉토리 새로 생성됨)
  * const prompt = buildInteractivePrompt(true, false);
  *
- * // 기존 DBCODE.md 업데이트
+ * // 기존 DHELIX.md 업데이트
  * const prompt = buildInteractivePrompt(false, true);
  * ```
  *
- * @param configDirCreated - .dbcode/ 디렉토리가 이번 실행에서 새로 생성되었는지 여부
- * @param isUpdate - true면 기존 DBCODE.md를 업데이트, false면 새로 생성하는 모드
+ * @param configDirCreated - .dhelix/ 디렉토리가 이번 실행에서 새로 생성되었는지 여부
+ * @param isUpdate - true면 기존 DHELIX.md를 업데이트, false면 새로 생성하는 모드
  * @returns LLM에게 전달할 4단계 대화형 초기화 프롬프트 문자열
  */
 export function buildInteractivePrompt(configDirCreated: boolean, isUpdate: boolean): string {

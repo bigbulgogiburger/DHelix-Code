@@ -169,7 +169,7 @@ CLOSED["CLOSED (정상)<br/><small>recordIteration() 반복 실행 중</small>"]
 | SCOPE  | ScopeManager | local > project > user 설정 병합 |
 | CLIENT | MCPClient    | 개별 MCP 서버 연결 담당          |
 | SERVER | MCP Server   | 외부 MCP 서버 프로세스           |
-| BRIDGE | ToolBridge   | MCP 도구를 dbcode 도구로 변환    |
+| BRIDGE | ToolBridge   | MCP 도구를 dhelix 도구로 변환    |
 | REG    | ToolRegistry | 도구 등록 저장소                 |
 
 **메시지 화살표에 추가할 설명:**
@@ -215,23 +215,23 @@ CLOSED["CLOSED (정상)<br/><small>recordIteration() 반복 실행 중</small>"]
 | 노드  | 현재 라벨             | 추가할 설명                  |
 | ----- | --------------------- | ---------------------------- |
 | D     | defaults.ts           | 하드코딩 기본값 (안전망)     |
-| U     | ~/.dbcode/config.json | 사용자 전역 설정             |
-| P     | .dbcode/config.json   | 프로젝트별 팀 공유 설정      |
-| E     | 환경변수              | DBCODE*\*, OPENAI*\* 등      |
+| U     | ~/.dhelix/config.json | 사용자 전역 설정             |
+| P     | .dhelix/config.json   | 프로젝트별 팀 공유 설정      |
+| E     | 환경변수              | DHELIX*\*, OPENAI*\* 등      |
 | C     | CLI 플래그            | --model, --verbose 등 일회성 |
 | MERGE | deepMerge             | 5개 레이어를 깊은 병합       |
 | FINAL | ResolvedConfig        | Zod 스키마 검증된 최종 설정  |
 
-**7b. DBCODE.md 6단계 로딩 체인** (graph LR)
+**7b. DHELIX.md 6단계 로딩 체인** (graph LR)
 
 | 노드   | 현재 라벨            | 추가할 설명                             |
 | ------ | -------------------- | --------------------------------------- |
-| G      | Global               | ~/.dbcode/DBCODE.md                     |
-| GR     | Global Rules         | ~/.dbcode/rules/\*.md (경로 조건부)     |
-| PD     | Parents              | 부모 디렉토리 DBCODE.md (모노레포)      |
-| P      | Project              | {root}/DBCODE.md 또는 .dbcode/DBCODE.md |
-| PR     | Project Rules        | .dbcode/rules/\*.md (경로 조건부)       |
-| L      | Local                | DBCODE.local.md (개인, gitignore)       |
+| G      | Global               | ~/.dhelix/DHELIX.md                     |
+| GR     | Global Rules         | ~/.dhelix/rules/\*.md (경로 조건부)     |
+| PD     | Parents              | 부모 디렉토리 DHELIX.md (모노레포)      |
+| P      | Project              | {root}/DHELIX.md 또는 .dhelix/DHELIX.md |
+| PR     | Project Rules        | .dhelix/rules/\*.md (경로 조건부)       |
+| L      | Local                | DHELIX.local.md (개인, gitignore)       |
 | CONCAT | 연결                 | '\n\n---\n\n' 구분자로 합침             |
 | PROMPT | System Prompt에 주입 | buildSystemPrompt()에서 사용            |
 
@@ -301,7 +301,7 @@ CLOSED["CLOSED (정상)<br/><small>recordIteration() 반복 실행 중</small>"]
 | 노드        | 현재 라벨       | 추가할 설명                               |
 | ----------- | --------------- | ----------------------------------------- |
 | START       | 도구 호출 요청  | LLM이 tool_call을 반환                    |
-| DENY_RULES  | Deny 규칙?      | .dbcode/settings.json의 deny 패턴 매칭    |
+| DENY_RULES  | Deny 규칙?      | .dhelix/settings.json의 deny 패턴 매칭    |
 | SESSION     | 세션 허용?      | 이번 세션에서 이미 허용된 도구인지        |
 | ALLOW_RULES | Allow 규칙?     | settings.json의 allow 패턴 매칭           |
 | EXPLICIT    | 명시적 허용?    | 도구별 항상 허용 설정 확인                |

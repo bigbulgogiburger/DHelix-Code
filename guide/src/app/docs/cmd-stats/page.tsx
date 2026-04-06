@@ -429,7 +429,7 @@ export default function CmdStatsPage() {
               <span className="kw">continue</span>;{"\n"}
               {"  "}
               <span className="cm">
-                {"// 키 형식: dbcode.tools.invocations{status=success,tool=xyz}"}
+                {"// 키 형식: dhelix.tools.invocations{status=success,tool=xyz}"}
               </span>
               {"\n"}
               {"  "}
@@ -476,7 +476,7 @@ export default function CmdStatsPage() {
               <p>
                 <strong className="text-gray-900">키 형식:</strong> 메트릭 카운터 키는{" "}
                 <code className="text-cyan-600">
-                  dbcode.tools.invocations{"{"}status=success,tool=file_read{"}"}
+                  dhelix.tools.invocations{"{"}status=success,tool=file_read{"}"}
                 </code>{" "}
                 형식으로 레이블이 인코딩되어 있습니다.
               </p>

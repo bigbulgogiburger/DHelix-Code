@@ -5,7 +5,7 @@
  * 이 모듈은 민감 정보(API 키, 토큰 등) 자동 마스킹(redaction)과
  * 파일 기반 로깅을 제공합니다.
  *
- * 로그 레벨은 DBCODE_LOG_LEVEL 환경 변수로 제어합니다:
+ * 로그 레벨은 DHELIX_LOG_LEVEL 환경 변수로 제어합니다:
  * - "trace" < "debug" < "info" < "warn" < "error" < "fatal"
  * - 기본값: "info"
  *
@@ -31,12 +31,12 @@ import { LOG_FILE } from "../constants.js";
  * - ISO 8601 형식의 타임스탬프
  *
  * @param options - 로거 생성 옵션 (선택적)
- * @param options.level - 로그 레벨 (기본값: DBCODE_LOG_LEVEL 환경 변수 또는 "info")
+ * @param options.level - 로그 레벨 (기본값: DHELIX_LOG_LEVEL 환경 변수 또는 "info")
  * @param options.file - 로그 파일 경로 (기본값: LOG_FILE 상수)
  * @returns pino Logger 인스턴스
  */
 export function createLogger(options?: { level?: string; file?: string }): pino.Logger {
-  const level = options?.level ?? (process.env.DBCODE_LOG_LEVEL || "info");
+  const level = options?.level ?? (process.env.DHELIX_LOG_LEVEL || "info");
   const file = options?.file ?? LOG_FILE;
 
   return pino({

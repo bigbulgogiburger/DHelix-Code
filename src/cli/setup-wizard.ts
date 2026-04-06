@@ -1,14 +1,14 @@
 /**
  * setup-wizard.ts — 초기 설정 마법사
  *
- * dbcode를 처음 실행할 때 API 키와 모델을 설정하는 대화형 마법사입니다.
- * 환경변수(OPENAI_API_KEY)나 설정 파일(~/.dbcode/config.json)에
+ * dhelix를 처음 실행할 때 API 키와 모델을 설정하는 대화형 마법사입니다.
+ * 환경변수(OPENAI_API_KEY)나 설정 파일(~/.dhelix/config.json)에
  * API 키가 없으면 자동으로 실행됩니다.
  *
  * 설정 흐름:
  * 1. 모델 선택 (프리셋 또는 커스텀)
  * 2. API 키 입력 (직접 입력 또는 환경변수 사용)
- * 3. ~/.dbcode/config.json에 설정 저장
+ * 3. ~/.dhelix/config.json에 설정 저장
  */
 import { mkdir, writeFile, readFile, access } from "node:fs/promises";
 import { join } from "node:path";
@@ -37,7 +37,7 @@ const MODEL_PRESETS = [
   { name: "Ollama (로컬 모델)", model: "qwen3:8b", baseUrl: "http://localhost:11434/v1" },
 ] as const;
 
-/** 사용자 설정 파일 경로 (~/.dbcode/config.json) */
+/** 사용자 설정 파일 경로 (~/.dhelix/config.json) */
 const CONFIG_PATH = join(CONFIG_DIR, "config.json");
 
 /** 설정 마법사에서 저장하는 구성 데이터 */
@@ -53,14 +53,14 @@ interface SetupConfig {
  * 설정 마법사 실행이 필요한지 확인합니다.
  *
  * 다음 조건 중 하나라도 만족하면 false(설정 불필요):
- * - OPENAI_API_KEY 또는 DBCODE_API_KEY 환경변수가 설정되어 있음
- * - ~/.dbcode/config.json에 apiKey가 저장되어 있음
+ * - OPENAI_API_KEY 또는 DHELIX_API_KEY 환경변수가 설정되어 있음
+ * - ~/.dhelix/config.json에 apiKey가 저장되어 있음
  *
  * 모두 해당하지 않으면 true(설정 필요)를 반환합니다.
  */
 export async function needsSetup(): Promise<boolean> {
   // If env vars provide an API key, no setup needed
-  if (process.env.OPENAI_API_KEY || process.env.DBCODE_API_KEY) {
+  if (process.env.OPENAI_API_KEY || process.env.DHELIX_API_KEY) {
     return false;
   }
 
@@ -83,7 +83,7 @@ export async function needsSetup(): Promise<boolean> {
  * 대화형 설정 마법사를 실행합니다.
  *
  * 터미널에서 readline 인터페이스를 통해 사용자에게 모델과 API 키를 묻고,
- * 결과를 ~/.dbcode/config.json에 저장합니다.
+ * 결과를 ~/.dhelix/config.json에 저장합니다.
  * 기존 설정 파일이 있으면 병합(merge)하여 기존 값을 보존합니다.
  */
 export async function runSetupWizard(): Promise<SetupConfig> {
@@ -132,7 +132,7 @@ export async function runSetupWizard(): Promise<SetupConfig> {
         stdout.write("  No key entered. You can set OPENAI_API_KEY env var later.\n");
       }
     } else {
-      stdout.write("  OK. Set OPENAI_API_KEY before running dbcode.\n");
+      stdout.write("  OK. Set OPENAI_API_KEY before running dhelix.\n");
     }
 
     const config: SetupConfig = {

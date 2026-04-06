@@ -1,8 +1,8 @@
-# dbcode Multi-Turn E2E Test Cases (50 Scenarios)
+# dhelix Multi-Turn E2E Test Cases (50 Scenarios)
 
 > 작성일: 2026-03-18
 > 목적: 실제 LLM을 사용한 멀티턴 E2E 품질 평가
-> 대상: dbcode CLI (MiniMax-M2.5 / GPT-4.1 / Claude 등)
+> 대상: dhelix CLI (MiniMax-M2.5 / GPT-4.1 / Claude 등)
 > 참고: SWE-bench, Aider Polyglot, MCPMark, Terminal-Bench 2.0, ICLR 2025 "LLMs Get Lost" 논문
 
 ---
@@ -65,32 +65,32 @@
 ## 실행 방법론 (QA 에이전트 필독)
 
 > **⚠️ 중요**: QA 에이전트는 테스트 내용을 **직접 구현하지 않습니다**.
-> 반드시 `dbcode` CLI를 실제로 실행하고 **dbcode의 응답을 채점**해야 합니다.
+> 반드시 `dhelix` CLI를 실제로 실행하고 **dhelix의 응답을 채점**해야 합니다.
 
 ### 올바른 실행 흐름
 
 ```
 QA 에이전트
-  └─► dbcode CLI 호출 (멀티턴)
-        └─► dbcode가 LLM 호출
-              └─► dbcode가 도구 실행 (파일 생성, bash 실행 등)
+  └─► dhelix CLI 호출 (멀티턴)
+        └─► dhelix가 LLM 호출
+              └─► dhelix가 도구 실행 (파일 생성, bash 실행 등)
                     └─► QA 에이전트가 결과 채점
 ```
 
 ### 멀티턴 실행 방법
 
-각 TC는 여러 프롬프트를 **순서대로 dbcode에 입력**합니다.
+각 TC는 여러 프롬프트를 **순서대로 dhelix에 입력**합니다.
 
 ```bash
 # 작업 디렉토리 준비
-mkdir -p /tmp/dbcode-e2e/tc01 && cd /tmp/dbcode-e2e/tc01
+mkdir -p /tmp/dhelix-e2e/tc01 && cd /tmp/dhelix-e2e/tc01
 
-# 턴 1: 첫 번째 프롬프트를 dbcode에 전달 (headless 모드)
-dbcode -p "피보나치 수열을 계산하는 Python 함수를 만들고 실행해줘" \
+# 턴 1: 첫 번째 프롬프트를 dhelix에 전달 (headless 모드)
+dhelix -p "피보나치 수열을 계산하는 Python 함수를 만들고 실행해줘" \
   --output-style text > turn1.txt 2>&1
 
 # 턴 2: 후속 프롬프트 (이전 컨텍스트 유지 필요 시 --session 플래그 사용)
-dbcode -p "fib(10)의 결과를 확인해줘" \
+dhelix -p "fib(10)의 결과를 확인해줘" \
   --output-style text > turn2.txt 2>&1
 
 # 결과 확인
@@ -101,18 +101,18 @@ cat turn1.txt turn2.txt
 
 | 항목        | 올바른 방법                 | 잘못된 방법               |
 | ----------- | --------------------------- | ------------------------- |
-| 파일 생성   | dbcode가 생성했는지 확인    | QA 에이전트가 직접 생성   |
-| 빌드/테스트 | dbcode가 실행했는지 확인    | QA 에이전트가 직접 실행   |
-| 채점        | dbcode 결과물 기준으로 채점 | QA 에이전트 구현물로 채점 |
+| 파일 생성   | dhelix가 생성했는지 확인    | QA 에이전트가 직접 생성   |
+| 빌드/테스트 | dhelix가 실행했는지 확인    | QA 에이전트가 직접 실행   |
+| 채점        | dhelix 결과물 기준으로 채점 | QA 에이전트 구현물로 채점 |
 
-### dbcode CLI 설치 확인
+### dhelix CLI 설치 확인
 
 ```bash
-# dbcode가 설치되어 있는지 확인
-which dbcode || npx dbcode --version
+# dhelix가 설치되어 있는지 확인
+which dhelix || npx dhelix --version
 
 # 또는 소스에서 직접 실행
-node /path/to/dbcode/dist/index.js --version
+node /path/to/dhelix/dist/index.js --version
 ```
 
 ---
@@ -136,7 +136,7 @@ node /path/to/dbcode/dist/index.js --version
 - **예상 턴**: 1-2
 - **사용 도구**: file_read
 - **통과 기준**:
-  - [ ] 프로젝트 이름 정확 ("dbcode")
+  - [ ] 프로젝트 이름 정확 ("dhelix")
   - [ ] 버전 정확 ("0.1.0")
   - [ ] 의존성 개수 정확 (dependencies + devDependencies)
 - **채점**: 각 항목 정확 시 3점씩 + 포맷 1점
@@ -759,10 +759,10 @@ node /path/to/dbcode/dist/index.js --version
 
 ```bash
 # 테스트용 임시 디렉토리 생성
-mkdir /tmp/dbcode-e2e-test && cd /tmp/dbcode-e2e-test
+mkdir /tmp/dhelix-e2e-test && cd /tmp/dhelix-e2e-test
 
-# dbcode 실행 (기본 LLM 사용)
-dbcode -p "..." --output-format json
+# dhelix 실행 (기본 LLM 사용)
+dhelix -p "..." --output-format json
 ```
 
 ### 채점 시트

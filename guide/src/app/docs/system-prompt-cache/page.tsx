@@ -69,7 +69,7 @@ export default function SystemPromptCachePage() {
   AL["Agent Loop<br/><small>agent-loop.ts</small>"]
   SPB["System Prompt Builder<br/><small>system-prompt.ts</small>"]
   SPC["SystemPromptCache<br/><small>system-prompt-cache.ts</small>"]
-  FILES["설정 파일들<br/><small>DBCODE.md, .dbcode/config.json...</small>"]
+  FILES["설정 파일들<br/><small>DHELIX.md, .dhelix/config.json...</small>"]
   LLM["LLM Client<br/><small>llm/client.ts</small>"]
 
   AL -->|"프롬프트 요청"| SPB
@@ -261,11 +261,11 @@ export default function SystemPromptCachePage() {
               <span className="fn">buildKey</span>([
               {"\n"}
               {"  "}
-              <span className="str">&quot;DBCODE.md&quot;</span>,{"\n"}
+              <span className="str">&quot;DHELIX.md&quot;</span>,{"\n"}
               {"  "}
-              <span className="str">&quot;.dbcode/config.json&quot;</span>,{"\n"}
+              <span className="str">&quot;.dhelix/config.json&quot;</span>,{"\n"}
               {"  "}
-              <span className="str">&quot;~/.dbcode/config.json&quot;</span>,{"\n"}]);
+              <span className="str">&quot;~/.dhelix/config.json&quot;</span>,{"\n"}]);
               {"\n"}
               {"\n"}
               <span className="cm">{"// 2. 캐시 확인"}</span>
@@ -338,7 +338,7 @@ export default function SystemPromptCachePage() {
                 </li>
                 <li>
                   &quot;경로:시각&quot; 형태의 문자열을 생성합니다. 예:{" "}
-                  <code>/path/DBCODE.md:1711234567890.123</code>
+                  <code>/path/DHELIX.md:1711234567890.123</code>
                 </li>
                 <li>
                   파일이 없으면 <code className="text-cyan-600">경로:0</code>으로 처리합니다 (센티넬

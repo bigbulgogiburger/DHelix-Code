@@ -439,7 +439,7 @@ export default function MentionResolverPage() {
 
             <DeepDive title="URL 해석의 보안 고려사항">
               <p className="mb-3">
-                URL 해석 시 <code className="text-cyan-600">User-Agent: dbcode/0.1.0</code> 헤더가
+                URL 해석 시 <code className="text-cyan-600">User-Agent: dhelix/0.1.0</code> 헤더가
                 설정됩니다. 이는 서버 측에서 봇 트래픽을 식별할 수 있게 합니다.
               </p>
               <ul className="list-disc list-inside space-y-1.5 text-gray-600">

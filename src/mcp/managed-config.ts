@@ -5,7 +5,7 @@
  * 관리자 설정은 사용자/프로젝트 설정보다 우선하며,
  * 보안에 민감한 설정을 중앙에서 제어할 수 있습니다.
  *
- * 설정 파일 위치: ~/.dbcode/managed-mcp.json
+ * 설정 파일 위치: ~/.dhelix/managed-mcp.json
  *
  * 주요 기능:
  * 1. 관리자가 MCP 서버를 사전 설정 (readOnly로 사용자 수정 방지 가능)
@@ -110,7 +110,7 @@ export interface ManagedConfigValidationResult {
 }
 
 /** 관리자 설정 파일 기본 경로 */
-const DEFAULT_MANAGED_CONFIG_PATH = join(homedir(), ".dbcode", "managed-mcp.json");
+const DEFAULT_MANAGED_CONFIG_PATH = join(homedir(), ".dhelix", "managed-mcp.json");
 
 /**
  * 트랜스포트 타입 결정 전의 원시 서버 설정
@@ -155,7 +155,7 @@ export function detectTransportType(config: RawServerConfigInput): "stdio" | "ht
  * 관리자 설정은 사용자/프로젝트 설정보다 우선하며,
  * 보안에 민감한 설정을 중앙에서 제어합니다.
  *
- * 설정 파일: `~/.dbcode/managed-mcp.json`
+ * 설정 파일: `~/.dhelix/managed-mcp.json`
  *
  * 파일이 없으면 모든 정책이 허용적(permissive)으로 동작합니다.
  * (사용자 서버 추가 허용, 트랜스포트 제한 없음 등)
@@ -167,7 +167,7 @@ export class MCPManagedConfig {
   private readonly configPath: string;
 
   /**
-   * @param configPath - 설정 파일 경로 (기본: ~/.dbcode/managed-mcp.json)
+   * @param configPath - 설정 파일 경로 (기본: ~/.dhelix/managed-mcp.json)
    */
   constructor(configPath?: string) {
     this.configPath = configPath ?? DEFAULT_MANAGED_CONFIG_PATH;

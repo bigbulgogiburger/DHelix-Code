@@ -67,9 +67,9 @@ export default function CmdMcpPage() {
   LIST["list<br/><small>서버 목록 조회</small>"]
   ADD["add<br/><small>서버 추가</small>"]
   REMOVE["remove<br/><small>서버 제거</small>"]
-  LOCAL[".dbcode/mcp-local.json<br/><small>local 스코프<br/>개인, gitignore</small>"]
-  PROJ[".dbcode/mcp.json<br/><small>project 스코프<br/>팀 공유, git</small>"]
-  USER["~/.dbcode/mcp-servers.json<br/><small>user 스코프<br/>전역</small>"]
+  LOCAL[".dhelix/mcp-local.json<br/><small>local 스코프<br/>개인, gitignore</small>"]
+  PROJ[".dhelix/mcp.json<br/><small>project 스코프<br/>팀 공유, git</small>"]
+  USER["~/.dhelix/mcp-servers.json<br/><small>user 스코프<br/>전역</small>"]
   MGR["MCPManager<br/><small>연결 상태 + 도구 수</small>"]
 
   CMD --> LIST
@@ -160,19 +160,19 @@ export default function CmdMcpPage() {
               params={[
                 {
                   name: "user",
-                  type: "~/.dbcode/mcp-servers.json",
+                  type: "~/.dhelix/mcp-servers.json",
                   required: false,
                   desc: "전역 설정 — 모든 프로젝트에 적용 (우선순위 3)",
                 },
                 {
                   name: "project",
-                  type: ".dbcode/mcp.json",
+                  type: ".dhelix/mcp.json",
                   required: false,
                   desc: "팀 공유 설정 — git 커밋 대상 (우선순위 2)",
                 },
                 {
                   name: "local",
-                  type: ".dbcode/mcp-local.json",
+                  type: ".dhelix/mcp-local.json",
                   required: false,
                   desc: "개인 설정 — gitignore 대상 (우선순위 1, 최우선)",
                 },
@@ -262,7 +262,7 @@ export default function CmdMcpPage() {
                 <code>-s</code> 옵션을 명시하세요.
               </li>
               <li>
-                서버를 추가/제거한 후 <strong>dbcode를 재시작</strong>해야 변경사항이 적용됩니다.
+                서버를 추가/제거한 후 <strong>dhelix를 재시작</strong>해야 변경사항이 적용됩니다.
                 설정 파일 수정만으로는 실시간 반영되지 않습니다.
               </li>
               <li>
@@ -300,11 +300,11 @@ export default function CmdMcpPage() {
               {"\n"}
               <span className="cm">{'// MCP server "playwright" added to user scope.'}</span>
               {"\n"}
-              <span className="cm">{"//   Config: ~/.dbcode/mcp-servers.json"}</span>
+              <span className="cm">{"//   Config: ~/.dhelix/mcp-servers.json"}</span>
               {"\n"}
               <span className="cm">{"//   Command: npx @playwright/mcp@latest"}</span>
               {"\n"}
-              <span className="cm">{"// Restart dbcode to connect to this server."}</span>
+              <span className="cm">{"// Restart dhelix to connect to this server."}</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"// 2. 서버 목록 확인"}</span>
@@ -314,13 +314,13 @@ export default function CmdMcpPage() {
               {"\n"}
               <span className="cm">{"// 출력 예시:"}</span>
               {"\n"}
-              <span className="cm">{"//   user (~/.dbcode/mcp-servers.json)"}</span>
+              <span className="cm">{"//   user (~/.dhelix/mcp-servers.json)"}</span>
               {"\n"}
               <span className="cm">{"//     * playwright: npx @playwright/mcp@latest"}</span>
               {"\n"}
               <span className="cm">{"//       12 tools | connected"}</span>
               {"\n"}
-              <span className="cm">{"//   project (.dbcode/mcp.json)"}</span>
+              <span className="cm">{"//   project (.dhelix/mcp.json)"}</span>
               {"\n"}
               <span className="cm">{"//     - postgres: pg-mcp --port 5432"}</span>
               {"\n"}
@@ -328,7 +328,7 @@ export default function CmdMcpPage() {
             </CodeBlock>
 
             <Callout type="warn" icon="!">
-              <strong>주의:</strong> 서버를 추가한 후 반드시 <strong>dbcode를 재시작</strong>해야
+              <strong>주의:</strong> 서버를 추가한 후 반드시 <strong>dhelix를 재시작</strong>해야
               연결됩니다.
               <code>/mcp list</code>에서 &quot;not connected&quot;로 표시되면 재시작이 필요합니다.
             </Callout>
@@ -540,7 +540,7 @@ export default function CmdMcpPage() {
                 &quot;서버를 추가했는데 /mcp list에서 &apos;not connected&apos;로 나와요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                서버 추가 후 <strong>dbcode를 재시작</strong>해야 합니다. 설정 파일에 기록되었지만
+                서버 추가 후 <strong>dhelix를 재시작</strong>해야 합니다. 설정 파일에 기록되었지만
                 실행 중인 세션에서는 자동으로 연결되지 않습니다. 재시작 후에도 연결되지 않으면
                 명령어가 올바른지 터미널에서 직접 실행하여 확인하세요.
               </p>
@@ -566,7 +566,7 @@ export default function CmdMcpPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 설정 파일에서는 제거되었지만, 현재 실행 중인 세션의 MCPManager는 이미 연결된 서버를
-                유지합니다. dbcode를 재시작하면 해당 서버가 연결 목록에서 사라집니다.
+                유지합니다. dhelix를 재시작하면 해당 서버가 연결 목록에서 사라집니다.
               </p>
             </div>
 
@@ -610,7 +610,7 @@ export default function CmdMcpPage() {
                   name: "mcp-tool-bridge.ts",
                   slug: "mcp-tool-bridge",
                   relation: "sibling",
-                  desc: "MCP 서버의 도구를 dbcode 내장 도구 시스템으로 브리지하는 모듈",
+                  desc: "MCP 서버의 도구를 dhelix 내장 도구 시스템으로 브리지하는 모듈",
                 },
               ]}
             />

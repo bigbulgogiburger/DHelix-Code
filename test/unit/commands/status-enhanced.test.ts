@@ -13,8 +13,8 @@ describe("/status enhanced", () => {
   it("should show basic output format", async () => {
     const result = await statusCommand.execute("", baseContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("dbcode Session Status");
-    expect(result.output).toContain("=".repeat("dbcode Session Status".length));
+    expect(result.output).toContain("dhelix Session Status");
+    expect(result.output).toContain("=".repeat("dhelix Session Status".length));
   });
 
   it("should show version info", async () => {

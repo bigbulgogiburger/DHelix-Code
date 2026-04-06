@@ -6,7 +6,7 @@ import { ScrollProgress } from "@/components/ScrollProgress";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "dbcode — Module Deep Dive",
+  title: "dhelix — Module Deep Dive",
   description: "각 TS 모듈의 내부 구조를 코드 레벨에서 이해하기",
 };
 

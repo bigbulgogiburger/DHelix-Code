@@ -554,7 +554,7 @@ export default function ResponsesClientPage() {
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
                 가장 흔한 원인은 <code className="text-cyan-600">function_call</code>에 매칭되는
                 <code className="text-cyan-600">function_call_output</code>이 누락된 경우입니다.
-                dbcode는 이를 자동으로 감지하여 플레이스홀더를 생성하지만, 다른 원인일 수 있습니다:
+                dhelix는 이를 자동으로 감지하여 플레이스홀더를 생성하지만, 다른 원인일 수 있습니다:
               </p>
               <ul className="text-[13px] text-gray-600 space-y-1 list-disc list-inside">
                 <li>
@@ -588,7 +588,7 @@ export default function ResponsesClientPage() {
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 네트워크 수준의 에러(DNS 실패, 연결 거부 등)가 3회 재시도 후에도 해결되지
                 않았습니다. 인터넷 연결, 프록시 설정, 방화벽 규칙을 확인하세요.
-                <code className="text-cyan-600">DBCODE_VERBOSE=1</code> 환경변수를 설정하면 상세
+                <code className="text-cyan-600">DHELIX_VERBOSE=1</code> 환경변수를 설정하면 상세
                 로그를 확인할 수 있습니다.
               </p>
             </div>

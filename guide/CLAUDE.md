@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-dbcode 개발가이드 — Next.js 16 / React 19 / Tailwind CSS v4 / Mermaid.js 기반 문서 사이트.
+dhelix 개발가이드 — Next.js 16 / React 19 / Tailwind CSS v4 / Mermaid.js 기반 문서 사이트.
 두 개의 탭으로 구성: **Deep Dive** (모듈 아키텍처 개요) + **Source Reference** (모듈별 상세 문서).
 
 ## Commands

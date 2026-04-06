@@ -84,7 +84,7 @@ export default function SecretScannerPage() {
 
             <DeepDive title="왜 서버 측 필터링이 아니라 클라이언트 측에서?">
               <p className="mb-2">
-                dbcode는 <strong>로컬 우선(local-first)</strong> 철학을 따릅니다. 비밀 정보가
+                dhelix는 <strong>로컬 우선(local-first)</strong> 철학을 따릅니다. 비밀 정보가
                 네트워크를 타기 <em>전에</em> 클라이언트에서 제거해야 합니다. 서버 측 필터링에
                 의존하면 전송 과정에서 이미 노출된 것이므로 의미가 없습니다.
               </p>

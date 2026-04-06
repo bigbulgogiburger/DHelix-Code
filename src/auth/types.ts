@@ -2,7 +2,7 @@
  * 인증(Authentication) 타입 정의 — API 토큰 관리에 사용되는 공통 인터페이스
  *
  * 이 파일은 LLM API 호출에 필요한 인증 토큰의 형식, 출처,
- * 설정을 정의합니다. dbcode는 다양한 LLM 제공자(OpenAI, Anthropic 등)를
+ * 설정을 정의합니다. dhelix는 다양한 LLM 제공자(OpenAI, Anthropic 등)를
  * 지원하므로 여러 인증 방식을 추상화합니다.
  *
  * 인증 흐름:
@@ -45,10 +45,10 @@ export interface TokenConfig {
  *
  * 디버깅과 보안 감사를 위해 토큰의 출처를 추적합니다.
  *
- * - "environment": 환경 변수에서 로드됨 (DBCODE_API_KEY, OPENAI_API_KEY)
+ * - "environment": 환경 변수에서 로드됨 (DHELIX_API_KEY, OPENAI_API_KEY)
  *   가장 높은 우선순위. CI/CD 환경에서 주로 사용
  *
- * - "file": 자격 증명 파일에서 로드됨 (~/.dbcode/credentials.json)
+ * - "file": 자격 증명 파일에서 로드됨 (~/.dhelix/credentials.json)
  *   로컬 개발 환경에서 주로 사용
  *
  * - "keychain": 운영체제 키체인에서 로드됨 (macOS Keychain, Windows Credential Manager)

@@ -43,11 +43,11 @@ describe("grep_search tool", () => {
 
   it("should search working directory by default", async () => {
     const result = await grepSearchTool.execute(
-      { pattern: "dbcode", include: "package.json" },
+      { pattern: "dhelix", include: "package.json" },
       context,
     );
     expect(result.isError).toBe(false);
-    expect(result.output).toContain("dbcode");
+    expect(result.output).toContain("dhelix");
   });
 
   describe("ripgrep detection", () => {

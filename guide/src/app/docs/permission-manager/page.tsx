@@ -43,7 +43,7 @@ export default function PermissionManagerPage() {
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-relaxed mb-6">
-              권한 관리자(PermissionManager)는 dbcode의{" "}
+              권한 관리자(PermissionManager)는 dhelix의{" "}
               <strong className="text-gray-900">보안 게이트키퍼</strong>입니다. AI 에이전트가 파일
               수정, 쉘 명령어 실행 등 도구를 호출할 때마다 이 모듈이 &ldquo;이 작업을 허용해도
               되는가?&rdquo;를 판단합니다.
@@ -454,7 +454,7 @@ const pm = new PermissionManager("default", [], {
   allow: ["Bash(npm *)"],
   deny:  ["Bash(rm -rf *)"],
 }, {
-  auditLogPath: "~/.dbcode/audit.jsonl",
+  auditLogPath: "~/.dhelix/audit.jsonl",
   sessionId: crypto.randomUUID(),
 });
 
@@ -663,7 +663,7 @@ if (result.allowed) {
                 보장하기 위한 의도적인 설계입니다.
               </p>
 
-              <CodeBlock>{`// 감사 로그 파일 예시 (~/.dbcode/audit.jsonl):
+              <CodeBlock>{`// 감사 로그 파일 예시 (~/.dhelix/audit.jsonl):
 {"timestamp":"2024-01-15T10:30:00Z","sessionId":"abc-123","toolName":"Bash","decision":"auto-approved","reason":"Session approved"}
 {"timestamp":"2024-01-15T10:30:05Z","sessionId":"abc-123","toolName":"Bash","decision":"denied","reason":"Persistent deny rule"}
 {"timestamp":"2024-01-15T10:30:10Z","sessionId":"abc-123","toolName":"Edit","decision":"auto-approved","reason":"Persistent allow rule"}`}</CodeBlock>
@@ -855,7 +855,7 @@ if (result.allowed) {
                 넓으면
                 <code className="text-cyan-600 text-xs ml-1">Bash(rm *)</code>처럼 구체적으로
                 좁히세요. 감사 로그(
-                <code className="text-cyan-600 text-xs">~/.dbcode/audit.jsonl</code>)에서{" "}
+                <code className="text-cyan-600 text-xs">~/.dhelix/audit.jsonl</code>)에서{" "}
                 <code className="text-cyan-600 text-xs">&quot;Persistent deny rule&quot;</code>을
                 검색하면 원인을 찾을 수 있습니다.
               </p>

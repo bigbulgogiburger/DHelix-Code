@@ -95,7 +95,7 @@ Tool schemas adapt to model capability tiers:
 
 ## MCP Tool Bridge
 
-- **tool-bridge.ts**: MCP 서버의 도구를 dbcode ToolRegistry에 등록
+- **tool-bridge.ts**: MCP 서버의 도구를 dhelix ToolRegistry에 등록
 - MCP 도구는 `mcp__{server}__{tool}` 네이밍 규칙
 - **tool-filter.ts**: 서버별 include/exclude 필터링
 - **tool-search.ts**: 사용 가능한 MCP 도구 검색

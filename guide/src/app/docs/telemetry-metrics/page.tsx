@@ -119,7 +119,7 @@ export default function TelemetryMetricsPage() {
                   name: "name",
                   type: "string",
                   required: true,
-                  desc: '메트릭 이름 (예: "dbcode.tokens.total")',
+                  desc: '메트릭 이름 (예: "dhelix.tokens.total")',
                 },
                 { name: "description", type: "string", required: true, desc: "메트릭 설명" },
                 {
@@ -403,15 +403,15 @@ export default function TelemetryMetricsPage() {
               <span className="cm">{"// 각각 별도의 키로 저장됨:"}</span>
               {"\n"}
               <span className="cm">
-                {'// "dbcode.tokens.total{model=gpt-4o,type=input}"  → 100'}
+                {'// "dhelix.tokens.total{model=gpt-4o,type=input}"  → 100'}
               </span>
               {"\n"}
               <span className="cm">
-                {'// "dbcode.tokens.total{model=gpt-4o,type=output}" → 200'}
+                {'// "dhelix.tokens.total{model=gpt-4o,type=output}" → 200'}
               </span>
               {"\n"}
               <span className="cm">
-                {'// "dbcode.tokens.total{model=claude-3,type=input}" → 50'}
+                {'// "dhelix.tokens.total{model=claude-3,type=input}" → 50'}
               </span>
             </CodeBlock>
 
@@ -447,7 +447,7 @@ export default function TelemetryMetricsPage() {
               chart={`graph LR
   INPUT["increment(tokensUsed, 150,<br/>{type: 'input', model: 'gpt-4o'})"]
   MAKEKEY["makeKey()<br/><small>레이블 키 정렬</small>"]
-  KEY["'dbcode.tokens.total<br/>{model=gpt-4o,type=input}'"]
+  KEY["'dhelix.tokens.total<br/>{model=gpt-4o,type=input}'"]
   MAP["Map&lt;string, MetricValue[]&gt;<br/><small>인메모리 저장소</small>"]
 
   INPUT --> MAKEKEY

@@ -5,8 +5,8 @@
  * 고유한 디렉토리에 저장됩니다.
  *
  * 경로 구조:
- * ~/.dbcode/projects/{해시16자}/memory/MEMORY.md
- * ~/.dbcode/projects/{해시16자}/memory/{토픽}.md
+ * ~/.dhelix/projects/{해시16자}/memory/MEMORY.md
+ * ~/.dhelix/projects/{해시16자}/memory/{토픽}.md
  *
  * 해시를 사용하는 이유:
  * - 프로젝트 경로에 특수문자가 있어도 안전한 디렉토리명 생성
@@ -19,7 +19,7 @@ import { resolve } from "node:path";
 import { APP_NAME } from "../constants.js";
 import { joinPath } from "../utils/path.js";
 
-/** 모든 프로젝트 메모리의 기본 디렉토리: ~/.dbcode/projects/ */
+/** 모든 프로젝트 메모리의 기본 디렉토리: ~/.dhelix/projects/ */
 const PROJECTS_BASE_DIR = joinPath(homedir(), `.${APP_NAME}`, "projects");
 
 /** 메인 메모리 파일명 */
@@ -45,7 +45,7 @@ export function computeProjectHash(projectRoot: string): string {
 /**
  * 프로젝트의 메모리 디렉토리 경로를 반환
  *
- * 경로: ~/.dbcode/projects/{프로젝트해시}/memory/
+ * 경로: ~/.dhelix/projects/{프로젝트해시}/memory/
  *
  * @param projectRoot - 프로젝트 루트의 절대 경로
  * @returns 메모리 디렉토리의 절대 경로
@@ -81,7 +81,7 @@ export function getTopicFilePath(projectRoot: string, topicFileName: string): st
 /**
  * 프로젝트 기본 디렉토리 경로를 반환
  *
- * @returns ~/.dbcode/projects/ 의 절대 경로
+ * @returns ~/.dhelix/projects/ 의 절대 경로
  */
 export function getProjectsBaseDir(): string {
   return PROJECTS_BASE_DIR;

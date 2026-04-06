@@ -657,7 +657,7 @@ const layers: Layer[] = [
           {
             slug: "mcp-tool-bridge",
             name: "mcp/tool-bridge.ts",
-            desc: "MCP 서버 도구를 dbcode 도구 레지스트리에 변환하여 연결하는 브리지",
+            desc: "MCP 서버 도구를 dhelix 도구 레지스트리에 변환하여 연결하는 브리지",
             status: "ready",
           },
           {
@@ -687,7 +687,7 @@ const layers: Layer[] = [
           {
             slug: "mcp-serve",
             name: "mcp/serve.ts",
-            desc: "dbcode를 MCP 서버로 실행 — JSON-RPC 2.0 프로토콜로 도구 노출",
+            desc: "dhelix를 MCP 서버로 실행 — JSON-RPC 2.0 프로토콜로 도구 노출",
             status: "ready",
           },
           {
@@ -891,7 +891,7 @@ const layers: Layer[] = [
           {
             slug: "instruction-loader",
             name: "instructions/loader.ts",
-            desc: "6단계 DBCODE.md 로딩 체인 — global → project → local 계층 병합",
+            desc: "6단계 DHELIX.md 로딩 체인 — global → project → local 계층 병합",
             status: "ready",
           },
           {
@@ -1170,7 +1170,7 @@ const layers: Layer[] = [
       {
         slug: "cmd-init",
         name: "commands/init.ts",
-        desc: "/init 프로젝트 초기화 — DBCODE.md + .dbcode/ 디렉토리 생성으로 AI 프로젝트 이해 지원",
+        desc: "/init 프로젝트 초기화 — DHELIX.md + .dhelix/ 디렉토리 생성으로 AI 프로젝트 이해 지원",
         status: "ready",
       },
       {
@@ -1391,7 +1391,7 @@ export default function DocsPage() {
             className="text-base text-gray-600 leading-relaxed"
             style={{ maxWidth: "36rem", marginLeft: "auto", marginRight: "auto" }}
           >
-            dbcode의 모든 TypeScript 모듈을 초보자도 이해할 수 있도록 구조화한 문서입니다. 각
+            dhelix의 모든 TypeScript 모듈을 초보자도 이해할 수 있도록 구조화한 문서입니다. 각
             페이지는 개요 → 레퍼런스 → 사용법 → 내부 구현 → 트러블슈팅 순서로 구성됩니다.
           </p>
         </div>

@@ -329,7 +329,7 @@ Tailwind spacing이 작동하지 않을 경우를 대비해 인라인 style로 s
 │                                       │  ← 24px
 │  ── 개요 ─────────────────────────    │
 │                                       │  ← 24px (h2 mb)
-│  Agent Loop는 dbcode의 심장입니다...  │
+│  Agent Loop는 dhelix의 심장입니다...  │
 │                                       │  ← 16px (p mb)
 │  ┌─ Mermaid 다이어그램 ──────────┐    │
 │  │        (24px 내부 패딩)        │    │

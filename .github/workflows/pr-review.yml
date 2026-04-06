@@ -1,0 +1,33 @@
+name: DHelix PR Review
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+      - run: npm ci && npm run build
+      - name: Review PR
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DIFF=$(git diff origin/main...HEAD)
+          node ./bin/dhelix.mjs -p "Review this PR diff and provide feedback: ${DIFF}" \
+            --output-format text \
+            --max-turns 5 > review.txt 2>/dev/null || true
+          if [ -s review.txt ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body "$(cat review.txt)"
+          fi

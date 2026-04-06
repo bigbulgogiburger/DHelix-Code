@@ -25,7 +25,7 @@ export default function CmdInitPage() {
               <LayerBadge layer="leaf" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              프로젝트의 DBCODE.md와 .dbcode/ 디렉토리를 생성하여 AI 코딩 어시스턴트의 프로젝트
+              프로젝트의 DHELIX.md와 .dhelix/ 디렉토리를 생성하여 AI 코딩 어시스턴트의 프로젝트
               이해를 돕는 초기화 명령어입니다.
             </p>
           </div>
@@ -42,20 +42,20 @@ export default function CmdInitPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">/init</code>은 프로젝트를 dbcode와 함께 사용하기
+                <code className="text-cyan-600">/init</code>은 프로젝트를 dhelix와 함께 사용하기
                 위한 첫 번째 단계입니다. 이 명령어는 프로젝트 루트에{" "}
-                <code className="text-cyan-600">DBCODE.md</code> 파일과
-                <code className="text-cyan-600">.dbcode/</code> 설정 디렉토리를 생성합니다.
+                <code className="text-cyan-600">DHELIX.md</code> 파일과
+                <code className="text-cyan-600">.dhelix/</code> 설정 디렉토리를 생성합니다.
               </p>
               <p>
-                두 가지 실행 모드를 지원합니다. <strong>CLI 모드</strong>(<code>dbcode init</code>
+                두 가지 실행 모드를 지원합니다. <strong>CLI 모드</strong>(<code>dhelix init</code>
                 )는 LLM 없이 프로젝트 설정 파일을 분석하여 정적 템플릿을 생성하고,
                 <strong>세션 내 모드</strong>(<code>/init</code>)는 LLM이 12단계 분석으로 풍부한
                 문서를 생성합니다.
               </p>
               <p>
                 추가로 <strong>인터랙티브 모드</strong>(<code>/init -i</code>)를 지원하여 사용자와
-                4단계 대화를 통해 맞춤형 DBCODE.md를 생성할 수 있습니다. 모듈 구조는 4개의 하위
+                4단계 대화를 통해 맞춤형 DHELIX.md를 생성할 수 있습니다. 모듈 구조는 4개의 하위
                 파일로 분리되어 각 책임을 명확히 합니다.
               </p>
             </div>
@@ -65,7 +65,7 @@ export default function CmdInitPage() {
               titleColor="purple"
               chart={`graph TD
   INIT["init.ts<br/><small>명령어 진입점</small>"]
-  CFG["config-setup.ts<br/><small>.dbcode/ 디렉토리 생성</small>"]
+  CFG["config-setup.ts<br/><small>.dhelix/ 디렉토리 생성</small>"]
   ANALYSIS["analysis-prompt.ts<br/><small>12단계 LLM 분석 프롬프트</small>"]
   TMPL["template-generator.ts<br/><small>15+ 프로젝트 타입 감지</small>"]
   IFLOW["interactive-flow.ts<br/><small>4단계 대화형 플로우</small>"]
@@ -89,7 +89,7 @@ export default function CmdInitPage() {
             <Callout type="info" icon="💡">
               <strong>핵심 원리:</strong> /init의 세션 내 모드는 직접 파일을 쓰지 않습니다. 대신{" "}
               <code>shouldInjectAsUserMessage: true</code>로 LLM에게 분석 프롬프트를 전달하여
-              에이전트 루프가 코드베이스를 탐색하고 DBCODE.md를 작성하게 합니다.
+              에이전트 루프가 코드베이스를 탐색하고 DHELIX.md를 작성하게 합니다.
             </Callout>
           </section>
         </RevealOnScroll>
@@ -127,13 +127,13 @@ export default function CmdInitPage() {
                   name: "path",
                   type: "string",
                   required: true,
-                  desc: ".dbcode/ 디렉토리의 절대 경로",
+                  desc: ".dhelix/ 디렉토리의 절대 경로",
                 },
                 {
                   name: "detail",
                   type: "object | undefined",
                   required: false,
-                  desc: "세부 생성 정보 (dbcodeMdCreated, configDirCreated)",
+                  desc: "세부 생성 정보 (dhelixMdCreated, configDirCreated)",
                 },
               ]}
             />
@@ -147,8 +147,8 @@ export default function CmdInitPage() {
             </h3>
             <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
               CLI 폴백용 프로젝트 초기화 함수입니다.{" "}
-              <code className="text-cyan-600">dbcode init</code> 명령으로 에이전트 루프 외부에서
-              호출됩니다. DBCODE.md와 .dbcode/ 디렉토리를 독립적으로 처리하여, 각각 없는 경우에만
+              <code className="text-cyan-600">dhelix init</code> 명령으로 에이전트 루프 외부에서
+              호출됩니다. DHELIX.md와 .dhelix/ 디렉토리를 독립적으로 처리하여, 각각 없는 경우에만
               생성합니다.
             </p>
             <CodeBlock>
@@ -204,7 +204,7 @@ export default function CmdInitPage() {
                   name: "config-setup.ts",
                   type: "모듈",
                   required: true,
-                  desc: ".dbcode/ 디렉토리 생성, .gitignore 관리, 기본 settings.json 작성",
+                  desc: ".dhelix/ 디렉토리 생성, .gitignore 관리, 기본 settings.json 작성",
                 },
                 {
                   name: "analysis-prompt.ts",
@@ -216,7 +216,7 @@ export default function CmdInitPage() {
                   name: "template-generator.ts",
                   type: "모듈",
                   required: true,
-                  desc: "15+ 프로젝트 타입 자동 감지 후 정적 DBCODE.md 템플릿 생성",
+                  desc: "15+ 프로젝트 타입 자동 감지 후 정적 DHELIX.md 템플릿 생성",
                 },
                 {
                   name: "interactive-flow.ts",
@@ -231,7 +231,7 @@ export default function CmdInitPage() {
             <h4 className="text-sm font-bold text-gray-900 mb-3 mt-8">주의사항 (Caveats)</h4>
             <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
               <li>
-                DBCODE.md와 .dbcode/ 디렉토리는 <strong>독립적</strong>입니다. git clone으로 한쪽만
+                DHELIX.md와 .dhelix/ 디렉토리는 <strong>독립적</strong>입니다. git clone으로 한쪽만
                 존재할 수 있으며, 각각 없는 경우에만 생성합니다.
               </li>
               <li>
@@ -244,7 +244,7 @@ export default function CmdInitPage() {
                 의존합니다. 더 풍부한 결과를 원하면 세션 내 <code>/init</code>을 사용하세요.
               </li>
               <li>
-                <code className="text-cyan-600">DBCODE.local.md</code>는 자동으로 .gitignore에
+                <code className="text-cyan-600">DHELIX.local.md</code>는 자동으로 .gitignore에
                 추가되어 개인 설정이 팀 리포지토리에 커밋되지 않도록 보호합니다.
               </li>
             </ul>
@@ -266,24 +266,24 @@ export default function CmdInitPage() {
               CLI 모드 &mdash; 빠른 프로젝트 셋업
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
-              터미널에서 <code className="text-cyan-600">dbcode init</code>을 실행하면 LLM 없이
-              프로젝트 설정 파일(package.json, tsconfig.json 등)을 분석하여 기본 DBCODE.md를
+              터미널에서 <code className="text-cyan-600">dhelix init</code>을 실행하면 LLM 없이
+              프로젝트 설정 파일(package.json, tsconfig.json 등)을 분석하여 기본 DHELIX.md를
               생성합니다.
             </p>
             <CodeBlock>
               <span className="cm">{"// 터미널에서 실행"}</span>
               {"\n"}
-              <span className="fn">$</span> <span className="str">dbcode init</span>
+              <span className="fn">$</span> <span className="str">dhelix init</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"// 결과:"}</span>
               {"\n"}
-              <span className="cm">{"//   .dbcode/settings.json  — 모델 및 도구 설정"}</span>
+              <span className="cm">{"//   .dhelix/settings.json  — 모델 및 도구 설정"}</span>
               {"\n"}
-              <span className="cm">{"//   .dbcode/rules/         — 커스텀 규칙 디렉토리"}</span>
+              <span className="cm">{"//   .dhelix/rules/         — 커스텀 규칙 디렉토리"}</span>
               {"\n"}
               <span className="cm">
-                {"//   DBCODE.md              — 프로젝트 가이드 (정적 템플릿)"}
+                {"//   DHELIX.md              — 프로젝트 가이드 (정적 템플릿)"}
               </span>
             </CodeBlock>
 
@@ -293,7 +293,7 @@ export default function CmdInitPage() {
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
               세션 안에서 <code className="text-cyan-600">/init</code>을 입력하면 LLM이 코드베이스를
-              12단계로 심층 분석하여 풍부한 DBCODE.md를 자동 생성합니다.
+              12단계로 심층 분석하여 풍부한 DHELIX.md를 자동 생성합니다.
             </p>
             <CodeBlock>
               <span className="cm">{"// 세션 내에서 슬래시 명령어로 실행"}</span>
@@ -331,7 +331,7 @@ export default function CmdInitPage() {
             </CodeBlock>
 
             <Callout type="warn" icon="!">
-              <strong>주의:</strong> 이미 DBCODE.md가 존재하면 <strong>업데이트 모드</strong>로
+              <strong>주의:</strong> 이미 DHELIX.md가 존재하면 <strong>업데이트 모드</strong>로
               전환됩니다. LLM이 기존 파일을 먼저 읽고, 누락되거나 오래된 내용을 보완합니다. 기존
               내용을 덮어쓰지 않고 개선하는 방식입니다.
             </Callout>
@@ -342,7 +342,7 @@ export default function CmdInitPage() {
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
               <code className="text-cyan-600">/init -i</code>는 사용자와 4단계 대화를 통해 맞춤형
-              DBCODE.md를 생성합니다. 원샷 분석과 달리 사용자의 피드백을 반영할 수 있습니다.
+              DHELIX.md를 생성합니다. 원샷 분석과 달리 사용자의 피드백을 반영할 수 있습니다.
             </p>
             <CodeBlock>
               <span className="str">/init -i</span>
@@ -352,7 +352,7 @@ export default function CmdInitPage() {
               {"\n"}
               <span className="cm">{'//   "다음 중 생성할 항목을 선택하세요:"'}</span>
               {"\n"}
-              <span className="cm">{"//   1. DBCODE.md  2. rules/  3. 커스텀 규칙"}</span>
+              <span className="cm">{"//   1. DHELIX.md  2. rules/  3. 커스텀 규칙"}</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"// Phase 2: 서브에이전트 탐색 — 깊이 분석"}</span>
@@ -375,15 +375,15 @@ export default function CmdInitPage() {
               서브에이전트를 활용하여 메인 컨텍스트를 오염시키지 않고 깊은 탐색을 수행합니다.
             </Callout>
 
-            <DeepDive title="생성되는 .dbcode/ 디렉토리 구조">
+            <DeepDive title="생성되는 .dhelix/ 디렉토리 구조">
               <p className="mb-3">
                 <code className="text-cyan-600">ensureConfigDir()</code>가 생성하는 기본 디렉토리
                 구조입니다. 이미 존재하면 건드리지 않습니다.
               </p>
               <CodeBlock>
-                <span className="cm">{"// .dbcode/ 디렉토리 구조"}</span>
+                <span className="cm">{"// .dhelix/ 디렉토리 구조"}</span>
                 {"\n"}
-                <span className="prop">.dbcode/</span>
+                <span className="prop">.dhelix/</span>
                 {"\n"}
                 {"  "}
                 <span className="prop">settings.json</span>
@@ -431,14 +431,14 @@ export default function CmdInitPage() {
               titleColor="purple"
               chart={`graph TD
   START(("시작")) --> MODE{"실행 모드?"}
-  MODE -->|"dbcode init<br/>(CLI)"| CLI["initProject()"]
+  MODE -->|"dhelix init<br/>(CLI)"| CLI["initProject()"]
   MODE -->|"/init<br/>(세션 내)"| SESSION["execute()"]
 
-  CLI --> CHK_EXIST{"DBCODE.md +<br/>.dbcode/ 존재?"}
+  CLI --> CHK_EXIST{"DHELIX.md +<br/>.dhelix/ 존재?"}
   CHK_EXIST -->|"둘 다 존재"| SKIP["건너뜀<br/>created: false"]
   CHK_EXIST -->|"일부 없음"| CREATE["없는 것만 생성"]
   CREATE --> TMPL["generateTemplate()<br/>15+ 타입 감지"]
-  TMPL --> WRITE["DBCODE.md 작성"]
+  TMPL --> WRITE["DHELIX.md 작성"]
 
   SESSION --> CFGDIR["ensureConfigDir()"]
   CFGDIR --> GITIGN["ensureGitignoreEntry()"]
@@ -477,7 +477,7 @@ export default function CmdInitPage() {
               {"\n"}
               {"\n"}
               {"  "}
-              <span className="cm">{"// Phase 1: .dbcode/ 디렉토리 구조 생성"}</span>
+              <span className="cm">{"// Phase 1: .dhelix/ 디렉토리 구조 생성"}</span>
               {"\n"}
               {"  "}
               <span className="kw">const</span> <span className="prop">configDirCreated</span> ={" "}
@@ -490,10 +490,10 @@ export default function CmdInitPage() {
               {"\n"}
               {"\n"}
               {"  "}
-              <span className="cm">{"// Phase 2: DBCODE.md 존재 여부 확인"}</span>
+              <span className="cm">{"// Phase 2: DHELIX.md 존재 여부 확인"}</span>
               {"\n"}
               {"  "}
-              <span className="kw">const</span> <span className="prop">dbcodeMdExists</span> ={" "}
+              <span className="kw">const</span> <span className="prop">dhelixMdExists</span> ={" "}
               <span className="kw">await</span> <span className="fn">fileExists</span>(...);
               {"\n"}
               {"\n"}
@@ -506,9 +506,9 @@ export default function CmdInitPage() {
               {"\n"}
               {"    "}? <span className="fn">buildInteractivePrompt</span>(
               <span className="prop">configDirCreated</span>,{" "}
-              <span className="prop">dbcodeMdExists</span>){"\n"}
+              <span className="prop">dhelixMdExists</span>){"\n"}
               {"    "}: <span className="fn">buildAnalysisPrompt</span>(
-              <span className="prop">dbcodeMdExists</span>,{" "}
+              <span className="prop">dhelixMdExists</span>,{" "}
               <span className="prop">configDirCreated</span>);
               {"\n"}
               {"\n"}
@@ -535,13 +535,13 @@ export default function CmdInitPage() {
                 코드베이스를 분석합니다.
               </p>
               <p>
-                <strong className="text-gray-900">refreshInstructions</strong> &mdash; DBCODE.md
+                <strong className="text-gray-900">refreshInstructions</strong> &mdash; DHELIX.md
                 생성 후 프로젝트 설정을 자동으로 다시 로드합니다. 새로 생성된 규칙이 즉시
                 적용됩니다.
               </p>
               <p>
-                <strong className="text-gray-900">독립적 산출물</strong> &mdash; DBCODE.md와
-                .dbcode/는 서로 독립적으로 존재할 수 있어, git clone 환경에서도 안전하게 동작합니다.
+                <strong className="text-gray-900">독립적 산출물</strong> &mdash; DHELIX.md와
+                .dhelix/는 서로 독립적으로 존재할 수 있어, git clone 환경에서도 안전하게 동작합니다.
               </p>
             </div>
 
@@ -607,7 +607,7 @@ export default function CmdInitPage() {
             {/* FAQ 1 */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <h4 className="text-sm font-bold text-amber-600 mb-3">
-                &quot;/init을 실행했는데 DBCODE.md가 생성되지 않아요&quot;
+                &quot;/init을 실행했는데 DHELIX.md가 생성되지 않아요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
                 세션 내 <code>/init</code>은 직접 파일을 생성하지 않습니다. LLM에게 분석 프롬프트를
@@ -615,7 +615,7 @@ export default function CmdInitPage() {
                 <code>file_write</code> 도구로 파일을 생성할 때까지 기다려주세요.
               </p>
               <Callout type="tip" icon="*">
-                즉시 기본 템플릿이 필요하다면 터미널에서 <code>dbcode init</code>을 사용하세요. LLM
+                즉시 기본 템플릿이 필요하다면 터미널에서 <code>dhelix init</code>을 사용하세요. LLM
                 없이 정적 템플릿이 바로 생성됩니다.
               </Callout>
             </div>
@@ -623,12 +623,12 @@ export default function CmdInitPage() {
             {/* FAQ 2 */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <h4 className="text-sm font-bold text-amber-600 mb-3">
-                &quot;이미 DBCODE.md가 있는데 /init을 다시 실행하면 덮어쓰나요?&quot;
+                &quot;이미 DHELIX.md가 있는데 /init을 다시 실행하면 덮어쓰나요?&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                아닙니다. DBCODE.md가 이미 존재하면 <strong>업데이트 모드</strong>로 전환됩니다.
+                아닙니다. DHELIX.md가 이미 존재하면 <strong>업데이트 모드</strong>로 전환됩니다.
                 LLM이 기존 파일을 먼저 읽고, 누락된 부분을 보완하거나 오래된 내용을 갱신합니다. CLI
-                모드(<code>dbcode init</code>)에서는 이미 존재하면 아예 건드리지 않습니다.
+                모드(<code>dhelix init</code>)에서는 이미 존재하면 아예 건드리지 않습니다.
               </p>
             </div>
 
@@ -647,7 +647,7 @@ export default function CmdInitPage() {
             {/* FAQ 4 */}
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h4 className="text-sm font-bold text-amber-600 mb-3">
-                &quot;.gitignore에 DBCODE.local.md가 추가되지 않았어요&quot;
+                &quot;.gitignore에 DHELIX.local.md가 추가되지 않았어요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 <code className="text-cyan-600">ensureGitignoreEntry()</code>는 .gitignore 파일이
@@ -674,13 +674,13 @@ export default function CmdInitPage() {
                   name: "config-loader.ts",
                   slug: "config-loader",
                   relation: "sibling",
-                  desc: "DBCODE.md를 포함한 5-Layer 설정 병합 — /init이 생성한 파일을 로드하는 모듈",
+                  desc: "DHELIX.md를 포함한 5-Layer 설정 병합 — /init이 생성한 파일을 로드하는 모듈",
                 },
                 {
                   name: "instruction-loader.ts",
                   slug: "instruction-loader",
                   relation: "sibling",
-                  desc: "DBCODE.md의 규칙을 시스템 프롬프트에 주입하는 인스트럭션 로더",
+                  desc: "DHELIX.md의 규칙을 시스템 프롬프트에 주입하는 인스트럭션 로더",
                 },
                 {
                   name: "skill-manager.ts",

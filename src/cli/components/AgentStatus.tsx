@@ -105,7 +105,7 @@ export const AgentStatus = React.memo(function AgentStatus({ tokenCount = 0 }: A
 
   return (
     <Text>
-      <Text color="magenta" bold>
+      <Text color="#00BCD4" bold>
         {star}
       </Text>
       <Text> {message} </Text>

@@ -1,0 +1,1384 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dhelix 전략 방향 2026 — Coding Agent 경쟁력 분석 & 로드맵</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@300;400;500;600;700&display=swap');
+
+  :root {
+    --bg-primary: #0a0a0f;
+    --bg-secondary: #12121a;
+    --bg-card: #1a1a26;
+    --bg-card-hover: #22222f;
+    --border: #2a2a3a;
+    --border-accent: #3a3a5a;
+    --text-primary: #e8e8f0;
+    --text-secondary: #9898b0;
+    --text-muted: #686880;
+    --accent-blue: #4a9eff;
+    --accent-purple: #8b5cf6;
+    --accent-green: #10b981;
+    --accent-red: #ef4444;
+    --accent-orange: #f59e0b;
+    --accent-cyan: #06b6d4;
+    --accent-pink: #ec4899;
+    --gradient-primary: linear-gradient(135deg, #4a9eff 0%, #8b5cf6 100%);
+    --gradient-danger: linear-gradient(135deg, #ef4444 0%, #f59e0b 100%);
+    --gradient-success: linear-gradient(135deg, #10b981 0%, #06b6d4 100%);
+    --shadow-lg: 0 20px 60px rgba(0,0,0,0.4);
+    --shadow-glow: 0 0 40px rgba(74,158,255,0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', 'Noto Sans KR', sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    line-height: 1.7;
+    overflow-x: hidden;
+  }
+
+  /* Navigation */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,10,15,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+    padding: 0 2rem;
+  }
+  .nav-inner {
+    max-width: 1400px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    height: 64px;
+  }
+  .nav-logo {
+    font-weight: 800; font-size: 1.2rem;
+    background: var(--gradient-primary); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .nav-links { display: flex; gap: 0.5rem; }
+  .nav-links a {
+    color: var(--text-secondary); text-decoration: none; font-size: 0.85rem;
+    padding: 0.4rem 0.8rem; border-radius: 6px; transition: all 0.2s;
+  }
+  .nav-links a:hover { color: var(--text-primary); background: var(--bg-card); }
+  .nav-links a.active { color: var(--accent-blue); background: rgba(74,158,255,0.1); }
+
+  /* Hero */
+  .hero {
+    padding: 10rem 2rem 6rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero::before {
+    content: '';
+    position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 800px;
+    background: radial-gradient(circle, rgba(74,158,255,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 0.5rem;
+    padding: 0.4rem 1rem; border-radius: 100px;
+    background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3);
+    color: var(--accent-red); font-size: 0.85rem; font-weight: 500;
+    margin-bottom: 2rem;
+  }
+  .hero h1 {
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 900; line-height: 1.2;
+    margin-bottom: 1.5rem;
+  }
+  .hero h1 span {
+    background: var(--gradient-primary);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .hero p {
+    font-size: 1.2rem; color: var(--text-secondary);
+    max-width: 700px; margin: 0 auto 3rem;
+  }
+  .hero-meta {
+    display: flex; justify-content: center; gap: 2rem;
+    flex-wrap: wrap;
+  }
+  .hero-meta-item {
+    display: flex; align-items: center; gap: 0.5rem;
+    color: var(--text-muted); font-size: 0.9rem;
+  }
+
+  /* Sections */
+  .section {
+    max-width: 1400px; margin: 0 auto;
+    padding: 5rem 2rem;
+  }
+  .section-header {
+    text-align: center; margin-bottom: 4rem;
+  }
+  .section-number {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem; color: var(--accent-blue);
+    letter-spacing: 0.2em; text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+  .section-title {
+    font-size: 2.2rem; font-weight: 800;
+    margin-bottom: 1rem;
+  }
+  .section-subtitle {
+    font-size: 1.1rem; color: var(--text-secondary);
+    max-width: 600px; margin: 0 auto;
+  }
+
+  /* Cards */
+  .card {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    transition: all 0.3s;
+  }
+  .card:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-accent);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  /* Grid layouts */
+  .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 1.5rem; }
+  .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; }
+  .grid-4 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; }
+
+  /* Comparison Table */
+  .comp-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 16px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .comp-table thead th {
+    background: var(--bg-card);
+    padding: 1rem 1.5rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+  .comp-table thead th:first-child { width: 200px; }
+  .comp-table tbody td {
+    padding: 0.8rem 1.5rem;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.9rem;
+    vertical-align: top;
+  }
+  .comp-table tbody tr:hover td { background: rgba(74,158,255,0.03); }
+  .comp-table .highlight { background: rgba(74,158,255,0.08); }
+  .comp-table .cell-good { color: var(--accent-green); }
+  .comp-table .cell-warn { color: var(--accent-orange); }
+  .comp-table .cell-bad { color: var(--accent-red); }
+
+  /* Score bars */
+  .score-bar {
+    display: flex; align-items: center; gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .score-label {
+    width: 140px; font-size: 0.85rem; color: var(--text-secondary);
+    flex-shrink: 0;
+  }
+  .score-track {
+    flex: 1; height: 8px; background: var(--bg-primary);
+    border-radius: 4px; overflow: hidden;
+  }
+  .score-fill {
+    height: 100%; border-radius: 4px;
+    transition: width 1s ease;
+  }
+  .score-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem; font-weight: 600;
+    width: 40px; text-align: right; flex-shrink: 0;
+  }
+
+  /* SWOT Grid */
+  .swot-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;
+  }
+  .swot-card { padding: 2rem; }
+  .swot-card h3 {
+    font-size: 1.1rem; margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .swot-card ul { list-style: none; }
+  .swot-card li {
+    padding: 0.5rem 0; font-size: 0.9rem; color: var(--text-secondary);
+    padding-left: 1.5rem; position: relative;
+  }
+  .swot-card li::before {
+    content: '→'; position: absolute; left: 0;
+    font-weight: 600;
+  }
+  .swot-s li::before { color: var(--accent-green); }
+  .swot-w li::before { color: var(--accent-red); }
+  .swot-o li::before { color: var(--accent-blue); }
+  .swot-t li::before { color: var(--accent-orange); }
+
+  /* Roadmap */
+  .roadmap { position: relative; }
+  .roadmap-phase {
+    position: relative;
+    padding-left: 3rem;
+    margin-bottom: 3rem;
+  }
+  .roadmap-phase::before {
+    content: '';
+    position: absolute; left: 11px; top: 30px; bottom: -30px;
+    width: 2px; background: var(--border);
+  }
+  .roadmap-phase:last-child::before { display: none; }
+  .roadmap-dot {
+    position: absolute; left: 0; top: 6px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.7rem; font-weight: 700; color: #fff;
+  }
+  .roadmap-phase-title {
+    font-size: 1.3rem; font-weight: 700; margin-bottom: 0.5rem;
+  }
+  .roadmap-phase-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.8rem; color: var(--text-muted);
+    margin-bottom: 1rem;
+  }
+  .roadmap-items { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+  .roadmap-item {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 12px; padding: 1.2rem;
+  }
+  .roadmap-item h4 { font-size: 0.95rem; margin-bottom: 0.5rem; }
+  .roadmap-item p { font-size: 0.85rem; color: var(--text-secondary); }
+  .roadmap-item .priority {
+    display: inline-block; font-size: 0.7rem; font-weight: 600;
+    padding: 0.15rem 0.5rem; border-radius: 4px; margin-top: 0.5rem;
+  }
+  .priority-critical { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+  .priority-high { background: rgba(245,158,11,0.15); color: var(--accent-orange); }
+  .priority-medium { background: rgba(74,158,255,0.15); color: var(--accent-blue); }
+
+  /* Insight callout */
+  .insight {
+    background: linear-gradient(135deg, rgba(74,158,255,0.05) 0%, rgba(139,92,246,0.05) 100%);
+    border: 1px solid rgba(74,158,255,0.2);
+    border-radius: 12px; padding: 1.5rem 2rem;
+    margin: 2rem 0;
+    font-size: 0.95rem; color: var(--text-secondary);
+  }
+  .insight strong { color: var(--accent-blue); }
+
+  /* Verdict banner */
+  .verdict {
+    background: var(--gradient-primary);
+    border-radius: 20px;
+    padding: 3rem;
+    text-align: center;
+    margin: 3rem 0;
+    position: relative; overflow: hidden;
+  }
+  .verdict::before {
+    content: ''; position: absolute; inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(255,255,255,0.1) 0%, transparent 60%);
+  }
+  .verdict h2 { font-size: 2rem; margin-bottom: 1rem; position: relative; }
+  .verdict p { font-size: 1.1rem; opacity: 0.9; max-width: 700px; margin: 0 auto; position: relative; }
+
+  /* Tags */
+  .tag {
+    display: inline-block; font-size: 0.75rem; font-weight: 500;
+    padding: 0.2rem 0.6rem; border-radius: 4px; margin-right: 0.3rem;
+  }
+  .tag-blue { background: rgba(74,158,255,0.15); color: var(--accent-blue); }
+  .tag-green { background: rgba(16,185,129,0.15); color: var(--accent-green); }
+  .tag-purple { background: rgba(139,92,246,0.15); color: var(--accent-purple); }
+  .tag-red { background: rgba(239,68,68,0.15); color: var(--accent-red); }
+
+  /* Metric box */
+  .metric-box {
+    text-align: center; padding: 2rem;
+  }
+  .metric-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.5rem; font-weight: 800;
+    margin-bottom: 0.5rem;
+  }
+  .metric-label {
+    font-size: 0.85rem; color: var(--text-secondary);
+  }
+
+  /* Architecture diagram placeholder */
+  .arch-diagram {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 2rem;
+    text-align: center;
+    margin: 2rem 0;
+  }
+
+  /* Code block */
+  .code-block {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    line-height: 1.8;
+  }
+  .code-comment { color: var(--text-muted); }
+  .code-keyword { color: var(--accent-purple); }
+  .code-string { color: var(--accent-green); }
+  .code-fn { color: var(--accent-blue); }
+
+  /* Gap analysis */
+  .gap-item {
+    display: flex; align-items: stretch; gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  .gap-indicator {
+    width: 4px; border-radius: 2px; flex-shrink: 0;
+  }
+  .gap-content { flex: 1; }
+  .gap-content h4 { font-size: 0.95rem; margin-bottom: 0.3rem; }
+  .gap-content p { font-size: 0.85rem; color: var(--text-secondary); }
+
+  /* Divider */
+  .divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--border), transparent);
+    margin: 3rem 0;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center; padding: 4rem 2rem;
+    color: var(--text-muted); font-size: 0.85rem;
+    border-top: 1px solid var(--border);
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .grid-2, .swot-grid { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    .hero { padding: 8rem 1.5rem 4rem; }
+    .comp-table { font-size: 0.8rem; }
+    .comp-table thead th, .comp-table tbody td { padding: 0.5rem 0.8rem; }
+  }
+
+  /* Animations */
+  @keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(30px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate { animation: fadeInUp 0.6s ease forwards; }
+
+  /* Flowchart styles */
+  .flow-container {
+    display: flex; align-items: center; justify-content: center;
+    gap: 0.5rem; flex-wrap: wrap; margin: 2rem 0;
+  }
+  .flow-box {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: 10px; padding: 0.8rem 1.2rem;
+    font-size: 0.85rem; text-align: center;
+    min-width: 120px;
+  }
+  .flow-arrow { color: var(--accent-blue); font-size: 1.5rem; }
+
+  /* Killer Feature Highlight */
+  .killer-feature {
+    background: linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(6,182,212,0.08) 100%);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 16px; padding: 2rem;
+    margin-bottom: 1.5rem;
+  }
+  .killer-feature h3 {
+    color: var(--accent-green); margin-bottom: 0.5rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+  <div class="nav-inner">
+    <div class="nav-logo">dhelix Strategic Direction</div>
+    <div class="nav-links">
+      <a href="#diagnosis" class="active">진단</a>
+      <a href="#landscape">경쟁 지형</a>
+      <a href="#gap">Gap 분석</a>
+      <a href="#strategy">전략</a>
+      <a href="#roadmap">로드맵</a>
+      <a href="#architecture">아키텍처</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero -->
+<header class="hero">
+  <div class="hero-badge">⚠ 전략적 전환점 — 2026 Q1 현황 진단</div>
+  <h1>dhelix가 <span>OpenCode를 넘어서는</span><br>전략적 방향</h1>
+  <p>Coding Agent 전문가 관점의 냉정한 진단, 경쟁 분석, 그리고 차별화된 미래 전략</p>
+  <div class="hero-meta">
+    <div class="hero-meta-item">📅 2026-03-28</div>
+    <div class="hero-meta-item">📊 63,124 LOC 분석</div>
+    <div class="hero-meta-item">🔍 6개 경쟁사 비교</div>
+    <div class="hero-meta-item">🗺 12개월 로드맵</div>
+  </div>
+</header>
+
+<!-- Section 1: 현황 진단 -->
+<section class="section" id="diagnosis">
+  <div class="section-header">
+    <div class="section-number">01 — Diagnosis</div>
+    <h2 class="section-title">냉정한 현황 진단</h2>
+    <p class="section-subtitle">"OpenCode보다 낫지 않다"는 피드백, 왜 나왔는가</p>
+  </div>
+
+  <!-- 핵심 지표 -->
+  <div class="grid-4" style="margin-bottom: 3rem;">
+    <div class="card metric-box">
+      <div class="metric-value" style="color: var(--accent-orange);">7.2</div>
+      <div class="metric-label">종합 성숙도 /10</div>
+    </div>
+    <div class="card metric-box">
+      <div class="metric-value" style="color: var(--accent-blue);">63K</div>
+      <div class="metric-label">Lines of Code</div>
+    </div>
+    <div class="card metric-box">
+      <div class="metric-value" style="color: var(--accent-green);">216</div>
+      <div class="metric-label">테스트 파일 수</div>
+    </div>
+    <div class="card metric-box">
+      <div class="metric-value" style="color: var(--accent-red);">0.1.0</div>
+      <div class="metric-label">현재 버전</div>
+    </div>
+  </div>
+
+  <!-- 영역별 점수 -->
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem;">dhelix 영역별 성숙도</h3>
+      <div class="score-bar">
+        <span class="score-label">에이전트 루프</span>
+        <div class="score-track"><div class="score-fill" style="width: 85%; background: var(--gradient-success);"></div></div>
+        <span class="score-value" style="color: var(--accent-green);">85%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">LLM 클라이언트</span>
+        <div class="score-track"><div class="score-fill" style="width: 90%; background: var(--gradient-success);"></div></div>
+        <span class="score-value" style="color: var(--accent-green);">90%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">컨텍스트 관리</span>
+        <div class="score-track"><div class="score-fill" style="width: 88%; background: var(--gradient-success);"></div></div>
+        <span class="score-value" style="color: var(--accent-green);">88%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">도구 시스템</span>
+        <div class="score-track"><div class="score-fill" style="width: 82%; background: var(--accent-blue);"></div></div>
+        <span class="score-value" style="color: var(--accent-blue);">82%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">권한 / 보안</span>
+        <div class="score-track"><div class="score-fill" style="width: 78%; background: var(--accent-blue);"></div></div>
+        <span class="score-value" style="color: var(--accent-blue);">78%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">MCP 시스템</span>
+        <div class="score-track"><div class="score-fill" style="width: 75%; background: var(--accent-orange);"></div></div>
+        <span class="score-value" style="color: var(--accent-orange);">75%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">서브에이전트</span>
+        <div class="score-track"><div class="score-fill" style="width: 65%; background: var(--accent-red);"></div></div>
+        <span class="score-value" style="color: var(--accent-red);">65%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">DX (개발자 경험)</span>
+        <div class="score-track"><div class="score-fill" style="width: 55%; background: var(--accent-red);"></div></div>
+        <span class="score-value" style="color: var(--accent-red);">55%</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom: 1.5rem; font-size: 1.1rem;">핵심 문제점 — 왜 "낫지 않다"는 평가인가</h3>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-red);"></div>
+        <div class="gap-content">
+          <h4>1. 코드 수정 후 자동 품질 검증 루프 부재</h4>
+          <p>코드 수정 후 lint/typecheck/test를 자동으로 돌려주는 피드백 루프가 없음. 참고: 네이티브 LSP는 OpenCode만 보유하고 Claude Code/Codex/Gemini CLI도 LSP 없음. 하지만 Claude Code는 bash로 빌드 도구 실행, Aider는 auto lint/test 루프를 돌림. dhelix는 두 방식 모두 없어 사용자가 직접 빌드해봐야 함.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-red);"></div>
+        <div class="gap-content">
+          <h4>2. 세션 영속성 없음</h4>
+          <p>OpenCode는 Go 기반 persistent server로 터미널 끊김, SSH 드롭에도 세션 유지. dhelix는 프로세스 종료 = 세션 소멸. 장시간 작업에 치명적.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-orange);"></div>
+        <div class="gap-content">
+          <h4>3. 선언형 에이전트 커스터마이즈 부재</h4>
+          <p>OpenCode는 YAML frontmatter로 커스텀 에이전트를 선언적 정의. dhelix는 코드 수정 필요. 파워유저의 확장성 진입장벽이 높음.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-orange);"></div>
+        <div class="gap-content">
+          <h4>4. 데스크톱 앱 & 멀티플랫폼 부재</h4>
+          <p>OpenCode는 Tauri 기반 데스크톱, Claude Code는 IDE 통합. dhelix는 순수 터미널만. 비-CLI 사용자에게 진입장벽.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-orange);"></div>
+        <div class="gap-content">
+          <h4>5. 벤치마크 / 가시적 성과 부재</h4>
+          <p>Claude Code는 SWE-bench 80.9%, Codex는 Terminal-Bench 77.3%. dhelix는 벤치마크 결과 없음. 설득력 부족.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>💡 핵심 인사이트:</strong> dhelix의 내부 아키텍처(ReAct Loop, 3-Layer Compaction, 5-Mode Permission)는 실제로 잘 설계되어 있다. 문제는 <strong>"보이지 않는 곳에 투자"</strong>했다는 것. 사용자가 체감하는 DX(개발자 경험)와 가시적 차별화 기능에서 OpenCode에 뒤처진다.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Section 2: 경쟁 지형 -->
+<section class="section" id="landscape">
+  <div class="section-header">
+    <div class="section-number">02 — Competitive Landscape</div>
+    <h2 class="section-title">2026 Coding Agent 경쟁 지형</h2>
+    <p class="section-subtitle">6대 CLI Coding Agent의 강점과 전략적 포지션</p>
+  </div>
+
+  <div style="overflow-x: auto; margin-bottom: 3rem;">
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>차원</th>
+          <th>🔵 dhelix</th>
+          <th>🟢 OpenCode</th>
+          <th>🟣 Claude Code</th>
+          <th>🔴 Aider</th>
+          <th>🟡 Gemini CLI</th>
+          <th>⚫ Codex CLI</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>언어</strong></td>
+          <td>TypeScript</td>
+          <td>Go</td>
+          <td>TypeScript</td>
+          <td>Python</td>
+          <td>TypeScript</td>
+          <td>TypeScript</td>
+        </tr>
+        <tr>
+          <td><strong>LLM 지원</strong></td>
+          <td class="cell-good">75+ (OpenAI 호환)</td>
+          <td class="cell-good">75+ (models.dev)</td>
+          <td class="cell-warn">Claude only</td>
+          <td class="cell-good">100+ 모델</td>
+          <td class="cell-warn">Gemini only</td>
+          <td class="cell-warn">OpenAI only</td>
+        </tr>
+        <tr>
+          <td><strong>LSP 통합</strong></td>
+          <td class="cell-bad">❌ 없음</td>
+          <td class="cell-good">✅ 네이티브</td>
+          <td class="cell-bad">❌ 없음</td>
+          <td class="cell-warn">⚠ lint/test 연동</td>
+          <td class="cell-bad">❌ 없음</td>
+          <td class="cell-bad">❌ 없음</td>
+        </tr>
+        <tr>
+          <td><strong>세션 영속성</strong></td>
+          <td class="cell-warn">파일 기반</td>
+          <td class="cell-good">SQLite + daemon</td>
+          <td class="cell-good">클라우드 동기</td>
+          <td class="cell-bad">없음</td>
+          <td class="cell-warn">파일 기반</td>
+          <td class="cell-warn">파일 기반</td>
+        </tr>
+        <tr>
+          <td><strong>에이전트 커스터마이즈</strong></td>
+          <td class="cell-warn">코드 수정 필요</td>
+          <td class="cell-good">YAML 선언형</td>
+          <td class="cell-warn">CLAUDE.md</td>
+          <td class="cell-bad">제한적</td>
+          <td class="cell-warn">GEMINI.md</td>
+          <td class="cell-warn">AGENTS.md</td>
+        </tr>
+        <tr>
+          <td><strong>서브에이전트</strong></td>
+          <td class="cell-good">팀 오케스트레이션</td>
+          <td class="cell-good">선언형 서브에이전트</td>
+          <td class="cell-good">병렬 에이전트 팀</td>
+          <td class="cell-bad">없음</td>
+          <td class="cell-warn">기본적</td>
+          <td class="cell-warn">기본적</td>
+        </tr>
+        <tr>
+          <td><strong>MCP 지원</strong></td>
+          <td class="cell-good">3-스코프 브리지</td>
+          <td class="cell-good">완전 지원</td>
+          <td class="cell-good">완전 지원</td>
+          <td class="cell-bad">없음</td>
+          <td class="cell-good">지원</td>
+          <td class="cell-good">지원</td>
+        </tr>
+        <tr>
+          <td><strong>보안 가드레일</strong></td>
+          <td class="cell-good">✅ 5-Layer</td>
+          <td class="cell-warn">기본적</td>
+          <td class="cell-good">완전</td>
+          <td class="cell-warn">기본적</td>
+          <td class="cell-warn">권한 확인만</td>
+          <td class="cell-good">샌드박스</td>
+        </tr>
+        <tr>
+          <td><strong>컨텍스트 관리</strong></td>
+          <td class="cell-good">3-Layer Compaction</td>
+          <td class="cell-warn">기본 truncation</td>
+          <td class="cell-good">고급 (1M window)</td>
+          <td class="cell-good">Repo Map</td>
+          <td class="cell-good">1M window</td>
+          <td class="cell-warn">기본</td>
+        </tr>
+        <tr>
+          <td><strong>데스크톱 앱</strong></td>
+          <td class="cell-bad">❌</td>
+          <td class="cell-good">Tauri</td>
+          <td class="cell-good">Electron</td>
+          <td class="cell-bad">❌</td>
+          <td class="cell-bad">❌</td>
+          <td class="cell-bad">❌</td>
+        </tr>
+        <tr>
+          <td><strong>Repo Map / 인덱싱</strong></td>
+          <td class="cell-bad">❌ 기본적</td>
+          <td class="cell-warn">LSP 기반</td>
+          <td class="cell-warn">기본 탐색</td>
+          <td class="cell-good">✅ Tree-sitter</td>
+          <td class="cell-warn">기본</td>
+          <td class="cell-warn">기본</td>
+        </tr>
+        <tr>
+          <td><strong>비용 추적</strong></td>
+          <td class="cell-good">✅ 정밀</td>
+          <td class="cell-warn">기본</td>
+          <td class="cell-good">상세</td>
+          <td class="cell-good">상세</td>
+          <td class="cell-bad">❌</td>
+          <td class="cell-warn">기본</td>
+        </tr>
+        <tr>
+          <td><strong>음성 지원</strong></td>
+          <td class="cell-good">✅</td>
+          <td class="cell-bad">❌</td>
+          <td class="cell-good">push-to-talk</td>
+          <td class="cell-bad">❌</td>
+          <td class="cell-bad">❌</td>
+          <td class="cell-bad">❌</td>
+        </tr>
+        <tr>
+          <td><strong>Star / 커뮤니티</strong></td>
+          <td class="cell-bad">내부 프로젝트</td>
+          <td class="cell-good">112K+ ⭐</td>
+          <td class="cell-good">Anthropic 공식</td>
+          <td class="cell-good">30K+ ⭐</td>
+          <td class="cell-good">Google 공식</td>
+          <td class="cell-good">OpenAI 공식</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="insight">
+    <strong>💡 2026 시장 핵심 트렌드:</strong> "어떤 모델이 가장 똑똑한가?"에서 <strong>"어떤 에이전트 아키텍처가 같은 모델로 더 나은 결과를 내는가?"</strong>로 경쟁 축이 이동.
+    Scaffolding(에이전트 프레임워크)이 모델만큼 중요해졌으며, 조직의 도메인 컨텍스트를 얼마나 잘 녹이느냐가 진짜 차별화 포인트.
+    또한 <strong>비용 효율성</strong>이 "가장 뜨거운 대화 주제"로 부상 — 같은 결과를 4x 적은 토큰으로 내는 에이전트가 승리.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Section 3: Gap Analysis -->
+<section class="section" id="gap">
+  <div class="section-header">
+    <div class="section-number">03 — Gap Analysis</div>
+    <h2 class="section-title">Critical Gap 분석</h2>
+    <p class="section-subtitle">dhelix가 반드시 메워야 할 격차와 역전 가능한 기회</p>
+  </div>
+
+  <div class="swot-grid" style="margin-bottom: 3rem;">
+    <div class="card swot-card swot-s">
+      <h3>💪 Strengths (dhelix 우위)</h3>
+      <ul>
+        <li><strong>3-Layer Context Compaction</strong> — 대부분 경쟁자는 단순 truncation. Cold Storage + Rehydration은 고유 강점</li>
+        <li><strong>5-Layer Security Guardrails</strong> — Command/Path/Secret/Injection/Entropy 다층 방어. 엔터프라이즈급 보안</li>
+        <li><strong>계층형 권한 시스템</strong> — 패턴 기반 규칙(Bash(npm *)), 감사 로그. OpenCode보다 세밀</li>
+        <li><strong>Dual-Model Router</strong> — Architect/Editor 패턴. 비용 최적화 내장</li>
+        <li><strong>풍부한 CLI 명령어</strong> — 41개 슬래시 명령어. 파워 유저 친화적</li>
+        <li><strong>Extended Thinking 지원</strong> — Claude 모델의 thinking budget 활용</li>
+        <li><strong>음성 입력</strong> — CLI에서 음성 지원하는 유일한 에이전트</li>
+      </ul>
+    </div>
+    <div class="card swot-card swot-w">
+      <h3>⚠️ Weaknesses (dhelix 열위)</h3>
+      <ul>
+        <li><strong>자동 품질 검증 루프 없음</strong> — 파일 수정 후 lint/typecheck 자동 실행 없음. 네이티브 LSP는 OpenCode만 보유(Claude Code/Codex도 없음), 하지만 Aider의 auto lint/test 루프조차 없어 체감 격차 큼</li>
+        <li><strong>Repo Map / 코드 인덱싱 부재</strong> — Aider의 Tree-sitter 기반 repo map 대비 원시적</li>
+        <li><strong>세션 영속성 취약</strong> — 파일 기반 복원만. daemon/SQLite 수준에 못 미침</li>
+        <li><strong>선언형 에이전트 부재</strong> — 커스텀 에이전트 정의에 코드 수정 필요</li>
+        <li><strong>벤치마크 부재</strong> — SWE-bench, Terminal-Bench 결과 없음</li>
+        <li><strong>느린 Go 대비 부트스트랩</strong> — Node.js 런타임 오버헤드 (2-3초 vs Go의 <500ms)</li>
+        <li><strong>커뮤니티 / 생태계 부재</strong> — 오픈소스 기여자, 플러그인 마켓 없음</li>
+        <li><strong>자동 lint/test 루프 없음</strong> — Aider는 코드 생성 후 자동 lint/test/fix</li>
+      </ul>
+    </div>
+    <div class="card swot-card swot-o">
+      <h3>🚀 Opportunities (기회)</h3>
+      <ul>
+        <li><strong>Context Flywheel</strong> — 조직 컨텍스트 축적이 진짜 해자(moat). dhelix의 Memory 시스템을 강화하면 경쟁 우위</li>
+        <li><strong>엔터프라이즈 보안 니즈</strong> — 규제 환경에서 로컬 우선 + 5-Layer 가드레일은 큰 장점</li>
+        <li><strong>비용 효율성 경쟁</strong> — "4x 적은 토큰으로 같은 결과"가 핫 토픽. Compaction + Dual Model 강화</li>
+        <li><strong>한국 시장 특화</strong> — 한국어 UX, 국내 클라우드(NHN, Naver) 통합, 한국 개발 문화 반영</li>
+        <li><strong>AI Agent 표준화 물결</strong> — ACP(Agent Communication Protocol) 등 새로운 표준 선점</li>
+        <li><strong>IDE 통합 대세</strong> — Zed, JetBrains, VS Code 플러그인으로 확장</li>
+      </ul>
+    </div>
+    <div class="card swot-card swot-t">
+      <h3>🔥 Threats (위협)</h3>
+      <ul>
+        <li><strong>Big Tech 자원 격차</strong> — Anthropic, Google, OpenAI가 공식 CLI 에이전트 투입</li>
+        <li><strong>오픈소스 네트워크 효과</strong> — OpenCode 112K⭐, Aider 30K⭐. 커뮤니티 기여가 격차 확대</li>
+        <li><strong>모델 종속성</strong> — Claude/GPT API 가격 정책 변동에 취약</li>
+        <li><strong>AI 코딩 도구 범용화</strong> — 에이전트 기능이 코모디티화. 차별화 어려움</li>
+        <li><strong>IDE 에이전트 확대</strong> — Cursor, Windsurf가 터미널 에이전트 기능 흡수</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Section 4: Strategy -->
+<section class="section" id="strategy">
+  <div class="section-header">
+    <div class="section-number">04 — Strategic Direction</div>
+    <h2 class="section-title">전략적 방향: 3가지 핵심 전략</h2>
+    <p class="section-subtitle">"모든 것을 따라하지 말고, 이길 수 있는 싸움을 골라라"</p>
+  </div>
+
+  <div class="verdict">
+    <h2>dhelix의 Positioning</h2>
+    <p><strong>"가장 지능적인 코드 이해"</strong>와 <strong>"가장 안전한 엔터프라이즈 에이전트"</strong>의 교차점.<br>
+    범용 에이전트가 아닌, <strong>"코드를 가장 깊이 이해하는 Secure-First Coding Agent"</strong>로 포지셔닝.</p>
+  </div>
+
+  <!-- Strategy 1 -->
+  <div class="killer-feature" style="margin-top: 3rem;">
+    <h3>🧠 전략 1: Code Intelligence Layer — "코드를 이해하는 에이전트"</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+      CLI 코딩 에이전트 중 네이티브 LSP 내장은 <strong>OpenCode만 유일</strong>하다. Claude Code, Codex, Gemini CLI 모두 LSP가 없다.
+      그러나 Claude Code는 bash로 빌드 도구를 실행하고, Aider는 자동 lint/test 루프를 돈다.
+      dhelix는 이 두 접근 모두 없어 체감 격차가 크다. <strong>현실적 단계별 전략</strong>을 취한다.
+    </p>
+    <div class="grid-3">
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">🔄 Auto Lint/Test/Typecheck Loop</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          코드 수정 후 자동 lint → typecheck → test 실행. 실패 시 에러를 LLM에 피드백 → 자동 수정.
+          기존 Hook + bash_exec 활용으로 <strong>2주 내 MVP 가능</strong>. Aider/Claude Code 접근.
+        </p>
+        <span class="tag tag-red">CRITICAL — Phase 1 최우선</span>
+      </div>
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">🗺 Semantic Repo Map</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          Tree-sitter 기반 AST 파싱 → 함수/클래스/모듈 관계도 자동 생성.
+          Aider의 repo-map을 벤치마킹하여, <strong>의존성 그래프 + 호출 체인</strong> 제공.
+        </p>
+        <span class="tag tag-red">CRITICAL</span>
+      </div>
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">🔗 LSP Integration Hub</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          TS(tsserver), Go(gopls), Python(pylsp) LSP 자동 감지 & 연결.
+          OpenCode만 가진 기능을 흡수하여 차별화. <strong>Auto Loop 안정화 후 진행</strong>.
+        </p>
+        <span class="tag tag-purple">HIGH — Phase 2 차별화</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strategy 2 -->
+  <div class="killer-feature" style="border-color: rgba(74,158,255,0.25); background: linear-gradient(135deg, rgba(74,158,255,0.05) 0%, rgba(139,92,246,0.05) 100%);">
+    <h3 style="color: var(--accent-blue);">🛡 전략 2: Enterprise-Grade Trust — "가장 신뢰할 수 있는 에이전트"</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+      이미 보유한 5-Layer Guardrails + Permission System을 <strong>엔터프라이즈 킬러 피처</strong>로 발전시킨다.
+      규제 산업(금융, 의료, 공공)에서 "유일하게 쓸 수 있는 코딩 에이전트"가 되는 것이 목표.
+    </p>
+    <div class="grid-3">
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">🔐 Policy-as-Code Engine</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          OPA(Open Policy Agent) 스타일 정책 엔진. 팀별/프로젝트별 보안 정책을 코드로 관리.
+          기존 권한 시스템을 기업용으로 확장.
+        </p>
+        <span class="tag tag-purple">HIGH</span>
+      </div>
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">📊 Compliance Dashboard</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          에이전트의 모든 행동을 추적하는 감사 대시보드.
+          "어떤 파일을 수정했는지, 어떤 명령을 실행했는지" 완전한 추적성.
+        </p>
+        <span class="tag tag-blue">MEDIUM</span>
+      </div>
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">🏢 Air-Gap Mode</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          완전 오프라인 모드. Ollama/vLLM + 로컬 MCP 서버만으로 동작.
+          군사/보안 기관, 금융권에서의 유일한 선택지.
+        </p>
+        <span class="tag tag-purple">HIGH</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Strategy 3 -->
+  <div class="killer-feature" style="border-color: rgba(139,92,246,0.25); background: linear-gradient(135deg, rgba(139,92,246,0.05) 0%, rgba(236,72,153,0.05) 100%);">
+    <h3 style="color: var(--accent-purple);">⚡ 전략 3: Context Flywheel — "쓸수록 똑똑해지는 에이전트"</h3>
+    <p style="color: var(--text-secondary); margin-bottom: 1.5rem;">
+      2026년의 핵심 경쟁 우위는 <strong>"조직의 도메인 컨텍스트를 얼마나 깊이 축적하는가"</strong>.
+      dhelix의 Memory 시스템을 <strong>Context Flywheel</strong>로 발전시켜, 사용할수록 더 정확해지는 에이전트를 만든다.
+    </p>
+    <div class="grid-3">
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">🧬 Project DNA</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          프로젝트의 코딩 컨벤션, 아키텍처 패턴, 자주 쓰는 라이브러리를 자동 학습.
+          "이 프로젝트에서는 이렇게 코딩한다"를 아는 에이전트.
+        </p>
+        <span class="tag tag-red">CRITICAL</span>
+      </div>
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">📈 Decision Memory</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          과거 결정의 이유(WHY)를 기록. "이전에 Redis 대신 Memcached를 선택한 이유"를 기억하는 에이전트.
+          기존 memory 시스템을 structured decisions로 확장.
+        </p>
+        <span class="tag tag-purple">HIGH</span>
+      </div>
+      <div class="card" style="padding: 1.2rem;">
+        <h4 style="font-size: 0.9rem; margin-bottom: 0.5rem;">🔄 Team Knowledge Sync</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary);">
+          팀원들의 에이전트 경험을 공유 메모리로 통합.
+          "팀 전체가 축적한 컨텍스트"를 활용하는 진정한 팀 에이전트.
+        </p>
+        <span class="tag tag-blue">MEDIUM</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="insight">
+    <strong>💡 전략적 차별화 원칙:</strong> OpenCode는 "유연성", Claude Code는 "지능", Aider는 "경량".
+    dhelix는 <strong>"Code Intelligence + Enterprise Trust + Context Flywheel"</strong>의 삼각형으로 독자적 포지션을 구축.
+    이 세 축은 서로 시너지를 내며, 특히 <strong>엔터프라이즈 시장에서 압도적 우위</strong>를 만든다.
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Section 5: Roadmap -->
+<section class="section" id="roadmap">
+  <div class="section-header">
+    <div class="section-number">05 — Execution Roadmap</div>
+    <h2 class="section-title">12개월 실행 로드맵</h2>
+    <p class="section-subtitle">Phase별 목표와 구체적 실행 항목</p>
+  </div>
+
+  <div class="roadmap">
+
+    <!-- Phase 1 -->
+    <div class="roadmap-phase">
+      <div class="roadmap-dot" style="background: var(--accent-red);">1</div>
+      <div class="roadmap-phase-title">Phase 1: Foundation Fix — 기반 격차 해소</div>
+      <div class="roadmap-phase-time">📅 Month 1-3 (2026 Q2) — "일단 따라잡기"</div>
+      <div class="roadmap-items">
+        <div class="roadmap-item">
+          <h4>🔄 Auto Lint/Test/Typecheck Loop</h4>
+          <p>코드 수정 후 자동 lint → typecheck → test → fix 루프. 기존 Hook + bash_exec 활용으로 2주 내 MVP 가능. Aider/Claude Code 방식의 "빌드 도구 실행" 접근.</p>
+          <span class="priority priority-critical">CRITICAL — Week 1-4</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🗺 Repo Map (Tree-sitter)</h4>
+          <p>tree-sitter 기반 코드 구조 파싱. 함수, 클래스, 모듈 관계를 자동 인덱싱. LLM에 "이 프로젝트 구조" 컨텍스트 제공.</p>
+          <span class="priority priority-critical">CRITICAL — Week 3-6</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>📝 YAML 선언형 에이전트</h4>
+          <p>.dhelix/agents/ 디렉토리에 YAML로 커스텀 에이전트 정의. OpenCode의 DX를 벤치마킹.</p>
+          <span class="priority priority-high">HIGH — Week 4-8</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>💾 Session Persistence (SQLite)</h4>
+          <p>파일 기반 세션을 SQLite로 전환. 프로세스 재시작 후에도 완벽한 세션 복원. Background daemon 모드 추가.</p>
+          <span class="priority priority-high">HIGH — Week 5-9</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>⚡ 부트스트랩 최적화</h4>
+          <p>Cold start 2-3초 → 800ms 목표. 지연 import 강화, V8 snapshot, 동적 의존성 분리.</p>
+          <span class="priority priority-medium">MEDIUM — Week 8-12</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🔗 LSP Integration Hub (기초)</h4>
+          <p>TS, Go, Python LSP 자동 감지 & 연결. Auto Loop 안정화 후 진행. OpenCode만 가진 기능을 흡수하여 차별화.</p>
+          <span class="priority priority-high">HIGH — Week 9-12</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 2 -->
+    <div class="roadmap-phase">
+      <div class="roadmap-dot" style="background: var(--accent-orange);">2</div>
+      <div class="roadmap-phase-title">Phase 2: Differentiation — 차별화 구축</div>
+      <div class="roadmap-phase-time">📅 Month 4-7 (2026 Q3) — "남들이 못 하는 것"</div>
+      <div class="roadmap-items">
+        <div class="roadmap-item">
+          <h4>🧬 Project DNA Engine</h4>
+          <p>프로젝트의 코딩 컨벤션, 네이밍 규칙, 아키텍처 패턴을 자동 학습. 새 코드 생성 시 프로젝트 스타일에 맞춰 생성.</p>
+          <span class="priority priority-critical">CRITICAL — Week 1-5</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🧠 Semantic Context Ranking</h4>
+          <p>현재 3-Layer Compaction에 시맨틱 중요도 점수 추가. "최근성"이 아닌 "관련성" 기반 컨텍스트 우선순위. 토큰 효율 극대화.</p>
+          <span class="priority priority-critical">CRITICAL — Week 3-7</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🛡 Policy-as-Code Engine</h4>
+          <p>팀/프로젝트별 보안 정책을 코드로 정의. "이 프로젝트에서는 rm -rf 금지" 같은 규칙을 .dhelix/policy.yaml로 관리.</p>
+          <span class="priority priority-high">HIGH — Week 5-8</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>📊 SWE-bench 도전</h4>
+          <p>SWE-bench Verified 벤치마크 참가. 목표: 75%+ (top-5 진입). 마케팅 소재 확보.</p>
+          <span class="priority priority-high">HIGH — Week 6-10</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>💰 Token Budget Optimizer</h4>
+          <p>"같은 결과, 4x 적은 토큰." Compaction + Dual Model + Selective Tool 전략으로 비용 혁신.</p>
+          <span class="priority priority-high">HIGH — Week 8-12</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🔌 IDE Plugin (VS Code)</h4>
+          <p>VS Code 사이드바에서 dhelix 에이전트 실행. 터미널 + IDE 하이브리드 경험.</p>
+          <span class="priority priority-medium">MEDIUM — Week 10-14</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Phase 3 -->
+    <div class="roadmap-phase">
+      <div class="roadmap-dot" style="background: var(--accent-green);">3</div>
+      <div class="roadmap-phase-title">Phase 3: Moat Building — 해자 구축</div>
+      <div class="roadmap-phase-time">📅 Month 8-12 (2026 Q4 ~ 2027 Q1) — "따라올 수 없는 격차"</div>
+      <div class="roadmap-items">
+        <div class="roadmap-item">
+          <h4>🔄 Context Flywheel v2</h4>
+          <p>팀 메모리 동기화, 크로스-프로젝트 패턴 학습, 자동 의사결정 추적. "쓸수록 똑똑해지는" 플라이휠 완성.</p>
+          <span class="priority priority-critical">CRITICAL — Week 1-8</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🏢 Enterprise Suite</h4>
+          <p>SSO 통합, RBAC(역할 기반 접근), 감사 대시보드, Air-Gap 배포. 기업 고객 진입.</p>
+          <span class="priority priority-high">HIGH — Week 4-12</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🌐 Agent Marketplace</h4>
+          <p>커뮤니티가 만든 커스텀 에이전트, 스킬, MCP 서버를 공유하는 마켓플레이스. 네트워크 효과 시작.</p>
+          <span class="priority priority-high">HIGH — Week 6-14</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>📱 Tauri 데스크톱 앱</h4>
+          <p>Tauri 기반 네이티브 데스크톱 앱. CLI 파워 + GUI 편의성 결합.</p>
+          <span class="priority priority-medium">MEDIUM — Week 8-16</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🤖 ACP (Agent Communication)</h4>
+          <p>Agent-to-Agent 통신 프로토콜 구현. 다른 에이전트/IDE와 상호운용. 미래 표준 선점.</p>
+          <span class="priority priority-medium">MEDIUM — Week 10-16</span>
+        </div>
+        <div class="roadmap-item">
+          <h4>🌏 한국 시장 특화</h4>
+          <p>한국어 UX, NHN Cloud/Naver Clova 통합, 한국 기업 보안 정책 대응. 국내 1위 코딩 에이전트 포지셔닝.</p>
+          <span class="priority priority-high">HIGH — Week 6-12</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Section 6: Architecture Evolution -->
+<section class="section" id="architecture">
+  <div class="section-header">
+    <div class="section-number">06 — Architecture Evolution</div>
+    <h2 class="section-title">아키텍처 진화 방향</h2>
+    <p class="section-subtitle">현재 4-Layer에서 "Code-Intelligent 5-Layer"로의 진화</p>
+  </div>
+
+  <div class="grid-2" style="margin-bottom: 3rem;">
+    <!-- Current -->
+    <div class="card">
+      <h3 style="margin-bottom: 1.5rem; color: var(--accent-orange);">현재 아키텍처 (As-Is)</h3>
+      <div class="code-block">
+<span class="code-comment">// 4-Layer Architecture</span>
+<span class="code-keyword">Layer 1</span>: CLI (Ink/React)
+  └─ App.tsx + 22 Components + 7 Hooks
+
+<span class="code-keyword">Layer 2</span>: Core (Zero UI)
+  └─ Agent Loop + Context Manager
+  └─ Recovery + Subagents
+
+<span class="code-keyword">Layer 3</span>: Infrastructure
+  └─ LLM Client + Tool System
+  └─ Guardrails + Permissions + MCP
+
+<span class="code-keyword">Layer 4</span>: Leaf Modules
+  └─ Utils + Config + Skills + Memory
+
+<span class="code-comment">// 문제: Code Intelligence 없음</span>
+<span class="code-comment">// 문제: 세션 영속성 취약</span>
+<span class="code-comment">// 문제: 에이전트 커스터마이즈 어려움</span>
+      </div>
+    </div>
+
+    <!-- Target -->
+    <div class="card">
+      <h3 style="margin-bottom: 1.5rem; color: var(--accent-green);">목표 아키텍처 (To-Be)</h3>
+      <div class="code-block">
+<span class="code-comment">// 5-Layer Code-Intelligent Architecture</span>
+<span class="code-keyword">Layer 0</span>: <span class="code-fn">Platform</span> <span class="code-string">← NEW</span>
+  └─ Daemon Process (persistent server)
+  └─ SQLite Session Store
+  └─ Auto Lint/Test Runner → LSP Pool (Phase 2)
+
+<span class="code-keyword">Layer 1</span>: CLI + Desktop + IDE Plugin
+  └─ Ink TUI / Tauri Desktop / VS Code
+
+<span class="code-keyword">Layer 2</span>: <span class="code-fn">Intelligence Core</span> <span class="code-string">← EVOLVED</span>
+  └─ Agent Loop + Code Intelligence
+  └─ Semantic Context + Project DNA
+  └─ YAML Agent Loader
+
+<span class="code-keyword">Layer 3</span>: Infrastructure
+  └─ LLM + Tools + Security + MCP
+  └─ Policy-as-Code Engine <span class="code-string">← NEW</span>
+
+<span class="code-keyword">Layer 4</span>: Foundation
+  └─ Utils + Config + Skills + Memory
+  └─ Context Flywheel <span class="code-string">← NEW</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Key Changes -->
+  <h3 style="margin-bottom: 1.5rem;">핵심 아키텍처 변화 상세</h3>
+  <div class="grid-3">
+    <div class="card">
+      <h4 style="color: var(--accent-blue); margin-bottom: 0.8rem;">🏗 Layer 0: Platform Layer</h4>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        현재 CLI 프로세스 종료 = 세션 종료. 새로운 Platform Layer는:
+      </p>
+      <div class="code-block" style="font-size: 0.8rem;">
+<span class="code-comment">// Persistent Background Server</span>
+dhelix daemon <span class="code-fn">start</span>
+  ├─ SQLite session store
+  ├─ Auto lint/test runner (Phase 1)
+  ├─ LSP server pool (Phase 2)
+  ├─ File watcher (fsnotify)
+  └─ IPC socket (/tmp/dhelix.sock)
+
+<span class="code-comment">// Client connects to daemon</span>
+dhelix <span class="code-fn">chat</span>
+  └─ IPC → daemon → agent loop
+      </div>
+    </div>
+    <div class="card">
+      <h4 style="color: var(--accent-green); margin-bottom: 0.8rem;">🧠 Code Intelligence Engine</h4>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        Phase 1: 빌드 도구 실행 방식 (Aider/Claude Code 접근), Phase 2: LSP 추가
+      </p>
+      <div class="code-block" style="font-size: 0.8rem;">
+<span class="code-comment">// Phase 1: 빌드 도구 실행 (Aider/Claude Code 방식)</span>
+<span class="code-keyword">async</span> <span class="code-fn">executeToolWithIntelligence</span>(call) {
+  <span class="code-keyword">const</span> result = <span class="code-keyword">await</span> tool.execute(call)
+
+  <span class="code-keyword">if</span> (isFileModification(call)) {
+    <span class="code-comment">// tsc --noEmit, eslint, pytest 등 실행</span>
+    <span class="code-keyword">const</span> checks = <span class="code-keyword">await</span> <span class="code-fn">runProjectChecks</span>()
+    <span class="code-keyword">if</span> (checks.errors.length > 0) {
+      <span class="code-comment">// LLM에 에러 출력 피드백 → 자동 수정</span>
+      context.addFeedback(checks)
+      <span class="code-keyword">return</span> { result, needsFix: <span class="code-keyword">true</span> }
+    }
+  }
+  <span class="code-keyword">return</span> { result, needsFix: <span class="code-keyword">false</span> }
+}
+<span class="code-comment">// Phase 2: + lsp.getDiagnostics() 실시간 추가</span>
+      </div>
+    </div>
+    <div class="card">
+      <h4 style="color: var(--accent-purple); margin-bottom: 0.8rem;">📄 YAML Agent Definition</h4>
+      <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 1rem;">
+        선언형 커스텀 에이전트 정의:
+      </p>
+      <div class="code-block" style="font-size: 0.8rem;">
+<span class="code-comment"># .dhelix/agents/spring-expert.yaml</span>
+<span class="code-keyword">name</span>: spring-expert
+<span class="code-keyword">description</span>: Spring Boot 전문 에이전트
+<span class="code-keyword">model</span>: claude-sonnet-4
+<span class="code-keyword">temperature</span>: 0.3
+<span class="code-keyword">tools</span>:
+  - file_read
+  - file_write
+  - bash_exec
+  - grep_search
+<span class="code-keyword">system_prompt</span>: |
+  You are a Spring Boot expert.
+  Follow our team conventions in
+  DHELIX.md.
+<span class="code-keyword">permissions</span>:
+  allow: [<span class="code-string">"Bash(./gradlew *)"</span>]
+  deny: [<span class="code-string">"Bash(rm *)"</span>]
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Section 7: Actionable Quick Wins -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">07 — Quick Wins</div>
+    <h2 class="section-title">즉시 실행 가능한 Quick Wins</h2>
+    <p class="section-subtitle">코드 변경 없이 또는 최소 변경으로 얻을 수 있는 승리</p>
+  </div>
+
+  <div class="grid-2">
+    <div class="card">
+      <h3 style="margin-bottom: 1rem; font-size: 1rem;">🏃 1주 내 실행 가능</h3>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-green);"></div>
+        <div class="gap-content">
+          <h4>SWE-bench Lite 도전</h4>
+          <p>현재 아키텍처로 SWE-bench Lite 실행. 점수 확보만으로 마케팅 소재.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-green);"></div>
+        <div class="gap-content">
+          <h4>README.md 리뉴얼</h4>
+          <p>"5-Layer Security Guardrails" "3-Layer Context Compaction" 등 고유 강점을 전면에 배치.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-green);"></div>
+        <div class="gap-content">
+          <h4>/doctor 명령어 강화</h4>
+          <p>시스템 진단을 더 직관적으로. 처음 실행 시 "당신의 환경에 맞는 최적 설정" 안내.</p>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom: 1rem; font-size: 1rem;">📅 2주 내 실행 가능</h3>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-blue);"></div>
+        <div class="gap-content">
+          <h4>Auto Lint/Test Hook</h4>
+          <p>file_write/file_edit 후 자동으로 lint 명령어 실행. 실패 시 LLM에 피드백. 기존 Hook 시스템 활용.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-blue);"></div>
+        <div class="gap-content">
+          <h4>YAML 에이전트 로더 (v1)</h4>
+          <p>기존 subagent spawner에 YAML 파서만 추가. 선언형 에이전트 정의의 MVP.</p>
+        </div>
+      </div>
+      <div class="gap-item">
+        <div class="gap-indicator" style="background: var(--accent-blue);"></div>
+        <div class="gap-content">
+          <h4>비용 최적화 대시보드</h4>
+          <p>기존 cost-tracker를 풍부한 TUI 대시보드로. "이번 세션에서 $2.30 절약".</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Section 8: Success Metrics -->
+<section class="section">
+  <div class="section-header">
+    <div class="section-number">08 — Success Metrics</div>
+    <h2 class="section-title">성공 지표</h2>
+    <p class="section-subtitle">각 Phase의 달성 여부를 측정하는 구체적 KPI</p>
+  </div>
+
+  <div class="grid-3">
+    <div class="card" style="border-top: 3px solid var(--accent-red);">
+      <h4 style="margin-bottom: 1rem;">Phase 1 KPI (Q2)</h4>
+      <div class="score-bar">
+        <span class="score-label">Auto Fix 성공률</span>
+        <span class="score-value" style="color: var(--accent-blue);">≥ 70%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">세션 복원율</span>
+        <span class="score-value" style="color: var(--accent-green);">99%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">부트스트랩 시간</span>
+        <span class="score-value" style="color: var(--accent-blue);">< 1s</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">Auto-fix 성공률</span>
+        <span class="score-value" style="color: var(--accent-blue);">≥ 60%</span>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent-orange);">
+      <h4 style="margin-bottom: 1rem;">Phase 2 KPI (Q3)</h4>
+      <div class="score-bar">
+        <span class="score-label">SWE-bench 점수</span>
+        <span class="score-value" style="color: var(--accent-green);">≥ 75%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">토큰 효율 개선</span>
+        <span class="score-value" style="color: var(--accent-blue);">≥ 2x</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">Project DNA 정확도</span>
+        <span class="score-value" style="color: var(--accent-blue);">≥ 80%</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">VS Code 플러그인</span>
+        <span class="score-value" style="color: var(--accent-green);">출시</span>
+      </div>
+    </div>
+    <div class="card" style="border-top: 3px solid var(--accent-green);">
+      <h4 style="margin-bottom: 1rem;">Phase 3 KPI (Q4~)</h4>
+      <div class="score-bar">
+        <span class="score-label">엔터프라이즈 고객</span>
+        <span class="score-value" style="color: var(--accent-green);">≥ 3</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">마켓플레이스 에이전트</span>
+        <span class="score-value" style="color: var(--accent-blue);">≥ 20</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">데스크톱 앱</span>
+        <span class="score-value" style="color: var(--accent-green);">출시</span>
+      </div>
+      <div class="score-bar">
+        <span class="score-label">GitHub Stars</span>
+        <span class="score-value" style="color: var(--accent-blue);">5K+</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- Final Verdict -->
+<section class="section">
+  <div class="verdict" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid var(--border-accent);">
+    <h2>결론: dhelix의 길</h2>
+    <p style="margin-bottom: 1.5rem;">
+      dhelix는 "OpenCode의 카피캣"이 되어서는 안 된다.<br>
+      <strong>"코드를 가장 깊이 이해하고, 가장 안전하며, 쓸수록 똑똑해지는"</strong><br>
+      독자적 정체성을 가진 Coding Agent로 진화해야 한다.
+    </p>
+    <p style="font-size: 0.95rem; opacity: 0.8;">
+      내부 아키텍처는 이미 견고하다. 지금 필요한 것은<br>
+      <strong>① Auto Lint/Test Loop로 "보이는" 지능 추가 (→ LSP 확장) ② 엔터프라이즈 신뢰 강화 ③ Context Flywheel로 해자 구축</strong><br>
+      이 세 가지를 12개월 안에 실행하면, dhelix는 "OpenCode보다 낫지 않다"가 아닌<br>
+      <strong>"dhelix만이 할 수 있는 것이 있다"</strong>는 평가를 받게 될 것이다.
+    </p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <p>dhelix Strategic Direction 2026 — Coding Agent Expert Analysis</p>
+  <p style="margin-top: 0.5rem; font-size: 0.8rem;">Generated 2026-03-28 | Based on 63,124 LOC analysis + 6 competitor research</p>
+</footer>
+
+<script>
+// Smooth scroll for nav links
+document.querySelectorAll('.nav-links a').forEach(link => {
+  link.addEventListener('click', (e) => {
+    e.preventDefault();
+    const id = link.getAttribute('href').slice(1);
+    document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.querySelectorAll('.nav-links a').forEach(l => l.classList.remove('active'));
+    link.classList.add('active');
+  });
+});
+
+// Active nav on scroll
+const sections = document.querySelectorAll('section[id]');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(section => {
+    const top = section.offsetTop - 100;
+    if (scrollY >= top) current = section.getAttribute('id');
+  });
+  document.querySelectorAll('.nav-links a').forEach(link => {
+    link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+  });
+});
+
+// Animate score bars on scroll
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.querySelectorAll('.score-fill').forEach(fill => {
+        fill.style.width = fill.style.width; // trigger animation
+      });
+    }
+  });
+}, { threshold: 0.3 });
+
+document.querySelectorAll('.card').forEach(card => observer.observe(card));
+</script>
+</body>
+</html>

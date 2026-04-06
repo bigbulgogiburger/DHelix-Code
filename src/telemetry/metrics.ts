@@ -27,7 +27,7 @@ export type MetricLabels = Readonly<Record<string, string>>;
 
 /** 카운터 메트릭 정의 — 누적 값을 추적 (항상 증가) */
 export interface CounterMetric {
-  /** 메트릭 이름 (예: "dbcode.tokens.total") */
+  /** 메트릭 이름 (예: "dhelix.tokens.total") */
   readonly name: string;
   /** 메트릭 설명 */
   readonly description: string;
@@ -60,37 +60,37 @@ export interface HistogramMetric {
  */
 export const COUNTERS = {
   sessionsTotal: {
-    name: "dbcode.sessions.total",
+    name: "dhelix.sessions.total",
     description: "Total number of sessions started",
     labels: [],
   },
   tokensUsed: {
-    name: "dbcode.tokens.total",
+    name: "dhelix.tokens.total",
     description: "Total tokens consumed",
     labels: ["type", "model"], // type: "input" | "output", model: 모델명
   },
   tokenCost: {
-    name: "dbcode.cost.usd",
+    name: "dhelix.cost.usd",
     description: "Estimated cost in USD",
     labels: ["model"],
   },
   toolInvocations: {
-    name: "dbcode.tools.invocations",
+    name: "dhelix.tools.invocations",
     description: "Total tool invocations",
     labels: ["tool", "status"], // status: "success" | "error"
   },
   toolDecisions: {
-    name: "dbcode.tools.decisions",
+    name: "dhelix.tools.decisions",
     description: "Tool decision outcomes (approved, denied, etc.)",
     labels: ["tool", "decision"],
   },
   linesOfCode: {
-    name: "dbcode.code.lines",
+    name: "dhelix.code.lines",
     description: "Lines of code affected",
     labels: ["action"], // action: "added" | "removed"
   },
   errors: {
-    name: "dbcode.errors.total",
+    name: "dhelix.errors.total",
     description: "Total errors by category",
     labels: ["category"], // category: "llm" | "tool" | "permission" 등
   },
@@ -109,25 +109,25 @@ export const COUNTERS = {
  */
 export const HISTOGRAMS = {
   sessionDuration: {
-    name: "dbcode.sessions.duration_seconds",
+    name: "dhelix.sessions.duration_seconds",
     description: "Session duration in seconds",
     labels: [],
     buckets: [10, 30, 60, 120, 300, 600, 1800, 3600],
   },
   toolDuration: {
-    name: "dbcode.tools.duration_ms",
+    name: "dhelix.tools.duration_ms",
     description: "Tool execution duration in milliseconds",
     labels: ["tool"],
     buckets: [10, 50, 100, 500, 1000, 5000, 10000, 30000],
   },
   agentIterations: {
-    name: "dbcode.agent.iterations_per_task",
+    name: "dhelix.agent.iterations_per_task",
     description: "Number of agent loop iterations per task",
     labels: [],
     buckets: [1, 2, 5, 10, 20, 50],
   },
   llmLatency: {
-    name: "dbcode.llm.latency_ms",
+    name: "dhelix.llm.latency_ms",
     description: "LLM call latency in milliseconds",
     labels: ["model"],
     buckets: [100, 500, 1000, 2000, 5000, 10000, 30000],

@@ -9,7 +9,7 @@
  * TurnBlock은 단일 턴을 독립적으로 렌더링할 때 사용됩니다.
  */
 import { Box, Text } from "ink";
-import React from "react";
+import React, { type RefObject } from "react";
 import { type TurnActivity, type ActivityEntry } from "../../core/activity.js";
 import { ToolCallBlock } from "./ToolCallBlock.js";
 import { StreamingMessage } from "./StreamingMessage.js";
@@ -24,6 +24,8 @@ interface TurnBlockProps {
   readonly turn: TurnActivity;
   readonly isLive?: boolean;
   readonly isExpanded?: boolean;
+  /** 실행 중인 도구의 실시간 출력 (toolCallId → accumulated output) */
+  readonly streamingOutputs?: RefObject<Map<string, string>>;
 }
 
 /** 활동 항목의 타입에서 도구 상태를 결정 (tool-start→running, tool-complete→complete/error 등) */
@@ -70,12 +72,13 @@ function renderEntry(
   isLive: boolean,
   allEntries: readonly ActivityEntry[],
   isExpanded?: boolean,
+  streamingOutputs?: RefObject<Map<string, string>>,
 ): React.ReactNode {
   switch (entry.type) {
     case "user-message":
       return (
         <Box key={`entry-${index}`} marginBottom={0}>
-          <Text color="green" bold>
+          <Text color="#00E5FF" bold>
             {">"}{" "}
           </Text>
           <Text>{String(entry.data.content ?? "")}</Text>
@@ -129,16 +132,23 @@ function renderEntry(
           ? findMetadata(allEntries, toolId)
           : (entry.data.metadata as Readonly<Record<string, unknown>> | undefined);
 
+      const status = getToolStatus(entry);
+      const streamingOutput =
+        status === "running" && toolId && streamingOutputs?.current
+          ? streamingOutputs.current.get(toolId)
+          : undefined;
+
       return (
         <ToolCallBlock
           key={`entry-${index}`}
           name={String(entry.data.name ?? "")}
-          status={getToolStatus(entry)}
+          status={status}
           args={entry.data.args as Record<string, unknown> | undefined}
           output={typeof entry.data.output === "string" ? entry.data.output : undefined}
           metadata={metadata}
           isExpanded={isExpanded}
           startTime={startTime}
+          streamingOutput={streamingOutput}
         />
       );
     }
@@ -160,10 +170,11 @@ export const TurnBlock = React.memo(function TurnBlock({
   turn,
   isLive = false,
   isExpanded,
+  streamingOutputs,
 }: TurnBlockProps) {
   return (
     <Box flexDirection="column" marginBottom={1}>
-      {turn.entries.map((entry, i) => renderEntry(entry, i, isLive, turn.entries, isExpanded))}
+      {turn.entries.map((entry, i) => renderEntry(entry, i, isLive, turn.entries, isExpanded, streamingOutputs))}
     </Box>
   );
 });

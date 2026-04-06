@@ -1,18 +1,18 @@
 {
-  "title": "dbcode 전체 기능 가이드",
+  "title": "dhelix 전체 기능 가이드",
   "subtitle": "DB Inc.",
   "date": "2026.3",
   "slides": [
     {
       "number": "01",
-      "title": "dbcode 한눈에 보기",
+      "title": "dhelix 한눈에 보기",
       "summary": [
-        "본 문서는 dbcode의 전체 기능을 시니어 엔지니어 관점에서 정리한 가이드임",
+        "본 문서는 dhelix의 전체 기능을 시니어 엔지니어 관점에서 정리한 가이드임",
         "실무에서 바로 활용할 수 있도록 기능별 사용법과 핵심 포인트를 함께 안내함"
       ],
       "sections": [
         {
-          "header": "dbcode 핵심 수치",
+          "header": "dhelix 핵심 수치",
           "type": "table",
           "columns": ["카테고리", "수량", "핵심 포인트"],
           "rows": [
@@ -29,7 +29,7 @@
       "number": "02",
       "title": "시작하기 — 설치부터 첫 대화까지",
       "summary": [
-        "dbcode를 처음 사용하는 분들을 위한 빠른 시작 가이드임",
+        "dhelix를 처음 사용하는 분들을 위한 빠른 시작 가이드임",
         "설치 후 바로 AI와 대화하며 코드를 작성할 수 있음"
       ],
       "sections": [
@@ -38,11 +38,11 @@
           "type": "table",
           "columns": ["단계", "명령어 / 동작", "설명"],
           "rows": [
-            ["1. 설치", "npm install -g dbcode", "Node.js 20+ 필요"],
-            ["2. 첫 실행", "dbcode", "설정 마법사가 모델/API 키 안내"],
-            ["3. 프로젝트 초기화", "/init", "DBCODE.md 생성 — AI 맥락 인식 향상"],
+            ["1. 설치", "npm install -g dhelix", "Node.js 20+ 필요"],
+            ["2. 첫 실행", "dhelix", "설정 마법사가 모델/API 키 안내"],
+            ["3. 프로젝트 초기화", "/init", "DHELIX.md 생성 — AI 맥락 인식 향상"],
             ["4. 대화 시작", "자연어로 입력", "\"src/index.ts 리팩토링해줘\""],
-            ["5. 세션 이어하기", "dbcode -c", "마지막 대화를 이어서 진행"]
+            ["5. 세션 이어하기", "dhelix -c", "마지막 대화를 이어서 진행"]
           ]
         },
         {
@@ -212,7 +212,7 @@
           "type": "table",
           "columns": ["명령어", "기능", "팁"],
           "rows": [
-            ["/init", "프로젝트 초기화", "DBCODE.md 생성으로 맥락 인식 향상"],
+            ["/init", "프로젝트 초기화", "DHELIX.md 생성으로 맥락 인식 향상"],
             ["/plan", "Plan 모드 토글", "읽기만 허용, 안전한 코드 분석"],
             ["/mcp", "MCP 서버 관리", "외부 도구 서버 연동 (add/remove)"],
             ["/memory", "영구 메모리 관리", "세션 간 유지되는 기억 저장"],
@@ -234,7 +234,7 @@
           "type": "table",
           "columns": ["단계", "방법", "예시"],
           "rows": [
-            ["1. 파일 생성", ".dbcode/skills/<이름>/SKILL.md", "code-review/SKILL.md"],
+            ["1. 파일 생성", ".dhelix/skills/<이름>/SKILL.md", "code-review/SKILL.md"],
             ["2. 프론트매터", "name, description (필수)", "name: code-review"],
             ["3. 프롬프트", "$ARGUMENTS 변수로 인자 수신", "\"$ARGUMENTS 파일을 리뷰해줘\""],
             ["4. 바로 사용", "/스킬이름 [인자]", "/code-review src/utils.ts"]
@@ -258,7 +258,7 @@
       "number": "09",
       "title": "AI 엔진 — 에이전트 루프 & 컨텍스트",
       "summary": [
-        "dbcode의 핵심 엔진인 ReAct 에이전트 루프와 토큰 관리 시스템임",
+        "dhelix의 핵심 엔진인 ReAct 에이전트 루프와 토큰 관리 시스템임",
         "무한 루프 방지, 자동 체크포인트, 에러 복구까지 안전하게 동작함"
       ],
       "sections": [
@@ -369,7 +369,7 @@
           "columns": ["기능", "설명", "사용법"],
           "rows": [
             ["자동 저장", "대화 메시지마다 자동 저장", "자동 (별도 설정 불필요)"],
-            ["세션 복원", "이전 대화 이어가기", "dbcode -c 또는 /resume"],
+            ["세션 복원", "이전 대화 이어가기", "dhelix -c 또는 /resume"],
             ["세션 포크", "현재 대화를 새 세션으로 분기", "/fork [새이름]"],
             ["체크포인트", "파일 수정 전 자동 스냅샷", "/rewind로 복원"]
           ]
@@ -392,7 +392,7 @@
       "title": "키보드 단축키 & @멘션",
       "summary": [
         "대화 중 빠르게 사용할 수 있는 키보드 단축키와 @ 참조 시스템임",
-        "모든 단축키는 ~/.dbcode/keybindings.json에서 커스터마이징 가능함"
+        "모든 단축키는 ~/.dhelix/keybindings.json에서 커스터마이징 가능함"
       ],
       "sections": [
         {
@@ -425,7 +425,7 @@
       "number": "14",
       "title": "시니어의 활용 팁",
       "summary": [
-        "dbcode를 실무에서 최대한 활용하기 위한 시니어 엔지니어의 노하우임",
+        "dhelix를 실무에서 최대한 활용하기 위한 시니어 엔지니어의 노하우임",
         "아래 패턴을 익혀두시면 일상 개발 생산성이 확실히 달라지실 거예요"
       ],
       "sections": [
@@ -434,9 +434,9 @@
           "type": "table",
           "columns": ["상황", "추천 방법", "이유"],
           "rows": [
-            ["새 프로젝트", "/init → DBCODE.md 생성", "AI가 프로젝트 맥락을 정확히 인식"],
+            ["새 프로젝트", "/init → DHELIX.md 생성", "AI가 프로젝트 맥락을 정확히 인식"],
             ["복잡한 리팩토링", "/plan on → 분석 → /plan off → 실행", "먼저 안전하게 분석 후 수정"],
-            ["팀 협업", ".dbcode/skills/에 스킬 커밋", "팀원 모두 동일한 워크플로우"],
+            ["팀 협업", ".dhelix/skills/에 스킬 커밋", "팀원 모두 동일한 워크플로우"],
             ["긴 대화", "/compact 수동 압축 또는 자동 신뢰", "시스템이 토큰을 알아서 관리"],
             ["비용 절약", "/effort low + /fast 조합", "간단한 질문에는 가벼운 모드"],
             ["안전한 작업", "default 모드 유지 (Shift+Tab)", "위험 작업은 항상 사용자 확인"],

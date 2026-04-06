@@ -559,7 +559,7 @@ export default function MCPClientPage() {
               <span className="str">&quot;2024-11-05&quot;</span>,{"\n"}
               {"    "}
               <span className="prop">clientInfo</span>: {"{"} <span className="prop">name</span>:{" "}
-              <span className="str">&quot;dbcode&quot;</span>, <span className="prop">version</span>
+              <span className="str">&quot;dhelix&quot;</span>, <span className="prop">version</span>
               : <span className="str">&quot;0.1.0&quot;</span> {"}"},{"\n"}
               {"  "}
               {"}"});
@@ -726,7 +726,7 @@ export default function MCPClientPage() {
                   name: "tool-bridge.ts",
                   slug: "mcp-tool-bridge",
                   relation: "sibling",
-                  desc: "MCP 도구를 dbcode 도구 레지스트리에 브리지하여 에이전트가 사용 가능하게 변환",
+                  desc: "MCP 도구를 dhelix 도구 레지스트리에 브리지하여 에이전트가 사용 가능하게 변환",
                 },
                 {
                   name: "mcp-manager.ts",

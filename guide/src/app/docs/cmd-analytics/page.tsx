@@ -248,7 +248,7 @@ export default function CmdAnalyticsPage() {
               </li>
               <li>
                 <code className="text-cyan-600">sessionStartedAt</code>은 모듈 로드 시점의
-                타임스탬프입니다. dbcode 프로세스 시작 시각과 약간의 차이가 있을 수 있습니다.
+                타임스탬프입니다. dhelix 프로세스 시작 시각과 약간의 차이가 있을 수 있습니다.
               </li>
               <li>
                 도구 성공률에서 <code className="text-cyan-600">tool=&quot;*&quot;</code> 와일드카드

@@ -445,7 +445,7 @@ export default function SandboxSeatbeltPage() {
   START(("시작")) --> PLATFORM{"process.platform<br/>== 'darwin'?"}
   PLATFORM -->|"아니오"| DIRECT["직접 실행<br/><small>샌드박스 없음</small>"]
   PLATFORM -->|"예"| PROFILE["Seatbelt 프로파일 생성<br/><small>S-expression 형식</small>"]
-  PROFILE --> TMPFILE["임시 파일 저장<br/><small>/tmp/dbcode-sandbox-UUID.sb</small>"]
+  PROFILE --> TMPFILE["임시 파일 저장<br/><small>/tmp/dhelix-sandbox-UUID.sb</small>"]
   TMPFILE --> EXEC["sandbox-exec -f 프로파일 명령어"]
   EXEC --> CLEANUP["finally: 임시 파일 삭제"]
   DIRECT --> RESULT(("결과"))
@@ -493,7 +493,7 @@ export default function SandboxSeatbeltPage() {
               {"\n"}
               <span className="kw">const</span> <span className="prop">profilePath</span> ={" "}
               <span className="fn">join</span>(<span className="fn">tmpdir</span>(),{" "}
-              <span className="str">`dbcode-sandbox-${"{"}</span>
+              <span className="str">`dhelix-sandbox-${"{"}</span>
               <span className="fn">randomUUID</span>()<span className="str">{"}"}.sb`</span>);
               {"\n"}
               {"\n"}
@@ -592,13 +592,13 @@ export default function SandboxSeatbeltPage() {
             {/* FAQ 4 */}
             <div className="bg-white border border-gray-200 rounded-xl p-5">
               <h4 className="text-sm font-bold text-amber-600 mb-3">
-                &quot;/tmp에 dbcode-sandbox-*.sb 파일이 남아 있어요&quot;
+                &quot;/tmp에 dhelix-sandbox-*.sb 파일이 남아 있어요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 정상적인 경우 <code className="text-cyan-600">finally</code> 블록에서 삭제됩니다.
                 프로세스가 강제 종료(SIGKILL 등)된 경우 잔여 파일이 남을 수 있습니다. 안전하게
                 삭제해도 됩니다:
-                <code className="text-cyan-600 ml-2">rm /tmp/dbcode-sandbox-*.sb</code>
+                <code className="text-cyan-600 ml-2">rm /tmp/dhelix-sandbox-*.sb</code>
               </p>
             </div>
           </section>

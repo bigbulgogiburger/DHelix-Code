@@ -209,14 +209,14 @@ export default function AgentLoopPage() {
               <LayerBadge layer="core" />
               <span className="text-[13px] text-gray-400">|</span>
               <span className="text-[14px] text-gray-600">
-                dbcode의 심장 -- ReAct 패턴 메인 실행 루프
+                dhelix의 심장 -- ReAct 패턴 메인 실행 루프
               </span>
             </div>
             <p className="text-[15px] text-gray-600 leading-relaxed max-w-[720px]">
               사용자의 질문을 받아 LLM을 호출하고, 응답에서 도구 호출을 추출하여 실행한 뒤, 그
               결과를 다시 LLM에게 전달하는 과정을{" "}
               <strong className="text-gray-900">도구 호출이 없을 때까지 반복</strong>합니다. 이
-              모듈이 없으면 dbcode는 단순한 챗봇에 불과합니다.
+              모듈이 없으면 dhelix는 단순한 챗봇에 불과합니다.
             </p>
           </div>
         </RevealOnScroll>
@@ -328,9 +328,9 @@ export default function AgentLoopPage() {
             />
 
             <Callout type="info" icon="💡">
-              <strong>왜 Agent Loop가 "심장"인가?</strong> -- dbcode의 모든 기능은 이 루프를 통해
+              <strong>왜 Agent Loop가 "심장"인가?</strong> -- dhelix의 모든 기능은 이 루프를 통해
               실행됩니다. 파일 편집, 터미널 명령, 검색 등 모든 도구 호출은 Agent Loop의 한
-              반복(iteration) 안에서 일어납니다. 이 모듈을 이해하면 dbcode의 전체 실행 흐름을 파악할
+              반복(iteration) 안에서 일어납니다. 이 모듈을 이해하면 dhelix의 전체 실행 흐름을 파악할
               수 있습니다.
             </Callout>
           </section>
@@ -983,7 +983,7 @@ denialCount >= MAX_DENIALS_BEFORE_STOP
                 </p>
                 <ul className="list-disc list-inside text-[13px] text-gray-600 pl-2 space-y-1">
                   <li>
-                    <span className="font-mono text-[12px]">DBCODE_VERBOSE=1</span> 환경변수를
+                    <span className="font-mono text-[12px]">DHELIX_VERBOSE=1</span> 환경변수를
                     설정하여 trace 로그를 확인하세요
                   </li>
                   <li>
@@ -1014,7 +1014,7 @@ denialCount >= MAX_DENIALS_BEFORE_STOP
                   <li>2회 거절 후 Agent는 자동으로 해당 도구 사용을 중단합니다</li>
                   <li>
                     특정 도구를 항상 허용하려면{" "}
-                    <span className="font-mono text-[12px]">.dbcode/settings.json</span>의
+                    <span className="font-mono text-[12px]">.dhelix/settings.json</span>의
                     allowedTools에 추가하세요
                   </li>
                 </ul>

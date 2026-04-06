@@ -16,7 +16,14 @@
  * 6. 경로 순회 공격 (path_traversal)
  * 7. 데이터 유출 시도 (data_exfiltration)
  * 8. 유니코드 호모글리프 공격 (homoglyph_attack)
+ *
+ * ReDoS 보호:
+ * 모든 정규식 실행은 safeRegexTest/safeRegexExec 래퍼를 통해 수행됩니다.
+ * 긴 입력(1000자 이상)에 대해 입력 길이를 제한하여 정규식 역추적
+ * (catastrophic backtracking)으로 인한 서비스 거부 공격(ReDoS)을 방지합니다.
  */
+
+import { getLogger } from "../utils/logger.js";
 
 /**
  * 인젝션 탐지 결과 인터페이스
@@ -32,6 +39,86 @@ export interface InjectionDetectionResult {
   readonly detected: boolean;
   readonly type?: string;
   readonly severity: "info" | "warn" | "block";
+}
+
+/**
+ * 정규식 입력 길이 제한 — ReDoS 보호를 위한 최대 입력 문자 수
+ *
+ * 이 길이를 초과하는 입력은 잘라서(truncate) 정규식에 전달됩니다.
+ * 10,000자는 일반적인 프롬프트 인젝션 탐지에 충분하며,
+ * 동시에 역추적 폭발(catastrophic backtracking)을 방지합니다.
+ */
+const SAFE_REGEX_INPUT_LIMIT = 10_000;
+
+/**
+ * 짧은 입력 임계값 — 이 길이 미만의 입력은 오버헤드 없이 직접 실행
+ *
+ * 1,000자 미만의 짧은 문자열은 어떤 정규식이든 충분히 빠르게 실행되므로
+ * 잘라내기(truncation) 오버헤드를 건너뜁니다.
+ */
+const SHORT_INPUT_THRESHOLD = 1_000;
+
+/**
+ * ReDoS 방지를 위한 안전한 정규식 test 래퍼
+ *
+ * ReDoS(Regular Expression Denial of Service)란 악의적으로 조작된 입력이
+ * 정규식의 역추적(backtracking)을 지수적으로 증가시켜
+ * CPU를 소모하는 서비스 거부 공격입니다.
+ *
+ * 이 함수는 다음 전략으로 ReDoS를 방지합니다:
+ * 1. 짧은 입력(< 1,000자)은 오버헤드 없이 직접 실행
+ * 2. 긴 입력은 최대 10,000자로 잘라서 실행
+ * 3. 잘림이 발생하면 경고 로그를 남김
+ *
+ * @param pattern - 실행할 정규식
+ * @param input - 검사할 입력 문자열
+ * @returns 패턴이 매칭되면 true, 아니면 false (잘림 시에도 안전하게 false 반환 가능)
+ */
+function safeRegexTest(pattern: RegExp, input: string): boolean {
+  if (input.length < SHORT_INPUT_THRESHOLD) {
+    return pattern.test(input);
+  }
+
+  if (input.length > SAFE_REGEX_INPUT_LIMIT) {
+    const logger = getLogger();
+    logger.warn(
+      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      "ReDoS protection: input truncated for regex test",
+    );
+    const truncated = input.slice(0, SAFE_REGEX_INPUT_LIMIT);
+    return pattern.test(truncated);
+  }
+
+  return pattern.test(input);
+}
+
+/**
+ * ReDoS 방지를 위한 안전한 정규식 exec 래퍼
+ *
+ * safeRegexTest와 동일한 입력 길이 제한을 적용하되,
+ * exec()의 반환값(RegExpExecArray | null)을 그대로 전달합니다.
+ * 전역(/g) 플래그가 있는 정규식의 반복 exec 호출에 사용됩니다.
+ *
+ * @param pattern - 실행할 정규식 (보통 /g 플래그 포함)
+ * @param input - 검사할 입력 문자열
+ * @returns exec 결과 또는 null
+ */
+function safeRegexExec(pattern: RegExp, input: string): RegExpExecArray | null {
+  if (input.length < SHORT_INPUT_THRESHOLD) {
+    return pattern.exec(input);
+  }
+
+  if (input.length > SAFE_REGEX_INPUT_LIMIT) {
+    const logger = getLogger();
+    logger.warn(
+      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      "ReDoS protection: input truncated for regex exec",
+    );
+    const truncated = input.slice(0, SAFE_REGEX_INPUT_LIMIT);
+    return pattern.exec(truncated);
+  }
+
+  return pattern.exec(input);
 }
 
 /**
@@ -282,7 +369,7 @@ export function detectInjection(text: string): InjectionDetectionResult {
   // 1단계: 명시적 인젝션 패턴 검사
   // 패턴 목록을 순서대로 순회하며 첫 번째 매칭에서 즉시 반환
   for (const { name, regex, severity } of INJECTION_PATTERNS) {
-    if (regex.test(text)) {
+    if (safeRegexTest(regex, text)) {
       return {
         detected: true,
         type: name,
@@ -300,7 +387,7 @@ export function detectInjection(text: string): InjectionDetectionResult {
 
   // 3단계: 유니코드 호모글리프 공격 검사
   // 키릴/그리스 문자와 라틴 문자가 혼합된 경우에만 추가 검사
-  if (HOMOGLYPH_REGEX.test(text)) {
+  if (safeRegexTest(HOMOGLYPH_REGEX, text)) {
     // 혼합 스크립트 자체만으로는 공격이 아닐 수 있으므로
     // 의심스러운 키워드(ignore, system, instruction 등)도 함께 있는지 확인
     const lowered = text.toLowerCase();
@@ -350,7 +437,7 @@ function checkBase64Injection(text: string): InjectionDetectionResult {
   const base64Pattern = /(?:^|[\s"'=])([A-Za-z0-9+/]{20,}={0,2})(?:[\s"']|$)/g;
   let match: RegExpExecArray | null;
 
-  while ((match = base64Pattern.exec(text)) !== null) {
+  while ((match = safeRegexExec(base64Pattern, text)) !== null) {
     try {
       // Base64 문자열을 디코딩하여 원본 텍스트 복원
       const decoded = Buffer.from(match[1], "base64").toString("utf-8");

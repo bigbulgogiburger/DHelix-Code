@@ -94,7 +94,7 @@ function updateUser(user: User, name: string): User {
 
 - 서브에이전트: `agent-types.ts`의 `AgentType` 타입 사용 (explore, plan, general)
 - MCP 도구 이름: `mcp__{server}__{tool}` (더블 언더스코어 구분)
-- 메모리 파일: `~/.dbcode/projects/{hash}/memory/` 아래 프로젝트 해시 기반
+- 메모리 파일: `~/.dhelix/projects/{hash}/memory/` 아래 프로젝트 해시 기반
 
 ## 주의사항
 

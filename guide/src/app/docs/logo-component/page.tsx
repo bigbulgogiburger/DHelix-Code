@@ -25,7 +25,7 @@ export default function LogoComponentPage() {
               <LayerBadge layer="cli" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              dbcode 브랜드 로고를 터미널에 렌더링하는 컴포넌트입니다. Ink React 컴포넌트와 직접
+              dhelix 브랜드 로고를 터미널에 렌더링하는 컴포넌트입니다. Ink React 컴포넌트와 직접
               stdout 출력 함수 두 가지 방식을 제공하며, 유니코드 블록 문자와 ANSI 색상으로 DB 로고를
               표현합니다.
             </p>

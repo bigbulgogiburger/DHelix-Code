@@ -1,4 +1,4 @@
-# dbcode Gap Analysis: Feature Comparison vs Claude Code & Competitors
+# dhelix Gap Analysis: Feature Comparison vs Claude Code & Competitors
 
 > Comprehensive analysis of features confirmed, missing, and worth considering
 > Based on: Claude Code docs (59 pages), Cursor, Aider, Windsurf, Continue.dev, GitHub Copilot CLI
@@ -38,13 +38,13 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 
 | Feature                                         | Priority | Description                                                                                                                                                                                                                                                                                                                                                 | Source      |
 | ----------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| **MCP Tool Search (deferred tool loading)**     | **P1**   | Claude Code auto-defers MCP tools when they exceed 10% of context. Uses a search tool to discover relevant MCP tools on-demand instead of preloading all definitions. Critical for scaling with many MCP servers. dbcode has tool search in registry but not the MCP-specific deferred loading with configurable threshold (`ENABLE_TOOL_SEARCH=auto:<N>`). | Claude Code |
+| **MCP Tool Search (deferred tool loading)**     | **P1**   | Claude Code auto-defers MCP tools when they exceed 10% of context. Uses a search tool to discover relevant MCP tools on-demand instead of preloading all definitions. Critical for scaling with many MCP servers. dhelix has tool search in registry but not the MCP-specific deferred loading with configurable threshold (`ENABLE_TOOL_SEARCH=auto:<N>`). | Claude Code |
 | **Parallel tool execution for read-only tools** | **P2**   | Architecture notes "향후 병렬화 가능" for reads but doesn't detail it. Claude Code runs read-only tools in parallel. Significant speed improvement for multi-file operations.                                                                                                                                                                               | Claude Code |
-| **Notebook editing tool (NotebookEdit)**        | **P2**   | Claude Code has a dedicated Jupyter notebook cell editing tool. dbcode supports .ipynb reading but not cell-level editing.                                                                                                                                                                                                                                  | Claude Code |
+| **Notebook editing tool (NotebookEdit)**        | **P2**   | Claude Code has a dedicated Jupyter notebook cell editing tool. dhelix supports .ipynb reading but not cell-level editing.                                                                                                                                                                                                                                  | Claude Code |
 | **Tool reference blocks**                       | **P2**   | Claude Code uses `tool_reference` blocks (Sonnet 4+) to let the model reference tools without loading full definitions. Reduces context usage.                                                                                                                                                                                                              | Claude Code |
-| **Fallback model on overload**                  | **P1**   | `--fallback-model` flag auto-switches to a different model when the primary is overloaded (print mode). dbcode has `fallbackModel` in config but no automatic overload detection and switchover.                                                                                                                                                            | Claude Code |
-| **Max budget (USD) limit**                      | **P1**   | `--max-budget-usd` stops API calls after spending a dollar amount. dbcode has token budget but not dollar-denominated budget limits.                                                                                                                                                                                                                        | Claude Code |
-| **Max turns limit**                             | **P1**   | `--max-turns` limits agentic turns in headless mode. dbcode has `maxAgentIterations` but no explicit turns limit for SDK/headless mode.                                                                                                                                                                                                                     | Claude Code |
+| **Fallback model on overload**                  | **P1**   | `--fallback-model` flag auto-switches to a different model when the primary is overloaded (print mode). dhelix has `fallbackModel` in config but no automatic overload detection and switchover.                                                                                                                                                            | Claude Code |
+| **Max budget (USD) limit**                      | **P1**   | `--max-budget-usd` stops API calls after spending a dollar amount. dhelix has token budget but not dollar-denominated budget limits.                                                                                                                                                                                                                        | Claude Code |
+| **Max turns limit**                             | **P1**   | `--max-turns` limits agentic turns in headless mode. dhelix has `maxAgentIterations` but no explicit turns limit for SDK/headless mode.                                                                                                                                                                                                                     | Claude Code |
 
 ---
 
@@ -70,7 +70,7 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 
 | Feature                                      | Priority | Description                                                                                                                                                                                                                         | Source      |
 | -------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| **Network sandbox with proxy**               | **P1**   | Claude Code routes all sandboxed network traffic through a proxy server that enforces domain allowlists. Blocks all outbound traffic except approved domains. dbcode has `allowedDomains` in config but no proxy-based enforcement. | Claude Code |
+| **Network sandbox with proxy**               | **P1**   | Claude Code routes all sandboxed network traffic through a proxy server that enforces domain allowlists. Blocks all outbound traffic except approved domains. dhelix has `allowedDomains` in config but no proxy-based enforcement. | Claude Code |
 | **Sandbox auto-allow mode**                  | **P2**   | Two sandbox modes: auto-allow (sandboxed commands run without permission) and regular permissions (all commands prompt). Reduces approval fatigue significantly.                                                                    | Claude Code |
 | **`excludedCommands` for sandbox**           | **P2**   | Allows specific commands (e.g., `docker`) to bypass sandbox when incompatible, while keeping sandbox for everything else.                                                                                                           | Claude Code |
 | **Managed MCP configuration**                | **P2**   | System-wide `/Library/Application Support/ClaudeCode/managed-mcp.json` (macOS) and allowlist/denylist for MCP servers. Enterprise control over which MCP servers employees can use.                                                 | Claude Code |
@@ -78,7 +78,7 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 | **`allowManagedHooksOnly`**                  | **P2**   | Enterprise setting that prevents loading user/project/plugin hooks. Only managed hooks allowed.                                                                                                                                     | Claude Code |
 | **Permission prompt tool for headless mode** | **P2**   | `--permission-prompt-tool` specifies an MCP tool to handle permission prompts in non-interactive mode. Enables custom approval flows in CI/CD.                                                                                      | Claude Code |
 | **Server-managed settings**                  | **P2**   | Centralized settings management pushed from a server to all clients. Enterprise fleet management.                                                                                                                                   | Claude Code |
-| **`dontAsk` permission mode**                | **P1**   | Auto-denies tools unless pre-approved. Safer than bypass but more autonomous than default. Missing from dbcode's mode list.                                                                                                         | Claude Code |
+| **`dontAsk` permission mode**                | **P1**   | Auto-denies tools unless pre-approved. Safer than bypass but more autonomous than default. Missing from dhelix's mode list.                                                                                                         | Claude Code |
 
 ---
 
@@ -93,17 +93,17 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 | Token counting (js-tiktoken + tokenx)                   | Confirmed | Accurate + real-time       |
 | /compact with custom instructions                       | Confirmed | Focus-guided summarization |
 | Subagent context isolation                              | Confirmed | `subagents/spawner.ts`     |
-| DBCODE.md hierarchical loading                          | Confirmed | 5-level priority           |
+| DHELIX.md hierarchical loading                          | Confirmed | 5-level priority           |
 
 ### Missing Features
 
 | Feature                                    | Priority | Description                                                                                                                                                                                                                                                         | Source      |
 | ------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
-| **Targeted summarization from checkpoint** | **P1**   | Claude Code's `/rewind` allows "Summarize from here" which compresses only messages after a selected point, keeping earlier context intact. Different from `/compact` which summarizes everything. dbcode has `/rewind` for restore but not targeted summarization. | Claude Code |
+| **Targeted summarization from checkpoint** | **P1**   | Claude Code's `/rewind` allows "Summarize from here" which compresses only messages after a selected point, keeping earlier context intact. Different from `/compact` which summarizes everything. dhelix has `/rewind` for restore but not targeted summarization. | Claude Code |
 | **`/context` visualization**               | **P2**   | Visualizes current context usage as a colored grid showing what's consuming space (CLAUDE.md, MCP tools, skills, conversation). Helps users understand and optimize context.                                                                                        | Claude Code |
-| **Prompt caching optimization**            | **P1**   | Claude Code leverages Anthropic's prompt caching to reduce costs for repeated content (system prompts, CLAUDE.md). Since dbcode uses OpenAI-compatible APIs, investigate provider-specific caching (e.g., vLLM prefix caching, Ollama keep-alive).                  | Claude Code |
+| **Prompt caching optimization**            | **P1**   | Claude Code leverages Anthropic's prompt caching to reduce costs for repeated content (system prompts, CLAUDE.md). Since dhelix uses OpenAI-compatible APIs, investigate provider-specific caching (e.g., vLLM prefix caching, Ollama keep-alive).                  | Claude Code |
 | **Background conversation summarization**  | **P2**   | Claude Code uses tokens in background to summarize previous conversations for `--resume` feature. Small cost (~$0.04/session) but improves session continuation quality.                                                                                            | Claude Code |
-| **Compaction instructions in DBCODE.md**   | **P2**   | Claude Code supports `# Compact instructions` section in CLAUDE.md to guide what compaction preserves. Simple but effective for maintaining important context across compactions.                                                                                   | Claude Code |
+| **Compaction instructions in DHELIX.md**   | **P2**   | Claude Code supports `# Compact instructions` section in CLAUDE.md to guide what compaction preserves. Simple but effective for maintaining important context across compactions.                                                                                   | Claude Code |
 
 ---
 
@@ -289,7 +289,7 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 | **MCP `list_changed` notifications**            | **P2**   | MCP servers can dynamically update available tools without reconnection.                                                                                                                | Claude Code |
 | **Environment variable expansion in .mcp.json** | **P2**   | `${VAR}` and `${VAR:-default}` syntax in MCP configs. Team-shared configs with machine-specific values.                                                                                 | Claude Code |
 | **MCP output limits and warnings**              | **P2**   | Warning at 10,000 tokens. Configurable max via `MAX_MCP_OUTPUT_TOKENS`. Prevents context bloat from large MCP responses.                                                                | Claude Code |
-| **`claude mcp serve` (Claude as MCP server)**   | **P3**   | Use dbcode itself as an MCP server that other apps can connect to. Exposes tools like Read, Edit, etc.                                                                                  | Claude Code |
+| **`claude mcp serve` (Claude as MCP server)**   | **P3**   | Use dhelix itself as an MCP server that other apps can connect to. Exposes tools like Read, Edit, etc.                                                                                  | Claude Code |
 
 ---
 
@@ -310,7 +310,7 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 | **Agent teams (multi-session coordination)**    | **P3**   | Multiple independent Claude Code sessions with shared task list, inter-agent messaging, and centralized management. Team lead coordinates, teammates work independently. Uses tmux for split panes. Experimental but powerful. | Claude Code |
 | **Custom subagent definitions (--agents flag)** | **P2**   | Define subagents via JSON with description, prompt, tools, model, skills, mcpServers, maxTurns. Dynamic agent creation without config files.                                                                                   | Claude Code |
 | **Subagent skill preloading**                   | **P1**   | Subagents can preload specific skills at launch. Full skill content injected at startup, not on-demand. Essential for specialized workers.                                                                                     | Claude Code |
-| **Agent definitions in `.dbcode/agents/`**      | **P2**   | Project-level agent configurations in markdown files. Shareable via version control.                                                                                                                                           | Claude Code |
+| **Agent definitions in `.dhelix/agents/`**      | **P2**   | Project-level agent configurations in markdown files. Shareable via version control.                                                                                                                                           | Claude Code |
 | **General-purpose agent type**                  | **P2**   | Beyond Explore and Plan, a general-purpose agent with full tool access. Default for skills with `context: fork`.                                                                                                               | Claude Code |
 | **Git worktree isolation for agents**           | **P2**   | `--worktree` / `-w` flag starts agent in isolated git worktree at `.claude/worktrees/<name>`. Agents work on separate branches without conflicts. `/batch` skill uses this for parallel implementation.                        | Claude Code |
 | **Teammate plan approval**                      | **P3**   | Teammates work in read-only plan mode until lead approves their approach. Lead reviews and approves/rejects. Rejected teammates revise.                                                                                        | Claude Code |
@@ -363,7 +363,7 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 | **Remote control**                               | **P3**   | Control local Claude Code from claude.ai or Claude app. `claude remote-control` command.                                                                                             | Claude Code |
 | **Chrome browser integration**                   | **P2**   | `--chrome` flag enables web automation and testing via Chrome DevTools. MCP-based. Useful for E2E testing.                                                                           | Claude Code |
 | **Slack integration**                            | **P3**   | `/install-slack-app` for Slack integration. OAuth flow.                                                                                                                              | Claude Code |
-| **GitHub Actions integration**                   | **P1**   | `@claude` mention in PR/issue triggers Claude. Auto code review, PR creation, feature implementation. Essential for CI/CD. Translates to: create a GitHub Action wrapper for dbcode. | Claude Code |
+| **GitHub Actions integration**                   | **P1**   | `@claude` mention in PR/issue triggers Claude. Auto code review, PR creation, feature implementation. Essential for CI/CD. Translates to: create a GitHub Action wrapper for dhelix. | Claude Code |
 | **GitLab CI/CD integration**                     | **P2**   | Same as GitHub Actions but for GitLab pipelines.                                                                                                                                     | Claude Code |
 | **`--add-dir` for multiple working directories** | **P1**   | Add additional working directories for multi-repo or monorepo workflows. `/add-dir` command during session. `additionalDirectories` in settings.                                     | Claude Code |
 
@@ -377,8 +377,8 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 | -------------------------------------------- | --------- | ------------------------------------------ |
 | 5-level hierarchical config                  | Confirmed | Managed -> CLI -> Local -> Project -> User |
 | Zod schema validation                        | Confirmed | Full config schema                         |
-| Environment variable for auth                | Confirmed | `DBCODE_API_KEY`                           |
-| Per-project settings (.dbcode/settings.json) | Confirmed | Shared via VCS                             |
+| Environment variable for auth                | Confirmed | `DHELIX_API_KEY`                           |
+| Per-project settings (.dhelix/settings.json) | Confirmed | Shared via VCS                             |
 | Managed enterprise settings                  | Confirmed | System-level policies                      |
 
 ### Missing Features
@@ -410,10 +410,10 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 
 | Feature                      | Priority | Description                                                                                | Source      |
 | ---------------------------- | -------- | ------------------------------------------------------------------------------------------ | ----------- |
-| **`dbcode update` command**  | **P1**   | Self-update command. Claude Code has `claude update`. Essential for keeping users current. | Claude Code |
+| **`dhelix update` command**  | **P1**   | Self-update command. Claude Code has `claude update`. Essential for keeping users current. | Claude Code |
 | **`--version` / `-v` flag**  | **P0**   | Output version number. Standard CLI convention.                                            | Claude Code |
 | **`/release-notes` command** | **P2**   | View full changelog with most recent version closest to prompt. In-app changelog.          | Claude Code |
-| **`/upgrade` command**       | **P3**   | Open upgrade page for plan tier changes. Only relevant if dbcode has paid tiers.           | Claude Code |
+| **`/upgrade` command**       | **P3**   | Open upgrade page for plan tier changes. Only relevant if dhelix has paid tiers.           | Claude Code |
 
 ---
 
@@ -423,7 +423,7 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 
 | Feature                                 | Priority | Description                                                                                                                                                                                | Differentiation Value                                                                                                                                                                                                         |
 | --------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Codebase semantic indexing**          | **P1**   | Builds a semantic understanding of entire project. Sub-second queries on up to 500MB codebases. Enables context-aware suggestions based on architecture, naming conventions, and patterns. | HIGH - dbcode could use tree-sitter for AST-based indexing combined with vector embeddings (local FAISS/HNSW) for semantic search. This is in the P1 deps list (`tree-sitter`) but not architected as a full indexing system. |
+| **Codebase semantic indexing**          | **P1**   | Builds a semantic understanding of entire project. Sub-second queries on up to 500MB codebases. Enables context-aware suggestions based on architecture, naming conventions, and patterns. | HIGH - dhelix could use tree-sitter for AST-based indexing combined with vector embeddings (local FAISS/HNSW) for semantic search. This is in the P1 deps list (`tree-sitter`) but not architected as a full indexing system. |
 | **Tab completion / predictive editing** | **P2**   | Specialized model predicts next edit across lines and blocks. Anticipates several coding steps. Single keystroke to execute.                                                               | MEDIUM - Requires IDE integration (not possible in pure CLI). Could be implemented as a VS Code extension feature. CLI could offer "suggested next action" prompts.                                                           |
 | **Inline diff preview**                 | **P2**   | Shows proposed changes inline in the editor before applying. Accept/reject per-hunk.                                                                                                       | MEDIUM - CLI diff view exists but inline preview requires IDE integration.                                                                                                                                                    |
 
@@ -431,11 +431,11 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 
 | Feature                                         | Priority | Description                                                                                                                                                                           | Differentiation Value                                                                                                                                                                 |
 | ----------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Repository map (repo-map)**                   | **P1**   | Tree-sitter-based map of entire repo showing classes, functions, and call signatures. Graph-ranked by dependencies. Optimized to fit token budget. Sends only most relevant portions. | HIGH - This is a critical efficiency feature. dbcode lists tree-sitter as P1 dependency but doesn't architect the repo-map system. Should be a core feature for context optimization. |
+| **Repository map (repo-map)**                   | **P1**   | Tree-sitter-based map of entire repo showing classes, functions, and call signatures. Graph-ranked by dependencies. Optimized to fit token budget. Sends only most relevant portions. | HIGH - This is a critical efficiency feature. dhelix lists tree-sitter as P1 dependency but doesn't architect the repo-map system. Should be a core feature for context optimization. |
 | **Voice input**                                 | **P3**   | Voice-to-code capabilities. Speak coding instructions. Useful for accessibility and hands-free workflows.                                                                             | LOW for CLI tool. Could integrate with OS speech-to-text APIs.                                                                                                                        |
 | **Browser UI mode**                             | **P3**   | Aider can run in browser, not just CLI. Lowers barrier to entry for non-CLI users.                                                                                                    | MEDIUM - Could be implemented as a separate lightweight web server (similar to Jupyter).                                                                                              |
-| **Auto-lint and auto-test on changes**          | **P2**   | Configure Aider to automatically run linter/test suite on LLM-made changes and feed results back.                                                                                     | MEDIUM - dbcode has PostToolUse hooks for this, but Aider's is more integrated (auto-retry on failure). Consider built-in lint-and-retry loop in agent loop.                          |
-| **Multi-model architecture (architect+editor)** | **P2**   | Uses a strong model for planning and a fast model for editing. Different models for different phases of work.                                                                         | MEDIUM - dbcode has model routing (Hybrid mode) but not phase-specific model switching within a single task.                                                                          |
+| **Auto-lint and auto-test on changes**          | **P2**   | Configure Aider to automatically run linter/test suite on LLM-made changes and feed results back.                                                                                     | MEDIUM - dhelix has PostToolUse hooks for this, but Aider's is more integrated (auto-retry on failure). Consider built-in lint-and-retry loop in agent loop.                          |
+| **Multi-model architecture (architect+editor)** | **P2**   | Uses a strong model for planning and a fast model for editing. Different models for different phases of work.                                                                         | MEDIUM - dhelix has model routing (Hybrid mode) but not phase-specific model switching within a single task.                                                                          |
 
 ### From Windsurf/Codeium
 
@@ -449,18 +449,18 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 
 | Feature                                   | Priority  | Description                                                                                                             | Differentiation Value                                                                                       |
 | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **Context providers (pluggable context)** | **P2**    | Extensible context system: code, docs, URLs, databases, custom sources. Each provider adds relevant context to prompts. | MEDIUM - dbcode's @ mentions + MCP cover most of this. Could formalize as a "context provider" abstraction. |
-| **Model flexibility (any LLM backend)**   | Confirmed | Continue supports OpenAI, Anthropic, local models via Ollama.                                                           | CONFIRMED - dbcode already has this via OpenAI-compatible client.                                           |
-| **Open-source, self-hostable**            | Confirmed | Fully open source, can be self-hosted.                                                                                  | CONFIRMED - dbcode is designed for internal deployment.                                                     |
+| **Context providers (pluggable context)** | **P2**    | Extensible context system: code, docs, URLs, databases, custom sources. Each provider adds relevant context to prompts. | MEDIUM - dhelix's @ mentions + MCP cover most of this. Could formalize as a "context provider" abstraction. |
+| **Model flexibility (any LLM backend)**   | Confirmed | Continue supports OpenAI, Anthropic, local models via Ollama.                                                           | CONFIRMED - dhelix already has this via OpenAI-compatible client.                                           |
+| **Open-source, self-hostable**            | Confirmed | Fully open source, can be self-hosted.                                                                                  | CONFIRMED - dhelix is designed for internal deployment.                                                     |
 
 ### From GitHub Copilot CLI
 
 | Feature                                                   | Priority  | Description                                                                                      | Differentiation Value                                                                                         |
 | --------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
 | **`gh copilot explain` pattern**                          | **P2**    | Dedicated command for explaining shell commands, errors, code. Focused UX for a common task.     | LOW - This is just a prompt pattern. Could be a bundled skill (`/explain`).                                   |
-| **Specialized agents (Explore, Task, Code Review, Plan)** | **P1**    | Auto-delegates to purpose-built agents based on task type. Each has optimized tools and prompts. | MEDIUM - dbcode has Explore and Plan. Consider adding Task (builds/tests) and Code Review agents as built-in. |
-| **Plan mode with explicit approval**                      | Confirmed | Reviews and approves plan before execution.                                                      | CONFIRMED - dbcode has Plan permission mode.                                                                  |
-| **Autopilot mode**                                        | Confirmed | Fully autonomous execution.                                                                      | CONFIRMED - dbcode has bypassPermissions mode.                                                                |
+| **Specialized agents (Explore, Task, Code Review, Plan)** | **P1**    | Auto-delegates to purpose-built agents based on task type. Each has optimized tools and prompts. | MEDIUM - dhelix has Explore and Plan. Consider adding Task (builds/tests) and Code Review agents as built-in. |
+| **Plan mode with explicit approval**                      | Confirmed | Reviews and approves plan before execution.                                                      | CONFIRMED - dhelix has Plan permission mode.                                                                  |
+| **Autopilot mode**                                        | Confirmed | Fully autonomous execution.                                                                      | CONFIRMED - dhelix has bypassPermissions mode.                                                                |
 
 ---
 
@@ -496,7 +496,7 @@ Priority: **P0** = Must have for MVP | **P1** = Must have for v1.0 | **P2** = Ni
 | 18  | Max budget (USD) limit                           | Cost Management      | Small  |
 | 19  | Fallback model on overload                       | LLM Client           | Medium |
 | 20  | OpenTelemetry integration                        | Monitoring           | Medium |
-| 21  | `dbcode update` command                          | Distribution         | Small  |
+| 21  | `dhelix update` command                          | Distribution         | Small  |
 | 22  | Debug/verbose mode with categories               | Developer UX         | Small  |
 | 23  | `/config` interactive settings UI                | Configuration        | Medium |
 | 24  | Extended thinking configuration                  | Model Config         | Medium |
@@ -544,7 +544,7 @@ src/mcp/
   ├── client.ts          # MCP client (stdio, HTTP, SSE transports)
   ├── registry.ts        # Server registration, scope management
   ├── auth.ts            # OAuth 2.0 flow for remote servers
-  ├── tool-bridge.ts     # Bridge MCP tools to dbcode tool registry
+  ├── tool-bridge.ts     # Bridge MCP tools to dhelix tool registry
   └── config.ts          # .mcp.json parsing, env var expansion
 ```
 

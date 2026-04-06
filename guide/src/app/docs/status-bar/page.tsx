@@ -43,7 +43,7 @@ export default function StatusBarPage() {
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
                 <code className="text-cyan-600">StatusBar</code>는 터미널 하단에 고정되는 정보
-                표시줄입니다. 현재 사용 중인 LLM 모델명, dbcode 버전, 컨텍스트 사용률(시각적 바 +
+                표시줄입니다. 현재 사용 중인 LLM 모델명, dhelix 버전, 컨텍스트 사용률(시각적 바 +
                 퍼센트), 세션 비용, 권한 모드, Verbose/Thinking 상태, MCP 연결 상태, 에이전트 단계를
                 한 줄에 압축하여 보여줍니다.
               </p>

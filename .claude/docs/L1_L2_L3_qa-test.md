@@ -1,8 +1,8 @@
-# dbcode L1 / L2 / L3 QA 테스트 결과
+# dhelix L1 / L2 / L3 QA 테스트 결과
 
 > 작성일: 2026-03-18
 > LLM: Azure OpenAI — gpt-5.1-codex-mini (MiniMax-M2.5 서버 네트워크 타임아웃으로 Azure 폴백)
-> 실행 방식: 10개 Claude Agent Teams 병렬 실행 (QA 에이전트가 dbcode CLI를 실행하고 결과를 채점)
+> 실행 방식: 10개 Claude Agent Teams 병렬 실행 (QA 에이전트가 dhelix CLI를 실행하고 결과를 채점)
 > CLI 명령: `node dist/index.js --model gpt-5.1-codex-mini --base-url "..."  -p "PROMPT" --output-format text`
 > 이전 결과 (L1+L2): 241/290 (83.1%)
 
@@ -45,7 +45,7 @@
 | -------- | --------------------------------------------------------------------------- |
 | **점수** | **10 / 10**                                                                 |
 | 턴 수    | 1턴                                                                         |
-| 결과     | 프로젝트명 `dbcode` ✅, 버전 `0.1.0` ✅, deps 16개 + devDeps 12개 = 28개 ✅ |
+| 결과     | 프로젝트명 `dhelix` ✅, 버전 `0.1.0` ✅, deps 16개 + devDeps 12개 = 28개 ✅ |
 | 이슈     | 없음                                                                        |
 
 ### TC-03: 간단한 버그 수정
@@ -91,7 +91,7 @@
 | **점수** | **3 / 10**                                                                                                    |
 | 턴 수    | 1턴                                                                                                           |
 | 결과     | `grep_search` 도구 사용 ✅. 그러나 결과: `sum1to10.js` 1개만 보고                                             |
-| 이슈     | `src/` 하위 실제 13개 파일 완전 누락. Windows 경로 `/c/Users/DBInc/dbcode/src/` 검색 스코프 처리 문제로 추정. |
+| 이슈     | `src/` 하위 실제 13개 파일 완전 누락. Windows 경로 `/c/Users/DBInc/dhelix/src/` 검색 스코프 처리 문제로 추정. |
 
 ### TC-08: 에러 메시지 분석
 
@@ -126,7 +126,7 @@
 | -------- | ------------------------------------------------------------------------ |
 | **점수** | **10 / 10**                                                              |
 | 턴 수    | 1턴                                                                      |
-| 결과     | cwd `/c/Users/DBInc/dbcode` ✅, Node `v22.17.0` ✅, git 브랜치 `main` ✅ |
+| 결과     | cwd `/c/Users/DBInc/dhelix` ✅, Node `v22.17.0` ✅, git 브랜치 `main` ✅ |
 | 이슈     | 없음                                                                     |
 
 ### TC-12: glob 검색
@@ -505,7 +505,7 @@
 
 ### 1. 반복 패턴: Silent Failure (무음 종료)
 
-- **현상**: dbcode가 응답 없이 exit 0 반환. 파일 미생성, 출력 없음.
+- **현상**: dhelix가 응답 없이 exit 0 반환. 파일 미생성, 출력 없음.
 - **발생 TC**: TC-32 (log/diff), TC-34 (Turn 3), TC-36 (rollback), TC-40 (Turn 2)
 - **원인 추정**: LLM이 대화형 질문을 생성하고 headless 모드에서 자동 응답(공백)으로 처리 → 작업 중단
 - **개선 방향**: headless 모드에서 질문 없이 합리적 기본값으로 진행하도록 시스템 프롬프트 강화
@@ -515,11 +515,11 @@
 - **현상**: "어느 디렉터리에 생성할까요?", "파일명도 변경하시겠습니까?" 등 질문 → 공백 자동 응답 → 작업 종료
 - **발생 TC**: TC-14, TC-18, TC-36, TC-37 (TC-21/24는 명시적 재프롬프트로 극복)
 - **개선 방향**: `-p` 모드 진입 시 LLM에게 "질문 없이 최선의 판단으로 진행하라" 지시 추가
-- **우회 사례**: TC-25 — NEXUS.md 파일에 컨텍스트 사전 기록 후 dbcode에 파일 읽기 지시 → 헤드리스 제약 극복
+- **우회 사례**: TC-25 — NEXUS.md 파일에 컨텍스트 사전 기록 후 dhelix에 파일 읽기 지시 → 헤드리스 제약 극복
 
 ### 3. Windows 경로 문제: grep_search / Bash executor
 
-- **현상**: `/c/Users/DBInc/dbcode/src/` 경로 스캔 실패 (TC-07, TC-28)
+- **현상**: `/c/Users/DBInc/dhelix/src/` 경로 스캔 실패 (TC-07, TC-28)
 - **TC-07**: grep_search가 `src/` 하위 파일 13개 누락
 - **TC-28**: `grep -r 'from '` bash 명령이 /c/ 경로에서 결과 없음 반환
 - **원인 추정**: Windows Git Bash에서 `/c/` Unix 경로와 실제 파일시스템 매핑 불일치
@@ -534,7 +534,7 @@
 
 ### 5. Bash 파일 수/줄 수 정확도 (TC-04)
 
-- dbcode가 `src/commands/*.ts` 파일 수를 41개 대신 45개로 과다 보고
+- dhelix가 `src/commands/*.ts` 파일 수를 41개 대신 45개로 과다 보고
 - 서브디렉토리 파일이나 다른 확장자 포함 추정
 - 개선: bash 명령 실행 결과 해석 정확도 향상 필요
 

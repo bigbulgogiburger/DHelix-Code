@@ -10,27 +10,27 @@ describe("initProject", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-init-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-init-test-"));
   });
 
   afterEach(async () => {
     await rm(tempDir, { recursive: true, force: true });
   });
 
-  it("should create .dbcode directory with template files", async () => {
+  it("should create .dhelix directory with template files", async () => {
     const result = await initProject(tempDir);
 
     expect(result.created).toBe(true);
     expect(result.path).toBe(join(tempDir, `.${APP_NAME}`));
 
-    // Verify .dbcode/ directory exists
+    // Verify .dhelix/ directory exists
     await expect(access(result.path)).resolves.toBeUndefined();
 
-    // Verify DBCODE.md at project ROOT (not inside .dbcode/)
+    // Verify DHELIX.md at project ROOT (not inside .dhelix/)
     const md = await readFile(join(tempDir, `${APP_NAME.toUpperCase()}.md`), "utf-8");
     expect(md).toContain("Project Instructions");
 
-    // Verify settings.json inside .dbcode/
+    // Verify settings.json inside .dhelix/
     const settingsRaw = await readFile(join(result.path, "settings.json"), "utf-8");
     const settings = JSON.parse(settingsRaw);
     expect(settings.model).toBe(DEFAULT_MODEL);
@@ -60,16 +60,16 @@ describe("initProject", () => {
     expect(afterReInit).toBe(original);
   });
 
-  it("should create DBCODE.md even if .dbcode/ already exists", async () => {
-    // Simulate scenario: .dbcode/ exists but DBCODE.md doesn't (e.g., from git clone)
+  it("should create DHELIX.md even if .dhelix/ already exists", async () => {
+    // Simulate scenario: .dhelix/ exists but DHELIX.md doesn't (e.g., from git clone)
     await mkdir(join(tempDir, `.${APP_NAME}`), { recursive: true });
 
     const result = await initProject(tempDir);
     expect(result.created).toBe(true);
-    expect(result.detail?.dbcodeMdCreated).toBe(true);
+    expect(result.detail?.dhelixMdCreated).toBe(true);
     expect(result.detail?.configDirCreated).toBe(false);
 
-    // Verify DBCODE.md was created at project root
+    // Verify DHELIX.md was created at project root
     const md = await readFile(join(tempDir, `${APP_NAME.toUpperCase()}.md`), "utf-8");
     expect(md).toContain("Project Instructions");
   });
@@ -86,7 +86,7 @@ describe("initCommand", () => {
   });
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-init-cmd-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-init-cmd-"));
   });
 
   afterEach(async () => {
@@ -111,7 +111,7 @@ describe("initCommand", () => {
     expect(result.refreshInstructions).toBe(true);
   });
 
-  it("should create .dbcode/ directory on first run", async () => {
+  it("should create .dhelix/ directory on first run", async () => {
     await initCommand.execute("", makeContext(tempDir));
 
     const projectPath = join(tempDir, `.${APP_NAME}`);
@@ -123,15 +123,15 @@ describe("initCommand", () => {
     expect(settings.model).toBe(DEFAULT_MODEL);
   });
 
-  it("should include 'create' instructions when DBCODE.md does not exist", async () => {
+  it("should include 'create' instructions when DHELIX.md does not exist", async () => {
     const result = await initCommand.execute("", makeContext(tempDir));
     expect(result.output).toContain("Analyze this codebase");
     expect(result.output).toContain("create");
     expect(result.output).not.toContain("already exists");
   });
 
-  it("should include 'update' instructions when DBCODE.md already exists", async () => {
-    // Create DBCODE.md first
+  it("should include 'update' instructions when DHELIX.md already exists", async () => {
+    // Create DHELIX.md first
     await writeFile(join(tempDir, `${APP_NAME.toUpperCase()}.md`), "# Existing content\n", "utf-8");
 
     const result = await initCommand.execute("", makeContext(tempDir));
@@ -146,7 +146,7 @@ describe("initCommand", () => {
   });
 
   it("should not mention config dir creation when it already existed", async () => {
-    // Create .dbcode/ first
+    // Create .dhelix/ first
     await mkdir(join(tempDir, `.${APP_NAME}`), { recursive: true });
 
     const result = await initCommand.execute("", makeContext(tempDir));
@@ -158,7 +158,7 @@ describe("initCommand", () => {
     const first = await initCommand.execute("", makeContext(tempDir));
     expect(first.refreshInstructions).toBe(true);
 
-    // Create DBCODE.md to simulate existing state
+    // Create DHELIX.md to simulate existing state
     await writeFile(join(tempDir, `${APP_NAME.toUpperCase()}.md`), "# Existing\n", "utf-8");
 
     // Second run (update mode)

@@ -68,9 +68,9 @@ export default function AgentMemorySubPage() {
               chart={`graph TD
   AGENT["Sub Agent<br/><small>코드 리뷰, 보안 분석 등</small>"]
   MM["AgentMemoryManager<br/><small>agent-memory.ts</small>"]
-  USER_DIR["~/.dbcode/agent-memory/<br/><small>user 스코프</small>"]
-  PROJ_DIR[".dbcode/agent-memory/<br/><small>project 스코프</small>"]
-  LOCAL_DIR[".dbcode/agent-memory-local/<br/><small>local 스코프</small>"]
+  USER_DIR["~/.dhelix/agent-memory/<br/><small>user 스코프</small>"]
+  PROJ_DIR[".dhelix/agent-memory/<br/><small>project 스코프</small>"]
+  LOCAL_DIR[".dhelix/agent-memory-local/<br/><small>local 스코프</small>"]
   PROMPT["System Prompt<br/><small>getMemoryPromptSection()</small>"]
 
   AGENT -->|"readMemory()"| MM
@@ -126,15 +126,15 @@ export default function AgentMemorySubPage() {
             <div className="text-[13px] text-gray-600 mt-2 space-y-1">
               <p>
                 &bull; <code className="text-blue-600">&quot;user&quot;</code> &mdash; 사용자 전역 (
-                <code>~/.dbcode/agent-memory/</code>) &mdash; 모든 프로젝트에서 공유
+                <code>~/.dhelix/agent-memory/</code>) &mdash; 모든 프로젝트에서 공유
               </p>
               <p>
                 &bull; <code className="text-emerald-600">&quot;project&quot;</code> &mdash;
-                프로젝트 단위 (<code>.dbcode/agent-memory/</code>) &mdash; Git 추적 가능
+                프로젝트 단위 (<code>.dhelix/agent-memory/</code>) &mdash; Git 추적 가능
               </p>
               <p>
                 &bull; <code className="text-amber-600">&quot;local&quot;</code> &mdash; 로컬 전용 (
-                <code>.dbcode/agent-memory-local/</code>) &mdash; Git 무시
+                <code>.dhelix/agent-memory-local/</code>) &mdash; Git 무시
               </p>
             </div>
 
@@ -246,11 +246,11 @@ export default function AgentMemorySubPage() {
             <CodeBlock>
               <span className="fn">getMemoryDir</span>(): <span className="type">string</span>
               {"\n"}
-              <span className="cm">{"// user:    ~/.dbcode/agent-memory/{agent-name}/"}</span>
+              <span className="cm">{"// user:    ~/.dhelix/agent-memory/{agent-name}/"}</span>
               {"\n"}
-              <span className="cm">{"// project: .dbcode/agent-memory/{agent-name}/"}</span>
+              <span className="cm">{"// project: .dhelix/agent-memory/{agent-name}/"}</span>
               {"\n"}
-              <span className="cm">{"// local:   .dbcode/agent-memory-local/{agent-name}/"}</span>
+              <span className="cm">{"// local:   .dhelix/agent-memory-local/{agent-name}/"}</span>
             </CodeBlock>
 
             {/* Caveats */}
@@ -451,9 +451,9 @@ export default function AgentMemorySubPage() {
               chart={`graph TD
   MM["AgentMemoryManager<br/><small>getMemoryDir()</small>"]
 
-  MM -->|"user"| U["~/.dbcode/agent-memory/<br/>code-reviewer/<br/><small>MEMORY.md</small>"]
-  MM -->|"project"| P["./dbcode/agent-memory/<br/>code-reviewer/<br/><small>MEMORY.md</small>"]
-  MM -->|"local"| L[".dbcode/agent-memory-local/<br/>code-reviewer/<br/><small>MEMORY.md</small>"]
+  MM -->|"user"| U["~/.dhelix/agent-memory/<br/>code-reviewer/<br/><small>MEMORY.md</small>"]
+  MM -->|"project"| P["./dhelix/agent-memory/<br/>code-reviewer/<br/><small>MEMORY.md</small>"]
+  MM -->|"local"| L[".dhelix/agent-memory-local/<br/>code-reviewer/<br/><small>MEMORY.md</small>"]
 
   U -.->|"모든 프로젝트 공유"| GLOBAL["전역 지식"]
   P -.->|"Git 추적 가능"| SHARED["팀 공유 가능"]
@@ -596,7 +596,7 @@ export default function AgentMemorySubPage() {
                 &quot;local 스코프 메모리가 Git에 커밋되었어요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">.dbcode/agent-memory-local/</code> 디렉토리를
+                <code className="text-cyan-600">.dhelix/agent-memory-local/</code> 디렉토리를
                 <code className="text-cyan-600">.gitignore</code>에 추가하세요. local 스코프는 개인
                 메모용으로 설계되었으므로 Git 추적에서 제외해야 합니다.
               </p>

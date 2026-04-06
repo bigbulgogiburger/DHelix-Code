@@ -129,16 +129,16 @@ describe("TaskViewPanel helpers", () => {
       expect(mod.getStatusColor("in_progress")).toBe("yellow");
     });
 
-    it("should return green for completed", () => {
-      expect(mod.getStatusColor("completed")).toBe("green");
+    it("should return #00E5FF for completed", () => {
+      expect(mod.getStatusColor("completed")).toBe("#00E5FF");
     });
 
     it("should return red for failed", () => {
       expect(mod.getStatusColor("failed")).toBe("red");
     });
 
-    it("should return cyan for blocked", () => {
-      expect(mod.getStatusColor("blocked")).toBe("cyan");
+    it("should return #0097A7 for blocked", () => {
+      expect(mod.getStatusColor("blocked")).toBe("#0097A7");
     });
 
     it("should return gray for cancelled", () => {
@@ -185,8 +185,8 @@ describe("TaskViewPanel helpers", () => {
       expect(mod.getPriorityColor("high")).toBe("yellow");
     });
 
-    it("should return blue for medium", () => {
-      expect(mod.getPriorityColor("medium")).toBe("blue");
+    it("should return cyan for medium", () => {
+      expect(mod.getPriorityColor("medium")).toBe("cyan");
     });
 
     it("should return gray for low", () => {

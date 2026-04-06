@@ -47,9 +47,9 @@ export default function MemoryStoragePage() {
                 <strong className="text-gray-900">세션 간에 정보를 기억</strong>하는 데 사용하는
                 마크다운 파일 시스템입니다. 메모리는 두 가지 스코프로 나뉩니다: 특정 프로젝트에서만
                 사용하는 <strong>프로젝트 메모리</strong>({"{"}프로젝트{"}"}/
-                <code className="text-cyan-600 text-[13px]">.dbcode/memory/</code>)와 모든
+                <code className="text-cyan-600 text-[13px]">.dhelix/memory/</code>)와 모든
                 프로젝트에서 공유되는 <strong>전역 메모리</strong>(
-                <code className="text-cyan-600 text-[13px]">~/.dbcode/memory/</code>).
+                <code className="text-cyan-600 text-[13px]">~/.dhelix/memory/</code>).
               </p>
               <p>
                 메인 파일(<code className="text-cyan-600 text-[13px]">MEMORY.md</code>)은 최대
@@ -68,12 +68,12 @@ export default function MemoryStoragePage() {
               title="메모리 스코프 구조"
               titleColor="cyan"
               chart={`graph TD
-    subgraph PROJECT["프로젝트 메모리 (.dbcode/memory/)"]
+    subgraph PROJECT["프로젝트 메모리 (.dhelix/memory/)"]
         PM["MEMORY.md<br/><small>최대 200줄 — 프로젝트 아키텍처, 패턴</small>"]
         PT["debugging.md<br/><small>최대 500줄 — 주제별 분리 저장</small>"]
         PT2["patterns.md<br/><small>최대 500줄 — 반복 패턴 기록</small>"]
     end
-    subgraph GLOBAL["전역 메모리 (~/.dbcode/memory/)"]
+    subgraph GLOBAL["전역 메모리 (~/.dhelix/memory/)"]
         GM["MEMORY.md<br/><small>최대 200줄 — 크로스 프로젝트 패턴</small>"]
     end
     subgraph AGENT["에이전트 (Agent Loop)"]
@@ -131,7 +131,7 @@ export default function MemoryStoragePage() {
                     name: "projectDir",
                     type: "string",
                     required: true,
-                    desc: "프로젝트 루트 디렉토리 경로. 프로젝트 메모리 경로({projectDir}/.dbcode/memory/)를 생성하는 기준입니다.",
+                    desc: "프로젝트 루트 디렉토리 경로. 프로젝트 메모리 경로({projectDir}/.dhelix/memory/)를 생성하는 기준입니다.",
                   },
                 ]}
               />
@@ -257,7 +257,7 @@ export default function MemoryStoragePage() {
                     name: "globalDir",
                     type: "string",
                     required: true,
-                    desc: "전역 메모리 디렉토리 경로 (~/.dbcode/memory/).",
+                    desc: "전역 메모리 디렉토리 경로 (~/.dhelix/memory/).",
                   },
                   {
                     name: "maxMainLines",

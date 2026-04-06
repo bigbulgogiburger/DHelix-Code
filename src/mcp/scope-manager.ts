@@ -2,9 +2,9 @@
  * MCP 스코프 매니저 — 세 가지 범위의 MCP 설정을 관리하는 모듈
  *
  * MCP 서버 설정은 세 가지 스코프(범위)로 나뉩니다:
- * - local: .dbcode/mcp-local.json (gitignore 대상, 개발자 개인 설정)
- * - project: .dbcode/mcp.json (git에 커밋, 팀 전체 공유)
- * - user: ~/.dbcode/mcp-servers.json (사용자 글로벌 설정)
+ * - local: .dhelix/mcp-local.json (gitignore 대상, 개발자 개인 설정)
+ * - project: .dhelix/mcp.json (git에 커밋, 팀 전체 공유)
+ * - user: ~/.dhelix/mcp-servers.json (사용자 글로벌 설정)
  *
  * 우선순위: local > project > user
  * → 같은 이름의 서버가 여러 스코프에 정의되어 있으면 local이 우선합니다.
@@ -56,9 +56,9 @@ const SCOPE_PRIORITY: readonly ("local" | "project" | "user")[] = ["local", "pro
 /**
  * 세 가지 스코프의 MCP 서버 설정을 관리합니다.
  *
- * - local: `.dbcode/mcp-local.json` (gitignore 대상, 개발자 개인 설정)
- * - project: `.dbcode/mcp.json` (git에 커밋, 팀 공유)
- * - user: `~/.dbcode/mcp-servers.json` (글로벌 사용자 설정)
+ * - local: `.dhelix/mcp-local.json` (gitignore 대상, 개발자 개인 설정)
+ * - project: `.dhelix/mcp.json` (git에 커밋, 팀 공유)
+ * - user: `~/.dhelix/mcp-servers.json` (글로벌 사용자 설정)
  *
  * 우선순위: local > project > user (같은 이름 = local이 우선).
  */
@@ -130,18 +130,18 @@ export class MCPScopeManager {
    * @returns 설정 파일의 절대 경로
    *
    * 경로 규칙:
-   * - local: {workingDirectory}/.dbcode/mcp-local.json
-   * - project: {workingDirectory}/.dbcode/mcp.json
-   * - user: ~/.dbcode/mcp-servers.json
+   * - local: {workingDirectory}/.dhelix/mcp-local.json
+   * - project: {workingDirectory}/.dhelix/mcp.json
+   * - user: ~/.dhelix/mcp-servers.json
    */
   getConfigPath(scope: "local" | "project" | "user"): string {
     switch (scope) {
       case "local":
-        return join(this.workingDirectory, ".dbcode", "mcp-local.json");
+        return join(this.workingDirectory, ".dhelix", "mcp-local.json");
       case "project":
-        return join(this.workingDirectory, ".dbcode", "mcp.json");
+        return join(this.workingDirectory, ".dhelix", "mcp.json");
       case "user":
-        return join(homedir(), ".dbcode", "mcp-servers.json");
+        return join(homedir(), ".dhelix", "mcp-servers.json");
     }
   }
 

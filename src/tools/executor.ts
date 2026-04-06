@@ -5,9 +5,10 @@
  * 타임아웃과 AbortSignal을 설정하여 안전하게 실행합니다.
  *
  * 주요 기능:
+ * - 4-stage ToolPipeline을 통한 구조화된 실행 (preflight → schedule → execute → postprocess)
  * - 도구 인수 자동 교정 (저성능 모델의 잘못된 호출 보정)
  * - 타임아웃 관리 (AbortController 기반)
- * - 일시적 에러 자동 재시도 (네트워크 오류 등)
+ * - 일시적 에러 자동 재시도 (RetryEngine 기반)
  * - 백그라운드 프로세스 관리 (장시간 실행 명령을 비동기로 관리)
  *
  * AbortController — 비동기 작업을 외부에서 취소할 수 있게 하는 웹 표준 API
@@ -24,9 +25,11 @@ import { type LLMProvider } from "../llm/provider.js";
 import { type AppEventEmitter } from "../utils/events.js";
 import { parseToolArguments } from "./validation.js";
 import { correctToolCall } from "./tool-call-corrector.js";
+import { classifyError } from "./errors.js";
 import { type CapabilityTier } from "../llm/model-capabilities.js";
 import { getPlatform, getShellCommand, getShellArgs } from "../utils/platform.js";
 import { TOOL_TIMEOUTS } from "../constants.js";
+import { ToolPipeline, type PipelineConfig, type PipelineResult } from "./pipeline.js";
 import { spawn, type ChildProcess } from "node:child_process";
 import { createWriteStream, readFileSync, statSync, openSync, readSync, closeSync } from "node:fs";
 import { join } from "node:path";
@@ -35,24 +38,6 @@ import { randomUUID } from "node:crypto";
 
 /** 일시적 에러 발생 시 최대 재시도 횟수 */
 const MAX_TOOL_RETRIES = 1;
-
-/**
- * 일시적(transient) 에러인지 판별 — 재시도하면 해결될 수 있는 네트워크 오류 확인
- *
- * 다음 에러 코드가 포함되어 있으면 일시적 에러로 판단합니다:
- * - ECONNRESET: 연결이 강제로 끊김
- * - ETIMEDOUT: 연결 시간 초과
- * - ENOTFOUND: DNS 조회 실패
- * - EPIPE: 파이프가 깨짐 (상대방이 연결을 닫음)
- * - EAI_AGAIN: DNS 조회 일시적 실패
- *
- * @param error - 판별할 에러 객체
- * @returns 일시적 에러이면 true
- */
-function isTransientError(error: unknown): boolean {
-  const msg = error instanceof Error ? error.message : String(error);
-  return /ECONNRESET|ETIMEDOUT|ENOTFOUND|EPIPE|EAI_AGAIN/.test(msg);
-}
 
 /**
  * 단일 도구 실행 — 타임아웃, 검증, 에러 처리를 포함한 안전한 실행
@@ -134,15 +119,16 @@ export async function executeTool(
     // Zod 스키마로 인수 검증 — 잘못된 인수면 에러를 던짐
     const validatedArgs = parseToolArguments(tool.parameterSchema, correctedArgs);
 
-    // 재시도 루프 — 일시적 네트워크 에러 시 지수 백오프(exponential backoff)로 재시도
+    // 재시도 루프 — classifyError로 에러를 분류하여 재시도 가능 여부 판단
     let lastError: unknown;
     for (let attempt = 0; attempt <= MAX_TOOL_RETRIES; attempt++) {
       try {
         return await tool.execute(validatedArgs, context);
       } catch (execError) {
         lastError = execError;
-        // 재시도 가능한 일시적 에러이고 재시도 횟수가 남아있으면 대기 후 재시도
-        if (attempt < MAX_TOOL_RETRIES && isTransientError(execError)) {
+        // classifyError로 에러 종류를 분류하여 재시도 가능 여부 판단
+        const classified = classifyError(execError, tool.name);
+        if (attempt < MAX_TOOL_RETRIES && classified.retryable) {
           // 지수 백오프: 1초, 2초, ... (attempt + 1)초 대기
           await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
           continue;
@@ -153,13 +139,16 @@ export async function executeTool(
     // 모든 재시도 실패 시 마지막 에러를 throw
     throw lastError;
   } catch (error) {
+    // classifyError로 에러를 구조화하여 일관된 에러 메시지 생성
+    const classified = classifyError(error, tool.name);
+
     // AbortSignal이 활성화됨 = 타임아웃 또는 사용자 취소
     if (controller.signal.aborted) {
       return { output: `Tool "${tool.name}" timed out after ${timeoutMs}ms`, isError: true };
     }
-    // 기타 에러 — 에러 메시지를 포함한 실패 결과 반환
-    const message = error instanceof Error ? error.message : String(error);
-    return { output: `Tool "${tool.name}" failed: ${message}`, isError: true };
+
+    // 분류된 에러 종류에 따라 적절한 에러 메시지 반환
+    return { output: `Tool "${tool.name}" failed [${classified.kind}]: ${classified.message}`, isError: true };
   } finally {
     // 타이머 정리 — 메모리 누수 방지
     clearTimeout(timeout);
@@ -321,7 +310,7 @@ export class BackgroundProcessManager {
     // 사람이 읽기 쉬운 순차 ID 할당
     const processId = `bg-${this.nextId++}`;
     // 임시 디렉토리에 출력 로그 파일 생성
-    const outputFile = join(tmpdir(), `dbcode-bg-${fileId}.log`);
+    const outputFile = join(tmpdir(), `dhelix-bg-${fileId}.log`);
     const shell = getShellCommand();
     const args = getShellArgs(command);
 
@@ -581,3 +570,60 @@ export class BackgroundProcessManager {
  * 모든 백그라운드 프로세스를 중앙에서 관리합니다.
  */
 export const backgroundProcessManager = new BackgroundProcessManager();
+
+/**
+ * 여러 도구 호출을 4-stage 파이프라인으로 일괄 실행
+ *
+ * 기존 executeToolCall을 개별 호출하는 대신, ToolPipeline을 사용하여
+ * preflight → schedule → execute → postprocess 단계를 거칩니다.
+ *
+ * @param registry - 도구 레지스트리
+ * @param calls - 실행할 도구 호출 목록
+ * @param options - 실행 옵션
+ * @param pipelineConfig - 파이프라인 설정 (선택사항)
+ * @returns 파이프라인 실행 결과
+ */
+export async function executeToolCallsWithPipeline(
+  registry: ToolRegistry,
+  calls: readonly ExtractedToolCall[],
+  options: {
+    workingDirectory?: string;
+    signal?: AbortSignal;
+    events?: AppEventEmitter;
+    capabilityTier?: CapabilityTier;
+    activeClient?: LLMProvider;
+    activeModel?: string;
+    checkPermission?: import("./types.js").ToolContext["checkPermission"];
+    checkpointManager?: import("./types.js").ToolContext["checkpointManager"];
+    sessionId?: string;
+    thinking?: import("../llm/provider.js").ThinkingConfig;
+    enableGuardrails?: boolean;
+  },
+  pipelineConfig?: PipelineConfig,
+): Promise<PipelineResult> {
+  const workingDirectory = options.workingDirectory ?? process.cwd();
+  const pipeline = new ToolPipeline(registry);
+
+  const context: ToolContext = {
+    workingDirectory,
+    abortSignal: options.signal ?? new AbortController().signal,
+    timeoutMs: TOOL_TIMEOUTS.default,
+    platform: getPlatform(),
+    events: options.events,
+    activeClient: options.activeClient,
+    activeModel: options.activeModel,
+    capabilityTier: options.capabilityTier,
+    checkPermission: options.checkPermission,
+    checkpointManager: options.checkpointManager,
+    sessionId: options.sessionId,
+    thinking: options.thinking,
+  };
+
+  return pipeline.execute(calls, context, {
+    enableGuardrails: options.enableGuardrails,
+    ...pipelineConfig,
+  });
+}
+
+// Re-export pipeline types for convenience
+export { ToolPipeline, type PipelineConfig, type PipelineResult } from "./pipeline.js";

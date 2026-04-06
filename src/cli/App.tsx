@@ -1,5 +1,5 @@
 /**
- * App.tsx — dbcode CLI 애플리케이션의 최상위(Root) 컴포넌트
+ * App.tsx — Dhelix Code CLI 애플리케이션의 최상위(Root) 컴포넌트
  *
  * Ink(터미널에서 React를 사용할 수 있게 해주는 라이브러리)를 기반으로
  * 전체 CLI UI를 구성합니다. 사용자 입력, 에이전트 상태, 권한 관리,
@@ -185,6 +185,7 @@ export function App({
     setInteractiveSelect,
     pendingAskUser,
     setPendingAskUser,
+    streamingOutputs,
   } = useAgentLoop({
     client,
     model,
@@ -387,7 +388,7 @@ export function App({
     ],
   );
 
-  // 사용자 설정 파일(~/.dbcode/keybindings.json)과 기본값을 병합하여 키바인딩 구성
+  // 사용자 설정 파일(~/.dhelix/keybindings.json)과 기본값을 병합하여 키바인딩 구성
   const keybindings = useMemo(() => {
     const userConfig = loadKeybindingConfig();
     const effective = getEffectiveBindings(userConfig);
@@ -403,6 +404,7 @@ export function App({
           completedTurns={completedTurns}
           currentTurn={liveTurn}
           isExpanded={verboseMode}
+          streamingOutputs={streamingOutputs}
         />
 
         {isProcessing && !isStreamingFinal ? (

@@ -1,7 +1,7 @@
-# dbcode UI 개선 기획서 v3 — Claude Code 수준 UX 달성
+# dhelix UI 개선 기획서 v3 — Claude Code 수준 UX 달성
 
 > **작성일**: 2026-03-12
-> **목표**: Claude Code의 세 가지 핵심 UX 패턴을 dbcode에 구현
+> **목표**: Claude Code의 세 가지 핵심 UX 패턴을 dhelix에 구현
 
 ---
 
@@ -53,7 +53,7 @@ if (key.upArrow) {
 
 ### Claude Code의 동작 방식
 
-| 기능           | Claude Code               | dbcode (현재)             |
+| 기능           | Claude Code               | dhelix (현재)             |
 | -------------- | ------------------------- | ------------------------- |
 | `@` 트리거     | 파일/디렉토리 목록 표시   | ✅ 동일                   |
 | 화살표 키 탐색 | ↑↓로 목록 탐색            | ❌ 히스토리 탐색으로 빠짐 |
@@ -230,7 +230,7 @@ describe("@ mention display format", () => {
 
 ### 현재 문제
 
-**dbcode 현재 출력:**
+**dhelix 현재 출력:**
 
 ```
   ⠋ Reading
@@ -247,7 +247,7 @@ describe("@ mention display format", () => {
 
 **핵심 차이점:**
 
-| 항목               | Claude Code                           | dbcode (현재)        |
+| 항목               | Claude Code                           | dhelix (현재)        |
 | ------------------ | ------------------------------------- | -------------------- |
 | 도구 이름          | `Read(file_path)` — 인자 포함         | `Read` — 인자 없음   |
 | 실행 중            | `⠋ Reading src/file.tsx`              | `⠋ Reading`          |
@@ -531,7 +531,7 @@ function getSpinnerLabel(name: string, args?: Record<string, unknown>): string {
 - [Claude Code Internals Part 11: Terminal UI](https://kotrotsos.medium.com/claude-code-internals-part-11-terminal-ui-542fe17db016) — Ink/React 기반 TUI 아키텍처 분석
 - [Claude Code Tool System Explained](https://callsphere.tech/blog/claude-code-tool-system-explained) — 도구 시스템 설명
 
-### dbcode 내부 파일 참조
+### dhelix 내부 파일 참조
 
 | 파일                                   | 역할                                        |
 | -------------------------------------- | ------------------------------------------- |

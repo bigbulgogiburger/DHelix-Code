@@ -524,7 +524,7 @@ export default function SandboxBubblewrapPage() {
   ROOT["/  (샌드박스 루트)"]
   SYS["시스템 경로<br/><small>/usr, /bin, /lib, /etc, /sbin</small><br/>🔒 읽기 전용"]
   PROC["/proc  (procfs)<br/>/dev  (devfs)"]
-  TMP["/tmp  (tmpfs 휘발성)<br/>/tmp/dbcode  (쓰기 가능)"]
+  TMP["/tmp  (tmpfs 휘발성)<br/>/tmp/dhelix  (쓰기 가능)"]
   PROJ["프로젝트 디렉토리<br/>📝 읽기/쓰기"]
   HOME["홈 설정 폴더<br/><small>.config, .npm, .cache 등</small><br/>🔒 읽기 전용"]
   LOCAL["~/.local<br/>📝 읽기/쓰기 (예외)"]

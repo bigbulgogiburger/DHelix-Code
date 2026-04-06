@@ -69,7 +69,7 @@ export default function ToolBashOutputPage() {
   EXEC["Tool Executor<br/><small>tools/executor.ts</small>"]
   BO["bash_output<br/><small>bash-output.ts</small>"]
   BPM["BackgroundProcessManager<br/><small>executor.ts 내부</small>"]
-  LOG["임시 로그 파일<br/><small>/tmp/dbcode-bg-*.log</small>"]
+  LOG["임시 로그 파일<br/><small>/tmp/dhelix-bg-*.log</small>"]
 
   AGENT -->|"도구 호출"| EXEC
   EXEC --> BO

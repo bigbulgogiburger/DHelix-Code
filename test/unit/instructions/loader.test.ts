@@ -9,7 +9,7 @@ import { join } from "node:path";
 import { tmpdir } from "node:os";
 
 // Use OS tmpdir to avoid findProjectRoot walking up into the actual project
-const tmpDir = join(tmpdir(), "dbcode-test-instructions-loader");
+const tmpDir = join(tmpdir(), "dhelix-test-instructions-loader");
 
 describe("instructions/loader", () => {
   beforeEach(async () => {
@@ -24,25 +24,25 @@ describe("instructions/loader", () => {
     }
   });
 
-  it("should return empty instructions when no DBCODE.md exists", async () => {
+  it("should return empty instructions when no DHELIX.md exists", async () => {
     const result = await loadInstructions(tmpDir);
     expect(result.projectInstructions).toBe("");
     expect(result.pathRules).toBe("");
     expect(result.combined).toBe("");
   });
 
-  it("should load DBCODE.md as project instructions", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "# Project Rules\nAlways use TypeScript.", "utf-8");
+  it("should load DHELIX.md as project instructions", async () => {
+    await writeFile(join(tmpDir, "DHELIX.md"), "# Project Rules\nAlways use TypeScript.", "utf-8");
     const result = await loadInstructions(tmpDir);
     expect(result.projectInstructions).toContain("Project Rules");
     expect(result.projectInstructions).toContain("TypeScript");
     expect(result.combined).toContain("Project Rules");
   });
 
-  it("should load path rules from .dbcode/rules/ directory", async () => {
-    // Create DBCODE.md so project root is found
-    await writeFile(join(tmpDir, "DBCODE.md"), "base instructions", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+  it("should load path rules from .dhelix/rules/ directory", async () => {
+    // Create DHELIX.md so project root is found
+    await writeFile(join(tmpDir, "DHELIX.md"), "base instructions", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
     await writeFile(join(rulesDir, "style.md"), "Use functional patterns.", "utf-8");
 
@@ -51,8 +51,8 @@ describe("instructions/loader", () => {
   });
 
   it("should handle rules with frontmatter pattern (legacy single pattern)", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
     await writeFile(
       join(rulesDir, "tests.md"),
@@ -66,8 +66,8 @@ describe("instructions/loader", () => {
   });
 
   it("should handle rules with multi-glob paths frontmatter", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
 
     const ruleContent = [
@@ -91,8 +91,8 @@ describe("instructions/loader", () => {
   });
 
   it("should parse paths array and match correctly", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
 
     // Rule with no frontmatter (matches everything with **)
@@ -116,8 +116,8 @@ describe("instructions/loader", () => {
   });
 
   it("should give paths precedence over pattern when both are present", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
 
     // Both pattern and paths present — paths should take precedence
@@ -139,8 +139,8 @@ describe("instructions/loader", () => {
   });
 
   it("should skip non-.md files in rules directory", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
     await writeFile(join(rulesDir, "notes.txt"), "not a rule", "utf-8");
     await writeFile(join(rulesDir, "style.md"), "is a rule", "utf-8");
@@ -151,8 +151,8 @@ describe("instructions/loader", () => {
   });
 
   it("should combine project instructions and path rules", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Project config", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Project config", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
     await writeFile(join(rulesDir, "code.md"), "Code style rule", "utf-8");
 
@@ -162,15 +162,15 @@ describe("instructions/loader", () => {
     expect(result.combined.length).toBeGreaterThan(0);
   });
 
-  it("should handle empty DBCODE.md", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "", "utf-8");
+  it("should handle empty DHELIX.md", async () => {
+    await writeFile(join(tmpDir, "DHELIX.md"), "", "utf-8");
     const result = await loadInstructions(tmpDir);
     expect(result.projectInstructions).toBe("");
   });
 
   it("should handle missing rules directory gracefully", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    // No .dbcode/rules/ directory
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    // No .dhelix/rules/ directory
     const result = await loadInstructions(tmpDir);
     expect(result.pathRules).toBe("");
   });
@@ -188,8 +188,8 @@ describe("instructions/loader", () => {
   });
 
   it("should exclude rule files matching excludePatterns", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
     await writeFile(join(rulesDir, "style.md"), "Keep included", "utf-8");
     await writeFile(join(rulesDir, "excluded.md"), "Should be excluded", "utf-8");
@@ -202,14 +202,14 @@ describe("instructions/loader", () => {
   });
 
   it("should accept options parameter without breaking existing behavior", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base instructions", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base instructions", "utf-8");
     const result = await loadInstructions(tmpDir, { excludePatterns: [] });
     expect(result.projectInstructions).toContain("base instructions");
   });
 
   it("should handle frontmatter with paths using unquoted values", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "base", "utf-8");
-    const rulesDir = join(tmpDir, ".dbcode", "rules");
+    await writeFile(join(tmpDir, "DHELIX.md"), "base", "utf-8");
+    const rulesDir = join(tmpDir, ".dhelix", "rules");
     await mkdir(rulesDir, { recursive: true });
 
     const ruleContent = [
@@ -228,26 +228,26 @@ describe("instructions/loader", () => {
     expect(result.pathRules).toBeDefined();
   });
 
-  it("should resolve symlinked DBCODE.md files", async () => {
+  it("should resolve symlinked DHELIX.md files", async () => {
     // Create a real file in a separate directory
     const realDir = join(tmpDir, "real-source");
     await mkdir(realDir, { recursive: true });
-    await writeFile(join(realDir, "DBCODE.md"), "Symlinked project instructions", "utf-8");
+    await writeFile(join(realDir, "DHELIX.md"), "Symlinked project instructions", "utf-8");
 
-    // Create a project directory with a symlinked DBCODE.md
+    // Create a project directory with a symlinked DHELIX.md
     const projectDir = join(tmpDir, "project");
     await mkdir(projectDir, { recursive: true });
-    await symlink(join(realDir, "DBCODE.md"), join(projectDir, "DBCODE.md"));
+    await symlink(join(realDir, "DHELIX.md"), join(projectDir, "DHELIX.md"));
 
     const result = await loadInstructions(projectDir);
     expect(result.projectInstructions).toContain("Symlinked project instructions");
   });
 
-  it("should resolve @path imports within DBCODE.md", async () => {
+  it("should resolve @path imports within DHELIX.md", async () => {
     const rulesDir = join(tmpDir, "rules");
     await mkdir(rulesDir, { recursive: true });
     await writeFile(join(rulesDir, "security.md"), "Always validate inputs", "utf-8");
-    await writeFile(join(tmpDir, "DBCODE.md"), "# Project\n@./rules/security.md\nEnd", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "# Project\n@./rules/security.md\nEnd", "utf-8");
 
     const result = await loadInstructions(tmpDir);
     expect(result.projectInstructions).toContain("Always validate inputs");
@@ -275,24 +275,24 @@ describe("LazyInstructionLoader", () => {
     expect(result).toBe("");
   });
 
-  it("should return empty string when no DBCODE.md exists", async () => {
+  it("should return empty string when no DHELIX.md exists", async () => {
     const loader = new LazyInstructionLoader(tmpDir);
     const result = await loader.getInstructionsForFile(join(tmpDir, "src", "index.ts"));
     expect(result).toBe("");
   });
 
-  it("should load root-level DBCODE.md for any file in project", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Root instructions", "utf-8");
+  it("should load root-level DHELIX.md for any file in project", async () => {
+    await writeFile(join(tmpDir, "DHELIX.md"), "Root instructions", "utf-8");
     const loader = new LazyInstructionLoader(tmpDir);
     const result = await loader.getInstructionsForFile(join(tmpDir, "src", "index.ts"));
     expect(result).toContain("Root instructions");
   });
 
-  it("should load subdirectory DBCODE.md", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Root instructions", "utf-8");
+  it("should load subdirectory DHELIX.md", async () => {
+    await writeFile(join(tmpDir, "DHELIX.md"), "Root instructions", "utf-8");
     const subDir = join(tmpDir, "src", "api");
     await mkdir(subDir, { recursive: true });
-    await writeFile(join(subDir, "DBCODE.md"), "API-specific instructions", "utf-8");
+    await writeFile(join(subDir, "DHELIX.md"), "API-specific instructions", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
     const result = await loader.getInstructionsForFile(join(subDir, "handler.ts"));
@@ -301,13 +301,13 @@ describe("LazyInstructionLoader", () => {
   });
 
   it("should collect instructions from all ancestor directories", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Root level", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Root level", "utf-8");
     const srcDir = join(tmpDir, "src");
     await mkdir(srcDir, { recursive: true });
-    await writeFile(join(srcDir, "DBCODE.md"), "Src level", "utf-8");
+    await writeFile(join(srcDir, "DHELIX.md"), "Src level", "utf-8");
     const apiDir = join(srcDir, "api");
     await mkdir(apiDir, { recursive: true });
-    await writeFile(join(apiDir, "DBCODE.md"), "API level", "utf-8");
+    await writeFile(join(apiDir, "DHELIX.md"), "API level", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
     const result = await loader.getInstructionsForFile(join(apiDir, "handler.ts"));
@@ -318,7 +318,7 @@ describe("LazyInstructionLoader", () => {
   });
 
   it("should cache loaded instructions", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Cached content", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Cached content", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
 
@@ -327,7 +327,7 @@ describe("LazyInstructionLoader", () => {
     expect(result1).toContain("Cached content");
 
     // Overwrite the file
-    await writeFile(join(tmpDir, "DBCODE.md"), "Updated content", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Updated content", "utf-8");
 
     // Second call should return cached content
     const result2 = await loader.getInstructionsForFile(join(tmpDir, "file2.ts"));
@@ -336,7 +336,7 @@ describe("LazyInstructionLoader", () => {
   });
 
   it("should invalidate cache for a specific directory", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Original content", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Original content", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
 
@@ -345,7 +345,7 @@ describe("LazyInstructionLoader", () => {
     expect(result1).toContain("Original content");
 
     // Update the file
-    await writeFile(join(tmpDir, "DBCODE.md"), "Updated content", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Updated content", "utf-8");
 
     // Invalidate
     loader.invalidate(tmpDir);
@@ -356,7 +356,7 @@ describe("LazyInstructionLoader", () => {
   });
 
   it("should clear all cached instructions", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Original content", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Original content", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
 
@@ -364,7 +364,7 @@ describe("LazyInstructionLoader", () => {
     await loader.getInstructionsForFile(join(tmpDir, "file.ts"));
 
     // Update the file
-    await writeFile(join(tmpDir, "DBCODE.md"), "Updated content", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Updated content", "utf-8");
 
     // Clear all
     loader.clearCache();
@@ -375,7 +375,7 @@ describe("LazyInstructionLoader", () => {
   });
 
   it("should handle files directly in the project root", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Root instructions", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Root instructions", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
     const result = await loader.getInstructionsForFile(join(tmpDir, "package.json"));
@@ -384,7 +384,7 @@ describe("LazyInstructionLoader", () => {
 
   it("should not load from directories above the project root", async () => {
     const parentDir = join(tmpDir, "..");
-    await writeFile(join(tmpDir, "DBCODE.md"), "Project instructions", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Project instructions", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
     const result = await loader.getInstructionsForFile(join(tmpDir, "src", "file.ts"));
@@ -394,7 +394,7 @@ describe("LazyInstructionLoader", () => {
   });
 
   it("should handle backslash paths on Windows", async () => {
-    await writeFile(join(tmpDir, "DBCODE.md"), "Root instructions", "utf-8");
+    await writeFile(join(tmpDir, "DHELIX.md"), "Root instructions", "utf-8");
 
     const loader = new LazyInstructionLoader(tmpDir);
     const windowsStylePath = join(tmpDir, "src", "file.ts").replace(/\//g, "\\");

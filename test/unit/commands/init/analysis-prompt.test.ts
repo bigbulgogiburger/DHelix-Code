@@ -54,7 +54,7 @@ describe("buildAnalysisPrompt", () => {
     expect(result).toContain("test");
     expect(result).toContain("test runner");
 
-    // Step 11: existing .dbcode/rules
+    // Step 11: existing .dhelix/rules
     expect(result).toContain("rules/");
 
     // Step 12: entry point tracing
@@ -76,7 +76,7 @@ describe("buildAnalysisPrompt", () => {
     expect(result).not.toContain("already exists");
   });
 
-  it("should include update instructions when DBCODE.md exists", () => {
+  it("should include update instructions when DHELIX.md exists", () => {
     const result = buildAnalysisPrompt(true, false);
 
     expect(result).toContain("already exists");

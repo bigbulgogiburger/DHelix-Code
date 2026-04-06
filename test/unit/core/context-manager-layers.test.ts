@@ -222,7 +222,7 @@ describe("Layer 3: Post-compaction rehydration", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-rehydrate-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-rehydrate-"));
   });
 
   afterEach(async () => {

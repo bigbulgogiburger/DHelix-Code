@@ -30,7 +30,7 @@ src/
 │   │   ├── useAgentLoop  # Orchestrates agent loop ↔ React state + CheckpointManager
 │   │   ├── useConversation # Immutable conversation state management
 │   │   ├── useTextBuffering # 100ms batched text streaming
-│   │   ├── useKeybindings # Keyboard shortcut registry + ~/.dbcode/keybindings.json
+│   │   ├── useKeybindings # Keyboard shortcut registry + ~/.dhelix/keybindings.json
 │   │   ├── useInput      # Input history with disk persistence
 │   │   ├── useVoice      # Voice recording + transcription
 │   │   └── ...           # usePermissionPrompt, useStreaming
@@ -104,7 +104,7 @@ src/
 │   ├── manager.ts        # Server lifecycle management
 │   ├── manager-connector.ts # Initializes sub-modules (resources, prompts, tools, OAuth)
 │   ├── scope-manager.ts  # 3-scope config: local > project > user
-│   ├── tool-bridge.ts    # MCP tools → dbcode tool registry bridge
+│   ├── tool-bridge.ts    # MCP tools → dhelix tool registry bridge
 │   ├── tool-filter.ts    # Include/exclude MCP tools
 │   ├── tool-search.ts    # Search and filter MCP tools
 │   ├── output-limiter.ts # Token limiting for tool outputs
@@ -112,13 +112,13 @@ src/
 │   ├── managed-config.ts # MCP server configuration
 │   ├── prompts.ts        # MCP prompt integration
 │   ├── resources.ts      # MCP resource handling
-│   ├── serve.ts          # Expose dbcode as MCP server (stub)
+│   ├── serve.ts          # Expose dhelix as MCP server (stub)
 │   └── types.ts          # MCPServerConfig, MCPTransport, JSON-RPC types
 ├── subagents/            # Subagent spawning and team coordination
 │   ├── spawner.ts        # spawnSubagent(), spawnParallelSubagents(), worktree isolation
 │   ├── agent-types.ts    # Built-in: explore, plan, general
 │   ├── definition-types.ts # AgentDefinition structure
-│   ├── definition-loader.ts # Load .dbcode/agents/*.md
+│   ├── definition-loader.ts # Load .dhelix/agents/*.md
 │   ├── team-manager.ts   # Multi-agent team coordination
 │   ├── task-list.ts      # Shared task list between agents
 │   ├── shared-state.ts   # Shared variables between agents
@@ -130,7 +130,7 @@ src/
 │   ├── rules.ts          # Glob pattern matching
 │   ├── modes.ts          # default/acceptEdits/plan/dontAsk/bypassPermissions
 │   ├── session-store.ts  # Session approval cache
-│   ├── persistent-store.ts # ~/.dbcode/settings.json rules
+│   ├── persistent-store.ts # ~/.dhelix/settings.json rules
 │   ├── pattern-parser.ts # Tool(pattern) matching
 │   ├── wildcard.ts       # Glob pattern matching
 │   └── audit-log.ts      # JSONL permission audit logging
@@ -141,7 +141,7 @@ src/
 │   ├── path-filter.ts    # Path traversal + sensitive path blocking
 │   ├── injection-detector.ts # Prompt injection detection
 │   └── output-limiter.ts # Token/character limits
-├── instructions/         # DBCODE.md loader — hierarchical merge
+├── instructions/         # DHELIX.md loader — hierarchical merge
 │   ├── loader.ts         # loadInstructions() with 6-layer merge
 │   ├── parser.ts         # Instruction file parsing
 │   └── path-matcher.ts   # Glob-based path-conditional rules

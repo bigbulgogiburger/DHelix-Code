@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import { rm } from "node:fs/promises";
 import { TaskManager } from "../../../src/core/task-manager.js";
 
-const testDir = join(tmpdir(), "dbcode-task-test-" + Date.now());
+const testDir = join(tmpdir(), "dhelix-task-test-" + Date.now());
 const storePath = join(testDir, "tasks.json");
 
 let manager: TaskManager;

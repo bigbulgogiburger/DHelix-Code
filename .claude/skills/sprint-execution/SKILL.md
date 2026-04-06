@@ -77,7 +77,7 @@ argument-hint: "[plan file path] [sprint number] [--dry-run]"
 
 **팀 생성 절차:**
 
-1. `TeamCreate`로 팀 생성 (이름: `dbcode-sprint-{N}`)
+1. `TeamCreate`로 팀 생성 (이름: `dhelix-sprint-{N}`)
 2. 각 작업 그룹에 대해 `TaskCreate`로 태스크 등록
 3. 각 태스크에 대해 `Agent` 도구로 팀원 스폰
 
@@ -86,13 +86,13 @@ argument-hint: "[plan file path] [sprint number] [--dry-run]"
 ```
 - mode: bypassPermissions (자동 실행)
 - run_in_background: true (병렬)
-- team_name: dbcode-sprint-{N}
+- team_name: dhelix-sprint-{N}
 ```
 
 **에이전트 프롬프트 템플릿:**
 
 ```
-당신은 dbcode 프로젝트의 [{역할명}] 개발자입니다.
+당신은 dhelix 프로젝트의 [{역할명}] 개발자입니다.
 
 ## 작업
 {구체적 작업 내용}

@@ -81,7 +81,7 @@ export default function MentionParserPage() {
             />
 
             <Callout type="info" icon="💡">
-              <strong>비유:</strong> 이메일에서 @를 사용해 사람을 태그하는 것처럼, dbcode에서는 @를
+              <strong>비유:</strong> 이메일에서 @를 사용해 사람을 태그하는 것처럼, dhelix에서는 @를
               사용해 파일, URL, MCP 리소스를 태그합니다. 이 파서는 그 태그를 인식하고 구조화된
               데이터로 변환하는 역할입니다.
             </Callout>

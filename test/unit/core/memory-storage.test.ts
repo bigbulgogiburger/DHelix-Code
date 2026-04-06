@@ -21,7 +21,7 @@ describe("memory-storage", () => {
   let tempDir: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-mem-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-mem-test-"));
   });
 
   afterEach(async () => {
@@ -65,7 +65,7 @@ describe("memory-storage", () => {
 
     it("sets globalDir under the user home directory", () => {
       const paths = getMemoryPaths("/any/dir");
-      expect(paths.globalDir).toContain("dbcode");
+      expect(paths.globalDir).toContain("dhelix");
       expect(paths.globalDir).toContain("memory");
     });
   });
@@ -80,7 +80,7 @@ describe("memory-storage", () => {
       await writeMainMemory(config, "# Project Memory\n\nSome notes.");
 
       // Verify the file was created
-      const memDir = join(tempDir, ".dbcode", "memory");
+      const memDir = join(tempDir, ".dhelix", "memory");
       const content = await readFile(join(memDir, "MEMORY.md"), "utf-8");
       expect(content).toBe("# Project Memory\n\nSome notes.");
     });
@@ -142,7 +142,7 @@ describe("memory-storage", () => {
       const config = makeConfig();
       await writeTopicMemory(config, "debugging", "Some debugging notes.");
 
-      const filePath = join(tempDir, ".dbcode", "memory", "debugging.md");
+      const filePath = join(tempDir, ".dhelix", "memory", "debugging.md");
       const content = await readFile(filePath, "utf-8");
       expect(content).toBe("Some debugging notes.");
     });
@@ -151,7 +151,7 @@ describe("memory-storage", () => {
       const config = makeConfig();
       await writeTopicMemory(config, "patterns", "Pattern notes.");
 
-      const filePath = join(tempDir, ".dbcode", "memory", "patterns.md");
+      const filePath = join(tempDir, ".dhelix", "memory", "patterns.md");
       const content = await readFile(filePath, "utf-8");
       expect(content).toBe("Pattern notes.");
     });
@@ -160,7 +160,7 @@ describe("memory-storage", () => {
       const config = makeConfig();
       await writeTopicMemory(config, "patterns.md", "Content.");
 
-      const filePath = join(tempDir, ".dbcode", "memory", "patterns.md");
+      const filePath = join(tempDir, ".dhelix", "memory", "patterns.md");
       const content = await readFile(filePath, "utf-8");
       expect(content).toBe("Content.");
     });
@@ -251,7 +251,7 @@ describe("memory-storage", () => {
 
     it("only returns .md files", async () => {
       const config = makeConfig();
-      const memDir = join(tempDir, ".dbcode", "memory");
+      const memDir = join(tempDir, ".dhelix", "memory");
       await mkdir(memDir, { recursive: true });
       await writeFile(join(memDir, "MEMORY.md"), "notes", "utf-8");
       await writeFile(join(memDir, "notes.txt"), "not markdown", "utf-8");

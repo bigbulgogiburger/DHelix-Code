@@ -75,7 +75,7 @@ describe("linux sandbox", () => {
         ".volta",
         ".rustup",
         ".cargo",
-        ".dbcode",
+        ".dhelix",
         ".claude",
         ".git",
       ];

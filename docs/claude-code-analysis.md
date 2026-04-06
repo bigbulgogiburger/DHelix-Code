@@ -34,10 +34,10 @@ Key sections identified from string analysis:
 | `# Environment`      | Platform, shell, cwd, git status, model info  |
 | `# Instructions`     | Project-specific CLAUDE.md content            |
 
-**Key patterns adopted in dbcode**:
+**Key patterns adopted in dhelix**:
 
 - Section-based prompt assembly with priority ordering
-- Auto-loading project instructions from `.dbcode/DBCODE.md`
+- Auto-loading project instructions from `.dhelix/DHELIX.md`
 - Git context (branch, recent commits) in environment section
 - Tool usage guidelines (when to use Read vs Grep vs Glob)
 
@@ -46,7 +46,7 @@ Key sections identified from string analysis:
 Claude Code uses Anthropic's native `tool_use` format (544 occurrences).
 Identified tools:
 
-| Tool         | Count | dbcode Equivalent |
+| Tool         | Count | dhelix Equivalent |
 | ------------ | ----- | ----------------- |
 | Read         | 51    | `file_read`       |
 | Bash         | 22    | `bash_exec`       |
@@ -61,7 +61,7 @@ Identified tools:
 | AskUser      | 1     | `ask_user`        |
 | TodoWrite    | 2     | (task manager)    |
 
-**Key insight**: Claude Code's core tool set is very similar to dbcode's P0 tools.
+**Key insight**: Claude Code's core tool set is very similar to dhelix's P0 tools.
 The main gaps are WebFetch, WebSearch, and NotebookEdit — all non-critical for MVP.
 
 ## Conversation Flow
@@ -81,21 +81,21 @@ Claude Code handles these HTTP errors:
 - 500: API error (retryable)
 - 529: Overloaded (retryable)
 
-**Adopted in dbcode**: Same classification pattern with OpenAI-equivalent status codes.
+**Adopted in dhelix**: Same classification pattern with OpenAI-equivalent status codes.
 
 ## UI Patterns
 
-- Single-file Ink-based React CLI (similar to dbcode)
+- Single-file Ink-based React CLI (similar to dhelix)
 - Logo/header pinned to scroll buffer
 - Streaming text display with tool call blocks
 - Permission prompts for dangerous operations
 - Status bar with model/token info
 
-## Key Takeaways for dbcode
+## Key Takeaways for dhelix
 
 1. **System prompt structure**: Adopted `# System`, `# Doing tasks`, `# Using your tools` pattern
 2. **Tool-centric architecture**: All capabilities exposed as LLM-callable tools
 3. **Error classification**: Transient vs permanent error handling with retries
 4. **Context management**: Auto-compaction when approaching token limits
-5. **Bundled ripgrep**: Claude Code bundles its own rg binary; dbcode uses fast-glob instead
-6. **Agent tool**: Sub-agent delegation for complex tasks (dbcode has subagent system)
+5. **Bundled ripgrep**: Claude Code bundles its own rg binary; dhelix uses fast-glob instead
+6. **Agent tool**: Sub-agent delegation for complex tasks (dhelix has subagent system)

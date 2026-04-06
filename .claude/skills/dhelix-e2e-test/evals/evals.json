@@ -1,0 +1,297 @@
+{
+  "skill_name": "dhelix-e2e-test",
+  "evals": [
+    {
+      "id": 1,
+      "mode": "project-e2e",
+      "prompt": "dhelix E2E 테스트를 실행해줘. Stack 2 (Spring Boot + React)로 Task Board 프로젝트를 멀티턴으로 만들어줘. /init으로 시작하고, DHELIX.md 규칙을 따르는지 확인해줘. 빌드와 테스트 커버리지 80% 이상 달성해야 해.",
+      "expected_output": "9-turn multi-turn session creating a Spring Boot + React Task Board app with passing build, 80%+ test coverage, and verified DHELIX.md compliance",
+      "files": [],
+      "assertions": [
+        {
+          "name": "dhelix_md_created",
+          "type": "file_exists",
+          "description": "DHELIX.md file is created in project root after /init turn"
+        },
+        {
+          "name": "build_success_backend",
+          "type": "command_exit_code",
+          "description": "Backend build (./gradlew build) succeeds with exit code 0"
+        },
+        {
+          "name": "build_success_frontend",
+          "type": "command_exit_code",
+          "description": "Frontend build (npm run build) succeeds with exit code 0"
+        },
+        {
+          "name": "test_coverage_80",
+          "type": "numeric_threshold",
+          "description": "Test coverage is >= 80% for both backend and frontend"
+        },
+        {
+          "name": "dhelix_read_count",
+          "type": "numeric_threshold",
+          "description": "DHELIX.md is read by the agent at least 2 times during the session"
+        },
+        {
+          "name": "all_turns_complete",
+          "type": "boolean",
+          "description": "All 9 turns complete without error"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "mode": "project-e2e",
+      "prompt": "Stack 1 (Spring MVC + JSP + JavaScript)로 Todo Manager를 만드는 E2E 테스트를 실행해줘. DHELIX.md에 JSP에서 scriptlet 사용 금지를 명시하고, 실제로 지켜지는지 확인해줘. 테스트 커버리지 80% 필수.",
+      "expected_output": "9-turn session creating Spring MVC + JSP Todo Manager. No scriptlets in JSP files. JaCoCo coverage >= 80%. DHELIX.md conventions verified.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "no_scriptlets_in_jsp",
+          "type": "pattern_absence",
+          "description": "No <% %> scriptlet tags found in any .jsp file"
+        },
+        {
+          "name": "dhelix_md_created",
+          "type": "file_exists",
+          "description": "DHELIX.md exists with scriptlet prohibition rule"
+        },
+        {
+          "name": "maven_build_success",
+          "type": "command_exit_code",
+          "description": "mvn clean package succeeds"
+        },
+        {
+          "name": "jacoco_coverage_80",
+          "type": "numeric_threshold",
+          "description": "JaCoCo reports >= 80% line coverage"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "mode": "project-e2e",
+      "prompt": "Flutter WebView + Spring Boot (Stack 5)로 Smart Notes 앱을 멀티턴으로 만들어줘. /init 필수, DHELIX.md에 JavaScript bridge 규칙 명시. 백엔드는 Thymeleaf + REST API 둘 다. 빌드 성공 + 80% 커버리지.",
+      "expected_output": "10-turn session creating Flutter WebView + Spring Boot Smart Notes app. Both Thymeleaf pages and REST API. JavaScript bridge working. Build passes, coverage >= 80%.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "thymeleaf_templates_exist",
+          "type": "file_exists",
+          "description": "Thymeleaf .html templates exist in src/main/resources/templates/"
+        },
+        {
+          "name": "rest_api_exists",
+          "type": "file_exists",
+          "description": "REST controller exists under api/ package"
+        },
+        {
+          "name": "flutter_webview_configured",
+          "type": "file_contains",
+          "description": "Flutter app has webview_flutter dependency and WebView widget"
+        },
+        {
+          "name": "js_bridge_implemented",
+          "type": "file_contains",
+          "description": "JavaScript bridge (FlutterBridge or equivalent) is implemented"
+        },
+        {
+          "name": "backend_build_success",
+          "type": "command_exit_code",
+          "description": "./gradlew build succeeds"
+        },
+        {
+          "name": "coverage_80",
+          "type": "numeric_threshold",
+          "description": "Backend coverage >= 80%"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "mode": "conversation-quality",
+      "scenario": "context-retention",
+      "prompt": "대화 품질 테스트를 실행해줘. 시나리오 1 (Context Retention) — 에이전트가 이전 턴의 정보를 정확히 기억하는지 검증해줘. config.json 만들고 수정한 뒤, 원래 값을 기억하는지 확인.",
+      "expected_output": "5-turn session testing context retention. Agent correctly recalls original values after modifications. Cross-file consistency maintained.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "original_value_recalled",
+          "type": "response_contains",
+          "description": "Agent's Turn 4 response mentions original maxRetries value (3)"
+        },
+        {
+          "name": "new_field_recalled",
+          "type": "response_contains",
+          "description": "Agent's Turn 4 response mentions 'logLevel' as the new field"
+        },
+        {
+          "name": "config_updated",
+          "type": "file_contains",
+          "description": "config.json has maxRetries: 5 and logLevel: 'debug' after Turn 3"
+        },
+        {
+          "name": "readme_consistent",
+          "type": "file_consistency",
+          "description": "README.md values match config.json after Turn 5"
+        },
+        {
+          "name": "no_hallucination",
+          "type": "response_absence",
+          "description": "Agent does not invent values not mentioned in any turn"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "mode": "conversation-quality",
+      "scenario": "tool-coherence",
+      "prompt": "대화 품질 테스트를 실행해줘. 시나리오 2 (Tool Call Coherence) — 에이전트가 도구를 논리적 순서로 사용하는지 검증. 파일 수정 전 반드시 읽기, file_edit 우선 사용 등.",
+      "expected_output": "5-turn session testing tool call patterns. Agent reads files before editing, uses file_edit over file_write for modifications, no redundant tool calls.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "read_before_edit",
+          "type": "tool_sequence",
+          "description": "Every file_edit is preceded by a file_read of the same file"
+        },
+        {
+          "name": "edit_over_write",
+          "type": "tool_present",
+          "description": "Agent uses file_edit (not file_write) for modifying existing files"
+        },
+        {
+          "name": "no_redundant_reads",
+          "type": "no_redundant_tools",
+          "description": "No duplicate consecutive reads of the same file without reason"
+        },
+        {
+          "name": "all_turns_complete",
+          "type": "boolean",
+          "description": "All 5 turns complete without error"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "mode": "conversation-quality",
+      "scenario": "error-recovery",
+      "prompt": "대화 품질 테스트를 실행해줘. 시나리오 3 (Error Recovery) — 에이전트가 실패 상황에서 자체 복구하는 능력을 검증. 테스트 실패 시 원인 파악하고 수정하는지 확인.",
+      "expected_output": "5-turn session testing error recovery. Agent diagnoses failures, applies fixes, retries successfully. No infinite retry loops.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "error_diagnosed",
+          "type": "response_contains",
+          "description": "Agent identifies root cause when a command fails"
+        },
+        {
+          "name": "fix_applied",
+          "type": "tool_present",
+          "description": "Agent uses tools to fix the issue (not just retry)"
+        },
+        {
+          "name": "final_tests_pass",
+          "type": "command_exit_code",
+          "description": "Final test run has 0 failures"
+        },
+        {
+          "name": "bounded_iterations",
+          "type": "numeric_threshold",
+          "description": "No turn exceeds 15 iterations"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "mode": "conversation-quality",
+      "scenario": "instruction-adherence",
+      "prompt": "대화 품질 테스트를 실행해줘. 시나리오 4 (Instruction Adherence) — 에이전트가 세션 전반에 걸쳐 코딩 규칙(camelCase, JSDoc, const, no console.log)을 일관되게 따르는지 검증.",
+      "expected_output": "5-turn session testing instruction adherence. All generated .ts files follow 4 rules consistently across turns. Self-review in Turn 5 is accurate.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "jsdoc_present",
+          "type": "pattern_present",
+          "description": "All functions in .ts files have JSDoc comments"
+        },
+        {
+          "name": "no_console_log",
+          "type": "pattern_absence",
+          "description": "No console.log in any .ts file"
+        },
+        {
+          "name": "const_preferred",
+          "type": "pattern_absence",
+          "description": "No 'let' where 'const' could be used"
+        },
+        {
+          "name": "self_review_accurate",
+          "type": "response_contains",
+          "description": "Turn 5 self-review correctly identifies any violations"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "mode": "conversation-quality",
+      "scenario": "progressive-complexity",
+      "prompt": "대화 품질 테스트를 실행해줘. 시나리오 5 (Progressive Complexity) — 단순 계산기에서 연산자 우선순위/괄호까지 점진적으로 복잡해지는 요구사항을 처리하는지 검증.",
+      "expected_output": "5-turn session testing progressive complexity. Calculator evolves from basic ops to operator precedence with parentheses. All features backward compatible. Tests cover all turns.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "backward_compatible",
+          "type": "file_contains",
+          "description": "Original 2-argument calculate() still works after Turn 3-4"
+        },
+        {
+          "name": "all_features_present",
+          "type": "file_contains",
+          "description": "Final code supports basic ops, modulo, power, chaining, precedence, parentheses"
+        },
+        {
+          "name": "tests_pass",
+          "type": "command_exit_code",
+          "description": "All tests pass in Turn 5"
+        },
+        {
+          "name": "cumulative_test_coverage",
+          "type": "file_contains",
+          "description": "Tests cover scenarios from ALL turns, not just latest"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "mode": "conversation-quality",
+      "scenario": "contradiction-handling",
+      "prompt": "대화 품질 테스트를 실행해줘. 시나리오 6 (Contradiction Handling) — 사용자가 이전 턴과 모순되는 지시를 줄 때 에이전트의 대응을 검증. API prefix와 인증 방식 변경 후 복원.",
+      "expected_output": "5-turn session testing contradiction handling. Agent applies latest-wins, cleans up stale code, acknowledges contradictions transparently.",
+      "files": [],
+      "assertions": [
+        {
+          "name": "latest_wins",
+          "type": "file_contains",
+          "description": "After Turn 5, JWT auth is used (latest instruction)"
+        },
+        {
+          "name": "prefix_correct",
+          "type": "file_contains",
+          "description": "After Turn 5, /v2/ prefix is used (not /api/v1/)"
+        },
+        {
+          "name": "no_stale_code",
+          "type": "pattern_absence",
+          "description": "No leftover session-based auth code after Turn 5"
+        },
+        {
+          "name": "doc_code_sync",
+          "type": "file_consistency",
+          "description": "api-design.md matches server.ts after final turn"
+        }
+      ]
+    }
+  ]
+}

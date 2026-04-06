@@ -66,10 +66,10 @@ export default function AgentSkillsLoaderPage() {
               chart={`flowchart TB
   DEF["Agent Definition<br/><small>.md 프론트매터</small>"]
   LOADER["AgentSkillsLoader<br/><small>agent-skills-loader.ts</small>"]
-  DIR1[".dbcode/commands/<br/><small>프로젝트 명령 (최우선)</small>"]
-  DIR2[".dbcode/skills/<br/><small>프로젝트 스킬</small>"]
-  DIR3["~/.dbcode/commands/<br/><small>사용자 전역 명령</small>"]
-  DIR4["~/.dbcode/skills/<br/><small>사용자 전역 스킬</small>"]
+  DIR1[".dhelix/commands/<br/><small>프로젝트 명령 (최우선)</small>"]
+  DIR2[".dhelix/skills/<br/><small>프로젝트 스킬</small>"]
+  DIR3["~/.dhelix/commands/<br/><small>사용자 전역 명령</small>"]
+  DIR4["~/.dhelix/skills/<br/><small>사용자 전역 스킬</small>"]
   SKILL["LoadedSkill[]<br/><small>name + content</small>"]
   PROMPT["buildSkillPromptSection()<br/><small>마크다운 텍스트 변환</small>"]
   SYS["서브에이전트 시스템 프롬프트"]
@@ -304,12 +304,12 @@ export default function AgentSkillsLoaderPage() {
             <CodeBlock>
               <span className="cm">{"// 파일 구조 예시:"}</span>
               {"\n"}
-              <span className="cm">{"// .dbcode/skills/python-testing.md  ← 프로젝트 전용"}</span>
+              <span className="cm">{"// .dhelix/skills/python-testing.md  ← 프로젝트 전용"}</span>
               {"\n"}
-              <span className="cm">{"// ~/.dbcode/skills/python-testing.md ← 전역 기본값"}</span>
+              <span className="cm">{"// ~/.dhelix/skills/python-testing.md ← 전역 기본값"}</span>
               {"\n"}
               {"\n"}
-              <span className="cm">{"// 항상 프로젝트 .dbcode/skills/의 스킬이 우선 로드됨"}</span>
+              <span className="cm">{"// 항상 프로젝트 .dhelix/skills/의 스킬이 우선 로드됨"}</span>
               {"\n"}
               <span className="kw">const</span> <span className="prop">skills</span> ={" "}
               <span className="kw">await</span> <span className="fn">loadSkillsForAgent</span>([
@@ -317,7 +317,7 @@ export default function AgentSkillsLoaderPage() {
               <span className="prop">cwd</span>);
               {"\n"}
               <span className="cm">
-                {"// → skills[0].content 는 .dbcode/skills/python-testing.md 내용"}
+                {"// → skills[0].content 는 .dhelix/skills/python-testing.md 내용"}
               </span>
             </CodeBlock>
 
@@ -337,7 +337,7 @@ export default function AgentSkillsLoaderPage() {
                     <span>workingDirectory</span>
                     {"}"}
                   </code>
-                  <code className="text-cyan-600">/.dbcode/commands/</code> — 프로젝트 명령 디렉토리
+                  <code className="text-cyan-600">/.dhelix/commands/</code> — 프로젝트 명령 디렉토리
                   (최우선)
                 </li>
                 <li>
@@ -346,14 +346,14 @@ export default function AgentSkillsLoaderPage() {
                     <span>workingDirectory</span>
                     {"}"}
                   </code>
-                  <code className="text-cyan-600">/.dbcode/skills/</code> — 프로젝트 스킬 디렉토리
+                  <code className="text-cyan-600">/.dhelix/skills/</code> — 프로젝트 스킬 디렉토리
                 </li>
                 <li>
-                  <code className="text-cyan-600">~/.dbcode/commands/</code> — 사용자 전역 명령
+                  <code className="text-cyan-600">~/.dhelix/commands/</code> — 사용자 전역 명령
                   디렉토리
                 </li>
                 <li>
-                  <code className="text-cyan-600">~/.dbcode/skills/</code> — 사용자 전역 스킬
+                  <code className="text-cyan-600">~/.dhelix/skills/</code> — 사용자 전역 스킬
                   디렉토리 (최하위)
                 </li>
               </ol>
@@ -524,10 +524,10 @@ export default function AgentSkillsLoaderPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 4개의 검색 경로가 올바른지 확인하세요:{" "}
-                <code className="text-cyan-600">.dbcode/commands/</code>,{" "}
-                <code className="text-cyan-600">.dbcode/skills/</code>,{" "}
-                <code className="text-cyan-600">~/.dbcode/commands/</code>,{" "}
-                <code className="text-cyan-600">~/.dbcode/skills/</code>. 파일명이{" "}
+                <code className="text-cyan-600">.dhelix/commands/</code>,{" "}
+                <code className="text-cyan-600">.dhelix/skills/</code>,{" "}
+                <code className="text-cyan-600">~/.dhelix/commands/</code>,{" "}
+                <code className="text-cyan-600">~/.dhelix/skills/</code>. 파일명이{" "}
                 <code className="text-cyan-600">{"{스킬이름}.md"}</code> 형태인지(확장자 .md 포함)
                 확인하세요. 또한 스킬 파일의 프론트매터에{" "}
                 <code className="text-cyan-600">name</code> 필드가 있는지 확인하세요.

@@ -1,4 +1,4 @@
-# Security & Guardrails Architecture Research for dbcode
+# Security & Guardrails Architecture Research for dhelix
 
 > AI Coding Assistant CLI Tool - Security Architecture for Local LLM (Closed Network) & External LLM
 
@@ -34,7 +34,7 @@
     [CLI Input]                    [Config Files]
          |                                |
 +-----------------------------------------------------+
-|              dbcode CLI Process                       |
+|              dhelix CLI Process                       |
 |  +-------+  +----------+  +---------+  +----------+  |
 |  | Prompt |  | Tool     |  | File    |  | Code     |  |
 |  | Engine |  | Registry |  | Access  |  | Executor |  |
@@ -86,7 +86,7 @@
 
 Reference: [OWASP Top 10 for LLM Applications 2025](https://genai.owasp.org/resource/owasp-top-10-for-llm-applications-2025/)
 
-| #     | Vulnerability                    | dbcode Relevance                                            | Mitigation Priority |
+| #     | Vulnerability                    | dhelix Relevance                                            | Mitigation Priority |
 | ----- | -------------------------------- | ----------------------------------------------------------- | ------------------- |
 | LLM01 | Prompt Injection                 | **Critical** - Files read by agent can contain injections   | P0                  |
 | LLM02 | Sensitive Information Disclosure | **Critical** - Code context sent to LLM may contain secrets | P0                  |
@@ -134,7 +134,7 @@ Layer 0: OS-Level Sandbox (bubblewrap / seatbelt / AppContainer)
          | Execution Boundary |
 +------------------------------------------------------------------+
 | TRUSTED ZONE                                                      |
-|  - dbcode core process                                            |
+|  - dhelix core process                                            |
 |  - Configuration (signed/validated)                               |
 |  - Audit log writer                                               |
 +------------------------------------------------------------------+
@@ -180,7 +180,7 @@ interface PromptStructure {
   systemPrompt: string;
   // Priority 2: Tool/capability definitions (config-defined)
   toolDefinitions: ToolDefinition[];
-  // Priority 3: Project-level rules (.dbcode/rules)
+  // Priority 3: Project-level rules (.dhelix/rules)
   projectRules: string;
   // Priority 4: User input (UNTRUSTED)
   userMessage: string;
@@ -296,7 +296,7 @@ function scanForInjections(content: string, source: string): InjectionScanResult
 
 ### 5.1 Cross-Platform Strategy
 
-dbcode must sandbox all code execution (shell commands, scripts, spawned processes) on both Windows and macOS.
+dhelix must sandbox all code execution (shell commands, scripts, spawned processes) on both Windows and macOS.
 
 | Platform  | Primary Mechanism               | Fallback                   |
 | --------- | ------------------------------- | -------------------------- |
@@ -309,7 +309,7 @@ dbcode must sandbox all code execution (shell commands, scripts, spawned process
 
 Reference: [agent-seatbelt-sandbox](https://github.com/michaelneale/agent-seatbelt-sandbox), [Anthropic's Claude Code sandboxing](https://www.anthropic.com/engineering/claude-code-sandboxing)
 
-**Sandbox Profile** (`dbcode-sandbox.sb`):
+**Sandbox Profile** (`dhelix-sandbox.sb`):
 
 ```scheme
 (version 1)
@@ -357,7 +357,7 @@ import { spawn } from "node:child_process";
 import path from "node:path";
 
 function spawnSandboxed(command: string, args: string[], projectDir: string): ChildProcess {
-  const profilePath = path.join(__dirname, "dbcode-sandbox.sb");
+  const profilePath = path.join(__dirname, "dhelix-sandbox.sb");
   const homeDir = process.env.HOME ?? "/Users/unknown";
 
   const sandboxArgs = [
@@ -432,8 +432,8 @@ function buildWindowsSanitizedEnv(projectDir: string): Record<string, string> {
   return {
     PATH: "C:\\Windows\\System32;C:\\Windows",
     USERPROFILE: projectDir,
-    TEMP: path.join(projectDir, ".dbcode", "tmp"),
-    TMP: path.join(projectDir, ".dbcode", "tmp"),
+    TEMP: path.join(projectDir, ".dhelix", "tmp"),
+    TMP: path.join(projectDir, ".dhelix", "tmp"),
     SYSTEMROOT: "C:\\Windows",
   };
 }
@@ -456,7 +456,7 @@ function spawnDockerSandboxed(command: string, args: string[], projectDir: strin
     "/workspace",
     "--user",
     "1000:1000", // Non-root user
-    "dbcode-sandbox:latest", // Pre-built sandbox image
+    "dhelix-sandbox:latest", // Pre-built sandbox image
     command,
     ...args,
   ];
@@ -576,7 +576,7 @@ function classifyCommand(command: string, args: string[]): CommandRisk {
 
 ### 6.1 Cross-Platform Path Handling
 
-Windows uses backslash (`\`) and drive letters (`C:\`), macOS uses forward slash (`/`). dbcode must normalize all paths.
+Windows uses backslash (`\`) and drive letters (`C:\`), macOS uses forward slash (`/`). dhelix must normalize all paths.
 
 ```typescript
 import path from "node:path";
@@ -612,7 +612,7 @@ const DEFAULT_POLICY: FileAccessPolicy = {
 
 ### 6.2 Path Traversal Prevention
 
-CVE-2025-27210 demonstrated Windows-specific path traversal via reserved device names. dbcode must defend against this and other traversal attacks.
+CVE-2025-27210 demonstrated Windows-specific path traversal via reserved device names. dhelix must defend against this and other traversal attacks.
 
 ```typescript
 async function validatePath(
@@ -704,7 +704,7 @@ async function validatePath(
 }
 ```
 
-### 6.3 Ignore File Support (`.dbcodeignore`)
+### 6.3 Ignore File Support (`.dhelixignore`)
 
 Similar to `.gitignore` and Copilot's `.copilotignore`:
 
@@ -726,12 +726,12 @@ function loadIgnoreRules(projectDir: string): ReturnType<typeof ignore> {
   ]);
 
   // Load project-specific ignores
-  const ignorePath = path.join(projectDir, ".dbcodeignore");
+  const ignorePath = path.join(projectDir, ".dhelixignore");
   try {
     const content = fs.readFileSync(ignorePath, "utf-8");
     ig.add(content);
   } catch {
-    // No .dbcodeignore file, use defaults only
+    // No .dhelixignore file, use defaults only
   }
 
   return ig;
@@ -1046,7 +1046,7 @@ class AuditLogger {
   private currentLogFile: string;
 
   constructor(projectDir: string) {
-    this.logDir = path.join(projectDir, ".dbcode", "audit");
+    this.logDir = path.join(projectDir, ".dhelix", "audit");
     this.currentLogFile = this.getLogFileName();
   }
 
@@ -1536,7 +1536,7 @@ interface SecurityProfile {
   fileAccess: {
     allowedRoots: string[];
     blockedPatterns: string[];
-    ignoreFile: string; // .dbcodeignore path
+    ignoreFile: string; // .dhelixignore path
     maxFileSize: number;
   };
   audit: {
@@ -1652,7 +1652,7 @@ function createSecureHttpsAgent(config: SecureRequestConfig): https.Agent {
 
 ### 12.1 SOC 2 Type II Requirements
 
-| Trust Service Criteria   | dbcode Implementation                                                      |
+| Trust Service Criteria   | dhelix Implementation                                                      |
 | ------------------------ | -------------------------------------------------------------------------- |
 | **Security**             | Sandbox isolation, permission system, secret scanning, TLS                 |
 | **Availability**         | Graceful degradation (local LLM fallback), health checks                   |
@@ -1693,7 +1693,7 @@ interface ComplianceExport {
 function toCommonEventFormat(entry: AuditLogEntry): string {
   const severity = entry.outcome.status === "blocked" ? 8 : 3;
   return [
-    `CEF:0|dbcode|dbcode-cli|1.0.0`,
+    `CEF:0|dhelix|dhelix-cli|1.0.0`,
     `|${entry.action.type}|${entry.action.type}|${severity}`,
     `|src=${entry.actor.id}`,
     `dst=${entry.action.target}`,
@@ -1737,14 +1737,14 @@ Source: [GitHub Copilot Trust Center](https://copilot.github.trust.page/)
 - **Audit logs**: Exportable audit logs through GitHub Enterprise
 - **User engagement data**: Kept for 2 years for analytics
 
-### 13.4 Key Lessons for dbcode
+### 13.4 Key Lessons for dhelix
 
 | Lesson                                   | Source                | Action Item                                              |
 | ---------------------------------------- | --------------------- | -------------------------------------------------------- |
 | OS-level sandboxing is essential         | Claude Code           | Implement Seatbelt (macOS) + process-level (Windows)     |
 | MCP is a significant attack vector       | Cursor CVE-2025-54135 | Validate all MCP tool responses, restrict config writes  |
 | Privacy mode should be default for teams | Cursor, Copilot       | Implement privacy mode with no data retention            |
-| `.ignore` files are expected by users    | Copilot               | Implement `.dbcodeignore`                                |
+| `.ignore` files are expected by users    | Copilot               | Implement `.dhelixignore`                                |
 | Audit logs are enterprise requirement    | Copilot, Cursor       | Structured audit logging from day one                    |
 | Permission fatigue reduces security      | Claude Code           | Sandbox reduces prompts by 84% - implement sandbox first |
 
@@ -1757,9 +1757,9 @@ Source: [GitHub Copilot Trust Center](https://copilot.github.trust.page/)
 | Library  | Purpose                             | Cross-Platform                               | Notes                                     |
 | -------- | ----------------------------------- | -------------------------------------------- | ----------------------------------------- |
 | `keytar` | OS credential storage               | Yes (macOS Keychain, Win Credential Manager) | For API key storage                       |
-| `ignore` | `.gitignore`-style pattern matching | Yes                                          | For `.dbcodeignore`                       |
+| `ignore` | `.gitignore`-style pattern matching | Yes                                          | For `.dhelixignore`                       |
 | `zod`    | Input validation / schema           | Yes                                          | Validate all user input and config        |
-| `helmet` | HTTP security headers               | Yes                                          | If dbcode exposes HTTP (e.g., LSP server) |
+| `helmet` | HTTP security headers               | Yes                                          | If dhelix exposes HTTP (e.g., LSP server) |
 | `nanoid` | Secure ID generation                | Yes                                          | For session/audit log IDs                 |
 | `pino`   | Structured logging                  | Yes                                          | High-performance JSON logging             |
 | `semver` | Version management                  | Yes                                          | For dependency version checks             |
@@ -1807,7 +1807,7 @@ Source: [GitHub Copilot Trust Center](https://copilot.github.trust.page/)
 2. **File System Access Control**
 
    - Path validation with traversal prevention (Windows device names, symlinks)
-   - `.dbcodeignore` support
+   - `.dhelixignore` support
    - Allowed roots enforcement (project directory only by default)
 
 3. **Pre-Send Secret Scanning** (external LLM mode)

@@ -25,7 +25,7 @@ export default function CmdDoctorPage() {
               <LayerBadge layer="leaf" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              dbcode 실행 환경의 12가지 항목을 자동 점검하는 환경 진단 명령어입니다.
+              dhelix 실행 환경의 12가지 항목을 자동 점검하는 환경 진단 명령어입니다.
             </p>
           </div>
         </RevealOnScroll>
@@ -41,7 +41,7 @@ export default function CmdDoctorPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">/doctor</code>는 dbcode가 제대로 동작하지 않을 때
+                <code className="text-cyan-600">/doctor</code>는 dhelix가 제대로 동작하지 않을 때
                 원인을 빠르게 진단하기 위한 명령어입니다. Node.js 버전, Git 설치 상태, 모델 설정,
                 API 키, 디스크 공간, 설정 디렉토리 권한, 구문 하이라이터, LLM 연결, 메모리 사용량,
                 토큰 캐시, 세션 잠금 등 총 12가지 항목을 순차적으로 점검합니다.
@@ -68,7 +68,7 @@ export default function CmdDoctorPage() {
   DOC["doctorCommand<br/><small>doctor.ts</small>"]
   ENV["환경 점검 12항목"]
   TOKEN["Token Cache<br/><small>token-counter.ts</small>"]
-  FS["파일시스템<br/><small>~/.dbcode, git, df</small>"]
+  FS["파일시스템<br/><small>~/.dhelix, git, df</small>"]
   NET["네트워크<br/><small>LLM API fetch</small>"]
 
   USER -->|"슬래시 명령"| REG
@@ -88,7 +88,7 @@ export default function CmdDoctorPage() {
 
             <Callout type="info" icon="💡">
               <strong>비유:</strong> 병원의 종합 건강검진을 떠올리세요. 혈압, 시력, 혈액 검사 등
-              여러 항목을 한 번에 체크하듯, <code>/doctor</code>는 dbcode의 &quot;건강 상태&quot;를
+              여러 항목을 한 번에 체크하듯, <code>/doctor</code>는 dhelix의 &quot;건강 상태&quot;를
               12가지 관점에서 한 번에 확인합니다.
             </Callout>
           </section>
@@ -221,14 +221,14 @@ export default function CmdDoctorPage() {
               </p>
               <p>
                 <strong className="text-gray-900">5. API key</strong> &mdash;
-                OPENAI/DBCODE/ANTHROPIC API 키 존재 여부. 없으면 warn
+                OPENAI/DHELIX/ANTHROPIC API 키 존재 여부. 없으면 warn
               </p>
               <p>
                 <strong className="text-gray-900">6. Disk space</strong> &mdash;{" "}
                 <code>df -h .</code>로 여유 공간 확인
               </p>
               <p>
-                <strong className="text-gray-900">7. Config directory</strong> &mdash; ~/.dbcode
+                <strong className="text-gray-900">7. Config directory</strong> &mdash; ~/.dhelix
                 디렉토리 존재 및 쓰기 권한
               </p>
               <p>
@@ -304,7 +304,7 @@ export default function CmdDoctorPage() {
               {"\n"}
               <span className="cm">{"// 출력 예시"}</span>
               {"\n"}
-              <span className="prop">dbcode Doctor</span>
+              <span className="prop">dhelix Doctor</span>
               {"\n"}
               <span className="prop">=============</span>
               {"\n"}
@@ -331,7 +331,7 @@ export default function CmdDoctorPage() {
               {"\n"}
               {"  "}
               <span className="str">✓</span> <span className="prop">Config directory</span>:
-              ~/.dbcode (writable)
+              ~/.dhelix (writable)
               {"\n"}
               {"  "}
               <span className="str">✓</span> <span className="prop">Syntax highlighter</span>: Shiki
@@ -374,7 +374,7 @@ export default function CmdDoctorPage() {
             <CodeBlock>
               <span className="cm">{"// 문제가 있는 출력 예시"}</span>
               {"\n"}
-              <span className="prop">dbcode Doctor</span>
+              <span className="prop">dhelix Doctor</span>
               {"\n"}
               <span className="prop">=============</span>
               {"\n"}
@@ -395,7 +395,7 @@ export default function CmdDoctorPage() {
               {"\n"}
               {"    "}
               <span className="cm">
-                Fix: Set OPENAI_API_KEY, DBCODE_API_KEY, or ANTHROPIC_API_KEY
+                Fix: Set OPENAI_API_KEY, DHELIX_API_KEY, or ANTHROPIC_API_KEY
               </span>
               {"\n"}
               {"  "}
@@ -403,7 +403,7 @@ export default function CmdDoctorPage() {
               MB, Heap: ...
               {"\n"}
               {"    "}
-              <span className="cm">Fix: Consider restarting dbcode to free memory</span>
+              <span className="cm">Fix: Consider restarting dhelix to free memory</span>
               {"\n"}
               {"\n"}
               <span className="prop">9/12 checks passed, 2 warnings, 1 failure</span>
@@ -546,7 +546,7 @@ export default function CmdDoctorPage() {
             <div className="bg-white border border-gray-200 rounded-xl p-5 mt-4 text-[13px] text-gray-600 space-y-2.5">
               <p>
                 <strong className="text-gray-900">ok/warn/fail 3단계 시스템:</strong> ok는 정상,
-                warn은 동작에 문제는 없지만 주의가 필요, fail은 dbcode 실행에 지장이 있는 심각한
+                warn은 동작에 문제는 없지만 주의가 필요, fail은 dhelix 실행에 지장이 있는 심각한
                 문제입니다.
               </p>
               <p>
@@ -586,7 +586,7 @@ export default function CmdDoctorPage() {
                 <li>
                   <strong>API 키 미설정:</strong>{" "}
                   <code className="text-cyan-600">OPENAI_API_KEY</code>,
-                  <code className="text-cyan-600">DBCODE_API_KEY</code>, 또는
+                  <code className="text-cyan-600">DHELIX_API_KEY</code>, 또는
                   <code className="text-cyan-600">ANTHROPIC_API_KEY</code> 환경변수를 확인하세요.
                 </li>
                 <li>
@@ -607,7 +607,7 @@ export default function CmdDoctorPage() {
                 &quot;Memory usage가 warn인데 어떻게 하나요?&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                RSS가 512MB를 넘거나 힙 사용률이 90%를 초과하면 warn이 표시됩니다. dbcode를
+                RSS가 512MB를 넘거나 힙 사용률이 90%를 초과하면 warn이 표시됩니다. dhelix를
                 재시작하면 메모리가 해제됩니다. 긴 세션을 사용 중이라면{" "}
                 <code className="text-cyan-600">/compact</code>로 컨텍스트를 압축하는 것도 도움이
                 됩니다.
@@ -621,7 +621,7 @@ export default function CmdDoctorPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
                 세션 잠금 파일이 30분 이상 오래되면 stale(유효기간 경과) 경고가 표시됩니다. 이전
-                세션이 비정상 종료되었을 가능성이 있습니다. dbcode를 재시작하면 잠금이 갱신됩니다.
+                세션이 비정상 종료되었을 가능성이 있습니다. dhelix를 재시작하면 잠금이 갱신됩니다.
               </p>
             </div>
 
@@ -631,8 +631,8 @@ export default function CmdDoctorPage() {
                 &quot;Config directory가 fail이에요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">~/.dbcode</code> 디렉토리에 읽기/쓰기 권한이
-                없습니다. 터미널에서 <code className="text-cyan-600">chmod u+rw ~/.dbcode</code>를
+                <code className="text-cyan-600">~/.dhelix</code> 디렉토리에 읽기/쓰기 권한이
+                없습니다. 터미널에서 <code className="text-cyan-600">chmod u+rw ~/.dhelix</code>를
                 실행하여 권한을 복구하세요.
               </p>
             </div>
@@ -666,7 +666,7 @@ export default function CmdDoctorPage() {
                   name: "config-loader.ts",
                   slug: "config-loader",
                   relation: "sibling",
-                  desc: "~/.dbcode 설정 디렉토리와 config.json을 관리하는 모듈",
+                  desc: "~/.dhelix 설정 디렉토리와 config.json을 관리하는 모듈",
                 },
               ]}
             />

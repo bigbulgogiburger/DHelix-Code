@@ -6,9 +6,9 @@
  *
  * 설정 우선순위 (높은 것이 낮은 것을 덮어씀):
  * 5. CLI 플래그 (--model gpt-4o)
- * 4. 환경변수 (DBCODE_MODEL=gpt-4o)
- * 3. 프로젝트 설정 (.dbcode/config.json)
- * 2. 사용자 설정 (~/.dbcode/config.json)
+ * 4. 환경변수 (DHELIX_MODEL=gpt-4o)
+ * 3. 프로젝트 설정 (.dhelix/config.json)
+ * 2. 사용자 설정 (~/.dhelix/config.json)
  * 1. 기본값 (src/config/defaults.ts)
  */
 
@@ -28,9 +28,9 @@ export type AppConfig = z.infer<typeof configSchema>;
  *
  * 우선순위 순서 (높은 것이 앞):
  * - "cli-flags": 명령줄 플래그 (--model, --verbose 등)
- * - "environment": 환경변수 (DBCODE_MODEL, OPENAI_API_KEY 등)
- * - "project": 프로젝트 설정 파일 (.dbcode/config.json)
- * - "user": 사용자 전역 설정 파일 (~/.dbcode/config.json)
+ * - "environment": 환경변수 (DHELIX_MODEL, OPENAI_API_KEY 등)
+ * - "project": 프로젝트 설정 파일 (.dhelix/config.json)
+ * - "user": 사용자 전역 설정 파일 (~/.dhelix/config.json)
  * - "defaults": 하드코딩된 기본값 (defaults.ts)
  */
 export type ConfigSource = "cli-flags" | "environment" | "project" | "user" | "defaults";

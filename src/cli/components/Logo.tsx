@@ -1,7 +1,7 @@
 /**
- * Logo.tsx — dbcode 브랜드 로고를 터미널에 표시하는 컴포넌트
+ * Logo.tsx — Dhelix Code 브랜드 로고를 터미널에 표시하는 컴포넌트
  *
- * DB 로고를 유니코드 문자와 ANSI 색상을 사용하여 터미널에 렌더링합니다.
+ * Dhelix 로고를 유니코드 문자와 ANSI 색상을 사용하여 터미널에 렌더링합니다.
  * 원본 SVG를 chafa(이미지→유니코드 변환 도구)로 변환한 결과입니다.
  *
  * 두 가지 렌더링 방식:
@@ -20,20 +20,21 @@ interface Segment {
 }
 
 /**
- * DB 브랜드 로고 데이터 — 유니코드 블록 문자로 구성
+ * Dhelix 브랜드 로고 데이터 — 유니코드 블록 문자로 구성
  *
- * 3가지 도형: 주황색 반원(왼쪽), 파란색 물방울(위), 초록색 물방울(오른쪽)
- * 그리고 "DB" 텍스트 — 원본의 그라데이션 색상을 보존
+ * Double Helix(이중나선) 모티프의 로고
+ * 시안/청록 그라데이션의 DNA 나선 구조
  */
 
 // prettier-ignore
 const DB_LOGO: readonly (readonly Segment[])[] = [
-  [{ text: "   " }, { text: "\u2595", color: "#0C7093" }, { text: "\u2594", color: "#0D84B4", bgColor: "#10A2DD" }, { text: "\u2594", bgColor: "#0A85C4" }, { text: "\u2584", color: "#04619D" }],
-  [{ text: "   " }, { text: "\u2595", color: "#12A4D7" }, { text: "\u2595", color: "#1499D3", bgColor: "#11A3DD" }, { text: "\u2581", color: "#409AB2", bgColor: "#0A8BCC" }, { text: "\u258c", color: "#0679C0", bgColor: "#036EB9" }, { text: "\u258e  ", color: "#005EA5" }, { text: "\u2582", color: "#005830" }, { text: "\u2582", color: "#006B3B" }, { text: "\u2582", color: "#006638" }, { text: "\u2581 ", color: "#004928" }, { text: " " }, { text: "\u2582\u2582", color: "#006B3B" }, { text: "\u2581", color: "#007D45" }],
-  [{ text: "\u258f", color: "#931E1E", bgColor: "#D43C27" }, { text: "\u2594", color: "#AC451A", bgColor: "#E76022" }, { text: "\u2585", color: "#E9731D" }, { text: "\u2596", color: "#824010" }, { text: "\u258c", color: "#12A7E0", bgColor: "#7EC057" }, { text: "\u2594", color: "#8AC441", bgColor: "#8BC53F" }, { text: "\u2594", color: "#3189A1", bgColor: "#79BD45" }, { text: "\u2584", color: "#4BA544" }, { text: " " }, { text: " ", color: "#0F3318" }, { text: "\u258f", bgColor: "#007C44" }, { text: "\u2586\u2586", bgColor: "#008449" }, { text: "\u2584", bgColor: "#00733F" }, { text: "\u259d", bgColor: "#006D3C" }, { text: "\u258b", bgColor: "#008449" }, { text: "\u258c", color: "#008449" }, { text: "\u2586", bgColor: "#008449" }, { text: "\u2596", bgColor: "#006135" }, { text: "\u258b", color: "#007741" }],
-  [{ text: "\u258c", color: "#CE3128", bgColor: "#D84426" }, { text: "\u258c", color: "#E25724", bgColor: "#EC6B21" }, { text: "\u258f", color: "#F2771F", bgColor: "#F3781F" }, { text: "\u258a", color: "#E5711D" }, { text: "\u258c", bgColor: "#87C13F" }, { text: " ", color: "#031C26", bgColor: "#8BC53F" }, { text: "\u258c", color: "#84C23F", bgColor: "#6FBB43" }, { text: "\u258c", color: "#5AB447", bgColor: "#44AC4B" }, { text: "\u258a ", color: "#259046" }, { text: "\u258f", bgColor: "#007C44" }, { text: "\u258f ", color: "#008449" }, { text: " " }, { text: "\u258f", bgColor: "#008046" }, { text: "\u258b", bgColor: "#008449" }, { text: "\u258c", color: "#008449" }, { text: "\u2584", bgColor: "#006537" }, { text: "\u2584", bgColor: "#008348" }, { text: "\u259d", bgColor: "#00723F" }],
-  [{ text: "\u258f", color: "#A92322", bgColor: "#D53E27" }, { text: "\u258c", color: "#E35823", bgColor: "#EC6B20" }, { text: "\u2581", color: "#E3701C", bgColor: "#F3771F" }, { text: "\u2598", color: "#F2771E" }, { text: "\u258c", bgColor: "#85BD3C" }, { text: " ", bgColor: "#8BC53F" }, { text: "\u258c", color: "#84C23F", bgColor: "#6EBB43" }, { text: "\u258c", color: "#59B447", bgColor: "#43AC4B" }, { text: "\u258a ", color: "#259147" }, { text: "\u2582", bgColor: "#006C3C" }, { text: "\u2582", bgColor: "#00532E" }, { text: "\u2586", color: "#00512D" }, { text: "\u2583", bgColor: "#00693A" }, { text: "\u2598", color: "#006538" }, { text: "\u258b", bgColor: "#006739" }, { text: "\u2582", bgColor: "#006A3B" }, { text: "\u2585", color: "#00562F" }, { text: "\u2582", bgColor: "#005730" }, { text: "\u2584", bgColor: "#006F3D" }],
-  [{ text: "\u2585", bgColor: "#C23823" }, { text: "\u2585", bgColor: "#DF5E21" }, { text: "\u2586", bgColor: "#834010" }, { text: " " }, { text: "\u258b", bgColor: "#7CB038" }, { text: "\u2581", color: "#66912D", bgColor: "#8BC53F" }, { text: "\u2581", bgColor: "#75B83F" }, { text: "\u2583", bgColor: "#44983F" }],
+  [{ text: "      " }, { text: "▕", color: "#0a3741" }, { text: "▄", color: "#058799", bgColor: "#0c171d" }, { text: "▁" }, { text: "▂▃▃▂", color: "#0c161d" }, { text: "▁" }, { text: "▄", color: "#10989d", bgColor: "#0d181d" }, { text: "▏", color: "#0d3d42" }],
+  [{ text: "     " }, { text: "▁", color: "#0b2f37" }, { text: "▁", color: "#09444e" }, { text: "▅", color: "#0b1e25", bgColor: "#03aabf" }, { text: "▘", color: "#067281", bgColor: "#09404b" }, { text: "▄", color: "#057a8a", bgColor: "#0b1c24" }, { text: "▂", color: "#02cae1", bgColor: "#0b222b" }, { text: "▂", color: "#05d7ea", bgColor: "#0b252c" }, { text: "▄", color: "#0a8c97", bgColor: "#0c1d24" }, { text: "▝", color: "#0c8089", bgColor: "#0c484f" }, { text: "▅", color: "#0c1f26", bgColor: "#11bfc3" }, { text: "▁", color: "#0d4a4e" }, { text: "▁", color: "#0d3337" }],
+  [{ text: "     " }, { text: "▔", color: "#0a3c46" }, { text: "▔", color: "#085460", bgColor: "#0b1b22" }, { text: "▗", color: "#01bbd3", bgColor: "#093c46" }, { text: "▄", color: "#094551", bgColor: "#067888" }, { text: "▅", color: "#093a45", bgColor: "#03a9bd" }, { text: "▔", color: "#03d5eb", bgColor: "#0a323c" }, { text: "▔", color: "#01b7ce", bgColor: "#0a313a" }, { text: "▅", color: "#0c3d44", bgColor: "#038fa2" }, { text: "▄", color: "#093e48", bgColor: "#066574" }, { text: "▖", color: "#019aae", bgColor: "#09343e" }, { text: "▔", color: "#0f5b60", bgColor: "#0c1b22" }, { text: "▔", color: "#0f4146" }],
+  [{ text: "     " }, { text: "▌", bgColor: "#0c161d" }, { text: "▁", color: "#0b1920", bgColor: "#0c171e" }, { text: "▁", color: "#02a7bd", bgColor: "#0a262f" }, { text: "▃", color: "#02aec3", bgColor: "#076271" }, { text: "▁", color: "#0a242c", bgColor: "#0490a4" }, { text: "▂▂", color: "#0a232b", bgColor: "#058496" }, { text: "▁", color: "#0a252d", bgColor: "#0591a2" }, { text: "▃", color: "#0ac7d4", bgColor: "#075562" }, { text: "▁", color: "#07c6d7", bgColor: "#0b262e" }, { text: "▁", color: "#0b1a21", bgColor: "#0c171e" }, { text: "▌", color: "#0c161d" }],
+  [{ text: "     " }, { text: "▕", color: "#084e5a", bgColor: "#0c161c" }, { text: "▁", color: "#0c171d", bgColor: "#048d9f" }, { text: "▂", color: "#02a8be", bgColor: "#084550" }, { text: "▁", color: "#029cb0", bgColor: "#0a242c" }, { text: "▁", color: "#0a2830", bgColor: "#0b222b" }, { text: "  ", color: "#0a2830", bgColor: "#0b232b" }, { text: "▁", color: "#0a2a32", bgColor: "#0b222b" }, { text: "▁", color: "#02bbd1", bgColor: "#0a252d" }, { text: "▂", color: "#03cadf", bgColor: "#0a4e58" }, { text: "▁", color: "#0c171e", bgColor: "#09a4b1" }, { text: "▏", color: "#0e565a", bgColor: "#0c161c" }],
+  [{ text: "      " }, { text: "▝" }, { text: "▁", color: "#047f92", bgColor: "#0b2028" }, { text: "▃", color: "#038ea3", bgColor: "#084550" }, { text: "▂", color: "#0b232c", bgColor: "#039baf" }, { text: "▃", color: "#0b1920", bgColor: "#048b9e" }, { text: "▃", color: "#0b181f", bgColor: "#048b9e" }, { text: "▂", color: "#0b2128", bgColor: "#06a5b4" }, { text: "▔", color: "#00d5ee", bgColor: "#074c58" }, { text: "▁", color: "#046975", bgColor: "#0b2028" }, { text: "▘" }],
+  [{ text: "       " }, { text: "▄", color: "#0c151c", bgColor: "#047e92" }, { text: "▔", color: "#0b181f" }, { text: "▆▅▅▆", bgColor: "#0c161d" }, { text: "▔", color: "#0b171d" }, { text: "▄", bgColor: "#046874" }],
 ];
 
 /**

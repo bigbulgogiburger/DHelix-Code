@@ -16,7 +16,7 @@ import { mkdirSync, writeFileSync, rmSync } from "node:fs";
 describe("buildSystemPrompt", () => {
   it("should build a prompt with identity section", () => {
     const prompt = buildSystemPrompt();
-    expect(prompt).toContain("dbcode");
+    expect(prompt).toContain("dhelix v");
     expect(prompt).toContain("AI coding assistant");
   });
 
@@ -91,7 +91,7 @@ describe("buildSystemPrompt", () => {
       projectInstructions: "PROJECT_MARKER",
       customSections: [{ id: "low", content: "LOW_PRIORITY_MARKER", priority: 10 }],
     });
-    const identityPos = prompt.indexOf("dbcode");
+    const identityPos = prompt.indexOf("dhelix");
     const projectPos = prompt.indexOf("PROJECT_MARKER");
     const lowPos = prompt.indexOf("LOW_PRIORITY_MARKER");
     expect(identityPos).toBeLessThan(projectPos);
@@ -99,7 +99,7 @@ describe("buildSystemPrompt", () => {
   });
 
   it("should detect git context in a git repo", () => {
-    // dbcode project root is a git repo
+    // dhelix project root is a git repo
     const prompt = buildSystemPrompt({ workingDirectory: process.cwd() });
     expect(prompt).toContain("Git branch:");
   });
@@ -110,7 +110,7 @@ describe("buildSystemPrompt", () => {
   });
 
   it("should detect Node.js project type", () => {
-    // dbcode project root has package.json
+    // dhelix project root has package.json
     const prompt = buildSystemPrompt({ workingDirectory: process.cwd() });
     expect(prompt).toContain("Project type: Node.js");
   });
@@ -122,10 +122,10 @@ describe("buildSystemPrompt", () => {
     expect(prompt).not.toContain("Project type:");
   });
 
-  it("should auto-load DBCODE.md from .dbcode directory", () => {
-    const dir = join(tmpdir(), `dbcode-prompt-autoload-${Date.now()}`);
-    mkdirSync(join(dir, ".dbcode"), { recursive: true });
-    writeFileSync(join(dir, ".dbcode", "DBCODE.md"), "Use strict TypeScript", "utf-8");
+  it("should auto-load DHELIX.md from .dhelix directory", () => {
+    const dir = join(tmpdir(), `dhelix-prompt-autoload-${Date.now()}`);
+    mkdirSync(join(dir, ".dhelix"), { recursive: true });
+    writeFileSync(join(dir, ".dhelix", "DHELIX.md"), "Use strict TypeScript", "utf-8");
 
     const prompt = buildSystemPrompt({ workingDirectory: dir });
     expect(prompt).toContain("Use strict TypeScript");
@@ -135,13 +135,13 @@ describe("buildSystemPrompt", () => {
   });
 
   it("should include recent git commits", () => {
-    // dbcode project root is a git repo with commits
+    // dhelix project root is a git repo with commits
     const prompt = buildSystemPrompt({ workingDirectory: process.cwd() });
     expect(prompt).toContain("Recent commits:");
   });
 
   describe("project type detection", () => {
-    const baseDir = join(tmpdir(), `dbcode-project-types-${Date.now()}`);
+    const baseDir = join(tmpdir(), `dhelix-project-types-${Date.now()}`);
 
     afterAll(() => {
       try {
@@ -311,10 +311,10 @@ describe("token budget", () => {
   it("should trim lowest-priority sections when budget exceeded", () => {
     const prompt = buildSystemPrompt({
       customSections: [{ id: "big-low", content: "A".repeat(5000), priority: 5 }],
-      totalTokenBudget: 500,
+      totalTokenBudget: 2000,
     });
     // The high-priority identity section should be included
-    expect(prompt).toContain("dbcode");
+    expect(prompt).toContain("dhelix");
     // The big low-priority section should be trimmed
     expect(prompt).not.toContain("A".repeat(5000));
   });
@@ -375,7 +375,7 @@ describe("backward compatibility", () => {
   it("should work with no arguments", () => {
     const prompt = buildSystemPrompt();
     expect(prompt).toBeTruthy();
-    expect(prompt).toContain("dbcode");
+    expect(prompt).toContain("dhelix");
   });
 
   it("should work with only old-style options", () => {
@@ -534,7 +534,7 @@ describe("tier-based system prompt budget", () => {
     // Big low-priority section should be trimmed due to low budget
     expect(prompt).not.toContain("X".repeat(20000));
     // But identity (highest priority) should still be present
-    expect(prompt).toContain("dbcode");
+    expect(prompt).toContain("dhelix");
   });
 
   it("should allow explicit totalTokenBudget to override tier budget", () => {

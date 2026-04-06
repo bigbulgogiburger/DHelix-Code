@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dbcode — Module Deep Dive</title>
+    <title>dhelix — Module Deep Dive</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <style>
       @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
@@ -698,7 +698,7 @@
     <!-- Navigation -->
     <nav id="nav">
       <div class="nav-inner">
-        <div class="nav-logo"><span>dbcode</span> Deep Dive</div>
+        <div class="nav-logo"><span>dhelix</span> Deep Dive</div>
         <div class="nav-links">
           <a href="#agent-loop">Agent Loop</a>
           <a href="#context">Context</a>
@@ -732,7 +732,7 @@
           <div class="section-label purple">MODULE 01</div>
           <h2 class="section-title">Agent Loop — ReAct 상태머신</h2>
           <p class="section-desc">
-            dbcode의 심장. 사용자 입력을 받아 LLM 호출 → 도구 실행 → 결과 피드백을 반복하는 핵심
+            dhelix의 심장. 사용자 입력을 받아 LLM 호출 → 도구 실행 → 결과 피드백을 반복하는 핵심
             루프입니다.
           </p>
         </div>
@@ -905,7 +905,7 @@
             <span class="cm">// 타임스탬프</span>
             }
 
-            <span class="cm">// 디스크 경로: ~/.dbcode/projects/{hash}/cold-storage/</span>
+            <span class="cm">// 디스크 경로: ~/.dhelix/projects/{hash}/cold-storage/</span>
             <span class="cm">// TTL: 24시간 후 자동 정리</span>
           </div>
 
@@ -1399,7 +1399,7 @@
               대시보드 구현 가능
             </li>
             <li>
-              <strong>팀 권한 정책</strong>: 프로젝트 .dbcode/settings.json으로 팀 공통 deny/allow
+              <strong>팀 권한 정책</strong>: 프로젝트 .dhelix/settings.json으로 팀 공통 deny/allow
               규칙 공유
             </li>
             <li><strong>동적 권한 학습</strong>: 사용자 승인 패턴 분석 → 자동 규칙 제안 기능</li>
@@ -1452,21 +1452,21 @@
         <div class="grid-3 reveal">
           <div class="card" style="border-top: 3px solid var(--accent-red)">
             <h4 style="font-size: 14px; margin-bottom: 8px">🔒 Local (최우선)</h4>
-            <div class="file-path" style="margin-bottom: 8px">.dbcode/mcp-local.json</div>
+            <div class="file-path" style="margin-bottom: 8px">.dhelix/mcp-local.json</div>
             <p style="font-size: 12px; color: var(--text-secondary)">
               개인 전용 설정. .gitignore에 포함. API 키가 들어간 서버 설정에 사용.
             </p>
           </div>
           <div class="card" style="border-top: 3px solid var(--accent-blue)">
             <h4 style="font-size: 14px; margin-bottom: 8px">👥 Project</h4>
-            <div class="file-path" style="margin-bottom: 8px">.dbcode/mcp.json</div>
+            <div class="file-path" style="margin-bottom: 8px">.dhelix/mcp.json</div>
             <p style="font-size: 12px; color: var(--text-secondary)">
               팀 공유 설정. Git에 커밋. 팀원 모두 같은 MCP 서버를 사용하도록.
             </p>
           </div>
           <div class="card" style="border-top: 3px solid var(--accent-green)">
             <h4 style="font-size: 14px; margin-bottom: 8px">🌐 User (전역)</h4>
-            <div class="file-path" style="margin-bottom: 8px">~/.dbcode/mcp-servers.json</div>
+            <div class="file-path" style="margin-bottom: 8px">~/.dhelix/mcp-servers.json</div>
             <p style="font-size: 12px; color: var(--text-secondary)">
               모든 프로젝트에 적용되는 전역 MCP 서버 설정.
             </p>
@@ -1651,7 +1651,7 @@
           <div class="section-label green">MODULE 08</div>
           <h2 class="section-title">Config & Instructions — 설정 계층</h2>
           <p class="section-desc">
-            5-Layer 설정 병합 + 6단계 DBCODE.md 로딩으로 유연한 설정 관리를 구현합니다.
+            5-Layer 설정 병합 + 6단계 DHELIX.md 로딩으로 유연한 설정 관리를 구현합니다.
           </p>
         </div>
 
@@ -1666,8 +1666,8 @@
           <div class="diagram-title green">5-Layer 설정 병합 과정</div>
           <div class="mermaid">
             graph BT subgraph SOURCES["설정 소스 (아래 → 위 우선순위)"] D["🏗️ defaults.ts<br />하드코딩
-            기본값<br />timeout: 120s, model: 'gpt-4o'"] U["👤 ~/.dbcode/settings.json<br />사용자
-            전역 설정<br />theme, 기본 모델, 키바인딩"] P["📁 .dbcode/settings.json<br />프로젝트
+            기본값<br />timeout: 120s, model: 'gpt-4o'"] U["👤 ~/.dhelix/settings.json<br />사용자
+            전역 설정<br />theme, 기본 모델, 키바인딩"] P["📁 .dhelix/settings.json<br />프로젝트
             설정<br />permissions, MCP 서버"] E["🌍 환경변수<br />LOCAL_API_BASE_URL<br />LOCAL_MODEL,
             API keys"] C["⌨️ CLI Flags<br />--model, --print<br />--verbose (최우선)"] end D -->
             MERGE["📦 Deep Merge<br />Object.assign 순차 적용"] U --> MERGE P --> MERGE E --> MERGE
@@ -1678,14 +1678,14 @@
           </div>
         </div>
 
-        <!-- DBCODE.md Loading -->
+        <!-- DHELIX.md Loading -->
         <div class="diagram-wrapper reveal">
-          <div class="diagram-title blue">DBCODE.md 6단계 로딩 체인</div>
+          <div class="diagram-title blue">DHELIX.md 6단계 로딩 체인</div>
           <div class="mermaid">
-            graph LR G["1. ~/.dbcode/DBCODE.md<br />전역 지시사항"] --> GR["2.
-            ~/.dbcode/rules/*.md<br />전역 규칙"] GR --> PD["3. 상위 디렉토리들<br />../DBCODE.md
-            체인"] PD --> P["4. ./DBCODE.md<br />프로젝트 지시사항"] P --> PR["5.
-            .dbcode/rules/*.md<br />프로젝트 규칙"] PR --> L["6. .dbcode/DBCODE.local.md<br />로컬
+            graph LR G["1. ~/.dhelix/DHELIX.md<br />전역 지시사항"] --> GR["2.
+            ~/.dhelix/rules/*.md<br />전역 규칙"] GR --> PD["3. 상위 디렉토리들<br />../DHELIX.md
+            체인"] PD --> P["4. ./DHELIX.md<br />프로젝트 지시사항"] P --> PR["5.
+            .dhelix/rules/*.md<br />프로젝트 규칙"] PR --> L["6. .dhelix/DHELIX.local.md<br />로컬
             (gitignored)"] G --> CONCAT["📋 순서대로 연결"] GR --> CONCAT PD --> CONCAT P --> CONCAT
             PR --> CONCAT L --> CONCAT CONCAT --> PROMPT["system-prompt-builder.ts<br />시스템
             프롬프트에 주입"] style CONCAT fill:#1e2a4a,stroke:#3b82f6,color:#f1f5f9 style PROMPT
@@ -1710,49 +1710,49 @@
             <tbody>
               <tr>
                 <td>프로젝트 설정</td>
-                <td class="mono">.dbcode/settings.json</td>
+                <td class="mono">.dhelix/settings.json</td>
                 <td>✅</td>
                 <td>프로젝트 전용 설정 (팀 공유)</td>
               </tr>
               <tr>
                 <td>사용자 전역</td>
-                <td class="mono">~/.dbcode/settings.json</td>
+                <td class="mono">~/.dhelix/settings.json</td>
                 <td>—</td>
                 <td>모든 프로젝트에 적용</td>
               </tr>
               <tr>
                 <td>프로젝트 규칙</td>
-                <td class="mono">.dbcode/rules/*.md</td>
+                <td class="mono">.dhelix/rules/*.md</td>
                 <td>✅</td>
                 <td>경로 조건부 규칙 (glob 기반)</td>
               </tr>
               <tr>
                 <td>전역 규칙</td>
-                <td class="mono">~/.dbcode/rules/*.md</td>
+                <td class="mono">~/.dhelix/rules/*.md</td>
                 <td>—</td>
                 <td>모든 프로젝트에 적용</td>
               </tr>
               <tr>
                 <td>로컬 지시사항</td>
-                <td class="mono">.dbcode/DBCODE.local.md</td>
+                <td class="mono">.dhelix/DHELIX.local.md</td>
                 <td>❌</td>
                 <td>개인 지시사항 (gitignored)</td>
               </tr>
               <tr>
                 <td>프로젝트 메모리</td>
-                <td class="mono">~/.dbcode/projects/{hash}/memory/</td>
+                <td class="mono">~/.dhelix/projects/{hash}/memory/</td>
                 <td>—</td>
                 <td>프로젝트별 AI 메모리</td>
               </tr>
               <tr>
                 <td>Cold Storage</td>
-                <td class="mono">~/.dbcode/projects/{hash}/cold-storage/</td>
+                <td class="mono">~/.dhelix/projects/{hash}/cold-storage/</td>
                 <td>—</td>
                 <td>압축된 컨텍스트 (24h TTL)</td>
               </tr>
               <tr>
                 <td>감사 로그</td>
-                <td class="mono">.dbcode/audit.jsonl</td>
+                <td class="mono">.dhelix/audit.jsonl</td>
                 <td>❌</td>
                 <td>권한 감사 기록</td>
               </tr>
@@ -1862,7 +1862,7 @@
         <div class="callout tip reveal">
           <div class="callout-icon">🔧</div>
           <div>
-            <strong>Custom Agent 정의:</strong> <code>.dbcode/agents/*.md</code> 파일에 마크다운으로
+            <strong>Custom Agent 정의:</strong> <code>.dhelix/agents/*.md</code> 파일에 마크다운으로
             에이전트를 정의합니다. 프론트매터로 이름, 도구 제한, 모델 지정 가능. 예:
             <code>security-reviewer.md</code>에 보안 전문 에이전트 정의.
           </div>
@@ -1902,7 +1902,7 @@
         <div class="diagram-wrapper reveal">
           <div class="diagram-title blue">End-to-End 데이터 흐름</div>
           <div class="mermaid">
-            graph TD USER["👤 User Input"] --> SYS_PROMPT["System Prompt Builder<br />DBCODE.md +
+            graph TD USER["👤 User Input"] --> SYS_PROMPT["System Prompt Builder<br />DHELIX.md +
             Skills + Config 조립"] SYS_PROMPT --> CTX_MGR["Context Manager<br />토큰 카운팅 + 압축
             체크"] CTX_MGR --> GUARD_IN["Input Guardrails<br />인젝션 감지 + 비밀 스캔"] GUARD_IN
             --> DUAL["Dual-Model Router<br />plan → architect / execute → editor"] DUAL --> LLM["LLM
@@ -1984,7 +1984,7 @@
     <footer>
       <div class="container">
         <p style="margin-bottom: 8px">
-          <strong style="color: var(--text-primary)">dbcode</strong> Module Deep Dive Documentation
+          <strong style="color: var(--text-primary)">dhelix</strong> Module Deep Dive Documentation
         </p>
         <p>
           Built with HTML, CSS, JavaScript &amp; Mermaid.js &mdash;

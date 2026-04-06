@@ -8,21 +8,21 @@ import { RevealOnScroll } from "../RevealOnScroll";
 
 const configMergeChart = `graph BT
     D["defaults.ts 하드코딩 기본값<br/><small>하드코딩 기본값 안전망</small>"] --> MERGE["Deep Merge<br/><small>5개 레이어를 깊은 병합</small>"]
-    U["~/.dbcode/settings.json 사용자 전역<br/><small>사용자 전역 설정</small>"] --> MERGE
-    P[".dbcode/settings.json 프로젝트 설정<br/><small>프로젝트별 팀 공유 설정</small>"] --> MERGE
-    E["환경변수 LOCAL_API_BASE_URL 등<br/><small>DBCODE_* OPENAI_* 등</small>"] --> MERGE
+    U["~/.dhelix/settings.json 사용자 전역<br/><small>사용자 전역 설정</small>"] --> MERGE
+    P[".dhelix/settings.json 프로젝트 설정<br/><small>프로젝트별 팀 공유 설정</small>"] --> MERGE
+    E["환경변수 LOCAL_API_BASE_URL 등<br/><small>DHELIX_* OPENAI_* 등</small>"] --> MERGE
     C["CLI Flags --model --verbose 최우선<br/><small>--model --verbose 등 일회성</small>"] --> MERGE
     MERGE --> FINAL["최종 Config<br/><small>Zod 스키마 검증된 최종 설정</small>"]
     style MERGE fill:#dcfce7,stroke:#10b981,color:#1e293b
     style C fill:#ede9fe,stroke:#8b5cf6,color:#1e293b
     style FINAL fill:#dcfce7,stroke:#10b981,color:#1e293b`;
 
-const dbcodeLoadChart = `graph LR
-    G["1. ~/.dbcode/DBCODE.md 전역<br/><small>~/.dbcode/DBCODE.md</small>"] --> GR["2. ~/.dbcode/rules/*.md 전역 규칙<br/><small>~/.dbcode/rules/*.md 경로 조건부</small>"]
-    GR --> PD["3. 상위 디렉토리 ../DBCODE.md 체인<br/><small>부모 디렉토리 DBCODE.md 모노레포</small>"]
-    PD --> P["4. ./DBCODE.md 프로젝트<br/><small>{root}/DBCODE.md</small>"]
-    P --> PR["5. .dbcode/rules/*.md 프로젝트 규칙<br/><small>.dbcode/rules/*.md 경로 조건부</small>"]
-    PR --> L["6. .dbcode/DBCODE.local.md 로컬<br/><small>DBCODE.local.md 개인 gitignore</small>"]
+const dhelixLoadChart = `graph LR
+    G["1. ~/.dhelix/DHELIX.md 전역<br/><small>~/.dhelix/DHELIX.md</small>"] --> GR["2. ~/.dhelix/rules/*.md 전역 규칙<br/><small>~/.dhelix/rules/*.md 경로 조건부</small>"]
+    GR --> PD["3. 상위 디렉토리 ../DHELIX.md 체인<br/><small>부모 디렉토리 DHELIX.md 모노레포</small>"]
+    PD --> P["4. ./DHELIX.md 프로젝트<br/><small>{root}/DHELIX.md</small>"]
+    P --> PR["5. .dhelix/rules/*.md 프로젝트 규칙<br/><small>.dhelix/rules/*.md 경로 조건부</small>"]
+    PR --> L["6. .dhelix/DHELIX.local.md 로컬<br/><small>DHELIX.local.md 개인 gitignore</small>"]
     L --> CONCAT["순서대로 연결<br/><small>'\\n\\n---\\n\\n' 구분자로 합침</small>"]
     CONCAT --> PROMPT["system-prompt-builder.ts에 주입<br/><small>buildSystemPrompt()에서 사용</small>"]
     style CONCAT fill:#dbeafe,stroke:#3b82f6,color:#1e293b
@@ -31,37 +31,37 @@ const dbcodeLoadChart = `graph LR
 const configPaths = [
   {
     use: "프로젝트 설정",
-    path: ".dbcode/settings.json",
+    path: ".dhelix/settings.json",
     git: "✅",
     desc: "프로젝트 전용 설정 (팀 공유)",
   },
-  { use: "사용자 전역", path: "~/.dbcode/settings.json", git: "—", desc: "모든 프로젝트에 적용" },
+  { use: "사용자 전역", path: "~/.dhelix/settings.json", git: "—", desc: "모든 프로젝트에 적용" },
   {
     use: "프로젝트 규칙",
-    path: ".dbcode/rules/*.md",
+    path: ".dhelix/rules/*.md",
     git: "✅",
     desc: "경로 조건부 규칙 (glob 기반)",
   },
-  { use: "전역 규칙", path: "~/.dbcode/rules/*.md", git: "—", desc: "모든 프로젝트에 적용" },
+  { use: "전역 규칙", path: "~/.dhelix/rules/*.md", git: "—", desc: "모든 프로젝트에 적용" },
   {
     use: "로컬 지시사항",
-    path: ".dbcode/DBCODE.local.md",
+    path: ".dhelix/DHELIX.local.md",
     git: "❌",
     desc: "개인 지시사항 (gitignored)",
   },
   {
     use: "프로젝트 메모리",
-    path: "~/.dbcode/projects/{hash}/memory/",
+    path: "~/.dhelix/projects/{hash}/memory/",
     git: "—",
     desc: "프로젝트별 AI 메모리",
   },
   {
     use: "Cold Storage",
-    path: "~/.dbcode/projects/{hash}/cold-storage/",
+    path: "~/.dhelix/projects/{hash}/cold-storage/",
     git: "—",
     desc: "압축된 컨텍스트 (24h TTL)",
   },
-  { use: "감사 로그", path: ".dbcode/audit.jsonl", git: "❌", desc: "권한 감사 기록" },
+  { use: "감사 로그", path: ".dhelix/audit.jsonl", git: "❌", desc: "권한 감사 기록" },
 ];
 
 export function ConfigSection() {
@@ -78,7 +78,7 @@ export function ConfigSection() {
               label="MODULE 08"
               labelColor="green"
               title="Config & Instructions — 설정 계층"
-              description="5-Layer 설정 병합 + 6단계 DBCODE.md 로딩으로 유연한 설정 관리를 구현합니다."
+              description="5-Layer 설정 병합 + 6단계 DHELIX.md 로딩으로 유연한 설정 관리를 구현합니다."
             />
           </div>
         </RevealOnScroll>
@@ -101,8 +101,8 @@ export function ConfigSection() {
 
         <RevealOnScroll>
           <MermaidDiagram
-            chart={dbcodeLoadChart}
-            title="DBCODE.md 6단계 로딩 체인"
+            chart={dhelixLoadChart}
+            title="DHELIX.md 6단계 로딩 체인"
             titleColor="blue"
           />
         </RevealOnScroll>

@@ -140,7 +140,7 @@ python <skill-path>/scripts/build_pptx.py <json-path> <output-path>.pptx
 ```
 
 `<skill-path>`는 이 스킬의 디렉토리 경로입니다:
-`C:\Users\DBInc\dbcode\.claude\skills\create-pptx`
+`C:\Users\DBInc\dhelix\.claude\skills\create-pptx`
 
 **출력 위치 기본값:** 사용자의 바탕화면 또는 현재 작업 디렉토리
 

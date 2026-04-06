@@ -1,16 +1,16 @@
 /**
- * 인스트럭션 로더 — 다층 계층 구조에서 DBCODE.md 인스트럭션을 로드하고 병합
+ * 인스트럭션 로더 — 다층 계층 구조에서 DHELIX.md 인스트럭션을 로드하고 병합
  *
  * 인스트럭션(지시사항)은 LLM의 시스템 프롬프트에 주입되어
  * AI의 행동 방식을 커스터마이징합니다.
  *
  * 병합 순서 (낮은 → 높은 우선순위):
- * 1. 전역 사용자 인스트럭션 (~/.dbcode/DBCODE.md)
- * 2. 전역 사용자 규칙 (~/.dbcode/rules/*.md)
- * 3. 상위 디렉토리 DBCODE.md (cwd에서 프로젝트 루트까지 상향 탐색)
- * 4. 프로젝트 인스트럭션 (DBCODE.md 또는 .dbcode/DBCODE.md)
- * 5. 프로젝트 경로 조건부 규칙 (.dbcode/rules/*.md)
- * 6. 로컬 오버라이드 (DBCODE.local.md — gitignore 대상)
+ * 1. 전역 사용자 인스트럭션 (~/.dhelix/DHELIX.md)
+ * 2. 전역 사용자 규칙 (~/.dhelix/rules/*.md)
+ * 3. 상위 디렉토리 DHELIX.md (cwd에서 프로젝트 루트까지 상향 탐색)
+ * 4. 프로젝트 인스트럭션 (DHELIX.md 또는 .dhelix/DHELIX.md)
+ * 5. 프로젝트 경로 조건부 규칙 (.dhelix/rules/*.md)
+ * 6. 로컬 오버라이드 (DHELIX.local.md — gitignore 대상)
  *
  * 각 레이어는 '\n\n---\n\n'으로 구분되어 합쳐집니다.
  */
@@ -37,17 +37,17 @@ export class InstructionLoadError extends BaseError {
  * 로드된 인스트럭션 결과 — 각 레이어별 내용과 최종 합산 내용을 포함
  */
 export interface LoadedInstructions {
-  /** 전역 사용자 인스트럭션 (~/.dbcode/DBCODE.md에서 로드) */
+  /** 전역 사용자 인스트럭션 (~/.dhelix/DHELIX.md에서 로드) */
   readonly globalInstructions: string;
-  /** 전역 사용자 규칙 (~/.dbcode/rules/*.md에서 로드) */
+  /** 전역 사용자 규칙 (~/.dhelix/rules/*.md에서 로드) */
   readonly globalRules: string;
-  /** 상위 디렉토리 DBCODE.md 파일들 (cwd에서 프로젝트 루트까지 수집) */
+  /** 상위 디렉토리 DHELIX.md 파일들 (cwd에서 프로젝트 루트까지 수집) */
   readonly parentInstructions: string;
-  /** 프로젝트 레벨 인스트럭션 (DBCODE.md에서 로드) */
+  /** 프로젝트 레벨 인스트럭션 (DHELIX.md에서 로드) */
   readonly projectInstructions: string;
-  /** 경로 조건부 규칙 내용 (.dbcode/rules/*.md에서 현재 경로에 매칭된 것) */
+  /** 경로 조건부 규칙 내용 (.dhelix/rules/*.md에서 현재 경로에 매칭된 것) */
   readonly pathRules: string;
-  /** 로컬 오버라이드 인스트럭션 (DBCODE.local.md, gitignore 대상) */
+  /** 로컬 오버라이드 인스트럭션 (DHELIX.local.md, gitignore 대상) */
   readonly localInstructions: string;
   /** 모든 레이어를 합산한 최종 인스트럭션 텍스트 (시스템 프롬프트에 주입) */
   readonly combined: string;
@@ -99,9 +99,9 @@ function isExcluded(fileName: string, excludePatterns: readonly string[]): boole
  * 프로젝트 루트 마커를 검색합니다.
  *
  * 탐지 순서 (디렉토리당, 첫 매칭 적용):
- * 1. DBCODE.md — 프로젝트 루트에 직접 위치 (권장 방식)
- * 2. .dbcode/DBCODE.md — 하위 호환 폴백
- * 3. .dbcode/ 디렉토리 존재 — DBCODE.md 없이도 프로젝트 표시
+ * 1. DHELIX.md — 프로젝트 루트에 직접 위치 (권장 방식)
+ * 2. .dhelix/DHELIX.md — 하위 호환 폴백
+ * 3. .dhelix/ 디렉토리 존재 — DHELIX.md 없이도 프로젝트 표시
  *
  * @param startDir - 탐색 시작 디렉토리
  * @returns 프로젝트 루트 경로 또는 null (찾지 못한 경우)
@@ -111,7 +111,7 @@ async function findProjectRoot(startDir: string): Promise<string | null> {
   const root = dirname(current) === current ? current : undefined;
 
   while (true) {
-    // 1. DBCODE.md가 루트에 직접 있는지 확인 (권장 방식)
+    // 1. DHELIX.md가 루트에 직접 있는지 확인 (권장 방식)
     const rootConfigPath = join(current, PROJECT_CONFIG_FILE);
     try {
       await stat(rootConfigPath);
@@ -120,16 +120,16 @@ async function findProjectRoot(startDir: string): Promise<string | null> {
       // 이 디렉토리에는 없음, 폴백 확인
     }
 
-    // 2. .dbcode/DBCODE.md 확인 (하위 호환)
+    // 2. .dhelix/DHELIX.md 확인 (하위 호환)
     const fallbackConfigPath = join(current, `.${APP_NAME}`, PROJECT_CONFIG_FILE);
     try {
       await stat(fallbackConfigPath);
       return current;
     } catch {
-      // .dbcode/ 내에도 없음
+      // .dhelix/ 내에도 없음
     }
 
-    // 3. .dbcode/ 디렉토리 자체가 있는지 확인 (프로젝트 표시 역할)
+    // 3. .dhelix/ 디렉토리 자체가 있는지 확인 (프로젝트 표시 역할)
     const configDir = join(current, `.${APP_NAME}`);
     try {
       const dirStat = await stat(configDir);
@@ -137,7 +137,7 @@ async function findProjectRoot(startDir: string): Promise<string | null> {
         return current;
       }
     } catch {
-      // .dbcode/ 디렉토리 없음
+      // .dhelix/ 디렉토리 없음
     }
 
     // 상위 디렉토리로 이동
@@ -150,16 +150,16 @@ async function findProjectRoot(startDir: string): Promise<string | null> {
 }
 
 /**
- * cwd에서 프로젝트 루트까지 상향 탐색하며 DBCODE.md 파일 수집
+ * cwd에서 프로젝트 루트까지 상향 탐색하며 DHELIX.md 파일 수집
  *
- * 프로젝트 루트의 DBCODE.md는 별도로 로드되므로 여기서 제외합니다.
+ * 프로젝트 루트의 DHELIX.md는 별도로 로드되므로 여기서 제외합니다.
  * 결과는 가장 먼 조상부터 가장 가까운 부모 순서로 정렬됩니다.
  * (낮은 우선순위 → 높은 우선순위)
  *
  * @param startDir - 탐색 시작 디렉토리 (보통 cwd)
  * @param projectRoot - 프로젝트 루트 경로 (여기서 멈춤)
  * @param excludePatterns - 제외할 패턴 배열
- * @returns 상위 디렉토리 DBCODE.md 내용을 합산한 문자열
+ * @returns 상위 디렉토리 DHELIX.md 내용을 합산한 문자열
  */
 async function loadParentInstructions(
   startDir: string,
@@ -310,12 +310,12 @@ async function loadPathRules(
  * 인스트럭션 로더 메인 함수 — 6개 레이어에서 인스트럭션을 수집하고 합산
  *
  * 병합 순서 (낮은 → 높은 우선순위):
- * 1. 전역 인스트럭션 (~/.dbcode/DBCODE.md) — 모든 프로젝트에 적용
- * 2. 전역 규칙 (~/.dbcode/rules/*.md) — 경로 조건부 전역 규칙
- * 3. 상위 디렉토리 DBCODE.md — 모노레포 등 중첩 프로젝트 지원
- * 4. 프로젝트 인스트럭션 (DBCODE.md) — 프로젝트 고유 지시사항
- * 5. 프로젝트 규칙 (.dbcode/rules/*.md) — 경로 조건부 프로젝트 규칙
- * 6. 로컬 오버라이드 (DBCODE.local.md) — 개인 설정 (gitignore)
+ * 1. 전역 인스트럭션 (~/.dhelix/DHELIX.md) — 모든 프로젝트에 적용
+ * 2. 전역 규칙 (~/.dhelix/rules/*.md) — 경로 조건부 전역 규칙
+ * 3. 상위 디렉토리 DHELIX.md — 모노레포 등 중첩 프로젝트 지원
+ * 4. 프로젝트 인스트럭션 (DHELIX.md) — 프로젝트 고유 지시사항
+ * 5. 프로젝트 규칙 (.dhelix/rules/*.md) — 경로 조건부 프로젝트 규칙
+ * 6. 로컬 오버라이드 (DHELIX.local.md) — 개인 설정 (gitignore)
  *
  * @param workingDirectory - 현재 작업 디렉토리
  * @param options - 로딩 옵션 (제외 패턴 등)
@@ -328,7 +328,7 @@ export async function loadInstructions(
   const excludePatterns = options?.excludePatterns ?? [];
   const globalDir = join(homedir(), `.${APP_NAME}`);
 
-  // 레이어 1: 전역 사용자 인스트럭션 (~/.dbcode/DBCODE.md)
+  // 레이어 1: 전역 사용자 인스트럭션 (~/.dhelix/DHELIX.md)
   let globalInstructions = "";
   if (!isExcluded(PROJECT_CONFIG_FILE, excludePatterns)) {
     const globalConfigPath = join(globalDir, PROJECT_CONFIG_FILE);
@@ -336,7 +336,7 @@ export async function loadInstructions(
     globalInstructions = globalRaw ? await parseInstructions(globalRaw, globalDir) : "";
   }
 
-  // 레이어 2: 전역 사용자 규칙 (~/.dbcode/rules/*.md)
+  // 레이어 2: 전역 사용자 규칙 (~/.dhelix/rules/*.md)
   const globalRulesDir = join(globalDir, "rules");
   const globalPathRules = await loadPathRules(globalRulesDir, excludePatterns);
   const globalRules = collectMatchingContent(globalPathRules, workingDirectory);
@@ -344,21 +344,21 @@ export async function loadInstructions(
   // 프로젝트 루트 탐색 (상향)
   const projectRoot = await findProjectRoot(workingDirectory);
 
-  // 레이어 3: 상위 디렉토리 DBCODE.md (cwd와 프로젝트 루트 사이)
+  // 레이어 3: 상위 디렉토리 DHELIX.md (cwd와 프로젝트 루트 사이)
   const parentInstructions = await loadParentInstructions(
     workingDirectory,
     projectRoot,
     excludePatterns,
   );
 
-  // 레이어 4: 프로젝트 루트 DBCODE.md (+ .dbcode/DBCODE.md 폴백)
+  // 레이어 4: 프로젝트 루트 DHELIX.md (+ .dhelix/DHELIX.md 폴백)
   let projectInstructions = "";
   if (projectRoot && !isExcluded(PROJECT_CONFIG_FILE, excludePatterns)) {
-    // 기본: DBCODE.md (프로젝트 루트에 직접)
+    // 기본: DHELIX.md (프로젝트 루트에 직접)
     const rootConfigPath = join(projectRoot, PROJECT_CONFIG_FILE);
     let rawContent = await safeReadFile(rootConfigPath);
 
-    // 폴백: .dbcode/DBCODE.md (하위 호환)
+    // 폴백: .dhelix/DHELIX.md (하위 호환)
     if (!rawContent) {
       const fallbackPath = join(projectRoot, `.${APP_NAME}`, PROJECT_CONFIG_FILE);
       rawContent = await safeReadFile(fallbackPath);
@@ -369,7 +369,7 @@ export async function loadInstructions(
     }
   }
 
-  // 레이어 5: 프로젝트 경로 조건부 규칙 (.dbcode/rules/*.md)
+  // 레이어 5: 프로젝트 경로 조건부 규칙 (.dhelix/rules/*.md)
   const configDir = join(workingDirectory, `.${APP_NAME}`);
   const rulesDir = join(configDir, "rules");
   const pathRules = await loadPathRules(rulesDir, excludePatterns);
@@ -383,7 +383,7 @@ export async function loadInstructions(
     pathRulesContent = [pathRulesContent, projectPathRulesContent].filter(Boolean).join("\n\n");
   }
 
-  // 레이어 6: 로컬 오버라이드 (DBCODE.local.md — 개인 설정, gitignore 대상)
+  // 레이어 6: 로컬 오버라이드 (DHELIX.local.md — 개인 설정, gitignore 대상)
   let localInstructions = "";
   if (projectRoot) {
     const localFileName = `${APP_NAME.toUpperCase()}.local.md`;
@@ -418,10 +418,10 @@ export async function loadInstructions(
 }
 
 /**
- * 지연(Lazy) 인스트럭션 로더 — 파일 접근 시 해당 디렉토리의 DBCODE.md를 온디맨드 로드
+ * 지연(Lazy) 인스트럭션 로더 — 파일 접근 시 해당 디렉토리의 DHELIX.md를 온디맨드 로드
  *
  * 시작 시 모든 인스트럭션을 로드하는 대신, 도구가 특정 파일에 접근할 때
- * 해당 디렉토리의 DBCODE.md를 그때 로드합니다.
+ * 해당 디렉토리의 DHELIX.md를 그때 로드합니다.
  *
  * 이를 통해 대규모 프로젝트에서 불필요한 인스트럭션 로딩을 방지하고,
  * 실제로 작업하는 디렉토리의 규칙만 적용할 수 있습니다.
@@ -445,7 +445,7 @@ export class LazyInstructionLoader {
    * 특정 파일 경로에 관련된 인스트럭션을 수집
    *
    * 파일의 디렉토리에서 프로젝트 루트까지 상향 탐색하며,
-   * 각 디렉토리의 DBCODE.md 내용을 수집합니다.
+   * 각 디렉토리의 DHELIX.md 내용을 수집합니다.
    *
    * 결과 순서: 가장 가까운 디렉토리 → 프로젝트 루트 (가까운 것이 먼저)
    *
@@ -472,7 +472,7 @@ export class LazyInstructionLoader {
         break;
       }
 
-      // 현재 디렉토리의 DBCODE.md 로드 (캐시 활용)
+      // 현재 디렉토리의 DHELIX.md 로드 (캐시 활용)
       const dirInstructions = await this.loadDirectoryInstructions(current);
       if (dirInstructions) {
         instructions.push(dirInstructions);
@@ -494,7 +494,7 @@ export class LazyInstructionLoader {
   /**
    * 특정 디렉토리의 캐시된 인스트럭션을 무효화
    *
-   * DBCODE.md가 수정되었을 때 호출하여 다음 접근 시 재로딩되도록 합니다.
+   * DHELIX.md가 수정되었을 때 호출하여 다음 접근 시 재로딩되도록 합니다.
    *
    * @param dirPath - 캐시를 무효화할 디렉토리 경로
    */
@@ -511,9 +511,9 @@ export class LazyInstructionLoader {
   }
 
   /**
-   * 특정 디렉토리의 DBCODE.md를 로드 (캐시가 있으면 캐시 반환)
+   * 특정 디렉토리의 DHELIX.md를 로드 (캐시가 있으면 캐시 반환)
    *
-   * @param dirPath - DBCODE.md를 검색할 디렉토리 경로
+   * @param dirPath - DHELIX.md를 검색할 디렉토리 경로
    * @returns 파싱된 인스트럭션 내용 (파일이 없으면 빈 문자열)
    */
   private async loadDirectoryInstructions(dirPath: string): Promise<string> {

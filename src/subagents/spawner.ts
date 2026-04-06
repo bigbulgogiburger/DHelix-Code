@@ -20,7 +20,7 @@
  *    - 공유 상태: 병렬 서브에이전트 간 데이터 공유 및 메시징
  *
  * 3. 히스토리 관리
- *    - 메모리 내 캐시 + 디스크 영속화 (~/.dbcode/agent-history/)
+ *    - 메모리 내 캐시 + 디스크 영속화 (~/.dhelix/agent-history/)
  *    - 최대 20개 파일 유지 (오래된 것 자동 삭제)
  *
  * 4. 병렬 실행 (spawnParallelSubagents)
@@ -52,14 +52,14 @@ import { resolveProvider } from "../llm/model-router.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 
 const trace = (tag: string, msg: string) => {
-  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+  if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
 };
 
 /** execFile의 Promise 버전 — 비동기적으로 외부 프로세스를 실행 */
 const execFileAsync = promisify(execFile);
 
 /** 서브에이전트 대화 히스토리를 저장하는 디렉토리 경로 */
-const AGENT_HISTORY_DIR = join(homedir(), ".dbcode", "agent-history");
+const AGENT_HISTORY_DIR = join(homedir(), ".dhelix", "agent-history");
 
 /** 디스크에 유지할 최대 히스토리 파일 수 — 초과 시 오래된 것부터 삭제 */
 const MAX_PERSISTED_HISTORIES = 20;
@@ -83,7 +83,7 @@ export class SubagentError extends BaseError {
  * 서브에이전트 유형
  *
  * 내장 유형: "explore" | "plan" | "general"
- * 커스텀 유형: .dbcode/agents/*.md 파일로 정의한 이름 (string)
+ * 커스텀 유형: .dhelix/agents/*.md 파일로 정의한 이름 (string)
  *
  * (string & {}) 패턴은 TypeScript에서 자동완성은 제공하면서
  * 임의의 문자열도 허용하는 기법입니다.
@@ -133,7 +133,7 @@ export interface SubagentConfig {
   readonly permissionMode?: AgentPermissionMode;
   /** 최대 컨텍스트 토큰 수 — 초과 시 자동 압축(compaction) 수행 */
   readonly maxContextTokens?: number;
-  /** 커스텀 에이전트 정의 (.dbcode/agents/*.md에서 로드) */
+  /** 커스텀 에이전트 정의 (.dhelix/agents/*.md에서 로드) */
   readonly agentDefinition?: AgentDefinition;
   /** 차단할 도구 이름 목록 (블랙리스트, 허용 목록에서 제거) */
   readonly disallowedTools?: readonly string[];
@@ -143,7 +143,7 @@ export interface SubagentConfig {
   readonly memory?: AgentMemoryScope;
   /** 응답 언어 로케일 (예: "ko", "en", "ja") — 서브에이전트 프롬프트에 전달 */
   readonly locale?: string;
-  /** 프로젝트 지시사항 (DBCODE.md 내용) — 서브에이전트가 프로젝트 컨벤션을 따르도록 */
+  /** 프로젝트 지시사항 (DHELIX.md 내용) — 서브에이전트가 프로젝트 컨벤션을 따르도록 */
   readonly projectInstructions?: string;
   /** 응답 톤/스타일 (예: "normal", "cute", "senior") */
   readonly tone?: string;
@@ -200,7 +200,7 @@ const agentHistoryStore = new Map<string, readonly ChatMessage[]>();
 /**
  * 에이전트 대화 히스토리를 디스크에 영속화합니다.
  *
- * ~/.dbcode/agent-history/{agentId}.json 형태로 저장하며,
+ * ~/.dhelix/agent-history/{agentId}.json 형태로 저장하며,
  * 파일 수가 MAX_PERSISTED_HISTORIES(20)를 초과하면
  * 가장 오래된 파일부터 삭제합니다.
  *
@@ -560,7 +560,7 @@ function buildSubagentSystemPrompt(
  * Git 워크트리(worktree)란 같은 저장소에서 별도의 작업 디렉토리를 만드는 기능입니다.
  * 서브에이전트가 워크트리에서 파일을 수정하면 메인 작업 디렉토리에는 영향이 없습니다.
  *
- * 워크트리는 .dbcode/worktrees/{agentId} 경로에 생성됩니다.
+ * 워크트리는 .dhelix/worktrees/{agentId} 경로에 생성됩니다.
  * 실행 후 변경 사항이 없으면 자동 정리되고,
  * 변경 사항이 있으면 사용자 검토를 위해 브랜치를 유지합니다.
  *
@@ -572,9 +572,9 @@ async function createWorktree(
   baseDir: string,
   agentId: string,
 ): Promise<{ worktreePath: string; branchName: string; cleanup: () => Promise<void> }> {
-  const worktreeDir = join(baseDir, ".dbcode", "worktrees");
+  const worktreeDir = join(baseDir, ".dhelix", "worktrees");
   const worktreePath = join(worktreeDir, agentId);
-  const branchName = `dbcode-worktree-${agentId}`;
+  const branchName = `dhelix-worktree-${agentId}`;
 
   // 워크트리 디렉토리 생성
   await mkdir(worktreeDir, { recursive: true });
@@ -626,7 +626,7 @@ async function createWorktree(
  * @returns 정리된 워크트리 수
  */
 export async function cleanOrphanedWorktrees(repoRoot: string): Promise<number> {
-  const worktreeDir = join(repoRoot, ".dbcode", "worktrees");
+  const worktreeDir = join(repoRoot, ".dhelix", "worktrees");
 
   try {
     const entries = await readdir(worktreeDir);

@@ -1,15 +1,15 @@
-# dbcode vs Claude Code: Gap Analysis & Improvement Roadmap
+# dhelix vs Claude Code: Gap Analysis & Improvement Roadmap
 
 > Date: 2026-03-08 (Updated)
 > Author: Claude Opus 4.6 (Anthropic Claude Code Expert Review)
-> dbcode version: 0.1.0 (145 source files, ~13,000 LOC)
+> dhelix version: 0.1.0 (145 source files, ~13,000 LOC)
 > Claude Code reference: v2.1.71 (latest stable, March 2026)
 
 ---
 
 ## Executive Summary
 
-dbcode has a solid foundation — ReAct agent loop, 12 tools, multi-turn conversation, Ink-based UI, hooks system. However, compared to Claude Code v2.1.71 (18 tools, 110+ system prompt components, 18 hook events, 6 built-in subagents, skills ecosystem with 334+ community skills), there are significant gaps across **tool system, context management, agent capabilities, and developer experience**. This document provides a detailed gap analysis with concrete implementation recommendations.
+dhelix has a solid foundation — ReAct agent loop, 12 tools, multi-turn conversation, Ink-based UI, hooks system. However, compared to Claude Code v2.1.71 (18 tools, 110+ system prompt components, 18 hook events, 6 built-in subagents, skills ecosystem with 334+ community skills), there are significant gaps across **tool system, context management, agent capabilities, and developer experience**. This document provides a detailed gap analysis with concrete implementation recommendations.
 
 ---
 
@@ -17,9 +17,9 @@ dbcode has a solid foundation — ReAct agent loop, 12 tools, multi-turn convers
 
 ### 1.1 Tool Inventory Comparison
 
-Claude Code: **18 built-in tools** / dbcode: **12 tools**
+Claude Code: **18 built-in tools** / dhelix: **12 tools**
 
-| #   | Tool             | Claude Code                                                                                             | dbcode                              | Gap          |
+| #   | Tool             | Claude Code                                                                                             | dhelix                              | Gap          |
 | --- | ---------------- | ------------------------------------------------------------------------------------------------------- | ----------------------------------- | ------------ |
 | 1   | Read             | `file_path`, `offset`, `limit`, `pages` (PDF, max 20pp). 2000 char line truncation                      | file_read (implemented)             | Parity       |
 | 2   | Write            | `file_path`, `content`. Must Read first if exists                                                       | file_write (implemented)            | Parity       |
@@ -42,7 +42,7 @@ Claude Code: **18 built-in tools** / dbcode: **12 tools**
 
 ### 1.2 Tool Behavior Gaps
 
-| Tool        | Claude Code Behavior                                                       | dbcode Gap                    |
+| Tool        | Claude Code Behavior                                                       | dhelix Gap                    |
 | ----------- | -------------------------------------------------------------------------- | ----------------------------- |
 | Bash        | Output truncated > 30,000 chars, `run_in_background` returns task ID       | No background task management |
 | Read        | Line truncation at 2000 chars, image/PDF support                           | Image untested in prod        |
@@ -52,7 +52,7 @@ Claude Code: **18 built-in tools** / dbcode: **12 tools**
 
 ### 1.3 Parallel Tool Execution
 
-| Feature             | Claude Code                           | dbcode                         | Gap    |
+| Feature             | Claude Code                           | dhelix                         | Gap    |
 | ------------------- | ------------------------------------- | ------------------------------ | ------ |
 | Dependency analysis | Smart grouping by file path conflicts | `groupToolCalls()` implemented | Parity |
 | Promise.allSettled  | Yes                                   | Yes                            | Parity |
@@ -88,9 +88,9 @@ Claude Code uses a **3-layer** context management system:
 
 **`PreCompact` hook**: Fires before compaction with matcher for `manual` vs `auto` trigger (observability only)
 
-### 2.2 dbcode Current State
+### 2.2 dhelix Current State
 
-| Feature                     | Claude Code                           | dbcode                        | Gap          |
+| Feature                     | Claude Code                           | dhelix                        | Gap          |
 | --------------------------- | ------------------------------------- | ----------------------------- | ------------ |
 | Microcompaction             | Continuous, disk-backed cold storage  | None                          | **Critical** |
 | Auto-compaction trigger     | ~83.5% context (overridable)          | 95% threshold (too late)      | **Major**    |
@@ -115,9 +115,9 @@ Claude Code assembles the system prompt from **110+ conditional strings** totali
 
 Assembly is conditional based on: environment variables, feature flags, user configuration, session state, available subagents, and A/B tests.
 
-### 3.2 dbcode Current State
+### 3.2 dhelix Current State
 
-| Feature                    | Claude Code                             | dbcode                        | Gap       |
+| Feature                    | Claude Code                             | dhelix                        | Gap       |
 | -------------------------- | --------------------------------------- | ----------------------------- | --------- |
 | Dynamic assembly           | 110+ conditional strings                | `buildSystemPrompt()` (basic) | **Major** |
 | Conditional injection      | Feature flags, session state, A/B tests | Static template               | Major     |
@@ -158,9 +158,9 @@ Assembly is conditional based on: environment variables, feature flags, user con
 - **Peer-to-peer messaging** via mailbox system (`SendMessage` tool)
 - Each teammate has own context window
 
-### 4.3 dbcode Gap Analysis
+### 4.3 dhelix Gap Analysis
 
-| Feature            | Claude Code                                     | dbcode                                           | Gap          |
+| Feature            | Claude Code                                     | dhelix                                           | Gap          |
 | ------------------ | ----------------------------------------------- | ------------------------------------------------ | ------------ |
 | Agent tool         | First-class tool (renamed from Task in v2.1.63) | spawner.ts (407 lines) but not a tool            | **Critical** |
 | Built-in agents    | 6 types with model/tool specialization          | 3 stubs (explore, general, plan, ~38 lines each) | **Critical** |
@@ -177,7 +177,7 @@ Assembly is conditional based on: environment variables, feature flags, user con
 
 ### 5.1 Cell-Level Differential Renderer
 
-| Aspect              | Claude Code                                              | dbcode                            | Gap    |
+| Aspect              | Claude Code                                              | dhelix                            | Gap    |
 | ------------------- | -------------------------------------------------------- | --------------------------------- | ------ |
 | Rendering engine    | Custom cell-level diff renderer (~85% flicker reduction) | Ink + Progressive Static Flushing | Major  |
 | Buffer strategy     | Double-buffered packed TypedArrays                       | None (Ink manages)                | Major  |
@@ -187,7 +187,7 @@ Assembly is conditional based on: environment variables, feature flags, user con
 
 ### 5.2 Output Formatting
 
-| Feature                     | Claude Code                                 | dbcode                 | Gap          |
+| Feature                     | Claude Code                                 | dhelix                 | Gap          |
 | --------------------------- | ------------------------------------------- | ---------------------- | ------------ |
 | Tool progress indicators    | "Reading..." → "Read" with tense switching  | Static `[✓]` with text | UX           |
 | Customizable thinking verbs | "Pondering", "Befuddling", etc. via tweakcc | Fixed text             | Nice-to-have |
@@ -229,9 +229,9 @@ Claude Code merged custom commands into skills. Files in `.claude/commands/` sti
 - `!`command`` syntax for shell command preprocessing
 - `@` for file references
 
-### 6.3 dbcode Gap
+### 6.3 dhelix Gap
 
-| Feature              | Claude Code                                | dbcode                  | Gap          |
+| Feature              | Claude Code                                | dhelix                  | Gap          |
 | -------------------- | ------------------------------------------ | ----------------------- | ------------ |
 | Skill loading        | Progressive 3-level disclosure             | loader.ts (178 lines)   | Partial      |
 | SKILL.md parsing     | Full frontmatter schema (12+ fields)       | types.ts (basic)        | Major        |
@@ -248,9 +248,9 @@ Claude Code merged custom commands into skills. Files in `.claude/commands/` sti
 
 ### 7.1 Lifecycle Events (Full List)
 
-Claude Code: **18 lifecycle events** / dbcode: **~6 events**
+Claude Code: **18 lifecycle events** / dhelix: **~6 events**
 
-| #   | Event                | Fires When                 | Can Block?            | dbcode          |
+| #   | Event                | Fires When                 | Can Block?            | dhelix          |
 | --- | -------------------- | -------------------------- | --------------------- | --------------- |
 | 1   | `SessionStart`       | Session begins/resumes     | No                    | Partial         |
 | 2   | `InstructionsLoaded` | CLAUDE.md loaded           | No                    | Missing         |
@@ -275,7 +275,7 @@ Claude Code: **18 lifecycle events** / dbcode: **~6 events**
 
 Claude Code supports **4 handler types**:
 
-| Type      | Description                                                    | dbcode          |
+| Type      | Description                                                    | dhelix          |
 | --------- | -------------------------------------------------------------- | --------------- |
 | `command` | Shell command execution, supports `async: true` for background | **Implemented** |
 | `http`    | POST JSON to URL, `allowedEnvVars` for header interpolation    | Missing         |
@@ -290,13 +290,13 @@ All handlers support `timeout` and `statusMessage`. HTTP hooks require 2xx + `de
 
 ### 7.3 Security Note
 
-Two CVEs found in Claude Code hooks: CVE-2025-59536, CVE-2026-21852 — hooks exploitable via malicious project configs. dbcode should learn from these vulnerabilities.
+Two CVEs found in Claude Code hooks: CVE-2025-59536, CVE-2026-21852 — hooks exploitable via malicious project configs. dhelix should learn from these vulnerabilities.
 
 ---
 
 ## 8. Checkpointing & Rewind (Major — Missing)
 
-| Feature              | Claude Code                                     | dbcode                       | Gap       |
+| Feature              | Claude Code                                     | dhelix                       | Gap       |
 | -------------------- | ----------------------------------------------- | ---------------------------- | --------- |
 | File change tracking | Tracks all Write/Edit/NotebookEdit changes      | checkpoint-manager.ts exists | Partial   |
 | `/rewind` command    | Browse and revert to any checkpoint             | Command stub only            | **Major** |
@@ -309,7 +309,7 @@ Two CVEs found in Claude Code hooks: CVE-2025-59536, CVE-2026-21852 — hooks ex
 
 ### 9.1 Claude Code Shortcuts
 
-| Shortcut         | Action                           | dbcode          |
+| Shortcut         | Action                           | dhelix          |
 | ---------------- | -------------------------------- | --------------- |
 | Ctrl+C           | Cancel current operation         | Implemented     |
 | Ctrl+D           | Exit                             | Not implemented |
@@ -326,7 +326,7 @@ Fully customizable via `~/.claude/keybindings.json` and `/keybindings` command.
 
 ### 9.2 @ File Mentions
 
-Type `@` + path to include file content in context, with Tab autocomplete. dbcode has no equivalent.
+Type `@` + path to include file content in context, with Tab autocomplete. dhelix has no equivalent.
 
 ---
 
@@ -340,13 +340,13 @@ Released March 2026:
 - `voice:pushToTalk` keybinding rebindable
 - No extra cost for Pro/Max/Team/Enterprise
 
-Not a priority for dbcode but worth tracking.
+Not a priority for dhelix but worth tracking.
 
 ---
 
 ## 11. IDE Integration (Medium)
 
-| Feature           | Claude Code                                 | dbcode          | Gap    |
+| Feature           | Claude Code                                 | dhelix          | Gap    |
 | ----------------- | ------------------------------------------- | --------------- | ------ |
 | VS Code extension | Native diff viewer, session management      | Not implemented | Medium |
 | JetBrains plugin  | IDE diff viewer integration                 | Not implemented | Medium |
@@ -357,7 +357,7 @@ Not a priority for dbcode but worth tracking.
 
 ## 12. Permission System (Minor gaps)
 
-| Feature                | Claude Code                                             | dbcode                         | Gap    |
+| Feature                | Claude Code                                             | dhelix                         | Gap    |
 | ---------------------- | ------------------------------------------------------- | ------------------------------ | ------ |
 | Permission modes       | 4 modes cycled with Shift+Tab                           | 5 modes defined, manager works | Parity |
 | Session store          | Remember per-session approvals (NOT restored on resume) | session-store.ts exists        | Parity |
@@ -369,7 +369,7 @@ Not a priority for dbcode but worth tracking.
 
 ## 13. Session Management (Minor gaps)
 
-| Feature          | Claude Code                 | dbcode          | Gap    |
+| Feature          | Claude Code                 | dhelix          | Gap    |
 | ---------------- | --------------------------- | --------------- | ------ |
 | Create session   | Auto-create on start        | Implemented     | Parity |
 | `--continue`     | Resume most recent          | Implemented     | Parity |
@@ -382,7 +382,7 @@ Not a priority for dbcode but worth tracking.
 
 ## 14. Instructions System (Medium gaps)
 
-| Feature             | Claude Code                                      | dbcode              | Gap    |
+| Feature             | Claude Code                                      | dhelix              | Gap    |
 | ------------------- | ------------------------------------------------ | ------------------- | ------ |
 | CLAUDE.md loading   | Project root + parents + .claude/                | loader.ts (partial) | Minor  |
 | User-level rules    | `~/.claude/rules/`                               | Not scanned         | Medium |
@@ -396,13 +396,13 @@ Not a priority for dbcode but worth tracking.
 
 ## 15. Slash Commands (Medium)
 
-### 15.1 dbcode Implemented (27 commands)
+### 15.1 dhelix Implemented (27 commands)
 
 `/clear`, `/compact`, `/help`, `/model`, `/resume`, `/rewind`, `/effort`, `/fast`, `/simplify`, `/batch`, `/debug`, `/mcp`, `/config`, `/diff`, `/doctor`, `/stats`, `/status`, `/context`, `/copy`, `/export`, `/fork`, `/output-style`, `/rename`, `/cost`, `/update`, `/init`, `/plan`, `/undo`
 
 ### 15.2 Missing vs Claude Code
 
-| Command              | Claude Code                   | dbcode                     | Priority |
+| Command              | Claude Code                   | dhelix                     | Priority |
 | -------------------- | ----------------------------- | -------------------------- | -------- |
 | `/agents`            | Manage custom subagents       | Missing                    | High     |
 | `/review`            | Review code changes           | Missing                    | High     |
@@ -420,7 +420,7 @@ Not a priority for dbcode but worth tracking.
 
 ## 16. Security & Sandboxing (Medium gaps)
 
-| Feature              | Claude Code                                                                             | dbcode                  | Gap                       |
+| Feature              | Claude Code                                                                             | dhelix                  | Gap                       |
 | -------------------- | --------------------------------------------------------------------------------------- | ----------------------- | ------------------------- |
 | macOS Seatbelt       | sandbox-exec profiles, `sandbox.filesystem.allowWrite/denyWrite`                        | seatbelt.ts (209 lines) | Implemented               |
 | Linux bubblewrap     | Kernel-level isolation                                                                  | Not implemented         | Major (if Linux target)   |
@@ -439,7 +439,7 @@ Not a priority for dbcode but worth tracking.
 
 ### 17.1 Claude Code's 5-Level Hierarchy
 
-| Priority    | Level            | Source                                                    | dbcode          |
+| Priority    | Level            | Source                                                    | dhelix          |
 | ----------- | ---------------- | --------------------------------------------------------- | --------------- |
 | 1 (highest) | Managed Settings | Server-managed, MDM, managed-settings.json, HKCU registry | Missing         |
 | 2           | CLI flags        | `--model`, `--permission-mode`, etc.                      | **Implemented** |
@@ -453,11 +453,11 @@ Array settings merge across scopes (concatenated + deduplicated).
 
 Claude Code supports enterprise-managed settings that users cannot override: `allowManagedPermissionRulesOnly`, `allowManagedHooksOnly`, `allowManagedMcpServersOnly`, `disableBypassPermissionsMode`, `strictKnownMarketplaces`, `blockedMarketplaces`.
 
-dbcode has no managed/enterprise settings tier.
+dhelix has no managed/enterprise settings tier.
 
 ### 17.3 Environment Variables
 
-Claude Code documents **60+ environment variables**. dbcode supports ~5 (`DBCODE_MODEL`, `DBCODE_BASE_URL`, `DBCODE_API_KEY`, `OPENAI_API_KEY`, `DBCODE_VERBOSE`).
+Claude Code documents **60+ environment variables**. dhelix supports ~5 (`DHELIX_MODEL`, `DHELIX_BASE_URL`, `DHELIX_API_KEY`, `OPENAI_API_KEY`, `DHELIX_VERBOSE`).
 
 ---
 
@@ -465,14 +465,14 @@ Claude Code documents **60+ environment variables**. dbcode supports ~5 (`DBCODE
 
 Claude Code introduced a **plugins system** in 2026:
 
-| Feature        | Claude Code                                   | dbcode          | Gap    |
+| Feature        | Claude Code                                   | dhelix          | Gap    |
 | -------------- | --------------------------------------------- | --------------- | ------ |
 | Package format | Skills + hooks + agents + MCP servers bundled | Not implemented | Future |
 | Sources        | GitHub, git, npm, URL, file, directory        | Not implemented | Future |
 | Marketplace    | Trust management, known marketplaces          | Not implemented | Future |
 | Commands       | `/plugins`, `/reload-plugins`                 | Missing         | Future |
 
-Not a priority for dbcode v1, but worth tracking for v2+.
+Not a priority for dhelix v1, but worth tracking for v2+.
 
 ---
 
@@ -480,7 +480,7 @@ Not a priority for dbcode v1, but worth tracking for v2+.
 
 ### 17.1 Default Model Change
 
-dbcode default model changed from `gpt-4o` to `gpt-4.1-mini`:
+dhelix default model changed from `gpt-4o` to `gpt-4.1-mini`:
 
 |                    | GPT-4o (previous) | GPT-4.1-mini (new)                     | Delta           |
 | ------------------ | ----------------- | -------------------------------------- | --------------- |
@@ -511,7 +511,7 @@ dbcode default model changed from `gpt-4o` to `gpt-4.1-mini`:
 ### P0 — Must Fix Now (Blocking real usage)
 
 1. **Agent tool registration** — Sub-agents exist (spawner.ts, 407 lines) but aren't usable from the agent loop. This is the single biggest capability gap.
-2. **Custom commands / Skills integration** — Wire skill triggering into agent loop + system prompt. Support `.md` files in `.dbcode/commands/`.
+2. **Custom commands / Skills integration** — Wire skill triggering into agent loop + system prompt. Support `.md` files in `.dhelix/commands/`.
 3. **Context compaction overhaul** — Implement microcompaction (disk-backed cold storage) + structured summarization. Lower threshold from 95% to ~83%.
 4. **Intermediate assistant messages** — Every assistant message during agent loop should be an activity entry, not just the final one.
 
@@ -519,7 +519,7 @@ dbcode default model changed from `gpt-4o` to `gpt-4.1-mini`:
 
 5. **TodoWrite tool** — Simple task tracking (pending/in_progress/completed state machine)
 6. **WebFetch tool** — URL fetching with caching (15-min), essential for documentation lookup
-7. **Hierarchical instructions** — Scan `~/.dbcode/rules/` + `.dbcode/rules/`, implement merge hierarchy
+7. **Hierarchical instructions** — Scan `~/.dhelix/rules/` + `.dhelix/rules/`, implement merge hierarchy
 8. **Keyboard shortcuts** — Esc (stop), Shift+Enter (newline), Shift+Tab (mode cycle), Ctrl+O (verbose)
 9. **Dynamic system prompt** — Conditional assembly based on session state, features, tools
 10. **Checkpointing / Rewind** — Track file changes, implement `/rewind` with checkpoint browser

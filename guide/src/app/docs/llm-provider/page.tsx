@@ -41,7 +41,7 @@ export default function LLMProviderPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">provider.ts</code>는 dbcode의 LLM 계층에서 가장
+                <code className="text-cyan-600">provider.ts</code>는 dhelix의 LLM 계층에서 가장
                 근본적인 파일입니다. OpenAI, Anthropic, Ollama 등 다양한 LLM 프로바이더가 하나의
                 통일된 인터페이스를 구현하도록
                 <strong> 공통 계약(contract)</strong>을 정의합니다.

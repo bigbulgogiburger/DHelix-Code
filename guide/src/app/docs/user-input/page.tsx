@@ -340,7 +340,7 @@ export default function UserInputPage() {
             <Callout type="warn" icon="!">
               <strong>주의:</strong> @ 멘션은 <code>fast-glob</code>으로{" "}
               <strong>현재 작업 디렉토리</strong>
-              (process.cwd())를 기준으로 검색합니다. 프로젝트 루트에서 dbcode를 실행해야 올바른
+              (process.cwd())를 기준으로 검색합니다. 프로젝트 루트에서 dhelix를 실행해야 올바른
               파일이 검색됩니다. 숨김 파일(dot 파일)은 검색에서 제외됩니다.
             </Callout>
 

@@ -116,7 +116,7 @@ export function SubagentSection() {
           <Callout type="tip" icon="🔧">
             <strong>Custom Agent 정의:</strong>{" "}
             <code className="bg-gray-100 px-1.5 py-0.5 rounded text-sm font-mono text-gray-800">
-              .dbcode/agents/*.md
+              .dhelix/agents/*.md
             </code>{" "}
             파일에 마크다운으로 에이전트를 정의합니다. 프론트매터로 이름, 도구 제한, 모델 지정 가능.
           </Callout>

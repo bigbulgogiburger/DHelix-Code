@@ -66,7 +66,7 @@ export class NativeFunctionCallingStrategy implements ToolCallStrategy {
         args = JSON.parse(tc.arguments) as Record<string, unknown>;
       } catch {
         // JSON 파싱 실패 시 빈 객체로 대체하고, 상세 모드에서 경고 출력
-        if (process.env.DBCODE_VERBOSE) {
+        if (process.env.DHELIX_VERBOSE) {
           process.stderr.write(
             `[native-function-calling] Failed to parse tool arguments for "${tc.name}" (id: ${tc.id}): ${tc.arguments}\n`,
           );

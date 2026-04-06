@@ -8,7 +8,7 @@ argument-hint: "<command-name> [description]"
 
 ## Why This Skill Exists
 
-dbcode는 현재 41개의 슬래시 명령어를 가지고 있으며, 모든 명령어가 동일한 패턴을 따릅니다. 새 명령어를 추가할 때마다 3~4개 파일을 일관된 방식으로 수정해야 하는데, 이 패턴을 벗어나면 레지스트리 등록 누락, 테스트 미작성, 타입 불일치 등의 문제가 발생합니다. 이 스킬은 그 반복 작업을 정확하게 안내합니다.
+dhelix는 현재 41개의 슬래시 명령어를 가지고 있으며, 모든 명령어가 동일한 패턴을 따릅니다. 새 명령어를 추가할 때마다 3~4개 파일을 일관된 방식으로 수정해야 하는데, 이 패턴을 벗어나면 레지스트리 등록 누락, 테스트 미작성, 타입 불일치 등의 문제가 발생합니다. 이 스킬은 그 반복 작업을 정확하게 안내합니다.
 
 ## 변경 대상 파일
 
@@ -75,7 +75,7 @@ export const <name>Command: SlashCommand = {
 | `shouldInjectAsUserMessage` | 출력을 LLM에 주입 | /commit, /review |
 | `interactiveSelect`         | 선택 목록 표시    | /model, /resume  |
 | `newModel`                  | 모델 변경         | /model           |
-| `refreshInstructions`       | DBCODE.md 재로드  | /config          |
+| `refreshInstructions`       | DHELIX.md 재로드  | /config          |
 
 ### Step 3: index.ts에 등록
 

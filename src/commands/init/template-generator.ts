@@ -1,8 +1,8 @@
 /**
- * 확장된 정적 DBCODE.md 템플릿 생성기 — 15+ 프로젝트 타입 자동 감지
+ * 확장된 정적 DHELIX.md 템플릿 생성기 — 15+ 프로젝트 타입 자동 감지
  *
  * 프로젝트 루트의 설정 파일들을 분석하여 프로젝트 유형을 자동 감지하고,
- * 구조화된 DBCODE.md 템플릿을 생성합니다.
+ * 구조화된 DHELIX.md 템플릿을 생성합니다.
  *
  * 감지 항목 (15+):
  *   1.  package.json     — 이름, 스크립트, 모듈 타입, 엔진, 워크스페이스
@@ -21,7 +21,7 @@
  *  14.  Makefile         — 주요 타겟 목록 (최대 10개)
  *  15.  vitest/jest/pytest — 테스트 프레임워크
  *
- * CLI에서 `dbcode init` 실행 시 (에이전트 루프 외부, LLM 없이)
+ * CLI에서 `dhelix init` 실행 시 (에이전트 루프 외부, LLM 없이)
  * 폴백(fallback)으로 사용됩니다.
  *
  * @module commands/init/template-generator
@@ -883,7 +883,7 @@ async function detectTestFramework(cwd: string): Promise<Partial<ProjectInfo>> {
 /**
  * 감지된 프로젝트 정보가 없을 때 사용되는 플레이스홀더 템플릿 생성
  *
- * @returns 최소한의 DBCODE.md 플레이스홀더 문자열
+ * @returns 최소한의 DHELIX.md 플레이스홀더 문자열
  */
 function buildPlaceholderTemplate(): string {
   return [
@@ -904,17 +904,17 @@ function buildPlaceholderTemplate(): string {
 }
 
 /**
- * 감지된 프로젝트 정보를 기반으로 구조화된 DBCODE.md 템플릿 생성
+ * 감지된 프로젝트 정보를 기반으로 구조화된 DHELIX.md 템플릿 생성
  *
  * 출력 구조:
- *   # DBCODE.md — Project Instructions
+ *   # DHELIX.md — Project Instructions
  *   ## Project Overview   (이름, 언어, 프레임워크)
  *   ## Commands           (빌드/테스트/린트 명령어)
  *   ## Stack              (스택 상세, 테스트, CI/CD, 컨테이너, 모노레포)
  *   ## Development        (환경변수, Docker Compose 서비스)
  *
  * @param info - 감지된 프로젝트 정보
- * @returns 구조화된 DBCODE.md 템플릿 문자열
+ * @returns 구조화된 DHELIX.md 템플릿 문자열
  */
 function buildDetectedTemplate(info: ProjectInfo): string {
   const lines: string[] = [`# ${APP_NAME.toUpperCase()}.md — Project Instructions`, ""];
@@ -1009,7 +1009,7 @@ function buildDetectedTemplate(info: ProjectInfo): string {
 // ─────────────────────────────────────────────────────────────
 
 /**
- * 프로젝트 디렉토리를 분석하여 DBCODE.md 정적 템플릿을 생성하는 함수
+ * 프로젝트 디렉토리를 분석하여 DHELIX.md 정적 템플릿을 생성하는 함수
  *
  * 15+ 프로젝트 유형의 설정 파일을 병렬로 감지하고,
  * 감지된 정보를 구조화된 마크다운 템플릿으로 조합합니다.
@@ -1017,16 +1017,16 @@ function buildDetectedTemplate(info: ProjectInfo): string {
  * 각 감지기는 독립적으로 실행되며, 특정 파일이 없거나
  * 파싱에 실패해도 다른 감지기에 영향을 주지 않습니다.
  *
- * CLI에서 `dbcode init` 실행 시 (에이전트 루프 외부, LLM 없이)
+ * CLI에서 `dhelix init` 실행 시 (에이전트 루프 외부, LLM 없이)
  * 폴백(fallback)으로 사용됩니다.
  *
  * @param cwd - 프로젝트 루트 디렉토리
- * @returns 생성된 DBCODE.md 템플릿 문자열
+ * @returns 생성된 DHELIX.md 템플릿 문자열
  *
  * @example
  * ```typescript
  * const template = await generateTemplate("/path/to/project");
- * await writeFile("DBCODE.md", template, "utf-8");
+ * await writeFile("DHELIX.md", template, "utf-8");
  * ```
  */
 export async function generateTemplate(cwd: string): Promise<string> {

@@ -60,8 +60,8 @@ export function PermissionPrompt({ toolName, description, onResponse }: Permissi
   }
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="yellow" paddingX={1}>
-      <Text color="yellow" bold>
+    <Box flexDirection="column" borderStyle="round" borderColor="#00BCD4" paddingX={1}>
+      <Text color="#00BCD4" bold>
         Permission required
       </Text>
       <Box marginTop={0}>

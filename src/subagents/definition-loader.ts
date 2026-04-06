@@ -19,8 +19,8 @@
  * 그 아래가 시스템 프롬프트 본문입니다.
  *
  * 로드 우선순위:
- * 1. 프로젝트 단위: .dbcode/agents/*.md (높은 우선순위)
- * 2. 사용자 전역: ~/.dbcode/agents/*.md (낮은 우선순위)
+ * 1. 프로젝트 단위: .dhelix/agents/*.md (높은 우선순위)
+ * 2. 사용자 전역: ~/.dhelix/agents/*.md (낮은 우선순위)
  * 같은 이름의 에이전트가 양쪽에 있으면 프로젝트 단위가 우선합니다.
  */
 import { readFile, readdir, stat } from "node:fs/promises";
@@ -284,8 +284,8 @@ async function loadFromDirectory(
  * 모든 설정 디렉토리에서 에이전트 정의를 로드합니다.
  *
  * 로드 순서 (낮은 우선순위 → 높은 우선순위):
- * 1. 사용자 전역: ~/.dbcode/agents/*.md (우선순위 낮음)
- * 2. 프로젝트 단위: .dbcode/agents/*.md (우선순위 높음)
+ * 1. 사용자 전역: ~/.dhelix/agents/*.md (우선순위 낮음)
+ * 2. 프로젝트 단위: .dhelix/agents/*.md (우선순위 높음)
  *
  * 같은 이름(name)의 에이전트 정의가 여러 곳에 있으면,
  * 높은 우선순위 소스의 정의가 낮은 우선순위를 덮어씁니다.
@@ -299,14 +299,14 @@ export async function loadAgentDefinitions(
 ): Promise<Map<string, AgentDefinition>> {
   const result = new Map<string, AgentDefinition>();
 
-  // 1단계: 사용자 전역 에이전트 로드 (~/.dbcode/agents/) — 낮은 우선순위
+  // 1단계: 사용자 전역 에이전트 로드 (~/.dhelix/agents/) — 낮은 우선순위
   const userAgentsDir = join(homedir(), `.${APP_NAME}`, "agents");
   const userDefinitions = await loadFromDirectory(userAgentsDir, "user");
   for (const def of userDefinitions) {
     result.set(def.frontmatter.name, def);
   }
 
-  // 2단계: 프로젝트 에이전트 로드 (.dbcode/agents/) — 높은 우선순위 (같은 이름이면 덮어씀)
+  // 2단계: 프로젝트 에이전트 로드 (.dhelix/agents/) — 높은 우선순위 (같은 이름이면 덮어씀)
   const projectAgentsDir = join(workingDirectory, `.${APP_NAME}`, "agents");
   const projectDefinitions = await loadFromDirectory(projectAgentsDir, "project");
   for (const def of projectDefinitions) {

@@ -25,7 +25,7 @@ export default function SetupWizardPage() {
               <LayerBadge layer="cli" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              dbcode를 처음 실행할 때 API 키와 모델을 설정하는 대화형 마법사입니다. 환경변수나 설정
+              dhelix를 처음 실행할 때 API 키와 모델을 설정하는 대화형 마법사입니다. 환경변수나 설정
               파일에 API 키가 없으면 자동으로 실행됩니다.
             </p>
           </div>
@@ -42,12 +42,12 @@ export default function SetupWizardPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">setup-wizard.ts</code>는 dbcode의 최초 실행
-                경험(OOBE)을 담당합니다. 사용자가 API 키를 설정하지 않은 상태에서 dbcode를 실행하면,
+                <code className="text-cyan-600">setup-wizard.ts</code>는 dhelix의 최초 실행
+                경험(OOBE)을 담당합니다. 사용자가 API 키를 설정하지 않은 상태에서 dhelix를 실행하면,
                 이 마법사가 자동으로 시작되어 모델 선택과 API 키 입력을 안내합니다.
               </p>
               <p>
-                설정은 <code className="text-cyan-600">~/.dbcode/config.json</code>에 저장되며, 기존
+                설정은 <code className="text-cyan-600">~/.dhelix/config.json</code>에 저장되며, 기존
                 설정 파일이 있으면 병합(merge)하여 기존 값을 보존합니다.
                 <code className="text-cyan-600">readline</code> 인터페이스를 사용하여 터미널에서
                 대화형으로 입력을 받습니다.
@@ -62,12 +62,12 @@ export default function SetupWizardPage() {
               title="Setup Wizard 아키텍처 위치"
               titleColor="purple"
               chart={`graph TD
-  CLI["dbcode 실행<br/><small>index.ts</small>"]
+  CLI["dhelix 실행<br/><small>index.ts</small>"]
   CHECK["needsSetup()<br/><small>설정 필요 여부 확인</small>"]
-  ENV["환경변수 확인<br/><small>OPENAI_API_KEY / DBCODE_API_KEY</small>"]
-  CFG["config.json 확인<br/><small>~/.dbcode/config.json</small>"]
+  ENV["환경변수 확인<br/><small>OPENAI_API_KEY / DHELIX_API_KEY</small>"]
+  CFG["config.json 확인<br/><small>~/.dhelix/config.json</small>"]
   WIZ["runSetupWizard()<br/><small>대화형 설정 마법사</small>"]
-  SAVE["설정 저장<br/><small>~/.dbcode/config.json</small>"]
+  SAVE["설정 저장<br/><small>~/.dhelix/config.json</small>"]
   APP["App 시작<br/><small>App.tsx 렌더링</small>"]
 
   CLI --> CHECK
@@ -91,7 +91,7 @@ export default function SetupWizardPage() {
 
             <Callout type="info" icon="💡">
               <strong>자동 감지:</strong> 마법사는 <code>OPENAI_API_KEY</code>,{" "}
-              <code>DBCODE_API_KEY</code> 환경변수, 또는 <code>~/.dbcode/config.json</code>의{" "}
+              <code>DHELIX_API_KEY</code> 환경변수, 또는 <code>~/.dhelix/config.json</code>의{" "}
               <code>apiKey</code> 중 하나라도 있으면 실행되지 않습니다. 즉, 환경변수만 설정해도
               마법사를 건너뛸 수 있습니다.
             </Callout>
@@ -219,7 +219,7 @@ export default function SetupWizardPage() {
             </h3>
             <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
               대화형 설정 마법사를 실행합니다. 모델 선택, API 키 입력을 거쳐
-              <code className="text-cyan-600">~/.dbcode/config.json</code>에 설정을 저장합니다.
+              <code className="text-cyan-600">~/.dhelix/config.json</code>에 설정을 저장합니다.
             </p>
             <CodeBlock>
               <span className="kw">export async function</span>{" "}
@@ -233,7 +233,7 @@ export default function SetupWizardPage() {
               <li>
                 설정 파일 경로(<code className="text-cyan-600">CONFIG_PATH</code>)는
                 <code className="text-cyan-600">CONFIG_DIR</code> 상수에서 파생됩니다. 일반적으로{" "}
-                <code className="text-cyan-600">~/.dbcode/config.json</code>입니다.
+                <code className="text-cyan-600">~/.dhelix/config.json</code>입니다.
               </li>
               <li>
                 기존 설정 파일이 있으면 <strong>병합(merge)</strong>합니다.
@@ -269,7 +269,7 @@ export default function SetupWizardPage() {
               기본 사용법 &mdash; 자동 실행
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
-              dbcode를 처음 실행하면 API 키가 감지되지 않아 자동으로 마법사가 시작됩니다.
+              dhelix를 처음 실행하면 API 키가 감지되지 않아 자동으로 마법사가 시작됩니다.
               <code className="text-cyan-600">index.ts</code>에서 다음과 같이 호출합니다.
             </p>
             <CodeBlock>
@@ -298,7 +298,7 @@ export default function SetupWizardPage() {
               실행하면 터미널에 다음과 같은 대화형 프롬프트가 표시됩니다.
             </p>
             <CodeBlock>
-              {"  Welcome to dbcode! Let's get you set up."}
+              {"  Welcome to dhelix! Let's get you set up."}
               {"\n"}
               {"\n"}
               {"  Choose a model:"}
@@ -322,7 +322,7 @@ export default function SetupWizardPage() {
             </CodeBlock>
 
             <Callout type="warn" icon="!">
-              <strong>주의:</strong> API 키를 마법사에서 입력하면 <code>~/.dbcode/config.json</code>
+              <strong>주의:</strong> API 키를 마법사에서 입력하면 <code>~/.dhelix/config.json</code>
               에<strong>평문으로</strong> 저장됩니다. 보안이 중요한 환경에서는 환경변수(
               <code>OPENAI_API_KEY</code>)를 사용하는 것을 권장합니다. 설정 파일의 권한이 적절한지
               확인하세요.
@@ -340,14 +340,14 @@ export default function SetupWizardPage() {
               {"\n"}
               <span className="kw">export</span> OPENAI_API_KEY=
               <span className="str">&quot;sk-...&quot;</span>
-              {"\n"}dbcode <span className="cm">{"# 마법사 없이 바로 시작"}</span>
+              {"\n"}dhelix <span className="cm">{"# 마법사 없이 바로 시작"}</span>
               {"\n"}
               {"\n"}
-              <span className="cm">{"# 방법 2: DBCODE_API_KEY 환경변수"}</span>
+              <span className="cm">{"# 방법 2: DHELIX_API_KEY 환경변수"}</span>
               {"\n"}
-              <span className="kw">export</span> DBCODE_API_KEY=
+              <span className="kw">export</span> DHELIX_API_KEY=
               <span className="str">&quot;sk-...&quot;</span>
-              {"\n"}dbcode <span className="cm">{"# 마법사 없이 바로 시작"}</span>
+              {"\n"}dhelix <span className="cm">{"# 마법사 없이 바로 시작"}</span>
             </CodeBlock>
 
             <DeepDive title="커스텀 모델 설정 상세">
@@ -400,9 +400,9 @@ export default function SetupWizardPage() {
               title="needsSetup() 검사 흐름"
               titleColor="purple"
               chart={`graph TD
-  START(("시작")) --> ENV{"환경변수 확인<br/><small>OPENAI_API_KEY or DBCODE_API_KEY</small>"}
+  START(("시작")) --> ENV{"환경변수 확인<br/><small>OPENAI_API_KEY or DHELIX_API_KEY</small>"}
   ENV -->|"있음"| FALSE["return false<br/><small>설정 불필요</small>"]
-  ENV -->|"없음"| FILE{"config.json 확인<br/><small>~/.dbcode/config.json</small>"}
+  ENV -->|"없음"| FILE{"config.json 확인<br/><small>~/.dhelix/config.json</small>"}
   FILE -->|"파일 있음 + apiKey 있음"| FALSE
   FILE -->|"파일 없음 or apiKey 없음"| TRUE["return true<br/><small>설정 필요</small>"]
 
@@ -474,7 +474,7 @@ export default function SetupWizardPage() {
                 <code className="text-cyan-600">
                   mkdir(CONFIG_DIR, {"{"} recursive: true {"}"})
                 </code>
-                로 <code>~/.dbcode</code> 디렉토리가 없으면 자동 생성합니다.
+                로 <code>~/.dhelix</code> 디렉토리가 없으면 자동 생성합니다.
               </p>
             </div>
           </section>
@@ -498,14 +498,14 @@ export default function SetupWizardPage() {
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">다음을 확인하세요:</p>
               <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
                 <li>
-                  <code className="text-cyan-600">~/.dbcode/config.json</code>에{" "}
+                  <code className="text-cyan-600">~/.dhelix/config.json</code>에{" "}
                   <code className="text-cyan-600">llm.apiKey</code>
                   필드가 있는지 확인하세요. 마법사에서 &quot;환경변수 사용&quot;을 선택했다면
                   apiKey가 저장되지 않습니다.
                 </li>
                 <li>
                   <code className="text-cyan-600">OPENAI_API_KEY</code> 또는{" "}
-                  <code className="text-cyan-600">DBCODE_API_KEY</code>
+                  <code className="text-cyan-600">DHELIX_API_KEY</code>
                   환경변수가 설정되어 있는지 확인하세요.
                 </li>
                 <li>
@@ -522,9 +522,9 @@ export default function SetupWizardPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 마법사를 다시 실행하려면{" "}
-                <code className="text-cyan-600">~/.dbcode/config.json</code>에서
+                <code className="text-cyan-600">~/.dhelix/config.json</code>에서
                 <code className="text-cyan-600">llm.apiKey</code> 필드를 삭제하고,
-                <code className="text-cyan-600">OPENAI_API_KEY</code> 환경변수도 해제한 뒤 dbcode를
+                <code className="text-cyan-600">OPENAI_API_KEY</code> 환경변수도 해제한 뒤 dhelix를
                 실행하세요. 또는 설정 파일을 직접 편집할 수도 있습니다.
               </p>
             </div>

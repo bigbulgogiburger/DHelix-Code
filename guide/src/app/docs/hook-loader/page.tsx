@@ -44,7 +44,7 @@ export default function HookLoaderPage() {
               <span>{"📦"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
-              Hook Loader는 <code className="text-cyan-600 text-xs">.dbcode/settings.json</code>의
+              Hook Loader는 <code className="text-cyan-600 text-xs">.dhelix/settings.json</code>의
               <code className="text-cyan-600 text-xs"> "hooks"</code> 키에서 훅 설정을 로드합니다.
               Zod의 <strong className="text-gray-900">discriminatedUnion</strong>을 활용하여
               <code className="text-cyan-600 text-xs"> type</code> 필드에 따라 서로 다른 스키마를
@@ -65,7 +65,7 @@ export default function HookLoaderPage() {
               title="훅 설정 로딩 흐름"
               titleColor="purple"
               chart={`flowchart TB
-  FILE[".dbcode/settings.json"] --> READ["파일 읽기 + JSON 파싱"]
+  FILE[".dhelix/settings.json"] --> READ["파일 읽기 + JSON 파싱"]
   READ -->|ENOENT| EMPTY["빈 설정 반환 {}"]
   READ -->|성공| EXTRACT['"hooks" 키 추출']
   EXTRACT -->|없음| EMPTY2["빈 설정 반환 {}"]
@@ -115,7 +115,7 @@ export default function HookLoaderPage() {
                     name: "settingsDir",
                     type: "string",
                     required: true,
-                    desc: 'settings.json이 있는 디렉토리 (예: ".dbcode")',
+                    desc: 'settings.json이 있는 디렉토리 (예: ".dhelix")',
                   },
                 ]}
               />
@@ -215,7 +215,7 @@ export default function HookLoaderPage() {
               settings.json에서 훅 설정
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
-              <code className="text-cyan-600 text-xs">.dbcode/settings.json</code>의{" "}
+              <code className="text-cyan-600 text-xs">.dhelix/settings.json</code>의{" "}
               <code className="text-cyan-600 text-xs">"hooks"</code> 키에 다음과 같이 설정합니다:
             </p>
 
@@ -282,7 +282,7 @@ export default function HookLoaderPage() {
               <span className="text-[#ff7b72]">await</span>{" "}
               <span className="text-[#d2a8ff]">loadHookConfig</span>
               <span className="text-[#c9d1d9]">(</span>
-              <span className="text-[#a5d6ff]">{'"./my-project/.dbcode"'}</span>
+              <span className="text-[#a5d6ff]">{'"./my-project/.dhelix"'}</span>
               <span className="text-[#c9d1d9]">);</span>
               {"\n"}
               <span className="text-[#8b949e]">

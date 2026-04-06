@@ -19,7 +19,7 @@ describe("resume command", () => {
   let tmpDir: string;
 
   beforeEach(async () => {
-    tmpDir = join(tmpdir(), `dbcode-resume-test-${Date.now()}`);
+    tmpDir = join(tmpdir(), `dhelix-resume-test-${Date.now()}`);
     await mkdir(tmpDir, { recursive: true });
   });
 
@@ -124,7 +124,7 @@ describe("rewind command", () => {
   let sessionDir: string;
 
   beforeEach(async () => {
-    tmpDir = join(tmpdir(), `dbcode-rewind-test-${Date.now()}`);
+    tmpDir = join(tmpdir(), `dhelix-rewind-test-${Date.now()}`);
     sessionDir = join(tmpDir, "test-session");
     await mkdir(sessionDir, { recursive: true });
   });

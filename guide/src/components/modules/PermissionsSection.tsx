@@ -134,7 +134,7 @@ export function PermissionsSection() {
           <ImplDirection
             items={[
               "<strong>감사 로그 활용</strong>: audit-log.ts의 JSONL 데이터로 도구 사용 패턴 분석 대시보드 구현 가능",
-              "<strong>팀 권한 정책</strong>: 프로젝트 .dbcode/settings.json으로 팀 공통 deny/allow 규칙 공유",
+              "<strong>팀 권한 정책</strong>: 프로젝트 .dhelix/settings.json으로 팀 공통 deny/allow 규칙 공유",
               "<strong>동적 권한 학습</strong>: 사용자 승인 패턴 분석 → 자동 규칙 제안 기능",
             ]}
           />

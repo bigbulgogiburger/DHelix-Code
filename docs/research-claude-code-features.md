@@ -1,4 +1,4 @@
-# Claude Code Feature Parity Checklist for dbcode
+# Claude Code Feature Parity Checklist for dhelix
 
 > Comprehensive analysis of Claude Code (Anthropic's agentic CLI coding tool) features.
 > Priority: P0 = must-have for MVP, P1 = important for v1.0, P2 = nice-to-have / future
@@ -953,7 +953,7 @@
 
 ### 1. Everything is Tools
 
-Claude Code's architecture is tool-centric. Every capability (file reading, command execution, web access, agent spawning) is exposed as a tool that the LLM decides when to use. dbcode should follow this pattern for extensibility.
+Claude Code's architecture is tool-centric. Every capability (file reading, command execution, web access, agent spawning) is exposed as a tool that the LLM decides when to use. dhelix should follow this pattern for extensibility.
 
 ### 2. Configuration is Layered
 

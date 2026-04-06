@@ -75,11 +75,10 @@ export const StreamingMessage = React.memo(function StreamingMessage({
   isComplete,
   enableMarkdown = true,
 }: StreamingMessageProps) {
-  if (!text) {
-    return null;
-  }
-
   const { rendered, raw } = useMemo(() => {
+    if (!text) {
+      return { rendered: "", raw: "" };
+    }
     if (!enableMarkdown || !hasMarkdown(text)) {
       return { rendered: "", raw: text };
     }
@@ -88,6 +87,10 @@ export const StreamingMessage = React.memo(function StreamingMessage({
     }
     return partialRenderMarkdown(text);
   }, [text, isComplete, enableMarkdown]);
+
+  if (!text) {
+    return null;
+  }
 
   return (
     <Box flexDirection="column">

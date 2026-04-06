@@ -45,7 +45,7 @@ export default function MemoryPathsPage() {
               <span>{"📋"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
-              메모리 파일은 <code className="text-cyan-600 text-xs">~/.dbcode/projects/</code>{" "}
+              메모리 파일은 <code className="text-cyan-600 text-xs">~/.dhelix/projects/</code>{" "}
               아래에 저장됩니다. 프로젝트 루트 경로에 특수문자가 있어도 디렉토리명으로 안전하게
               사용할 수 있도록,{" "}
               <strong className="text-gray-900">절대 경로의 SHA-256 해시 앞 16자</strong>를
@@ -66,7 +66,7 @@ export default function MemoryPathsPage() {
               chart={`flowchart TB
   PROJECT["프로젝트 루트<br/><small>/Users/alice/my-app</small>"]
   HASH["computeProjectHash()<br/><small>SHA-256 → 앞 16자</small>"]
-  DIR["메모리 디렉토리<br/><small>~/.dbcode/projects/a1b2c3d4e5f6g7h8/memory/</small>"]
+  DIR["메모리 디렉토리<br/><small>~/.dhelix/projects/a1b2c3d4e5f6g7h8/memory/</small>"]
   MAIN["MEMORY.md<br/><small>주 메모리 파일</small>"]
   TOPIC["{토픽}.md<br/><small>overflow 섹션</small>"]
 
@@ -149,7 +149,7 @@ export default function MemoryPathsPage() {
                 <span className="font-bold text-gray-900">반환값:</span>{" "}
                 <code className="text-cyan-600 text-xs">string</code> —{" "}
                 <code className="text-cyan-600 text-xs">
-                  {"~/.dbcode/projects/{해시16자}/memory/"}
+                  {"~/.dhelix/projects/{해시16자}/memory/"}
                 </code>
               </div>
             </div>
@@ -218,7 +218,7 @@ export default function MemoryPathsPage() {
               </h3>
               <p className="text-[13px] text-gray-600">
                 전체 프로젝트 메모리의 기본 디렉토리{" "}
-                <code className="text-cyan-600 text-xs">~/.dbcode/projects/</code>를 반환합니다.
+                <code className="text-cyan-600 text-xs">~/.dhelix/projects/</code>를 반환합니다.
                 메모리 디렉토리 목록 조회 등에 사용됩니다.
               </p>
             </div>
@@ -271,7 +271,7 @@ export default function MemoryPathsPage() {
               <span className="text-[#d2a8ff]">process</span>
               <span className="text-[#c9d1d9]">.cwd();</span>
               {"\n\n"}
-              <span className="text-[#8b949e]">{"// ~/.dbcode/projects/a1b2.../memory/"}</span>
+              <span className="text-[#8b949e]">{"// ~/.dhelix/projects/a1b2.../memory/"}</span>
               {"\n"}
               <span className="text-[#ff7b72]">const</span>{" "}
               <span className="text-[#79c0ff]">memDir</span>{" "}
@@ -280,7 +280,7 @@ export default function MemoryPathsPage() {
               <span className="text-[#c9d1d9]">(projectRoot);</span>
               {"\n\n"}
               <span className="text-[#8b949e]">
-                {"// ~/.dbcode/projects/a1b2.../memory/MEMORY.md"}
+                {"// ~/.dhelix/projects/a1b2.../memory/MEMORY.md"}
               </span>
               {"\n"}
               <span className="text-[#ff7b72]">const</span>{" "}
@@ -311,7 +311,7 @@ export default function MemoryPathsPage() {
               <span className="text-[#c9d1d9]">;</span>
               {"\n\n"}
               <span className="text-[#8b949e]">
-                {"// ~/.dbcode/projects/a1b2.../memory/debugging.md"}
+                {"// ~/.dhelix/projects/a1b2.../memory/debugging.md"}
               </span>
               {"\n"}
               <span className="text-[#ff7b72]">const</span>{" "}
@@ -381,7 +381,7 @@ export default function MemoryPathsPage() {
                 <div className="flex gap-3">
                   <code className="text-cyan-600 font-bold shrink-0 w-44">PROJECTS_BASE_DIR</code>
                   <span>
-                    <code className="text-cyan-600 text-xs">~/.dbcode/projects/</code> — 모든
+                    <code className="text-cyan-600 text-xs">~/.dhelix/projects/</code> — 모든
                     프로젝트 메모리의 루트
                   </span>
                 </div>
@@ -399,7 +399,7 @@ export default function MemoryPathsPage() {
               <code className="text-cyan-600 text-xs">PROJECTS_BASE_DIR</code>은{" "}
               <code className="text-cyan-600 text-xs">constants.ts</code>의{" "}
               <code className="text-cyan-600 text-xs">APP_NAME</code>을 사용하여{" "}
-              <code className="text-cyan-600 text-xs">~/.dbcode/projects/</code>를 생성합니다. 앱
+              <code className="text-cyan-600 text-xs">~/.dhelix/projects/</code>를 생성합니다. 앱
               이름이 변경되면 메모리 경로도 함께 변경됩니다.
             </Callout>
           </section>
@@ -453,7 +453,7 @@ export default function MemoryPathsPage() {
                     Windows에서 드라이브 문자 대소문자 차이(
                     <code className="text-red-600 text-xs">C:\</code> vs{" "}
                     <code className="text-cyan-600 text-xs">c:\</code>)가 있으면 다른 해시가
-                    생성됩니다. dbcode는 크로스 플랫폼을 위해{" "}
+                    생성됩니다. dhelix는 크로스 플랫폼을 위해{" "}
                     <code className="text-cyan-600 text-xs">src/utils/path.ts</code>의{" "}
                     <code className="text-cyan-600 text-xs">joinPath()</code>를 사용합니다.
                   </p>

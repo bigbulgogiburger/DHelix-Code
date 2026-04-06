@@ -63,9 +63,9 @@ const STATUS_ICONS: Readonly<Record<string, string>> = {
 const STATUS_COLORS: Readonly<Record<string, string>> = {
   pending: "gray",
   in_progress: "yellow",
-  completed: "green",
+  completed: "#00E5FF",
   failed: "red",
-  blocked: "cyan",
+  blocked: "#0097A7",
   cancelled: "gray",
 };
 
@@ -77,11 +77,11 @@ const PRIORITY_STARS: Readonly<Record<string, string>> = {
   low: "★",
 };
 
-/** 우선순위별 색상 — critical=빨강, high=노랑, medium=파랑, low=회색 */
+/** 우선순위별 색상 — critical=빨강, high=노랑, medium=시안, low=회색 */
 const PRIORITY_COLORS: Readonly<Record<string, string>> = {
   critical: "red",
   high: "yellow",
-  medium: "blue",
+  medium: "cyan",
   low: "gray",
 };
 
@@ -328,10 +328,10 @@ export const TaskViewPanel = React.memo(function TaskViewPanel({
   const headerTitle = teamName ? `Task View ─── ${teamName}` : "Task View";
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="blue" paddingX={1} paddingY={0}>
+    <Box flexDirection="column" borderStyle="single" borderColor="#0097A7" paddingX={1} paddingY={0}>
       {/* Header */}
       <Box marginBottom={1}>
-        <Text bold color="blue">
+        <Text bold color="cyan">
           {headerTitle}
         </Text>
       </Box>

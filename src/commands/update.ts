@@ -1,5 +1,5 @@
 /**
- * /update 명령어 핸들러 — dbcode를 최신 버전으로 업데이트
+ * /update 명령어 핸들러 — dhelix를 최신 버전으로 업데이트
  *
  * 사용자가 /update를 입력하면:
  *   1. npm 레지스트리에서 최신 버전 확인
@@ -15,7 +15,7 @@ import { APP_NAME, VERSION } from "../constants.js";
 
 export const updateCommand: SlashCommand = {
   name: "update",
-  description: "Update dbcode to the latest version",
+  description: "Update dhelix to the latest version",
   usage: "/update",
   execute: async () => {
     const lines: string[] = [];
@@ -58,7 +58,7 @@ export const updateCommand: SlashCommand = {
       }
 
       lines.push(`Updated to ${latestVersion} successfully.`);
-      lines.push("Restart dbcode to use the new version.");
+      lines.push("Restart dhelix to use the new version.");
     } catch (error) {
       lines.push(`Update check failed: ${error instanceof Error ? error.message : String(error)}`);
       lines.push("");

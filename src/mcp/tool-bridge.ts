@@ -1,15 +1,15 @@
 /**
- * MCP 도구 브리지 — MCP 서버의 도구를 dbcode 도구 레지스트리에 연결하는 모듈
+ * MCP 도구 브리지 — MCP 서버의 도구를 dhelix 도구 레지스트리에 연결하는 모듈
  *
  * MCP 서버는 자체적인 도구 정의(MCPToolDefinition)를 가지고 있고,
- * dbcode는 자체적인 도구 시스템(ToolDefinition)을 가지고 있습니다.
+ * dhelix는 자체적인 도구 시스템(ToolDefinition)을 가지고 있습니다.
  * 이 모듈은 두 시스템을 "브리지(다리)"로 연결하여,
- * MCP 서버의 도구를 dbcode 내에서 자연스럽게 사용할 수 있게 합니다.
+ * MCP 서버의 도구를 dhelix 내에서 자연스럽게 사용할 수 있게 합니다.
  *
  * 주요 변환 작업:
  * 1. 이름 네임스페이싱: MCP 도구 이름을 "mcp__서버명__도구명" 형태로 변환
  * 2. 스키마 변환: MCP의 JSON Schema를 Zod 스키마로 변환 (타입 검증용)
- * 3. 실행 프록시: dbcode가 도구를 호출하면 실제로는 MCP 클라이언트를 통해 서버에서 실행
+ * 3. 실행 프록시: dhelix가 도구를 호출하면 실제로는 MCP 클라이언트를 통해 서버에서 실행
  */
 import { z } from "zod";
 import { writeFile, mkdir } from "node:fs/promises";
@@ -19,6 +19,7 @@ import { type ToolDefinition, type ToolResult } from "../tools/types.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { BaseError } from "../utils/error.js";
 import { getLogger } from "../utils/logger.js";
+import { scanForSecrets } from "../guardrails/secret-scanner.js";
 import { type MCPClient } from "./client.js";
 import { type MCPToolDefinition } from "./types.js";
 
@@ -48,7 +49,7 @@ const MAX_MCP_OUTPUT_TOKENS = (() => {
 
 /**
  * MCP 도구 실행 타임아웃 — 환경변수 MCP_TOOL_TIMEOUT으로 조절 가능
- * Claude Code는 기본 ~27.8시간이지만, dbcode는 실용적인 120초(2분)를 기본값으로 사용
+ * Claude Code는 기본 ~27.8시간이지만, dhelix는 실용적인 120초(2분)를 기본값으로 사용
  */
 const MCP_TOOL_TIMEOUT_MS = (() => {
   const envValue = process.env.MCP_TOOL_TIMEOUT;
@@ -77,7 +78,7 @@ async function persistLargeOutput(
 ): Promise<string> {
   const logger = getLogger();
   try {
-    const dir = join(tmpdir(), "dbcode-mcp-outputs");
+    const dir = join(tmpdir(), "dhelix-mcp-outputs");
     await mkdir(dir, { recursive: true });
     const timestamp = Date.now();
     const safeName = toolName.replace(/[^a-zA-Z0-9_-]/g, "_");
@@ -161,7 +162,7 @@ function jsonSchemaToZod(schema: Readonly<Record<string, unknown>>): z.ZodType {
 }
 
 /**
- * MCP 도구 정의를 dbcode ToolDefinition으로 변환합니다.
+ * MCP 도구 정의를 dhelix ToolDefinition으로 변환합니다.
  *
  * 변환된 도구는 호출 시 MCP 클라이언트를 통해 원격 서버에서 실행됩니다.
  * 즉, 실행 로직은 로컬이 아니라 MCP 서버 측에 있습니다.
@@ -169,7 +170,7 @@ function jsonSchemaToZod(schema: Readonly<Record<string, unknown>>): z.ZodType {
  * @param mcpTool - MCP 도구 정의 (이름, 설명, 입력 스키마)
  * @param client - 도구를 실행할 MCP 클라이언트
  * @param serverName - MCP 서버 이름 (네임스페이싱에 사용)
- * @returns dbcode 도구 정의
+ * @returns dhelix 도구 정의
  */
 function bridgeMCPTool(
   mcpTool: MCPToolDefinition,
@@ -210,10 +211,20 @@ function bridgeMCPTool(
         const result = await client.callTool(mcpTool.name, args);
 
         // 결과의 텍스트 콘텐츠를 하나의 문자열로 합침
-        const output = result.content
+        const rawOutput = result.content
           .map((c) => c.text ?? "")
           .filter(Boolean)
           .join("\n");
+
+        // 시크릿 스캐닝 — 출력 제한 전에 적용하여 파일 저장/truncation 전에 비밀 정보를 제거
+        const secretScan = scanForSecrets(rawOutput);
+        const output = secretScan.found ? secretScan.redacted : rawOutput;
+        if (secretScan.found) {
+          logger.warn(
+            { tool: namespacedName, patterns: secretScan.patterns },
+            `[MCP Bridge] Redacted secrets in output: ${secretScan.patterns.join(", ")}`,
+          );
+        }
 
         // 3-tier 출력 제한 (Claude Code 패턴)
         // Tier 3: 400,000자 초과 → 파일 저장 + preview
@@ -347,7 +358,7 @@ function getMCPRecoveryHint(errorMsg: string, toolName: string): string {
 }
 
 /**
- * MCP 도구 브리지 — MCP 서버에서 도구를 발견하고 dbcode 도구 레지스트리에 등록합니다.
+ * MCP 도구 브리지 — MCP 서버에서 도구를 발견하고 dhelix 도구 레지스트리에 등록합니다.
  *
  * 지연 로딩(lazy loading)과 동적 업데이트를 지원합니다.
  * 서버에서 도구 목록이 변경되면 자동으로 갱신됩니다.
@@ -357,7 +368,7 @@ export class MCPToolBridge {
   private readonly registeredTools = new Map<string, readonly string[]>();
 
   /**
-   * @param toolRegistry - 도구를 등록할 dbcode 도구 레지스트리
+   * @param toolRegistry - 도구를 등록할 dhelix 도구 레지스트리
    */
   constructor(private readonly toolRegistry: ToolRegistry) {}
 
@@ -377,7 +388,7 @@ export class MCPToolBridge {
     const registeredNames: string[] = [];
 
     for (const mcpTool of mcpTools) {
-      // MCP 도구를 dbcode 도구로 브리지(변환)
+      // MCP 도구를 dhelix 도구로 브리지(변환)
       const bridged = bridgeMCPTool(mcpTool, client, serverName);
 
       // 이미 등록된 도구는 건너뜀 (재연결 시 중복 방지)

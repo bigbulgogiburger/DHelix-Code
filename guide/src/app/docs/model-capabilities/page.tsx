@@ -99,7 +99,7 @@ export default function ModelCapabilitiesPage() {
             </h2>
 
             <p className="text-[14px] text-gray-600 leading-relaxed mb-5">
-              <span className="font-mono text-cyan-600">model-capabilities</span> 모듈은 dbcode가
+              <span className="font-mono text-cyan-600">model-capabilities</span> 모듈은 dhelix가
               지원하는 모든 LLM 모델의 <strong className="text-gray-900">기능 플래그</strong>,{" "}
               <strong className="text-gray-900">컨텍스트 크기</strong>,{" "}
               <strong className="text-gray-900">토큰 가격</strong>,{" "}

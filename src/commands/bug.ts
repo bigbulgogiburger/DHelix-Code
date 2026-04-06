@@ -5,7 +5,7 @@
  * 모델명 등)를 자동으로 수집하여 GitHub 이슈 형태의 버그 리포트를 생성합니다.
  * 생성된 URL을 클릭하면 GitHub에 미리 채워진 이슈 페이지가 열립니다.
  *
- * 사용 시점: dbcode에서 버그를 발견했을 때 빠르게 리포트를 작성할 때
+ * 사용 시점: dhelix에서 버그를 발견했을 때 빠르게 리포트를 작성할 때
  */
 import { type SlashCommand } from "./registry.js";
 import { VERSION, APP_NAME } from "../constants.js";
@@ -26,7 +26,7 @@ function buildGitHubIssueUrl(title: string, body: string): string {
     body,
     labels: "bug",
   });
-  return `https://github.com/bigbulgogiburger/dbcode/issues/new?${params}`;
+  return `https://github.com/bigbulgogiburger/dhelix/issues/new?${params}`;
 }
 
 /**

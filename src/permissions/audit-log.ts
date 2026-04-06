@@ -9,7 +9,7 @@
  * - 한 줄씩 추가(append)하므로 파일이 손상되더라도 다른 줄에 영향 없음
  * - 파싱이 간단하고 스트리밍 처리에 적합
  *
- * 기본 로그 파일 경로: ~/.dbcode/audit.jsonl
+ * 기본 로그 파일 경로: ~/.dhelix/audit.jsonl
  *
  * 예시:
  * ```jsonl
@@ -56,7 +56,7 @@ export class AuditLogger {
   private initialized: boolean = false;
 
   /**
-   * @param logPath - 감사 로그 파일의 절대 경로 (예: ~/.dbcode/audit.jsonl)
+   * @param logPath - 감사 로그 파일의 절대 경로 (예: ~/.dhelix/audit.jsonl)
    */
   constructor(logPath: string) {
     this.logPath = logPath;

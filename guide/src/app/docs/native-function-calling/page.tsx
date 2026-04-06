@@ -246,7 +246,7 @@ export default function NativeFunctionCallingPage() {
                 가끔 잘못된 JSON을 생성할 수 있으므로 방어적으로 처리합니다.
               </li>
               <li>
-                JSON 파싱 실패 시 경고는 <code className="text-cyan-600">DBCODE_VERBOSE</code> 환경
+                JSON 파싱 실패 시 경고는 <code className="text-cyan-600">DHELIX_VERBOSE</code> 환경
                 변수가 설정된 경우에만 <code className="text-cyan-600">stderr</code>로 출력됩니다.
               </li>
               <li>
@@ -336,14 +336,14 @@ export default function NativeFunctionCallingPage() {
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
               모델이 잘못된 JSON을 생성하면 인자가 빈 객체로 대체됩니다.
-              <code className="text-cyan-600">DBCODE_VERBOSE</code> 환경 변수로 디버깅할 수
+              <code className="text-cyan-600">DHELIX_VERBOSE</code> 환경 변수로 디버깅할 수
               있습니다.
             </p>
             <CodeBlock>
               <span className="cm">{"// 환경 변수 설정으로 파싱 실패 경고 활성화"}</span>
               {"\n"}
-              <span className="prop">DBCODE_VERBOSE</span>=<span className="num">1</span>{" "}
-              <span className="prop">dbcode</span>
+              <span className="prop">DHELIX_VERBOSE</span>=<span className="num">1</span>{" "}
+              <span className="prop">dhelix</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"// stderr 출력 예시:"}</span>
@@ -411,7 +411,7 @@ export default function NativeFunctionCallingPage() {
               chart={`graph TD
   INPUT["toolCalls.map()"] --> PARSE{"JSON.parse<br/>tc.arguments"}
   PARSE -->|"성공"| RESULT["{ id, name, arguments }"]
-  PARSE -->|"실패"| VERBOSE{"DBCODE_VERBOSE?"}
+  PARSE -->|"실패"| VERBOSE{"DHELIX_VERBOSE?"}
   VERBOSE -->|"Yes"| WARN["stderr 경고 출력"]
   VERBOSE -->|"No"| SILENT["조용히 진행"]
   WARN --> EMPTY["arguments = {}"]
@@ -548,7 +548,7 @@ export default function NativeFunctionCallingPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
                 모델이 잘못된 JSON을 생성한 경우입니다.{" "}
-                <code className="text-cyan-600">DBCODE_VERBOSE=1</code>로 실행하면 stderr에 파싱
+                <code className="text-cyan-600">DHELIX_VERBOSE=1</code>로 실행하면 stderr에 파싱
                 실패 로그가 출력됩니다:
               </p>
               <CodeBlock>

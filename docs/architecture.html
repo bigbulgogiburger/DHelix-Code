@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>dbcode Architecture Documentation</title>
+    <title>dhelix Architecture Documentation</title>
     <script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
     <style>
       @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
@@ -890,7 +890,7 @@
     <!-- Navigation -->
     <nav id="nav">
       <div class="nav-inner">
-        <div class="nav-logo"><span>dbcode</span> Architecture</div>
+        <div class="nav-logo"><span>dhelix</span> Architecture</div>
         <div class="nav-links">
           <a href="#overview">Overview</a>
           <a href="#architecture">Architecture</a>
@@ -908,7 +908,7 @@
     <header class="hero" id="overview">
       <div class="hero-badge">v0.1 &mdash; CLI AI Coding Assistant</div>
       <h1>
-        <span class="gradient">dbcode</span><br />
+        <span class="gradient">dhelix</span><br />
         Architecture Guide
       </h1>
       <p>
@@ -945,7 +945,7 @@
         <div class="section-header reveal">
           <div class="section-label blue">TECH STACK</div>
           <h2 class="section-title">기술 스택</h2>
-          <p class="section-desc">dbcode를 구성하는 핵심 기술들</p>
+          <p class="section-desc">dhelix를 구성하는 핵심 기술들</p>
         </div>
         <div
           style="
@@ -996,7 +996,7 @@
           <div class="section-label purple">ARCHITECTURE</div>
           <h2 class="section-title">4-Layer Architecture</h2>
           <p class="section-desc">
-            dbcode는 4개의 레이어로 구성되며, 의존성은 항상 위에서 아래로만 흐릅니다.
+            dhelix는 4개의 레이어로 구성되며, 의존성은 항상 위에서 아래로만 흐릅니다.
           </p>
         </div>
 
@@ -1159,7 +1159,7 @@
                     <div class="name">useKeybindings</div>
                     <div class="path">src/cli/hooks/useKeybindings.ts</div>
                     <div class="desc">
-                      키보드 단축키를 등록하고 ~/.dbcode/keybindings.json 커스텀 설정을 지원합니다.
+                      키보드 단축키를 등록하고 ~/.dhelix/keybindings.json 커스텀 설정을 지원합니다.
                     </div>
                   </div>
                 </div>
@@ -1370,7 +1370,7 @@
                     <div class="name">Instruction Loader</div>
                     <div class="path">src/instructions/loader.ts</div>
                     <div class="desc">
-                      6단계 DBCODE.md 로딩: global → global rules → parent dirs → project → project
+                      6단계 DHELIX.md 로딩: global → global rules → parent dirs → project → project
                       rules → local.
                     </div>
                   </div>
@@ -1389,7 +1389,7 @@
           <div class="section-label cyan">CORE ENGINE</div>
           <h2 class="section-title">Agent Loop (ReAct Pattern)</h2>
           <p class="section-desc">
-            dbcode의 심장부. 사용자 입력을 받아 LLM과 도구를 오케스트레이션합니다.
+            dhelix의 심장부. 사용자 입력을 받아 LLM과 도구를 오케스트레이션합니다.
           </p>
         </div>
 
@@ -1814,9 +1814,9 @@
         <div class="diagram-wrapper reveal">
           <div class="diagram-title">MCP 아키텍처</div>
           <div class="mermaid">
-            graph TD subgraph Config["📁 3-Scope Configuration"] LOCAL[".dbcode/mcp-local.json<br />🔒
-            개인 (gitignored)"] PROJECT[".dbcode/mcp.json<br />👥 팀 공유 (git)"]
-            USER["~/.dbcode/mcp-servers.json<br />🌐 글로벌"] end subgraph Manager["🎛️ MCP Manager"]
+            graph TD subgraph Config["📁 3-Scope Configuration"] LOCAL[".dhelix/mcp-local.json<br />🔒
+            개인 (gitignored)"] PROJECT[".dhelix/mcp.json<br />👥 팀 공유 (git)"]
+            USER["~/.dhelix/mcp-servers.json<br />🌐 글로벌"] end subgraph Manager["🎛️ MCP Manager"]
             SCOPE["ScopeManager<br />local > project > user"] MGR["MCPManager<br />connect /
             disconnect"] CONN["MCPManagerConnector<br />tools, resources, prompts"] end subgraph
             Transport["🔌 Transport Layer"] STDIO["stdio<br />로컬 CLI 도구"] HTTP["http<br />원격
@@ -1886,7 +1886,7 @@
             EXPLORE["🔍 Explore Agent<br />코드베이스 탐색<br /><i>읽기 전용</i>"] SPAWNER -->
             PLAN["📋 Plan Agent<br />구현 계획 수립<br /><i>읽기 전용</i>"] SPAWNER --> GENERAL["⚡
             General Agent<br />범용 작업<br /><i>전체 도구</i>"] SPAWNER --> CUSTOM["🔧 Custom
-            Agent<br />.dbcode/agents/*.md<br /><i>커스텀 정의</i>"] MAIN -->|"/team"| TEAM["🏢 Team
+            Agent<br />.dhelix/agents/*.md<br /><i>커스텀 정의</i>"] MAIN -->|"/team"| TEAM["🏢 Team
             Manager"] TEAM --> W1["Worker 1"] TEAM --> W2["Worker 2"] TEAM --> WN["Worker N"] W1 &
             W2 & WN --> TASKS["📋 Shared Task List"] W1 & W2 & WN --> STATE["💾 Shared State"] style
             MAIN fill:#2a1e4a,stroke:#8b5cf6,color:#f1f5f9 style TEAM
@@ -1973,7 +1973,7 @@
         <div class="section-header reveal">
           <div class="section-label cyan">COMMANDS</div>
           <h2 class="section-title">42 Slash Commands</h2>
-          <p class="section-desc">dbcode에서 사용할 수 있는 모든 슬래시 명령어 목록</p>
+          <p class="section-desc">dhelix에서 사용할 수 있는 모든 슬래시 명령어 목록</p>
         </div>
 
         <div class="reveal">
@@ -2174,7 +2174,7 @@
                   </tr>
                   <tr>
                     <td class="cmd-name">/init</td>
-                    <td>프로젝트에 DBCODE.md 생성</td>
+                    <td>프로젝트에 DHELIX.md 생성</td>
                   </tr>
                 </tbody>
               </table>
@@ -2242,7 +2242,7 @@
           <div class="diagram-title">설정 병합 우선순위</div>
           <div class="mermaid">
             graph BT A["🏗️ defaults.ts<br />기본값"] --> MERGE["📦 Merged Config"] B["👤
-            ~/.dbcode/settings.json<br />사용자 전역 설정"] --> MERGE C["📁 .dbcode/settings.json<br />프로젝트
+            ~/.dhelix/settings.json<br />사용자 전역 설정"] --> MERGE C["📁 .dhelix/settings.json<br />프로젝트
             설정"] --> MERGE D["🌍 Environment Variables<br />환경변수"] --> MERGE E["⌨️ CLI
             Flags<br />명령줄 플래그 (최우선)"] --> MERGE style MERGE
             fill:#1e3a2a,stroke:#10b981,color:#f1f5f9 style E
@@ -2264,42 +2264,42 @@
               <tbody>
                 <tr>
                   <td>프로젝트 설정</td>
-                  <td class="cmd-name">.dbcode/settings.json</td>
+                  <td class="cmd-name">.dhelix/settings.json</td>
                   <td>이 프로젝트에만 적용되는 설정</td>
                 </tr>
                 <tr>
                   <td>사용자 전역</td>
-                  <td class="cmd-name">~/.dbcode/settings.json</td>
+                  <td class="cmd-name">~/.dhelix/settings.json</td>
                   <td>모든 프로젝트에 적용</td>
                 </tr>
                 <tr>
                   <td>프로젝트 규칙</td>
-                  <td class="cmd-name">.dbcode/rules/*.md</td>
+                  <td class="cmd-name">.dhelix/rules/*.md</td>
                   <td>경로 조건부 규칙 (glob 기반)</td>
                 </tr>
                 <tr>
                   <td>전역 규칙</td>
-                  <td class="cmd-name">~/.dbcode/rules/*.md</td>
+                  <td class="cmd-name">~/.dhelix/rules/*.md</td>
                   <td>모든 프로젝트에 적용되는 규칙</td>
                 </tr>
                 <tr>
                   <td>키바인딩</td>
-                  <td class="cmd-name">~/.dbcode/keybindings.json</td>
+                  <td class="cmd-name">~/.dhelix/keybindings.json</td>
                   <td>키보드 단축키 커스터마이징</td>
                 </tr>
                 <tr>
                   <td>프로젝트 메모리</td>
-                  <td class="cmd-name">~/.dbcode/projects/{hash}/memory/</td>
+                  <td class="cmd-name">~/.dhelix/projects/{hash}/memory/</td>
                   <td>프로젝트별 AI 메모리</td>
                 </tr>
                 <tr>
                   <td>Cold Storage</td>
-                  <td class="cmd-name">~/.dbcode/projects/{hash}/cold-storage/</td>
+                  <td class="cmd-name">~/.dhelix/projects/{hash}/cold-storage/</td>
                   <td>압축된 컨텍스트 (24h TTL)</td>
                 </tr>
                 <tr>
                   <td>감사 로그</td>
-                  <td class="cmd-name">.dbcode/audit.jsonl</td>
+                  <td class="cmd-name">.dhelix/audit.jsonl</td>
                   <td>권한 감사 로그</td>
                 </tr>
               </tbody>
@@ -2449,7 +2449,7 @@
     <footer>
       <div class="container">
         <p style="margin-bottom: 8px">
-          <strong style="color: var(--text-primary)">dbcode</strong> Architecture Documentation
+          <strong style="color: var(--text-primary)">dhelix</strong> Architecture Documentation
         </p>
         <p>Built with HTML, CSS, JavaScript &amp; Mermaid.js &mdash; Last updated: 2026-03-21</p>
       </div>

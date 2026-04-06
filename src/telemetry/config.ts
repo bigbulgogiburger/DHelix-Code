@@ -5,23 +5,23 @@
  * 내보내기 간격 등을 환경 변수로 설정할 수 있습니다.
  *
  * 기본적으로 텔레메트리는 비활성 상태입니다 (프라이버시 보호).
- * 활성화하려면 DBCODE_TELEMETRY=true 또는 DBCODE_TELEMETRY_ENABLED=true를 설정하세요.
+ * 활성화하려면 DHELIX_TELEMETRY=true 또는 DHELIX_TELEMETRY_ENABLED=true를 설정하세요.
  *
  * 지원하는 환경 변수:
- * - DBCODE_TELEMETRY=true (간편 활성화)
- * - DBCODE_TELEMETRY_ENABLED=true|false
- * - DBCODE_TELEMETRY_OTLP_ENDPOINT=http://localhost:4318
- * - DBCODE_TELEMETRY_PROMETHEUS_PORT=9464
- * - DBCODE_TELEMETRY_EXPORT_INTERVAL_MS=60000
- * - DBCODE_TELEMETRY_SERVICE_NAME=dbcode
- * - DBCODE_TELEMETRY_SERVICE_VERSION=0.1.0
+ * - DHELIX_TELEMETRY=true (간편 활성화)
+ * - DHELIX_TELEMETRY_ENABLED=true|false
+ * - DHELIX_TELEMETRY_OTLP_ENDPOINT=http://localhost:4318
+ * - DHELIX_TELEMETRY_PROMETHEUS_PORT=9464
+ * - DHELIX_TELEMETRY_EXPORT_INTERVAL_MS=60000
+ * - DHELIX_TELEMETRY_SERVICE_NAME=dhelix
+ * - DHELIX_TELEMETRY_SERVICE_VERSION=0.1.0
  * - OTEL_EXPORTER_OTLP_ENDPOINT (표준 OTel 환경 변수, 폴백)
  * - OTEL_SERVICE_NAME (표준 OTel 환경 변수, 폴백)
  *
  * @example
  * // 환경 변수 설정 후 설정 로드
- * process.env.DBCODE_TELEMETRY = "true";
- * process.env.DBCODE_TELEMETRY_OTLP_ENDPOINT = "http://localhost:4318";
+ * process.env.DHELIX_TELEMETRY = "true";
+ * process.env.DHELIX_TELEMETRY_OTLP_ENDPOINT = "http://localhost:4318";
  * const config = loadTelemetryConfig();
  * // config.enabled → true
  * // config.otlpEndpoint → "http://localhost:4318"
@@ -43,8 +43,8 @@ export const telemetryConfigSchema = z.object({
   prometheusPort: z.number().int().positive().optional(),
   /** 내보내기 간격 (밀리초, 기본값: 60000 = 1분) */
   exportIntervalMs: z.number().int().positive().default(60_000),
-  /** 텔레메트리 식별용 서비스 이름 (기본값: "dbcode") */
-  serviceName: z.string().default("dbcode"),
+  /** 텔레메트리 식별용 서비스 이름 (기본값: "dhelix") */
+  serviceName: z.string().default("dhelix"),
   /** 서비스 버전 (기본값: "0.1.0") */
   serviceVersion: z.string().default("0.1.0"),
   /** OTel 리소스에 추가할 커스텀 속성(attributes) */
@@ -55,19 +55,19 @@ export const telemetryConfigSchema = z.object({
 export type TelemetryConfig = z.infer<typeof telemetryConfigSchema>;
 
 /** 텔레메트리 환경 변수 접두사 */
-const ENV_PREFIX = "DBCODE_TELEMETRY_";
+const ENV_PREFIX = "DHELIX_TELEMETRY_";
 
 /**
  * 환경 변수에서 텔레메트리 설정을 로드합니다.
  *
  * 환경 변수 매핑:
- * - DBCODE_TELEMETRY=true → enabled: true (간편 활성화)
- * - DBCODE_TELEMETRY_ENABLED=true → enabled: true
- * - DBCODE_TELEMETRY_OTLP_ENDPOINT → otlpEndpoint
- * - DBCODE_TELEMETRY_PROMETHEUS_PORT → prometheusPort
- * - DBCODE_TELEMETRY_EXPORT_INTERVAL_MS → exportIntervalMs
- * - DBCODE_TELEMETRY_SERVICE_NAME → serviceName
- * - DBCODE_TELEMETRY_SERVICE_VERSION → serviceVersion
+ * - DHELIX_TELEMETRY=true → enabled: true (간편 활성화)
+ * - DHELIX_TELEMETRY_ENABLED=true → enabled: true
+ * - DHELIX_TELEMETRY_OTLP_ENDPOINT → otlpEndpoint
+ * - DHELIX_TELEMETRY_PROMETHEUS_PORT → prometheusPort
+ * - DHELIX_TELEMETRY_EXPORT_INTERVAL_MS → exportIntervalMs
+ * - DHELIX_TELEMETRY_SERVICE_NAME → serviceName
+ * - DHELIX_TELEMETRY_SERVICE_VERSION → serviceVersion
  * - OTEL_EXPORTER_OTLP_ENDPOINT → otlpEndpoint (표준 OTel 폴백)
  * - OTEL_SERVICE_NAME → serviceName (표준 OTel 폴백)
  *
@@ -78,8 +78,8 @@ export function loadTelemetryConfig(): TelemetryConfig {
 
   // 환경 변수에서 원시 값 추출
   const raw = {
-    // DBCODE_TELEMETRY=true 또는 DBCODE_TELEMETRY_ENABLED=true 중 하나로 활성화
-    enabled: env[`${ENV_PREFIX}ENABLED`] === "true" || env.DBCODE_TELEMETRY === "true",
+    // DHELIX_TELEMETRY=true 또는 DHELIX_TELEMETRY_ENABLED=true 중 하나로 활성화
+    enabled: env[`${ENV_PREFIX}ENABLED`] === "true" || env.DHELIX_TELEMETRY === "true",
     // OTLP 엔드포인트: 전용 변수 → 표준 OTel 변수 순으로 폴백
     otlpEndpoint: env[`${ENV_PREFIX}OTLP_ENDPOINT`] ?? env.OTEL_EXPORTER_OTLP_ENDPOINT ?? undefined,
     prometheusPort: env[`${ENV_PREFIX}PROMETHEUS_PORT`]

@@ -25,7 +25,7 @@ export default function InstructionLoaderPage() {
               <span className="text-gray-900">Instruction Loader</span>
             </h1>
             <p className="text-[16px] text-gray-600 max-w-[640px]">
-              6단계 계층에서 DBCODE.md 인스트럭션을 로드하고 병합하는 모듈입니다. global부터
+              6단계 계층에서 DHELIX.md 인스트럭션을 로드하고 병합하는 모듈입니다. global부터
               local까지, 우선순위에 따라{" "}
               <span className="text-cyan-600 font-semibold">{`'\\n\\n---\\n\\n'`}</span> 구분자로
               합쳐져 LLM 시스템 프롬프트에 주입됩니다.
@@ -43,7 +43,7 @@ export default function InstructionLoaderPage() {
               <span>{"📋"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
-              dbcode는 하나의 DBCODE.md에 의존하지 않습니다.
+              dhelix는 하나의 DHELIX.md에 의존하지 않습니다.
               <strong className="text-gray-900"> 6개 레이어</strong>에서 인스트럭션을 수집하여 낮은
               우선순위부터 높은 우선순위 순서로 합칩니다. 이 구조 덕분에 전역 규칙 위에 프로젝트
               규칙을 얹고, 경로별 조건부 규칙을 적용하고, 개인 오버라이드까지 지원할 수 있습니다.
@@ -51,8 +51,8 @@ export default function InstructionLoaderPage() {
 
             <Callout type="tip" icon="💡">
               <strong>핵심 원칙:</strong> 높은 레이어가 낮은 레이어 위에 추가됩니다.
-              DBCODE.local.md가 가장 높고,{" "}
-              <code className="text-cyan-600 text-xs">~/.dbcode/DBCODE.md</code>가 가장 낮습니다.
+              DHELIX.local.md가 가장 높고,{" "}
+              <code className="text-cyan-600 text-xs">~/.dhelix/DHELIX.md</code>가 가장 낮습니다.
               Config Loader와 달리 덮어쓰기가 아닌 <strong>이어붙이기(concatenation)</strong>입니다.
             </Callout>
 
@@ -60,12 +60,12 @@ export default function InstructionLoaderPage() {
               title="6-Layer 인스트럭션 병합 순서"
               titleColor="orange"
               chart={`flowchart TB
-  L1["🌍 Layer 1\\n~/.dbcode/DBCODE.md\\n(전역 인스트럭션)"]
-  L2["📏 Layer 2\\n~/.dbcode/rules/*.md\\n(전역 경로 조건부 규칙)"]
-  L3["📂 Layer 3\\n상위 디렉토리 DBCODE.md\\n(모노레포 지원)"]
-  L4["📁 Layer 4\\n{projectRoot}/DBCODE.md\\n(프로젝트 인스트럭션)"]
-  L5["🎯 Layer 5\\n.dbcode/rules/*.md\\n(프로젝트 경로 조건부)"]
-  L6["🔒 Layer 6\\nDBCODE.local.md\\n(개인 오버라이드)"]
+  L1["🌍 Layer 1\\n~/.dhelix/DHELIX.md\\n(전역 인스트럭션)"]
+  L2["📏 Layer 2\\n~/.dhelix/rules/*.md\\n(전역 경로 조건부 규칙)"]
+  L3["📂 Layer 3\\n상위 디렉토리 DHELIX.md\\n(모노레포 지원)"]
+  L4["📁 Layer 4\\n{projectRoot}/DHELIX.md\\n(프로젝트 인스트럭션)"]
+  L5["🎯 Layer 5\\n.dhelix/rules/*.md\\n(프로젝트 경로 조건부)"]
+  L6["🔒 Layer 6\\nDHELIX.local.md\\n(개인 오버라이드)"]
 
   L1 -->|concat| L2
   L2 -->|concat| L3
@@ -111,7 +111,7 @@ export default function InstructionLoaderPage() {
                   <span className="text-emerald-600 font-bold shrink-0 w-20">Layer 4</span>
                   <span>
                     프로젝트 고유 인스트럭션 &mdash; 팀원과 Git으로 공유 (
-                    <code className="text-cyan-600 text-xs">DBCODE.md</code>를 커밋)
+                    <code className="text-cyan-600 text-xs">DHELIX.md</code>를 커밋)
                   </span>
                 </div>
                 <div className="flex gap-3">
@@ -125,7 +125,7 @@ export default function InstructionLoaderPage() {
                   <span className="text-red-600 font-bold shrink-0 w-20">Layer 6</span>
                   <span>
                     개인 오버라이드 &mdash;{" "}
-                    <code className="text-cyan-600 text-xs">DBCODE.local.md</code>는 gitignore
+                    <code className="text-cyan-600 text-xs">DHELIX.local.md</code>는 gitignore
                     대상으로 팀에 공유되지 않음
                   </span>
                 </div>
@@ -204,37 +204,37 @@ export default function InstructionLoaderPage() {
                     name: "globalInstructions",
                     type: "string (readonly)",
                     required: true,
-                    desc: "~/.dbcode/DBCODE.md에서 로드된 전역 사용자 인스트럭션",
+                    desc: "~/.dhelix/DHELIX.md에서 로드된 전역 사용자 인스트럭션",
                   },
                   {
                     name: "globalRules",
                     type: "string (readonly)",
                     required: true,
-                    desc: "~/.dbcode/rules/*.md에서 로드된 전역 경로 조건부 규칙",
+                    desc: "~/.dhelix/rules/*.md에서 로드된 전역 경로 조건부 규칙",
                   },
                   {
                     name: "parentInstructions",
                     type: "string (readonly)",
                     required: true,
-                    desc: "cwd에서 프로젝트 루트까지 상향 탐색하며 수집한 상위 DBCODE.md 내용",
+                    desc: "cwd에서 프로젝트 루트까지 상향 탐색하며 수집한 상위 DHELIX.md 내용",
                   },
                   {
                     name: "projectInstructions",
                     type: "string (readonly)",
                     required: true,
-                    desc: "프로젝트 루트의 DBCODE.md (또는 .dbcode/DBCODE.md 폴백) 내용",
+                    desc: "프로젝트 루트의 DHELIX.md (또는 .dhelix/DHELIX.md 폴백) 내용",
                   },
                   {
                     name: "pathRules",
                     type: "string (readonly)",
                     required: true,
-                    desc: ".dbcode/rules/*.md에서 현재 경로에 매칭된 프로젝트 경로 조건부 규칙",
+                    desc: ".dhelix/rules/*.md에서 현재 경로에 매칭된 프로젝트 경로 조건부 규칙",
                   },
                   {
                     name: "localInstructions",
                     type: "string (readonly)",
                     required: true,
-                    desc: "DBCODE.local.md에서 로드된 개인 오버라이드 (gitignore 대상)",
+                    desc: "DHELIX.local.md에서 로드된 개인 오버라이드 (gitignore 대상)",
                   },
                   {
                     name: "combined",
@@ -321,8 +321,8 @@ export default function InstructionLoaderPage() {
 
               <Callout type="warn" icon="⚠️">
                 프로젝트 루트를 찾지 못하면 Layer 3~6은 모두 빈 문자열이 됩니다.
-                <code className="text-cyan-600 text-xs"> DBCODE.md</code>나{" "}
-                <code className="text-cyan-600 text-xs">.dbcode/</code> 디렉토리가 프로젝트 루트
+                <code className="text-cyan-600 text-xs"> DHELIX.md</code>나{" "}
+                <code className="text-cyan-600 text-xs">.dhelix/</code> 디렉토리가 프로젝트 루트
                 마커 역할을 합니다.
               </Callout>
             </div>
@@ -339,7 +339,7 @@ export default function InstructionLoaderPage() {
                 </span>
               </h3>
               <p className="text-[13px] text-gray-600 mb-3">
-                파일 접근 시 해당 디렉토리의 DBCODE.md를 온디맨드 로드하는 지연 로더입니다. 시작 시
+                파일 접근 시 해당 디렉토리의 DHELIX.md를 온디맨드 로드하는 지연 로더입니다. 시작 시
                 모든 인스트럭션을 로드하는 대신, 도구가 특정 파일에 접근할 때 그 디렉토리의 규칙만
                 로드합니다. 결과는 디렉토리별로 캐시됩니다.
               </p>
@@ -384,7 +384,7 @@ export default function InstructionLoaderPage() {
                           {"(filePath: string) => Promise<string>"}
                         </td>
                         <td className="p-2.5 text-gray-600 font-sans">
-                          파일 경로에서 프로젝트 루트까지 상향 탐색하며 DBCODE.md 수집
+                          파일 경로에서 프로젝트 루트까지 상향 탐색하며 DHELIX.md 수집
                         </td>
                       </tr>
                       <tr className="border-b border-gray-200">
@@ -393,7 +393,7 @@ export default function InstructionLoaderPage() {
                           {"(dirPath: string) => void"}
                         </td>
                         <td className="p-2.5 text-gray-600 font-sans">
-                          특정 디렉토리의 캐시를 무효화 (DBCODE.md 수정 시 호출)
+                          특정 디렉토리의 캐시를 무효화 (DHELIX.md 수정 시 호출)
                         </td>
                       </tr>
                       <tr>
@@ -462,7 +462,7 @@ export default function InstructionLoaderPage() {
               </span>
               {"\n"}
               <span className="text-[#8b949e]">
-                {"// result.projectInstructions — 프로젝트 DBCODE.md만 확인 가능"}
+                {"// result.projectInstructions — 프로젝트 DHELIX.md만 확인 가능"}
               </span>
               {"\n"}
               <span className="text-[#8b949e]">
@@ -506,7 +506,7 @@ export default function InstructionLoaderPage() {
 
             <DeepDive title="LazyInstructionLoader로 온디맨드 로딩하기">
               <p className="mb-3">
-                대규모 프로젝트에서는 시작 시 모든 디렉토리의 DBCODE.md를 로드하는 것이
+                대규모 프로젝트에서는 시작 시 모든 디렉토리의 DHELIX.md를 로드하는 것이
                 비효율적입니다.
                 <code className="text-cyan-600 text-xs"> LazyInstructionLoader</code>를 사용하면
                 실제로 파일에 접근할 때만 해당 디렉토리의 인스트럭션을 로드하고, 결과를 캐시합니다.
@@ -531,7 +531,7 @@ export default function InstructionLoaderPage() {
                 <span className="text-[#c9d1d9]">);</span>
                 {"\n\n"}
                 <span className="text-[#8b949e]">
-                  {"// 파일 접근 시 해당 디렉토리의 DBCODE.md를 자동 로드"}
+                  {"// 파일 접근 시 해당 디렉토리의 DHELIX.md를 자동 로드"}
                 </span>
                 {"\n"}
                 <span className="text-[#ff7b72]">const</span>{" "}
@@ -547,7 +547,7 @@ export default function InstructionLoaderPage() {
                 {"\n"}
                 <span className="text-[#c9d1d9]">);</span>
                 {"\n\n"}
-                <span className="text-[#8b949e]">{"// DBCODE.md 수정 후 캐시 무효화"}</span>
+                <span className="text-[#8b949e]">{"// DHELIX.md 수정 후 캐시 무효화"}</span>
                 {"\n"}
                 <span className="text-[#c9d1d9]">loader.</span>
                 <span className="text-[#d2a8ff]">invalidate</span>
@@ -572,14 +572,14 @@ export default function InstructionLoaderPage() {
               경로 조건부 규칙 작성하기
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
-              <code className="text-cyan-600 text-xs">.dbcode/rules/</code> 디렉토리에{" "}
+              <code className="text-cyan-600 text-xs">.dhelix/rules/</code> 디렉토리에{" "}
               <code className="text-cyan-600 text-xs">.md</code> 파일을 추가하면 경로 조건부 규칙이
               됩니다. 프론트매터의 <code className="text-cyan-600 text-xs">paths:</code>로 적용
               범위를 제한할 수 있습니다.
             </p>
 
             <CodeBlock>
-              <span className="text-[#8b949e]">{"# .dbcode/rules/react-components.md"}</span>
+              <span className="text-[#8b949e]">{"# .dhelix/rules/react-components.md"}</span>
               {"\n"}
               <span className="text-[#c9d1d9]">---</span>
               {"\n"}
@@ -638,11 +638,11 @@ export default function InstructionLoaderPage() {
               title="프로젝트 루트 탐색 흐름"
               titleColor="cyan"
               chart={`flowchart TD
-  START["findProjectRoot(startDir)<br/><small>프로젝트 루트 탐색 시작</small>"] --> CHECK1{"DBCODE.md\\n직접 존재?"}
+  START["findProjectRoot(startDir)<br/><small>프로젝트 루트 탐색 시작</small>"] --> CHECK1{"DHELIX.md\\n직접 존재?"}
   CHECK1 -->|Yes| FOUND["✅ 프로젝트 루트 발견<br/><small>현재 디렉토리 반환</small>"]
-  CHECK1 -->|No| CHECK2{".dbcode/DBCODE.md\\n존재? (폴백)"}
+  CHECK1 -->|No| CHECK2{".dhelix/DHELIX.md\\n존재? (폴백)"}
   CHECK2 -->|Yes| FOUND
-  CHECK2 -->|No| CHECK3{".dbcode/\\n디렉토리 존재?"}
+  CHECK2 -->|No| CHECK3{".dhelix/\\n디렉토리 존재?"}
   CHECK3 -->|Yes| FOUND
   CHECK3 -->|No| PARENT["상위 디렉토리로 이동<br/><small>한 단계 위로 올라감</small>"]
   PARENT --> ISROOT{"파일 시스템\\n루트인가?"}
@@ -716,10 +716,10 @@ export default function InstructionLoaderPage() {
               <span className="text-[#8b949e]">{"// 심볼릭 링크 활용 예시"}</span>
               {"\n"}
               <span className="text-[#8b949e]">
-                {"// 여러 프로젝트에서 공유 DBCODE.md를 심볼릭 링크로 연결"}
+                {"// 여러 프로젝트에서 공유 DHELIX.md를 심볼릭 링크로 연결"}
               </span>
               {"\n"}
-              <span className="text-[#c9d1d9]">ln -s ~/shared/DBCODE.md ./DBCODE.md</span>
+              <span className="text-[#c9d1d9]">ln -s ~/shared/DHELIX.md ./DHELIX.md</span>
               {"\n\n"}
               <span className="text-[#8b949e]">
                 {"// safeReadFile이 realpath()로 실제 경로를 해석하므로"}
@@ -735,7 +735,7 @@ export default function InstructionLoaderPage() {
               @import 지시어 처리
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
-              각 레이어의 DBCODE.md 파일은{" "}
+              각 레이어의 DHELIX.md 파일은{" "}
               <code className="text-cyan-600 text-xs">parseInstructions()</code>를 통해 처리됩니다.
               이 함수는 <code className="text-cyan-600 text-xs">@import</code> 지시어를 해석하여
               외부 파일의 내용을 인라인으로 포함시킵니다. 이를 통해 인스트럭션을 여러 파일로
@@ -766,20 +766,20 @@ export default function InstructionLoaderPage() {
               {/* FAQ 1 */}
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <h4 className="text-[14px] font-bold mb-2 flex items-center gap-2">
-                  <span className="text-red-600">Q.</span> DBCODE.md를 만들었는데 인스트럭션이
+                  <span className="text-red-600">Q.</span> DHELIX.md를 만들었는데 인스트럭션이
                   적용되지 않아요
                 </h4>
                 <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p className="mb-2">
                     <strong className="text-gray-900">원인 1:</strong> 프로젝트 루트를 찾지 못하고
                     있습니다.
-                    <code className="text-cyan-600 text-xs"> DBCODE.md</code>가 프로젝트 루트에
-                    있거나, <code className="text-cyan-600 text-xs">.dbcode/</code> 디렉토리가
+                    <code className="text-cyan-600 text-xs"> DHELIX.md</code>가 프로젝트 루트에
+                    있거나, <code className="text-cyan-600 text-xs">.dhelix/</code> 디렉토리가
                     존재해야 합니다.
                   </p>
                   <p className="mb-2">
                     <strong className="text-gray-900">원인 2:</strong> 작업 디렉토리(cwd)가
-                    DBCODE.md 파일보다 상위에 있습니다.
+                    DHELIX.md 파일보다 상위에 있습니다.
                     <code className="text-cyan-600 text-xs"> findProjectRoot</code>는 현재
                     디렉토리에서 <em>위로만</em> 탐색합니다.
                   </p>
@@ -821,18 +821,18 @@ export default function InstructionLoaderPage() {
               {/* FAQ 3 */}
               <div className="bg-white border border-gray-200 rounded-xl p-5">
                 <h4 className="text-[14px] font-bold mb-2 flex items-center gap-2">
-                  <span className="text-red-600">Q.</span> DBCODE.local.md가 팀원에게 공유돼
+                  <span className="text-red-600">Q.</span> DHELIX.local.md가 팀원에게 공유돼
                   버렸어요
                 </h4>
                 <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p>
-                    <code className="text-cyan-600 text-xs">DBCODE.local.md</code>는 개인
+                    <code className="text-cyan-600 text-xs">DHELIX.local.md</code>는 개인
                     오버라이드용 파일로, <code className="text-cyan-600 text-xs">.gitignore</code>에
                     추가해야 합니다. 프로젝트의{" "}
                     <code className="text-cyan-600 text-xs">.gitignore</code>에{" "}
-                    <code className="text-cyan-600 text-xs">DBCODE.local.md</code>를 추가하세요.
+                    <code className="text-cyan-600 text-xs">DHELIX.local.md</code>를 추가하세요.
                     이미 커밋된 경우{" "}
-                    <code className="text-cyan-600 text-xs">git rm --cached DBCODE.local.md</code>로
+                    <code className="text-cyan-600 text-xs">git rm --cached DHELIX.local.md</code>로
                     추적을 해제할 수 있습니다.
                   </p>
                 </div>
@@ -848,7 +848,7 @@ export default function InstructionLoaderPage() {
                   <p className="mb-2">
                     <strong className="text-gray-900">해결:</strong>{" "}
                     <code className="text-cyan-600 text-xs">invalidate(dirPath)</code>로 해당
-                    디렉토리의 캐시를 무효화하세요. DBCODE.md가 수정된 디렉토리 경로를 전달하면 다음
+                    디렉토리의 캐시를 무효화하세요. DHELIX.md가 수정된 디렉토리 경로를 전달하면 다음
                     접근 시 재로딩됩니다.
                   </p>
                   <p>

@@ -333,7 +333,7 @@ export default function UtilsPathPage() {
 
             <Callout type="warn" icon="!">
               <strong>주의:</strong> <code>gitBashToWindows()</code>의 결과는 백슬래시(
-              <code>\</code>)를 사용합니다. dbcode 내부에서 사용하려면 <code>normalizePath()</code>
+              <code>\</code>)를 사용합니다. dhelix 내부에서 사용하려면 <code>normalizePath()</code>
               를 추가로 적용하여 포워드 슬래시로 통일하세요.
             </Callout>
 

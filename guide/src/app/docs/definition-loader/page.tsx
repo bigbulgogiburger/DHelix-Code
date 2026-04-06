@@ -48,8 +48,8 @@ export default function DefinitionLoaderPage() {
               </p>
               <p>
                 로드 우선순위는 두 단계입니다. 먼저 사용자 전역 디렉토리(
-                <code className="text-cyan-600">~/.dbcode/agents/*.md</code>)에서 로드하고, 그 다음
-                프로젝트 단위 디렉토리(<code className="text-cyan-600">.dbcode/agents/*.md</code>
+                <code className="text-cyan-600">~/.dhelix/agents/*.md</code>)에서 로드하고, 그 다음
+                프로젝트 단위 디렉토리(<code className="text-cyan-600">.dhelix/agents/*.md</code>
                 )에서 로드합니다. 같은 이름의 에이전트가 양쪽에 있으면 프로젝트 단위가 우선합니다.
               </p>
               <p>
@@ -64,8 +64,8 @@ export default function DefinitionLoaderPage() {
               title="Definition Loader 로드 흐름"
               titleColor="purple"
               chart={`graph TD
-  USER_DIR["~/.dbcode/agents/<br/><small>사용자 전역 (낮은 우선순위)</small>"]
-  PROJ_DIR[".dbcode/agents/<br/><small>프로젝트 단위 (높은 우선순위)</small>"]
+  USER_DIR["~/.dhelix/agents/<br/><small>사용자 전역 (낮은 우선순위)</small>"]
+  PROJ_DIR[".dhelix/agents/<br/><small>프로젝트 단위 (높은 우선순위)</small>"]
   LOADER["loadAgentDefinitions()<br/><small>definition-loader.ts</small>"]
   PARSE["parseAgentFile()<br/><small>프론트매터 + 본문 분리</small>"]
   ZOD["Zod Schema<br/><small>agentDefinitionSchema</small>"]
@@ -431,9 +431,9 @@ export default function DefinitionLoaderPage() {
               title="loadAgentDefinitions 우선순위"
               titleColor="purple"
               chart={`graph TD
-  START(("시작")) --> STEP1["1. ~/.dbcode/agents/ 로드<br/><small>사용자 전역 — 낮은 우선순위</small>"]
+  START(("시작")) --> STEP1["1. ~/.dhelix/agents/ 로드<br/><small>사용자 전역 — 낮은 우선순위</small>"]
   STEP1 -->|"Map에 저장"| MAP["Map&lt;name, def&gt;"]
-  MAP --> STEP2["2. .dbcode/agents/ 로드<br/><small>프로젝트 단위 — 높은 우선순위</small>"]
+  MAP --> STEP2["2. .dhelix/agents/ 로드<br/><small>프로젝트 단위 — 높은 우선순위</small>"]
   STEP2 -->|"같은 name이면 덮어쓰기"| MAP2["최종 Map"]
   MAP2 --> END(("반환"))
 
@@ -554,8 +554,8 @@ export default function DefinitionLoaderPage() {
                   파일 확장자가 <code className="text-cyan-600">.md</code>인지 확인하세요.
                 </li>
                 <li>
-                  파일이 <code className="text-cyan-600">.dbcode/agents/</code> 또는{" "}
-                  <code className="text-cyan-600">~/.dbcode/agents/</code> 디렉토리에 있는지
+                  파일이 <code className="text-cyan-600">.dhelix/agents/</code> 또는{" "}
+                  <code className="text-cyan-600">~/.dhelix/agents/</code> 디렉토리에 있는지
                   확인하세요.
                 </li>
                 <li>

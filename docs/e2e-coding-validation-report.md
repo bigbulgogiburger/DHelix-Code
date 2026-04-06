@@ -1,12 +1,12 @@
 # E2E Coding Validation Report
 
 > **Date**: 2026-03-07
-> **Agent**: dbcode (GPT-4o via OpenAI API)
+> **Agent**: dhelix (GPT-4o via OpenAI API)
 > **Method**: Multi-turn agent-loop sessions using `runAgentLoop()` with real tool execution
 
 ## Summary
 
-dbcode was tested across **5 different technology stacks** by programmatically invoking its agent-loop with sequential user messages. Each project was created through multi-turn conversation where dbcode used file_write, file_edit, file_read, bash_exec, glob_search, and grep_search tools to generate complete, working projects.
+dhelix was tested across **5 different technology stacks** by programmatically invoking its agent-loop with sequential user messages. Each project was created through multi-turn conversation where dhelix used file_write, file_edit, file_read, bash_exec, glob_search, and grep_search tools to generate complete, working projects.
 
 | #   | Project         | Stack                      | Turns Passed | Tool Calls | Messages | Build | Tests | Verdict  |
 | --- | --------------- | -------------------------- | :----------: | :--------: | :------: | :---: | :---: | :------: |
@@ -142,7 +142,7 @@ dbcode was tested across **5 different technology stacks** by programmatically i
 
 ### Note
 
-Maven was not installed on the system. Adapted to use Gradle (available via Homebrew). The validation purpose remains the same — dbcode created a complete Spring Boot microservice through multi-turn conversation.
+Maven was not installed on the system. Adapted to use Gradle (available via Homebrew). The validation purpose remains the same — dhelix created a complete Spring Boot microservice through multi-turn conversation.
 
 ---
 
@@ -182,7 +182,7 @@ Maven was not installed on the system. Adapted to use Gradle (available via Home
 
 ### Manual Fixes Required
 
-- None! Build and tests passed on first try after dbcode created all files.
+- None! Build and tests passed on first try after dhelix created all files.
 
 ### Context Retention
 
@@ -251,7 +251,7 @@ The E2E test used `flutter-memo-app` (dashes) as directory name but Flutter crea
 ### Session Quality Metrics
 
 - **Context Retention Rate**: ~90% — Later turns consistently referenced earlier code correctly
-- **Self-Correction Ability**: Moderate — dbcode could fix simple issues when asked but the build/test fix loops tended to time out (300s limit)
+- **Self-Correction Ability**: Moderate — dhelix could fix simple issues when asked but the build/test fix loops tended to time out (300s limit)
 - **Tool Usage Efficiency**: High — Average 6-7 tool calls per turn, no redundant reads
 - **Multi-language Capability**: Validated across TypeScript, Python, Java, Dart
 
@@ -264,6 +264,6 @@ The E2E test used `flutter-memo-app` (dashes) as directory name but Flutter crea
 
 ### Conclusion
 
-dbcode demonstrates **production-viable multi-turn coding ability** across 5 technology stacks. It successfully creates complete, compilable, testable projects through iterative conversation. The main area for improvement is the self-correction loop speed — a longer timeout or smarter error-fixing strategy would reduce the need for manual fixes.
+dhelix demonstrates **production-viable multi-turn coding ability** across 5 technology stacks. It successfully creates complete, compilable, testable projects through iterative conversation. The main area for improvement is the self-correction loop speed — a longer timeout or smarter error-fixing strategy would reduce the need for manual fixes.
 
 **Total across all projects**: ~193 tool calls, ~267 messages, 41+ tests passing, 5 builds successful.

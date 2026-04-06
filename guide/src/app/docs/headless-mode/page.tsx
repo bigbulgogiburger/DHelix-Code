@@ -43,7 +43,7 @@ export default function HeadlessModePage() {
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
                 <code className="text-cyan-600">runHeadless()</code>는{" "}
-                <code className="text-cyan-600">dbcode -p &quot;질문&quot;</code>
+                <code className="text-cyan-600">dhelix -p &quot;질문&quot;</code>
                 처럼 <code className="text-cyan-600">-p</code> 플래그로 실행할 때 호출됩니다. Ink
                 터미널 UI를 띄우지 않고, 프롬프트를 에이전트 루프에 직접 전달하여 결과를 stdout으로
                 출력합니다.
@@ -53,7 +53,7 @@ export default function HeadlessModePage() {
                 <code className="text-cyan-600">&quot;text&quot;</code>(기본값, 일반 텍스트),
                 <code className="text-cyan-600">&quot;json&quot;</code>(구조화된 JSON),
                 <code className="text-cyan-600">&quot;stream-json&quot;</code>(NDJSON &mdash; 줄
-                단위 JSON 스트리밍). 이를 통해 다른 프로그램이 dbcode의 출력을 파싱하기 쉽습니다.
+                단위 JSON 스트리밍). 이를 통해 다른 프로그램이 dhelix의 출력을 파싱하기 쉽습니다.
               </p>
               <p>
                 <strong>HeadlessGuard</strong> 안정성 기능이 내장되어 있어, 에러 발생 시 stderr
@@ -66,9 +66,9 @@ export default function HeadlessModePage() {
               title="Headless Mode 아키텍처 위치"
               titleColor="purple"
               chart={`graph TD
-  CLI["dbcode -p 'prompt'<br/><small>CLI 진입점</small>"]
+  CLI["dhelix -p 'prompt'<br/><small>CLI 진입점</small>"]
   HL["runHeadless()<br/><small>headless.ts</small>"]
-  INST["Instruction Loader<br/><small>DBCODE.md 로드</small>"]
+  INST["Instruction Loader<br/><small>DHELIX.md 로드</small>"]
   MEM["MemoryManager<br/><small>자동 메모리 로드</small>"]
   SPB["System Prompt Builder<br/><small>시스템 프롬프트 구성</small>"]
   AL["runAgentLoop()<br/><small>에이전트 루프 실행</small>"]
@@ -310,16 +310,16 @@ export default function HeadlessModePage() {
             </p>
             <CodeBlock>
               <span className="cm">{"# 기본 (text 출력)"}</span>
-              {"\n"}dbcode -p <span className="str">&quot;이 프로젝트의 구조를 설명해줘&quot;</span>
+              {"\n"}dhelix -p <span className="str">&quot;이 프로젝트의 구조를 설명해줘&quot;</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"# JSON 출력"}</span>
-              {"\n"}dbcode -p <span className="str">&quot;package.json 분석해줘&quot;</span>{" "}
+              {"\n"}dhelix -p <span className="str">&quot;package.json 분석해줘&quot;</span>{" "}
               --format json
               {"\n"}
               {"\n"}
               <span className="cm">{"# NDJSON 스트리밍"}</span>
-              {"\n"}dbcode -p <span className="str">&quot;코드 리뷰해줘&quot;</span> --format
+              {"\n"}dhelix -p <span className="str">&quot;코드 리뷰해줘&quot;</span> --format
               stream-json
             </CodeBlock>
 
@@ -333,18 +333,18 @@ export default function HeadlessModePage() {
             </p>
             <CodeBlock>
               <span className="cm">{"# jq로 결과만 추출"}</span>
-              {"\n"}dbcode -p <span className="str">&quot;요약해줘&quot;</span> --format json | jq
+              {"\n"}dhelix -p <span className="str">&quot;요약해줘&quot;</span> --format json | jq
               -r <span className="str">&apos;.result&apos;</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"# CI/CD에서 코드 리뷰 자동화"}</span>
-              {"\n"}dbcode -p{" "}
+              {"\n"}dhelix -p{" "}
               <span className="str">&quot;git diff를 분석하고 문제점을 찾아줘&quot;</span> {">"}{" "}
               review.txt
               {"\n"}
               {"\n"}
               <span className="cm">{"# stream-json으로 실시간 모니터링"}</span>
-              {"\n"}dbcode -p <span className="str">&quot;테스트 작성해줘&quot;</span> --format
+              {"\n"}dhelix -p <span className="str">&quot;테스트 작성해줘&quot;</span> --format
               stream-json | \{"\n"}
               {"  "}while read line; do echo <span className="str">&quot;$line&quot;</span> | jq{" "}
               <span className="str">&apos;.type&apos;</span>; done
@@ -610,7 +610,7 @@ export default function HeadlessModePage() {
                 <li>
                   API 키가 올바르게 설정되어 있는지 (
                   <code className="text-cyan-600">OPENAI_API_KEY</code> 또는{" "}
-                  <code className="text-cyan-600">DBCODE_API_KEY</code>)
+                  <code className="text-cyan-600">DHELIX_API_KEY</code>)
                 </li>
                 <li>모델이 존재하고 접근 가능한지</li>
                 <li>

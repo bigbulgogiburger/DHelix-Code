@@ -64,7 +64,7 @@ export default function MCPTransportHttpPage() {
               title="HttpTransport 통신 구조"
               titleColor="purple"
               chart={`graph TD
-  CLIENT["dbcode<br/><small>클라이언트</small>"]
+  CLIENT["dhelix<br/><small>클라이언트</small>"]
   SERVER["MCP 서버<br/><small>원격</small>"]
 
   CLIENT -->|"HTTP POST<br/>JSON-RPC + Session-Id"| SERVER

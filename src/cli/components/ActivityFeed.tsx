@@ -29,6 +29,8 @@ interface ActivityFeedProps {
   readonly completedTurns: readonly TurnActivity[];
   readonly currentTurn?: TurnActivity | null;
   readonly isExpanded?: boolean;
+  /** 실행 중인 도구의 실시간 출력 (toolCallId → accumulated output) */
+  readonly streamingOutputs?: React.RefObject<Map<string, string>>;
 }
 
 /**
@@ -100,6 +102,7 @@ function renderEntry(
   allEntries: readonly ActivityEntry[],
   keyPrefix: string,
   isExpanded?: boolean,
+  streamingOutputs?: React.RefObject<Map<string, string>>,
 ): React.ReactNode {
   // Handle grouped reads
   if ("type" in entry && (entry as { readonly type: string }).type === "read-group") {
@@ -125,7 +128,7 @@ function renderEntry(
     case "user-message":
       return (
         <Box key={keyPrefix} marginBottom={0}>
-          <Text color="green" bold>
+          <Text color="#00E5FF" bold>
             {">"}{" "}
           </Text>
           <Text>{String(entry.data.content ?? "")}</Text>
@@ -192,6 +195,12 @@ function renderEntry(
               ? ("error" as const)
               : ("complete" as const);
 
+      // Look up streaming output for running tools
+      const streamingOutput =
+        status === "running" && toolId && streamingOutputs?.current
+          ? streamingOutputs.current.get(toolId)
+          : undefined;
+
       return (
         <ToolCallBlock
           key={keyPrefix}
@@ -202,6 +211,7 @@ function renderEntry(
           isExpanded={isExpanded}
           startTime={startTime}
           metadata={metadata}
+          streamingOutput={streamingOutput}
         />
       );
     }
@@ -239,6 +249,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({
   completedTurns,
   currentTurn,
   isExpanded,
+  streamingOutputs,
 }: ActivityFeedProps) {
   // Monotonically increasing ID for Static items — ensures append-only
   const nextIdRef = useRef(0);
@@ -353,7 +364,7 @@ export const ActivityFeed = React.memo(function ActivityFeed({
       {liveEntries.length > 0 && (
         <Box flexDirection="column" marginBottom={1}>
           {liveEntries.map((entry, i) =>
-            renderEntry(entry, true, currentTurn?.entries ?? [], `live-${i}`, isExpanded),
+            renderEntry(entry, true, currentTurn?.entries ?? [], `live-${i}`, isExpanded, streamingOutputs),
           )}
         </Box>
       )}

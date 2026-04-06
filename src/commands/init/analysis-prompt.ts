@@ -1,7 +1,7 @@
 /**
  * 향상된 LLM 분석 프롬프트 빌더 — 12단계 코드베이스 분석
  *
- * 기존 5단계 분석을 12단계로 확장하여 더 정확하고 풍부한 DBCODE.md를 생성합니다.
+ * 기존 5단계 분석을 12단계로 확장하여 더 정확하고 풍부한 DHELIX.md를 생성합니다.
  * Claude Code의 CLAUDE.md 품질과 동등한 수준의 프로젝트 문서를 목표로 합니다.
  *
  * 주요 개선사항:
@@ -17,10 +17,10 @@
 import { APP_NAME, PROJECT_CONFIG_FILE, PROJECT_CONFIG_DIR } from "../../constants.js";
 
 /**
- * 컨텍스트 섹션을 생성하는 헬퍼 — .dbcode/ 생성 여부와 업데이트/신규 모드에 따라 다른 메시지 구성
+ * 컨텍스트 섹션을 생성하는 헬퍼 — .dhelix/ 생성 여부와 업데이트/신규 모드에 따라 다른 메시지 구성
  *
- * @param isUpdate - true면 기존 DBCODE.md를 업데이트하는 모드
- * @param configDirCreated - .dbcode/ 디렉토리가 이번에 새로 생성되었는지 여부
+ * @param isUpdate - true면 기존 DHELIX.md를 업데이트하는 모드
+ * @param configDirCreated - .dhelix/ 디렉토리가 이번에 새로 생성되었는지 여부
  * @returns 컨텍스트 섹션 문자열 (줄바꿈으로 구분된 여러 줄)
  */
 function buildContextSection(isUpdate: boolean, configDirCreated: boolean): string {
@@ -53,7 +53,7 @@ function buildContextSection(isUpdate: boolean, configDirCreated: boolean): stri
  * "What to include" 섹션을 생성하는 헬퍼 — 7가지 분석 항목 정의
  *
  * 기존 4개 항목에 개발환경, CI/CD, 모노레포 구조 3개를 추가하여
- * 실제 개발에 필요한 모든 맥락을 DBCODE.md에 포함할 수 있도록 합니다.
+ * 실제 개발에 필요한 모든 맥락을 DHELIX.md에 포함할 수 있도록 합니다.
  *
  * @returns "What to include" 섹션 문자열
  */
@@ -117,7 +117,7 @@ function buildGuidelinesSection(): string {
 }
 
 /**
- * 출력 포맷 섹션을 생성하는 헬퍼 — 권장 DBCODE.md 구조 정의
+ * 출력 포맷 섹션을 생성하는 헬퍼 — 권장 DHELIX.md 구조 정의
  *
  * Commands, Architecture, Code Style, Development 4개 필수 섹션과
  * 권장 포맷을 마크다운 예시로 제공합니다.
@@ -184,18 +184,18 @@ If the project contains more than 50 source files, consider the following approa
  * 향상된 LLM 분석 프롬프트를 구성하는 함수 — 12단계 종합 코드베이스 분석
  *
  * 기존 {@link buildAnalysisPrompt}의 5단계 분석을 12단계로 확장하여
- * 더 정확하고 풍부한 DBCODE.md를 생성합니다.
+ * 더 정확하고 풍부한 DHELIX.md를 생성합니다.
  *
  * 프롬프트 구성:
- *   1. 컨텍스트 — .dbcode/ 생성 여부, 업데이트/신규 모드
+ *   1. 컨텍스트 — .dhelix/ 생성 여부, 업데이트/신규 모드
  *   2. 포함 항목 — 7가지 분석 대상 (빌드, 아키텍처, 코드 스타일, 기술 결정, 개발환경, CI/CD, 모노레포)
  *   3. 분석 단계 — 12단계 순차 분석 절차
  *   4. 가이드라인 — 품질 기준 (200줄 제한, 구체성, 비자명 정보 우선)
- *   5. 출력 포맷 — 권장 DBCODE.md 마크다운 구조
+ *   5. 출력 포맷 — 권장 DHELIX.md 마크다운 구조
  *   6. 서브에이전트 지시 — 대규모 프로젝트용 탐색 전략
  *
- * @param isUpdate - true면 기존 DBCODE.md를 분석하여 업데이트, false면 신규 생성
- * @param configDirCreated - .dbcode/ 디렉토리가 이번 호출에서 새로 생성되었는지 여부
+ * @param isUpdate - true면 기존 DHELIX.md를 분석하여 업데이트, false면 신규 생성
+ * @param configDirCreated - .dhelix/ 디렉토리가 이번 호출에서 새로 생성되었는지 여부
  * @returns LLM에게 전달할 종합 분석 프롬프트 문자열
  *
  * @example

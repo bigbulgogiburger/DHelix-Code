@@ -69,7 +69,7 @@ export default function Home() {
       >
         <div className="center-wide">
           <p className="mb-2">
-            <strong className="text-gray-900">dbcode</strong> Module Deep Dive Documentation
+            <strong className="text-gray-900">dhelix</strong> Module Deep Dive Documentation
           </p>
           <p>Built with Next.js, Tailwind CSS &amp; Mermaid.js</p>
         </div>

@@ -43,7 +43,7 @@ describe("/bug command", () => {
     expect(result.output).toContain(`Node.js: ${process.version}`);
     expect(result.output).toContain("Model: test-model");
     expect(result.output).toContain("Session: test-session");
-    expect(result.output).toContain("dbcode: v");
+    expect(result.output).toContain("dhelix: v");
   });
 
   it("should show N/A when sessionId is missing", async () => {
@@ -58,7 +58,7 @@ describe("/bug command", () => {
 
   it("should include a GitHub issue URL", async () => {
     const result = await bugCommand.execute("Something broke", baseContext);
-    expect(result.output).toContain("https://github.com/bigbulgogiburger/dbcode/issues/new?");
+    expect(result.output).toContain("https://github.com/bigbulgogiburger/dhelix/issues/new?");
     expect(result.output).toContain("Open in browser:");
   });
 

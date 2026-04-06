@@ -105,7 +105,7 @@ export function ContextSection() {
               {"\n"}
               {"}"}
               {"\n\n"}
-              <span className="cm">{"// 디스크: ~/.dbcode/projects/{hash}/cold-storage/"}</span>
+              <span className="cm">{"// 디스크: ~/.dhelix/projects/{hash}/cold-storage/"}</span>
               {"\n"}
               <span className="cm">{"// TTL: 24시간 후 자동 정리"}</span>
             </CodeBlock>

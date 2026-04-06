@@ -1,13 +1,13 @@
-# dbcode vs Claude Code 상세 비교 분석
+# dhelix vs Claude Code 상세 비교 분석
 
 > 작성일: 2026-03-08
-> 분석 대상: dbcode (현재 main 브랜치) vs Anthropic Claude Code 2.1.x
+> 분석 대상: dhelix (현재 main 브랜치) vs Anthropic Claude Code 2.1.x
 
 ---
 
 ## 1. 전체 요약
 
-| 영역              | dbcode        | Claude Code    | 격차        |
+| 영역              | dhelix        | Claude Code    | 격차        |
 | ----------------- | ------------- | -------------- | ----------- |
 | 핵심 아키텍처     | ✅ 완성       | ✅ 완성        | 동등        |
 | 도구 시스템       | ⚠️ 11개 도구  | ✅ 15+ 도구    | 중간        |
@@ -48,7 +48,7 @@
      Duration  16.44s
 ```
 
-**dbcode의 현재 표시 방식:**
+**dhelix의 현재 표시 방식:**
 
 ```
 [⠋] Reading src/cli/App.tsx
@@ -64,7 +64,7 @@
 
 **남은 격차:**
 
-| 항목                                          | Claude Code      | dbcode            | 우선순위 |
+| 항목                                          | Claude Code      | dhelix            | 우선순위 |
 | --------------------------------------------- | ---------------- | ----------------- | -------- |
 | 도구 아이콘 (⏺ vs [✓])                       | ⏺ filled circle | [✓] brackets      | P2       |
 | Edit 시 줄 번호 + 컨텍스트 라인 표시          | ✅ ±3줄 컨텍스트 | ⚠️ old/new만 표시 | **P0**   |
@@ -76,7 +76,7 @@
 
 ### 2.2 스트리밍 & 마크다운
 
-| 항목                          | Claude Code        | dbcode                  | 우선순위 |
+| 항목                          | Claude Code        | dhelix                  | 우선순위 |
 | ----------------------------- | ------------------ | ----------------------- | -------- |
 | 실시간 마크다운 렌더링        | ✅ 스트리밍 중에도 | ⚠️ 완료 후에만          | P1       |
 | 코드블록 구문 하이라이팅      | ✅ highlight.js    | ⚠️ marked-terminal 기본 | P2       |
@@ -85,7 +85,7 @@
 
 ### 2.3 입력 UX
 
-| 항목                                 | Claude Code | dbcode                | 상태   |
+| 항목                                 | Claude Code | dhelix                | 상태   |
 | ------------------------------------ | ----------- | --------------------- | ------ |
 | 멀티라인 입력 (Ctrl+J / Shift+Enter) | ✅          | ✅ 수정 완료          | 동등   |
 | 입력 히스토리 (↑/↓)                  | ✅          | ✅                    | 동등   |
@@ -98,7 +98,7 @@
 
 ### 2.4 상태바 & 정보 표시
 
-| 항목                   | Claude Code    | dbcode          | 상태 |
+| 항목                   | Claude Code    | dhelix          | 상태 |
 | ---------------------- | -------------- | --------------- | ---- |
 | 모델명 표시            | ✅             | ✅              | 동등 |
 | 토큰 사용량 바         | ✅             | ✅              | 동등 |
@@ -114,7 +114,7 @@
 ### 3.1 도구 (Tools)
 
 **Claude Code의 도구:**
-| 도구 | Claude Code | dbcode | 격차 |
+| 도구 | Claude Code | dhelix | 격차 |
 |------|-------------|--------|------|
 | Read | ✅ 이미지/PDF 지원, 2000줄 기본 | ⚠️ 텍스트만, 줄 제한 없음 | **P0** |
 | Edit | ✅ uniqueness 검증, old_string/new_string | ✅ 동일 | 동등 |
@@ -130,14 +130,14 @@
 | LSP | ✅ 언어 서버 연동 | ❌ | P2 |
 | MCP tools | ✅ 동적 로딩 | ✅ | 동등 |
 
-**dbcode에만 있는 도구:**
+**dhelix에만 있는 도구:**
 
 - `list_dir` — Claude Code는 Bash(`ls`)로 대체
 - `ask_user` — Claude Code는 `AskUserQuestion`
 
 ### 3.2 Bash 도구 세부 비교
 
-| 기능                                  | Claude Code               | dbcode        |
+| 기능                                  | Claude Code               | dhelix        |
 | ------------------------------------- | ------------------------- | ------------- |
 | 타임아웃 (기본 120s, 최대 600s)       | ✅                        | ✅            |
 | `run_in_background` 파라미터          | ✅                        | ❌            |
@@ -148,7 +148,7 @@
 
 ### 3.3 file_read 세부 비교
 
-| 기능                      | Claude Code        | dbcode         |
+| 기능                      | Claude Code        | dhelix         |
 | ------------------------- | ------------------ | -------------- |
 | 줄 번호 표시              | ✅ cat -n 형식     | ✅ 유사        |
 | offset/limit              | ✅                 | ✅             |
@@ -165,7 +165,7 @@
 
 ### 4.1 에이전트 루프
 
-| 항목                | Claude Code                     | dbcode        | 비고        |
+| 항목                | Claude Code                     | dhelix        | 비고        |
 | ------------------- | ------------------------------- | ------------- | ----------- |
 | ReAct 패턴          | ✅                              | ✅            | 동등        |
 | maxIterations       | ✅                              | ✅ (50)       | 동등        |
@@ -179,7 +179,7 @@
 
 ### 4.2 LLM 클라이언트
 
-| 항목                     | Claude Code        | dbcode                   | 비고        |
+| 항목                     | Claude Code        | dhelix                   | 비고        |
 | ------------------------ | ------------------ | ------------------------ | ----------- |
 | Anthropic API 직접 지원  | ✅ 전용 프로바이더 | ❌ OpenAI 호환만         | **P0**      |
 | OpenAI 호환 API          | ✅                 | ✅                       | 동등        |
@@ -200,7 +200,7 @@
 - 병렬 에이전트 실행 (한 메시지에 여러 Agent 호출)
 - 에이전트 간 통신 없음 (각자 독립)
 
-**dbcode:**
+**dhelix:**
 
 - 3개 타입만: explore, plan, general
 - 백그라운드 실행 없음
@@ -214,7 +214,7 @@
 
 ## 5. 슬래시 명령어 비교
 
-### 5.1 dbcode에 있는 명령어 (29개)
+### 5.1 dhelix에 있는 명령어 (29개)
 
 ```
 /clear  /compact  /help  /model  /resume  /rewind  /effort  /fast
@@ -223,7 +223,7 @@
 /cost  /update  /init  /plan  /undo
 ```
 
-### 5.2 Claude Code에 있고 dbcode에 없는 것
+### 5.2 Claude Code에 있고 dhelix에 없는 것
 
 | 명령어               | 기능             | 우선순위 |
 | -------------------- | ---------------- | -------- |
@@ -236,7 +236,7 @@
 | `/pr-comments`       | PR 코멘트 보기   | P2       |
 | `/vim`               | Vim 모드 토글    | P3       |
 
-### 5.3 dbcode에만 있는 고유 명령어
+### 5.3 dhelix에만 있는 고유 명령어
 
 ```
 /effort  /fast  /simplify  /batch  /doctor  /fork
@@ -249,7 +249,7 @@
 
 ## 6. 보안 & 권한 비교
 
-| 항목                      | Claude Code | dbcode                     | 상태 |
+| 항목                      | Claude Code | dhelix                     | 상태 |
 | ------------------------- | ----------- | -------------------------- | ---- |
 | 권한 모드 (5단계)         | ✅          | ✅                         | 동등 |
 | 세션별 승인 캐싱          | ✅          | ✅                         | 동등 |
@@ -494,7 +494,7 @@ CLI 컴포넌트:  15개
 
 ## 11. 결론
 
-dbcode는 **핵심 아키텍처**와 **기능 구현**에서 Claude Code와 대등한 수준입니다. 주요 격차는:
+dhelix는 **핵심 아키텍처**와 **기능 구현**에서 Claude Code와 대등한 수준입니다. 주요 격차는:
 
 1. **Extended Thinking** — Anthropic API 전용 프로바이더 필요
 2. **멀티모달 (이미지/PDF)** — file_read 확장

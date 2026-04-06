@@ -48,7 +48,7 @@ export default function CmdUpdatePage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">/update</code> 명령어는 dbcode를 최신 버전으로
+                <code className="text-cyan-600">/update</code> 명령어는 dhelix를 최신 버전으로
                 업데이트합니다. 대화 중에 바로 실행할 수 있어 터미널을 따로 열어 npm 명령을 입력할
                 필요가 없습니다.
               </p>
@@ -68,11 +68,11 @@ export default function CmdUpdatePage() {
               titleColor="purple"
               chart={`graph TD
   USER["/update 입력"] --> CMD["updateCommand.execute()"]
-  CMD --> CHECK["npm view dbcode version<br/><small>최신 버전 조회 (30초 타임아웃)</small>"]
+  CMD --> CHECK["npm view dhelix version<br/><small>최신 버전 조회 (30초 타임아웃)</small>"]
   CHECK -->|"실패/ERR"| AIRGAP["에어갭 환경 안내<br/><small>수동 업데이트 명령 표시</small>"]
   CHECK -->|"성공"| COMPARE{"현재 버전 =<br/>최신 버전?"}
   COMPARE -->|"같음"| LATEST["이미 최신 버전"]
-  COMPARE -->|"다름"| INSTALL["npm install -g dbcode@latest<br/><small>글로벌 업데이트 실행</small>"]
+  COMPARE -->|"다름"| INSTALL["npm install -g dhelix@latest<br/><small>글로벌 업데이트 실행</small>"]
   INSTALL -->|"성공"| DONE["업데이트 완료<br/><small>재시작 안내</small>"]
   INSTALL -->|"실패/ERR"| MANUAL["수동 업데이트 안내"]
 
@@ -118,7 +118,7 @@ export default function CmdUpdatePage() {
                   name: "description",
                   type: "string",
                   required: true,
-                  desc: '"Update dbcode to the latest version"',
+                  desc: '"Update dhelix to the latest version"',
                 },
                 { name: "usage", type: "string", required: true, desc: '"/update"' },
                 {
@@ -193,7 +193,7 @@ export default function CmdUpdatePage() {
                 <code className="text-red-600">EACCES</code> 에러가 발생합니다.
               </li>
               <li>
-                업데이트 후 반드시 dbcode를 <strong>재시작</strong>해야 새 버전이 적용됩니다. 실행
+                업데이트 후 반드시 dhelix를 <strong>재시작</strong>해야 새 버전이 적용됩니다. 실행
                 중인 프로세스는 이전 버전의 코드를 계속 사용합니다.
               </li>
               <li>
@@ -236,11 +236,11 @@ export default function CmdUpdatePage() {
               <span className="prop">Latest version: 1.3.0</span>
               {"\n"}
               {"\n"}
-              <span className="prop">Updating dbcode...</span>
+              <span className="prop">Updating dhelix...</span>
               {"\n"}
               <span className="fn">Updated to 1.3.0 successfully.</span>
               {"\n"}
-              <span className="cm">Restart dbcode to use the new version.</span>
+              <span className="cm">Restart dhelix to use the new version.</span>
             </CodeBlock>
 
             <CodeBlock>
@@ -254,7 +254,7 @@ export default function CmdUpdatePage() {
 
             <Callout type="warn" icon="!">
               <strong>주의:</strong> <code>npm install -g</code>는 시스템 전역 패키지를 수정합니다.
-              macOS/Linux에서 권한 에러가 발생하면 <code>sudo npm install -g dbcode@latest</code>로
+              macOS/Linux에서 권한 에러가 발생하면 <code>sudo npm install -g dhelix@latest</code>로
               수동 설치하거나, nvm/volta 등의 노드 버전 관리자를 사용하세요.
             </Callout>
 
@@ -280,7 +280,7 @@ export default function CmdUpdatePage() {
               <span className="prop">Manual update:</span>
               {"\n"}
               {"  "}
-              <span className="fn">npm install -g dbcode@latest</span>
+              <span className="fn">npm install -g dhelix@latest</span>
             </CodeBlock>
 
             <DeepDive title="runCommand() 내부 동작">
@@ -532,7 +532,7 @@ export default function CmdUpdatePage() {
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 npm 레지스트리에 접근할 수 없는 경우입니다. 인터넷 연결을 확인하거나, 프록시/방화벽
                 설정을 확인하세요. 에어갭 환경이라면 패키지 파일을 직접 복사하여{" "}
-                <code className="text-cyan-600">npm install -g ./dbcode-1.3.0.tgz</code>로 설치할 수
+                <code className="text-cyan-600">npm install -g ./dhelix-1.3.0.tgz</code>로 설치할 수
                 있습니다.
               </p>
             </div>
@@ -547,7 +547,7 @@ export default function CmdUpdatePage() {
               </p>
               <ul className="text-[13px] text-gray-600 space-y-1 list-disc list-inside mt-2">
                 <li>
-                  <code className="text-cyan-600">sudo npm install -g dbcode@latest</code>{" "}
+                  <code className="text-cyan-600">sudo npm install -g dhelix@latest</code>{" "}
                   (macOS/Linux)
                 </li>
                 <li>nvm이나 volta를 사용하여 노드 관리 (권한 문제 해결)</li>
@@ -561,7 +561,7 @@ export default function CmdUpdatePage() {
                 &quot;업데이트 성공했는데 새 기능이 안 보여요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                업데이트 후 반드시 dbcode를 <strong>재시작</strong>해야 합니다. 현재 실행 중인
+                업데이트 후 반드시 dhelix를 <strong>재시작</strong>해야 합니다. 현재 실행 중인
                 프로세스는 이전 버전의 코드를 메모리에서 계속 사용합니다.
                 <code className="text-cyan-600">Ctrl+D</code>로 종료한 후 다시 실행하세요.
               </p>
@@ -576,7 +576,7 @@ export default function CmdUpdatePage() {
                 <code className="text-cyan-600">runCommand()</code>의 타임아웃은 30초입니다. 느린
                 네트워크 환경에서는 이 시간 안에 npm 레지스트리 응답을 받지 못할 수 있습니다. 이
                 경우 터미널에서 직접{" "}
-                <code className="text-cyan-600">npm install -g dbcode@latest</code>를 실행하면
+                <code className="text-cyan-600">npm install -g dhelix@latest</code>를 실행하면
                 타임아웃 제한 없이 설치할 수 있습니다.
               </p>
             </div>

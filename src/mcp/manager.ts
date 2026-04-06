@@ -8,7 +8,7 @@
  * 주요 역할:
  * 1. 설정 파일(mcp.json)에서 MCP 서버 설정을 로딩
  * 2. MCPClient를 사용하여 각 서버에 연결
- * 3. MCPToolBridge를 통해 서버의 도구를 dbcode 도구 레지스트리에 등록
+ * 3. MCPToolBridge를 통해 서버의 도구를 dhelix 도구 레지스트리에 등록
  * 4. 연결 해제 및 정리
  */
 import { readFile } from "node:fs/promises";
@@ -33,14 +33,14 @@ export class MCPManagerError extends BaseError {
   }
 }
 
-/** 기본 설정 파일 경로: ~/.dbcode/mcp.json */
-const DEFAULT_CONFIG_PATH = join(homedir(), ".dbcode", "mcp.json");
+/** 기본 설정 파일 경로: ~/.dhelix/mcp.json */
+const DEFAULT_CONFIG_PATH = join(homedir(), ".dhelix", "mcp.json");
 
 /**
  * MCP 매니저 설정 인터페이스
  */
 export interface MCPManagerConfig {
-  /** 설정 파일 경로 (기본값: ~/.dbcode/mcp.json) */
+  /** 설정 파일 경로 (기본값: ~/.dhelix/mcp.json) */
   readonly configPath?: string;
   /** 작업 디렉토리 — 스코프 기반 설정 해석에 사용 */
   readonly workingDirectory?: string;
@@ -76,7 +76,7 @@ export interface ConnectAllResult {
 export class MCPManager {
   /** 서버 이름 → MCPClient 인스턴스 맵 */
   private readonly clients = new Map<string, MCPClient>();
-  /** MCP 도구를 dbcode 레지스트리에 브리지하는 컴포넌트 */
+  /** MCP 도구를 dhelix 레지스트리에 브리지하는 컴포넌트 */
   private readonly bridge: MCPToolBridge;
   /** 설정 파일 경로 */
   private readonly configPath: string;
@@ -227,7 +227,7 @@ export class MCPManager {
     await client.connect();
     this.clients.set(name, client);
 
-    // 서버의 도구를 발견하고 dbcode 레지스트리에 등록
+    // 서버의 도구를 발견하고 dhelix 레지스트리에 등록
     const toolNames = await this.bridge.registerTools(client, name);
     return toolNames;
   }

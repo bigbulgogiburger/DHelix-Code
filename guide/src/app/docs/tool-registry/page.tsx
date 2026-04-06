@@ -53,7 +53,7 @@ export default function ToolRegistryPage() {
 
             <div className="text-[14px] text-gray-600 leading-relaxed space-y-4 mb-8">
               <p>
-                <strong className="text-gray-900">ToolRegistry</strong>는 dbcode의 모든 도구(내장
+                <strong className="text-gray-900">ToolRegistry</strong>는 dhelix의 모든 도구(내장
                 16개 + MCP 외부 도구)를 하나의{" "}
                 <code className="text-cyan-600 text-[13px]">Map&lt;string, ToolDefinition&gt;</code>
                 에 저장하고 관리하는 싱글턴 클래스입니다. Agent Loop가 LLM에게 &ldquo;사용 가능한

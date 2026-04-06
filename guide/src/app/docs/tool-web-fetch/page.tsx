@@ -581,7 +581,7 @@ export default function ToolWebFetchPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
                 서버가 자동화된 요청을 차단하고 있습니다. User-Agent 헤더로
-                <code className="text-cyan-600">&quot;dbcode/1.0&quot;</code>을 보내는데, 일부
+                <code className="text-cyan-600">&quot;dhelix/1.0&quot;</code>을 보내는데, 일부
                 사이트는 봇을 차단합니다.
               </p>
               <Callout type="tip" icon="*">

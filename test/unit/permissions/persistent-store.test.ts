@@ -6,7 +6,7 @@ import { join } from "node:path";
 // Mock homedir so user-scope settings also go to our temp dir
 const { mockHomedir } = vi.hoisted(() => {
   // Provide a default so module-level calls (e.g. constants.ts CONFIG_DIR) don't crash
-  const mockHomedir = vi.fn<() => string>().mockReturnValue("/tmp/dbcode-mock-home");
+  const mockHomedir = vi.fn<() => string>().mockReturnValue("/tmp/dhelix-mock-home");
   return { mockHomedir };
 });
 
@@ -22,14 +22,14 @@ import {
 
 describe("PersistentPermissionStore", () => {
   let tempDir: string;
-  /** The project-scope settings path: {tempDir}/.dbcode/settings.json */
+  /** The project-scope settings path: {tempDir}/.dhelix/settings.json */
   let projectSettingsPath: string;
 
   beforeEach(async () => {
-    tempDir = await mkdtemp(join(tmpdir(), "dbcode-persist-test-"));
+    tempDir = await mkdtemp(join(tmpdir(), "dhelix-persist-test-"));
     // Point homedir to a subfolder so user-scope writes don't collide
     mockHomedir.mockReturnValue(tempDir);
-    projectSettingsPath = join(tempDir, ".dbcode", "settings.json");
+    projectSettingsPath = join(tempDir, ".dhelix", "settings.json");
   });
 
   afterEach(async () => {
@@ -38,7 +38,7 @@ describe("PersistentPermissionStore", () => {
 
   /** Helper: write a project-scope settings file */
   async function writeProjectSettings(data: unknown): Promise<void> {
-    await mkdir(join(tempDir, ".dbcode"), { recursive: true });
+    await mkdir(join(tempDir, ".dhelix"), { recursive: true });
     await writeFile(projectSettingsPath, JSON.stringify(data), "utf-8");
   }
 
@@ -87,7 +87,7 @@ describe("PersistentPermissionStore", () => {
     });
 
     it("should return empty array for invalid JSON", async () => {
-      await mkdir(join(tempDir, ".dbcode"), { recursive: true });
+      await mkdir(join(tempDir, ".dhelix"), { recursive: true });
       await writeFile(projectSettingsPath, "not json!!!", "utf-8");
       const store = createPersistentPermissionStore(tempDir);
       const rules = await store.loadRules();
@@ -280,12 +280,12 @@ describe("PersistentPermissionStore", () => {
 
   describe("nested directory creation", () => {
     it("should create parent directories when writing", async () => {
-      // Use a fresh nested temp dir as project dir so .dbcode/ needs to be created
+      // Use a fresh nested temp dir as project dir so .dhelix/ needs to be created
       const nestedProjectDir = join(tempDir, "a", "b");
       const store = createPersistentPermissionStore(nestedProjectDir);
       await store.addRule({ tool: "file_read", type: "allow" }, "project");
 
-      const nestedSettingsPath = join(nestedProjectDir, ".dbcode", "settings.json");
+      const nestedSettingsPath = join(nestedProjectDir, ".dhelix", "settings.json");
       const content = JSON.parse(await readFile(nestedSettingsPath, "utf-8"));
       expect(content.permissions.allow).toEqual(["file_read"]);
     });

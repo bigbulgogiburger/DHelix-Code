@@ -1,12 +1,12 @@
-# dbcode 코드베이스 온보딩 가이드
+# dhelix 코드베이스 온보딩 가이드
 
 > 주니어 개발자를 위한 코드 읽기 가이드. 어디서부터, 어떤 순서로, 무엇을 봐야 하는지 설명합니다.
 
 ---
 
-## 1. dbcode가 뭔가요?
+## 1. dhelix가 뭔가요?
 
-dbcode는 **터미널에서 동작하는 AI 코딩 어시스턴트**입니다.
+dhelix는 **터미널에서 동작하는 AI 코딩 어시스턴트**입니다.
 
 사용자가 터미널에 질문이나 명령을 입력하면, AI(LLM)가 코드를 읽고, 수정하고, 명령을 실행하면서 개발 작업을 도와줍니다. ChatGPT 같은 대화형 인터페이스이지만, **파일 시스템과 셸에 직접 접근**할 수 있다는 점이 다릅니다.
 
@@ -58,7 +58,7 @@ dbcode는 **터미널에서 동작하는 AI 코딩 어시스턴트**입니다.
 
 | 순서 | 파일             | 왜 봐야 하나                                                                                                       |
 | ---- | ---------------- | ------------------------------------------------------------------------------------------------------------------ |
-| 1    | `bin/dbcode.mjs` | 실제 실행 파일. `node bin/dbcode.mjs`로 프로그램 시작                                                              |
+| 1    | `bin/dhelix.mjs` | 실제 실행 파일. `node bin/dhelix.mjs`로 프로그램 시작                                                              |
 | 2    | `src/index.ts`   | **부트스트랩 전체 과정**. 설정 로딩 → LLM 클라이언트 생성 → 도구 등록 → UI 렌더링까지 10단계를 순서대로 볼 수 있음 |
 
 `src/index.ts`를 읽으면 프로젝트의 모든 주요 모듈이 어디서 어떻게 조립되는지 한눈에 보입니다.
@@ -106,20 +106,20 @@ dbcode는 **터미널에서 동작하는 AI 코딩 어시스턴트**입니다.
 | MCP          | `src/mcp/client.ts`          | 외부 MCP 서버 연동 (JSON-RPC 2.0)                                    |
 | 스킬         | `src/skills/manager.ts`      | `/commit`, `/debug` 같은 슬래시 명령 시스템                          |
 | 서브에이전트 | `src/subagents/spawner.ts`   | 하위 에이전트 생성 및 병렬 실행                                      |
-| 메모리       | `src/memory/manager.ts`      | 대화 간 기억 저장 (~/.dbcode/projects/)                              |
+| 메모리       | `src/memory/manager.ts`      | 대화 간 기억 저장 (~/.dhelix/projects/)                              |
 
 ---
 
 ## 4. Agent Loop 상세 — 이 프로젝트의 심장
 
-dbcode의 핵심 동작 원리는 **ReAct (Reasoning + Acting) 패턴**입니다.
+dhelix의 핵심 동작 원리는 **ReAct (Reasoning + Acting) 패턴**입니다.
 
 ```
 사용자 입력
    │
    ▼
 ┌──────────────────────────┐
-│ 시스템 프롬프트 구성       │  ← DBCODE.md + 스킬 + 메모리 + 레포 맵
+│ 시스템 프롬프트 구성       │  ← DHELIX.md + 스킬 + 메모리 + 레포 맵
 └──────────┬───────────────┘
            ▼
 ┌──────────────────────────┐
@@ -190,7 +190,7 @@ dbcode의 핵심 동작 원리는 **ReAct (Reasoning + Acting) 패턴**입니다
 | `/cost`      | API 비용 확인             |
 | `/clear`     | 대화 초기화               |
 | `/resume`    | 이전 세션 복원            |
-| `/init`      | 프로젝트에 DBCODE.md 생성 |
+| `/init`      | 프로젝트에 DHELIX.md 생성 |
 | `/commit`    | Git 커밋 생성             |
 | `/debug`     | 디버깅 모드               |
 | `/plan`      | Plan 모드 (실행 전 확인)  |
@@ -261,7 +261,7 @@ userInvocable: true
 문제를 단계적으로 디버깅해주세요...
 ```
 
-4개 디렉토리에서 로드: `~/.dbcode/skills/`, `~/.dbcode/commands/`, `.dbcode/skills/`, `.dbcode/commands/`
+4개 디렉토리에서 로드: `~/.dhelix/skills/`, `~/.dhelix/commands/`, `.dhelix/skills/`, `.dhelix/commands/`
 
 ### 5.9 서브에이전트
 
@@ -377,13 +377,13 @@ test/
 
 | 파일                         | 용도                               |
 | ---------------------------- | ---------------------------------- |
-| `DBCODE.md` (프로젝트 루트)  | 프로젝트별 AI 지시사항             |
-| `DBCODE.local.md`            | 로컬 전용 (gitignored)             |
-| `.dbcode/settings.json`      | 프로젝트 설정                      |
-| `~/.dbcode/settings.json`    | 사용자 전역 설정                   |
-| `~/.dbcode/config.json`      | 사용자 전역 설정 (모델, API 키 등) |
-| `~/.dbcode/keybindings.json` | 키보드 단축키 커스터마이징         |
-| `~/.dbcode/mcp.json`         | MCP 서버 설정                      |
+| `DHELIX.md` (프로젝트 루트)  | 프로젝트별 AI 지시사항             |
+| `DHELIX.local.md`            | 로컬 전용 (gitignored)             |
+| `.dhelix/settings.json`      | 프로젝트 설정                      |
+| `~/.dhelix/settings.json`    | 사용자 전역 설정                   |
+| `~/.dhelix/config.json`      | 사용자 전역 설정 (모델, API 키 등) |
+| `~/.dhelix/keybindings.json` | 키보드 단축키 커스터마이징         |
+| `~/.dhelix/mcp.json`         | MCP 서버 설정                      |
 
 ---
 

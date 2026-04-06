@@ -76,7 +76,7 @@ export default function PermissionAuditLogPage() {
                 접근하더라도, 이미 기록된 로그 항목을 API로 지울 수 없습니다.
               </p>
               <p>
-                기본 파일 경로는 <code className="text-cyan-600">~/.dbcode/audit.jsonl</code>이며,
+                기본 파일 경로는 <code className="text-cyan-600">~/.dhelix/audit.jsonl</code>이며,
                 생성자에서 경로를 지정할 수 있습니다.
               </p>
             </div>
@@ -90,7 +90,7 @@ export default function PermissionAuditLogPage() {
   SS["SessionApprovalStore<br/><small>session-store.ts</small>"]
   PS["PersistentPermissionStore<br/><small>persistent-store.ts</small>"]
   AL["AuditLogger<br/><small>audit-log.ts</small>"]
-  DISK["~/.dbcode/audit.jsonl<br/><small>JSONL 로그 파일</small>"]
+  DISK["~/.dhelix/audit.jsonl<br/><small>JSONL 로그 파일</small>"]
 
   TOOL -->|"1. 권한 확인"| PM
   PM -->|"2. 캐시/규칙 확인"| SS
@@ -222,7 +222,7 @@ export default function PermissionAuditLogPage() {
                   name: "logPath",
                   type: "string",
                   required: true,
-                  desc: '감사 로그 파일의 절대 경로 (예: "/home/user/.dbcode/audit.jsonl")',
+                  desc: '감사 로그 파일의 절대 경로 (예: "/home/user/.dhelix/audit.jsonl")',
                 },
               ]}
             />
@@ -339,7 +339,7 @@ export default function PermissionAuditLogPage() {
               <span className="kw">new</span> <span className="fn">AuditLogger</span>({"\n"}
               {"  "}
               <span className="fn">join</span>(<span className="fn">homedir</span>(),{" "}
-              <span className="str">&quot;.dbcode&quot;</span>,{" "}
+              <span className="str">&quot;.dhelix&quot;</span>,{" "}
               <span className="str">&quot;audit.jsonl&quot;</span>){"\n"});
               {"\n"}
               <span className="cm">
@@ -371,7 +371,7 @@ export default function PermissionAuditLogPage() {
               {"}"});
               {"\n"}
               <span className="cm">
-                {"// → 첫 호출이므로 ~/.dbcode/ 디렉토리 생성 + 로그 기록"}
+                {"// → 첫 호출이므로 ~/.dhelix/ 디렉토리 생성 + 로그 기록"}
               </span>
               {"\n"}
               {"\n"}
@@ -749,22 +749,22 @@ export default function PermissionAuditLogPage() {
               <CodeBlock>
                 <span className="cm">{"# 현재 로그 파일 크기 확인"}</span>
                 {"\n"}
-                <span className="fn">ls</span> -lh ~/.dbcode/audit.jsonl
+                <span className="fn">ls</span> -lh ~/.dhelix/audit.jsonl
                 {"\n"}
                 {"\n"}
                 <span className="cm">
                   {"# 백업 후 초기화 — 새 파일은 다음 log() 호출 시 자동 생성"}
                 </span>
                 {"\n"}
-                <span className="fn">mv</span> ~/.dbcode/audit.jsonl ~/.dbcode/audit.jsonl.bak
+                <span className="fn">mv</span> ~/.dhelix/audit.jsonl ~/.dhelix/audit.jsonl.bak
                 {"\n"}
                 {"\n"}
                 <span className="cm">{"# 또는 최근 1000줄만 남기기"}</span>
                 {"\n"}
-                <span className="fn">tail</span> -n 1000 ~/.dbcode/audit.jsonl {">"}{" "}
-                ~/.dbcode/audit.tmp
+                <span className="fn">tail</span> -n 1000 ~/.dhelix/audit.jsonl {">"}{" "}
+                ~/.dhelix/audit.tmp
                 {"\n"}
-                <span className="fn">mv</span> ~/.dbcode/audit.tmp ~/.dbcode/audit.jsonl
+                <span className="fn">mv</span> ~/.dhelix/audit.tmp ~/.dhelix/audit.jsonl
               </CodeBlock>
             </div>
 

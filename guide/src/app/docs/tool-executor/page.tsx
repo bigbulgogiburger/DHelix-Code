@@ -574,7 +574,7 @@ export default function ToolExecutorPage() {
               <li>
                 <code className="text-cyan-600">BackgroundProcessManager</code>의 프로세스는
                 <code className="text-cyan-600">detached + unref()</code>로 실행되어 부모
-                프로세스(dbcode)가 종료되어도 계속 실행됩니다. 반드시{" "}
+                프로세스(dhelix)가 종료되어도 계속 실행됩니다. 반드시{" "}
                 <code className="text-cyan-600">cleanup()</code>으로 정리하세요.
               </li>
             </ul>

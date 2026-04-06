@@ -46,6 +46,7 @@ import { createEventEmitter } from "../../utils/events.js";
 import { ActivityCollector, type TurnActivity } from "../../core/activity.js";
 import { MemoryManager } from "../../memory/manager.js";
 import { metrics, COUNTERS } from "../../telemetry/metrics.js";
+import { spawnSubagent, type SubagentType } from "../../subagents/spawner.js";
 
 /**
  * useAgentLoop 훅의 옵션 인터페이스
@@ -697,6 +698,65 @@ export function useAgentLoop({
     ],
   );
 
+  // Wire up skill:fork event — spawn a subagent when a fork skill is executed
+  useEffect(() => {
+    const handleSkillFork = (data: {
+      readonly prompt: string;
+      readonly model?: string;
+      readonly agentType?: SubagentType;
+      readonly allowedTools?: readonly string[];
+    }) => {
+      const subagentModel = data.model ?? activeModel;
+      const subagentStrategy = selectStrategy(subagentModel);
+
+      void spawnSubagent({
+        type: data.agentType ?? "general",
+        prompt: data.prompt,
+        client: clientRef.current,
+        model: subagentModel,
+        strategy: subagentStrategy,
+        toolRegistry,
+        workingDirectory: process.cwd(),
+        allowedTools: data.allowedTools,
+        parentEvents: events,
+        signal: abortControllerRef.current?.signal,
+        checkPermission,
+        sessionId,
+        locale: currentLocale,
+        tone: currentTone,
+        projectInstructions,
+        autoMemoryContent,
+        repoMapContent,
+      }).then((result) => {
+        if (result.response) {
+          void processMessage(
+            `[Subagent (${result.type}) completed]\n\n${result.response}`,
+          );
+        }
+      }).catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : String(err);
+        setError(`Subagent fork failed: ${msg}`);
+      });
+    };
+
+    events.on("skill:fork", handleSkillFork);
+    return () => {
+      events.off("skill:fork", handleSkillFork);
+    };
+  }, [
+    events,
+    activeModel,
+    toolRegistry,
+    checkPermission,
+    sessionId,
+    currentLocale,
+    currentTone,
+    projectInstructions,
+    autoMemoryContent,
+    repoMapContent,
+    processMessage,
+  ]);
+
   const handleSubmit = useCallback(
     async (input: string) => {
       // Handle slash commands
@@ -717,6 +777,13 @@ export function useAgentLoop({
           // Skill commands with shouldInjectAsUserMessage bypass display
           // and send the expanded prompt through the agent loop
           if (result.shouldInjectAsUserMessage && result.success) {
+            // Apply skill model override if specified
+            if (result.modelOverride) {
+              if (result.newProvider) {
+                clientRef.current = createLLMClientForModel(result.newProvider);
+              }
+              setActiveModel(result.modelOverride);
+            }
             void processMessage(result.output);
             return;
           }
@@ -797,6 +864,7 @@ export function useAgentLoop({
       processMessage,
       clearConversation,
       contextManager,
+      mcpManager,
     ],
   );
 

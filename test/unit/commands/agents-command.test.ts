@@ -24,8 +24,8 @@ const mockStat = vi.mocked(stat);
 const WORK_DIR = "/project";
 
 /** Computed expected paths (platform-agnostic via join) */
-const PROJECT_AGENTS_DIR = join(WORK_DIR, ".dbcode", "agents");
-const USER_AGENTS_DIR = join(homedir(), ".dbcode", "agents");
+const PROJECT_AGENTS_DIR = join(WORK_DIR, ".dhelix", "agents");
+const USER_AGENTS_DIR = join(homedir(), ".dhelix", "agents");
 
 const baseContext: CommandContext = {
   workingDirectory: WORK_DIR,
@@ -132,7 +132,7 @@ describe("/agents command", () => {
       const result = await agentsCommand.execute("list", baseContext);
       expect(result.success).toBe(true);
       expect(result.output).toContain("No agent definitions found");
-      expect(result.output).toContain(".dbcode/agents/");
+      expect(result.output).toContain(".dhelix/agents/");
     });
 
     it("should list agents from project directory", async () => {

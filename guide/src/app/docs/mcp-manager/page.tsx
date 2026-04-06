@@ -29,7 +29,7 @@ export default function MCPManagerPage() {
               <span className="text-violet-600 font-semibold">local &gt; project &gt; user</span>)
               우선순위에 따라 서버를 병렬 연결하고,{" "}
               <span className="text-cyan-600 font-semibold">ToolBridge</span>를 통해 MCP 도구를
-              dbcode의 도구 레지스트리에 자동 등록합니다.
+              dhelix의 도구 레지스트리에 자동 등록합니다.
             </p>
           </div>
         </RevealOnScroll>
@@ -44,12 +44,12 @@ export default function MCPManagerPage() {
               <span>{"📋"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
-              MCP(Model Context Protocol) 서버는 외부 도구를 dbcode에 연결하는 표준 프로토콜입니다.
+              MCP(Model Context Protocol) 서버는 외부 도구를 dhelix에 연결하는 표준 프로토콜입니다.
               <code className="text-cyan-600 text-xs"> MCPManager</code>는 설정 파일에서 서버 목록을
               읽어
               <strong className="text-gray-900"> 병렬로 연결</strong>한 뒤, 각 서버가 제공하는
               도구를 <span className="text-cyan-600 font-semibold">MCPToolBridge</span>를 통해
-              dbcode의 <span className="text-violet-600 font-semibold">ToolRegistry</span>에 자동
+              dhelix의 <span className="text-violet-600 font-semibold">ToolRegistry</span>에 자동
               등록합니다. 일부 서버 연결이 실패해도 나머지 서버는 정상 동작하는
               <strong className="text-gray-900">
                 {" "}
@@ -110,7 +110,7 @@ export default function MCPManagerPage() {
                 <div className="flex gap-3">
                   <span className="text-emerald-600 font-bold shrink-0 w-28">MCPToolBridge</span>
                   <span>
-                    MCP 서버의 도구를 dbcode{" "}
+                    MCP 서버의 도구를 dhelix{" "}
                     <code className="text-cyan-600 text-xs">ToolRegistry</code>에{" "}
                     <strong className="text-gray-900">자동 변환/등록</strong>
                   </span>
@@ -155,7 +155,7 @@ export default function MCPManagerPage() {
                     name: "configPath",
                     type: "string | undefined",
                     required: false,
-                    desc: "설정 파일 경로. 기본값: ~/.dbcode/mcp.json",
+                    desc: "설정 파일 경로. 기본값: ~/.dhelix/mcp.json",
                   },
                   {
                     name: "workingDirectory",
@@ -440,15 +440,15 @@ export default function MCPManagerPage() {
               MCP 설정 파일 작성하기
             </h3>
             <p className="text-[13px] text-gray-600 mb-3">
-              <code className="text-cyan-600 text-xs">~/.dbcode/mcp.json</code> (사용자 전역) 또는
-              프로젝트 디렉토리의 <code className="text-cyan-600 text-xs">.dbcode/mcp.json</code>{" "}
+              <code className="text-cyan-600 text-xs">~/.dhelix/mcp.json</code> (사용자 전역) 또는
+              프로젝트 디렉토리의 <code className="text-cyan-600 text-xs">.dhelix/mcp.json</code>{" "}
               (프로젝트별)에 서버 설정을 작성합니다.{" "}
               <code className="text-cyan-600 text-xs">mcpServers</code> 필드 안에 서버 이름을 키로
               사용합니다.
             </p>
 
             <CodeBlock>
-              <span className="text-[#8b949e]">{"// ~/.dbcode/mcp.json"}</span>
+              <span className="text-[#8b949e]">{"// ~/.dhelix/mcp.json"}</span>
               {"\n"}
               <span className="text-[#c9d1d9]">{"{"}</span>
               {"\n"}
@@ -532,7 +532,7 @@ export default function MCPManagerPage() {
                     <span className="text-red-600 font-bold shrink-0 w-16">1순위</span>
                     <span>
                       <strong className="text-gray-900">local</strong> &mdash;{" "}
-                      <code className="text-cyan-600 text-xs">.dbcode/mcp.json</code> (현재
+                      <code className="text-cyan-600 text-xs">.dhelix/mcp.json</code> (현재
                       디렉토리)
                     </span>
                   </div>
@@ -547,7 +547,7 @@ export default function MCPManagerPage() {
                     <span className="text-emerald-600 font-bold shrink-0 w-16">3순위</span>
                     <span>
                       <strong className="text-gray-900">user</strong> &mdash;{" "}
-                      <code className="text-cyan-600 text-xs">~/.dbcode/mcp.json</code> (전역 설정)
+                      <code className="text-cyan-600 text-xs">~/.dhelix/mcp.json</code> (전역 설정)
                     </span>
                   </div>
                 </div>
@@ -808,13 +808,13 @@ export default function MCPManagerPage() {
                 <div className="text-[13px] text-gray-600 leading-relaxed">
                   <p className="mb-2">
                     <strong className="text-gray-900">원인:</strong> 설정 파일(
-                    <code className="text-cyan-600 text-xs">~/.dbcode/mcp.json</code> 또는 프로젝트
+                    <code className="text-cyan-600 text-xs">~/.dhelix/mcp.json</code> 또는 프로젝트
                     설정)의 JSON 문법이 잘못되었습니다.
                   </p>
                   <p>
                     <strong className="text-gray-900">해결:</strong> 터미널에서{" "}
                     <code className="text-cyan-600 text-xs">
-                      cat ~/.dbcode/mcp.json | python3 -m json.tool
+                      cat ~/.dhelix/mcp.json | python3 -m json.tool
                     </code>
                     로 문법을 검증하세요. 후행 쉼표(trailing comma)나 따옴표 누락이 흔한 원인입니다.
                   </p>

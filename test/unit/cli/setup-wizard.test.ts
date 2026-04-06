@@ -24,9 +24,9 @@ describe("setup-wizard", () => {
       expect(await needsSetup()).toBe(false);
     });
 
-    it("should return false when DBCODE_API_KEY is set", async () => {
+    it("should return false when DHELIX_API_KEY is set", async () => {
       delete process.env.OPENAI_API_KEY;
-      process.env.DBCODE_API_KEY = "sk-test-key";
+      process.env.DHELIX_API_KEY = "sk-test-key";
       const { needsSetup } = await import("../../../src/cli/setup-wizard.js");
       expect(await needsSetup()).toBe(false);
     });

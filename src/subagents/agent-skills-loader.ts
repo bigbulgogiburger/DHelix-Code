@@ -9,10 +9,10 @@
  * 시스템 프롬프트에 삽입할 수 있는 형태로 가공합니다.
  *
  * 스킬 검색 경로 (우선순위 순):
- * 1. {프로젝트}/.dbcode/commands/ — 프로젝트 명령 (최우선)
- * 2. {프로젝트}/.dbcode/skills/  — 프로젝트 스킬
- * 3. ~/.dbcode/commands/          — 사용자 전역 명령
- * 4. ~/.dbcode/skills/            — 사용자 전역 스킬 (최하위)
+ * 1. {프로젝트}/.dhelix/commands/ — 프로젝트 명령 (최우선)
+ * 2. {프로젝트}/.dhelix/skills/  — 프로젝트 스킬
+ * 3. ~/.dhelix/commands/          — 사용자 전역 명령
+ * 4. ~/.dhelix/skills/            — 사용자 전역 스킬 (최하위)
  */
 import { join } from "node:path";
 import { homedir } from "node:os";
@@ -81,10 +81,10 @@ async function findAndLoadSkill(
  * 여러 스킬을 이름으로 로드하여 시스템 프롬프트에 주입할 수 있는 형태로 반환합니다.
  *
  * 4개의 스킬 디렉토리를 순서대로 검색합니다:
- * - .dbcode/commands/ (프로젝트)
- * - .dbcode/skills/ (프로젝트)
- * - ~/.dbcode/commands/ (사용자 전역)
- * - ~/.dbcode/skills/ (사용자 전역)
+ * - .dhelix/commands/ (프로젝트)
+ * - .dhelix/skills/ (프로젝트)
+ * - ~/.dhelix/commands/ (사용자 전역)
+ * - ~/.dhelix/skills/ (사용자 전역)
  *
  * 어떤 디렉토리에서도 찾지 못한 스킬은 조용히 건너뜁니다 (에러 발생 안 함).
  *

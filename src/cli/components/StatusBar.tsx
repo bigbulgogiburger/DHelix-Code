@@ -108,12 +108,12 @@ export const StatusBar = React.memo(function StatusBar({
   return (
     <Box
       borderStyle="single"
-      borderColor={contextWarning ? "red" : "gray"}
+      borderColor={contextWarning ? "red" : "#0097A7"}
       paddingX={1}
       justifyContent="space-between"
     >
       <Box gap={1}>
-        <Text color="blue">{displayName}</Text>
+        <Text color="cyan">{displayName}</Text>
         <Text color="gray">v{VERSION}</Text>
         {sessionName ? <Text color="gray">({sessionName})</Text> : null}
       </Box>
@@ -127,8 +127,8 @@ export const StatusBar = React.memo(function StatusBar({
           </Text>
         )}
         {costStr.length > 0 && <Text color="cyan">{costStr}</Text>}
-        {effortLevel ? <Text color="magenta">[{effortLevel}]</Text> : null}
-        {permissionMode ? <Text color="green">[{permissionMode}]</Text> : null}
+        {effortLevel ? <Text color="#00BCD4">[{effortLevel}]</Text> : null}
+        {permissionMode ? <Text color="#0097A7">[{permissionMode}]</Text> : null}
         {verboseMode ? <Text color="yellow">[Verbose]</Text> : null}
         {thinkingEnabled ? <Text color="cyan">[Thinking]</Text> : null}
       </Box>

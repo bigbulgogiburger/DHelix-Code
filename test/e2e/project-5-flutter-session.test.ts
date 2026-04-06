@@ -1,7 +1,7 @@
 /**
  * E2E Multi-turn Session Test: Flutter Memo App
  *
- * Uses dbcode's agent-loop to build a Flutter memo app incrementally
+ * Uses dhelix's agent-loop to build a Flutter memo app incrementally
  * across multiple conversation turns.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";

@@ -80,7 +80,7 @@ describe("update-checker", () => {
       const info = {
         current: "0.1.0",
         latest: "0.2.0",
-        updateCommand: "npm install -g dbcode@latest",
+        updateCommand: "npm install -g dhelix@latest",
       } as const;
 
       expect(info.current).toBe("0.1.0");

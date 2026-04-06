@@ -134,7 +134,7 @@ export default function ConstantsPage() {
                 },
                 {
                   name: "APP_NAME",
-                  type: '"dbcode"',
+                  type: '"dhelix"',
                   required: true,
                   desc: "애플리케이션 이름 (디렉토리명, 환경변수 접두사 등에 사용)",
                 },
@@ -154,17 +154,17 @@ export default function ConstantsPage() {
                   name: "CONFIG_DIR",
                   type: "string",
                   required: true,
-                  desc: "사용자 전역 설정 디렉토리: ~/.dbcode/",
+                  desc: "사용자 전역 설정 디렉토리: ~/.dhelix/",
                 },
                 {
                   name: "PROJECT_CONFIG_FILE",
-                  type: '"DBCODE.md"',
+                  type: '"DHELIX.md"',
                   required: true,
                   desc: "프로젝트 루트 인스트럭션 파일명",
                 },
                 {
                   name: "PROJECT_CONFIG_DIR",
-                  type: '".dbcode"',
+                  type: '".dhelix"',
                   required: true,
                   desc: "프로젝트별 설정 디렉토리명",
                 },
@@ -172,19 +172,19 @@ export default function ConstantsPage() {
                   name: "SESSIONS_DIR",
                   type: "string",
                   required: true,
-                  desc: "세션 저장 디렉토리: ~/.dbcode/sessions/",
+                  desc: "세션 저장 디렉토리: ~/.dhelix/sessions/",
                 },
                 {
                   name: "LOG_FILE",
                   type: "string",
                   required: true,
-                  desc: "디버그 로그 파일: ~/.dbcode/debug.log",
+                  desc: "디버그 로그 파일: ~/.dhelix/debug.log",
                 },
                 {
                   name: "INPUT_HISTORY_FILE",
                   type: "string",
                   required: true,
-                  desc: "입력 히스토리: ~/.dbcode/input-history.json",
+                  desc: "입력 히스토리: ~/.dhelix/input-history.json",
                 },
                 {
                   name: "INPUT_HISTORY_MAX",
@@ -203,7 +203,7 @@ export default function ConstantsPage() {
               function getProjectConfigPaths()
             </h3>
             <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
-              DBCODE.md 탐색 경로를 우선순위 순으로 반환합니다.
+              DHELIX.md 탐색 경로를 우선순위 순으로 반환합니다.
             </p>
             <CodeBlock>
               <span className="kw">export function</span>{" "}
@@ -216,12 +216,12 @@ export default function ConstantsPage() {
             />
             <div className="text-[13px] text-gray-600 mt-2 space-y-1">
               <p>
-                &bull; 우선순위 1: <code className="text-cyan-600">{"{cwd}/DBCODE.md"}</code>{" "}
+                &bull; 우선순위 1: <code className="text-cyan-600">{"{cwd}/DHELIX.md"}</code>{" "}
                 (프로젝트 루트, 권장)
               </p>
               <p>
                 &bull; 우선순위 2:{" "}
-                <code className="text-cyan-600">{"{cwd}/.dbcode/DBCODE.md"}</code> (하위 호환 폴백)
+                <code className="text-cyan-600">{"{cwd}/.dhelix/DHELIX.md"}</code> (하위 호환 폴백)
               </p>
             </div>
 
@@ -301,7 +301,7 @@ export default function ConstantsPage() {
               <span className="cm">{"// DEFAULT_MODEL 우선순위:"}</span>
               {"\n"}
               <span className="cm">
-                {'// LOCAL_MODEL > DBCODE_MODEL > OPENAI_MODEL > "gpt-4o-mini"'}
+                {'// LOCAL_MODEL > DHELIX_MODEL > OPENAI_MODEL > "gpt-4o-mini"'}
               </span>
               {"\n"}
               <span className="kw">export const</span> <span className="prop">DEFAULT_MODEL</span> =
@@ -312,7 +312,7 @@ export default function ConstantsPage() {
               {"\n"}
               {"  "}
               <span className="prop">process</span>.<span className="prop">env</span>.
-              <span className="prop">DBCODE_MODEL</span> ||
+              <span className="prop">DHELIX_MODEL</span> ||
               {"\n"}
               {"  "}
               <span className="prop">process</span>.<span className="prop">env</span>.
@@ -327,7 +327,7 @@ export default function ConstantsPage() {
                   name: "LLM_DEFAULTS.baseUrl",
                   type: "string",
                   required: true,
-                  desc: "기본 API URL (LOCAL_API_BASE_URL > DBCODE_BASE_URL > OPENAI_BASE_URL > OpenAI 공식)",
+                  desc: "기본 API URL (LOCAL_API_BASE_URL > DHELIX_BASE_URL > OPENAI_BASE_URL > OpenAI 공식)",
                 },
                 {
                   name: "LLM_DEFAULTS.model",
@@ -430,13 +430,13 @@ export default function ConstantsPage() {
               <span className="prop">projectDir</span>: <span className="type">string</span>):{" "}
               <span className="type">string</span>
               {"\n"}
-              <span className="cm">{"// → {projectDir}/.dbcode/memory/"}</span>
+              <span className="cm">{"// → {projectDir}/.dhelix/memory/"}</span>
               {"\n"}
               {"\n"}
               <span className="kw">export function</span>{" "}
               <span className="fn">getGlobalMemoryDir</span>(): <span className="type">string</span>
               {"\n"}
-              <span className="cm">{"// → ~/.dbcode/memory/"}</span>
+              <span className="cm">{"// → ~/.dhelix/memory/"}</span>
             </CodeBlock>
 
             {/* Caveats */}
@@ -532,20 +532,20 @@ export default function ConstantsPage() {
               {"\n"}
               <span className="prop">LOCAL_MODEL</span>=
               <span className="str">&quot;llama-3.3-70b&quot;</span>{" "}
-              <span className="fn">dbcode</span>
+              <span className="fn">dhelix</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"# OpenAI 모델 지정"}</span>
               {"\n"}
               <span className="prop">OPENAI_MODEL</span>=
-              <span className="str">&quot;gpt-4o&quot;</span> <span className="fn">dbcode</span>
+              <span className="str">&quot;gpt-4o&quot;</span> <span className="fn">dhelix</span>
               {"\n"}
               {"\n"}
               <span className="cm">{"# 커스텀 API 엔드포인트"}</span>
               {"\n"}
-              <span className="prop">DBCODE_BASE_URL</span>=
+              <span className="prop">DHELIX_BASE_URL</span>=
               <span className="str">&quot;http://localhost:11434/v1&quot;</span>{" "}
-              <span className="fn">dbcode</span>
+              <span className="fn">dhelix</span>
             </CodeBlock>
 
             <DeepDive title="환경변수 우선순위 체인 상세">
@@ -555,7 +555,7 @@ export default function ConstantsPage() {
                   <strong>LOCAL_*</strong> &mdash; 최우선. 로컬 LLM(Ollama 등) 설정용
                 </li>
                 <li>
-                  <strong>DBCODE_*</strong> &mdash; dbcode 전용 설정. 다른 도구와 충돌 방지
+                  <strong>DHELIX_*</strong> &mdash; dhelix 전용 설정. 다른 도구와 충돌 방지
                 </li>
                 <li>
                   <strong>OPENAI_*</strong> &mdash; OpenAI SDK 표준 환경변수. 기존 설정 재활용
@@ -623,7 +623,7 @@ export default function ConstantsPage() {
               기반으로 하위 경로가 파생됩니다.
             </p>
             <CodeBlock>
-              <span className="cm">{"// [1] 기반 경로: ~/.dbcode/"}</span>
+              <span className="cm">{"// [1] 기반 경로: ~/.dhelix/"}</span>
               {"\n"}
               <span className="kw">export const</span> <span className="prop">CONFIG_DIR</span> ={" "}
               <span className="fn">join</span>(<span className="fn">homedir</span>(),{" "}
@@ -679,7 +679,7 @@ export default function ConstantsPage() {
               </p>
               <p>
                 <strong className="text-gray-900">[3]</strong> 프로젝트 메모리는 프로젝트 디렉토리
-                내 <code className="text-cyan-600">.dbcode/memory/</code>에 저장되어 프로젝트별로
+                내 <code className="text-cyan-600">.dhelix/memory/</code>에 저장되어 프로젝트별로
                 격리됩니다.
               </p>
             </div>
@@ -704,7 +704,7 @@ export default function ConstantsPage() {
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 <code className="text-cyan-600">DEFAULT_MODEL</code>은{" "}
                 <strong>프로세스 시작 시점</strong>에 결정됩니다. 실행 중에 환경변수를 변경해도
-                반영되지 않습니다. dbcode를 재시작하거나,{" "}
+                반영되지 않습니다. dhelix를 재시작하거나,{" "}
                 <code className="text-cyan-600">/model</code> 명령어로 런타임에 모델을 전환하세요.
                 또한 우선순위가 높은 환경변수가 이미 설정되어 있는지 확인하세요 (예:{" "}
                 <code className="text-cyan-600">LOCAL_MODEL</code>이 설정되면{" "}
@@ -715,14 +715,14 @@ export default function ConstantsPage() {
             {/* FAQ 2 */}
             <div className="bg-white border border-gray-200 rounded-xl p-5 mb-4">
               <h4 className="text-sm font-bold text-amber-600 mb-3">
-                &quot;DBCODE.md가 인식되지 않아요&quot;
+                &quot;DHELIX.md가 인식되지 않아요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 <code className="text-cyan-600">getProjectConfigPaths()</code>가 반환하는 두 경로를
-                확인하세요. 프로젝트 루트에 <code className="text-cyan-600">DBCODE.md</code>가
+                확인하세요. 프로젝트 루트에 <code className="text-cyan-600">DHELIX.md</code>가
                 있거나
-                <code className="text-cyan-600">.dbcode/DBCODE.md</code>에 있어야 합니다. 파일명의
-                대소문자가 정확한지도 확인하세요 (대문자 &quot;DBCODE&quot;).
+                <code className="text-cyan-600">.dhelix/DHELIX.md</code>에 있어야 합니다. 파일명의
+                대소문자가 정확한지도 확인하세요 (대문자 &quot;DHELIX&quot;).
               </p>
             </div>
 

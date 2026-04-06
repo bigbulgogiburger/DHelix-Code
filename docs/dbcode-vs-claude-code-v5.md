@@ -1,9 +1,9 @@
-# dbcode vs Claude Code — v5 종합 비교 분석
+# dhelix vs Claude Code — v5 종합 비교 분석
 
 > **분석일**: 2026-03-11
 > **이전 분석**: v4 (2026-03-11, 9.0/10)
 > **Claude Code 기준 버전**: v2.1.71 (2026-03-06 릴리즈)
-> **dbcode 기준**: main branch (Core-Level 7대 개선 구현 완료 후)
+> **dhelix 기준**: main branch (Core-Level 7대 개선 구현 완료 후)
 > **분석자 관점**: Anthropic Claude Code 핵심 개발자로서의 기술적 평가
 
 ---
@@ -79,14 +79,14 @@ v4의 잔존 격차였던 **Core 레벨 7대 영역**을 대규모 병렬 개발
 
 **구현**:
 
-- `MemoryManager` 클래스: `~/.dbcode/projects/{sha256(cwd).slice(0,12)}/memory/`
+- `MemoryManager` 클래스: `~/.dhelix/projects/{sha256(cwd).slice(0,12)}/memory/`
 - `MEMORY.md` 메인 메모리 (200줄 제한, 초과 시 경고 주석 삽입)
 - 토픽 메모리: `debugging.md`, `patterns.md` 등 분리 저장
 - 원자적 쓰기 (write-to-temp + rename, session-manager와 동일 패턴)
 - `system-prompt-builder.ts`의 `autoMemoryContent` 슬롯에 바로 연결 가능
 
 **Claude Code 비교**:
-| 기능 | Claude Code | dbcode v5 |
+| 기능 | Claude Code | dhelix v5 |
 |------|-------------|-----------|
 | MEMORY.md 자동 로드 | ✅ 200줄 | ✅ 200줄 |
 | 토픽 파일 | ✅ 온디맨드 | ✅ 온디맨드 |
@@ -182,7 +182,7 @@ AWS Keys, GitHub Tokens, OpenAI Keys, Passwords, Bearer Tokens, API Keys (기존
 
 **디스크 히스토리 퍼시스턴스**:
 
-- `~/.dbcode/agent-history/{agentId}.json`
+- `~/.dhelix/agent-history/{agentId}.json`
 - 인메모리 + 디스크 이중 저장 (디스크는 최대 20개 유지)
 - `resume` 시 인메모리 → 디스크 순서로 검색
 
@@ -198,7 +198,7 @@ AWS Keys, GitHub Tokens, OpenAI Keys, Passwords, Bearer Tokens, API Keys (기존
 **Prompt Handler** (신규 구현):
 
 - `promptMessage` 필드의 확인 메시지 표시
-- CI 자동 승인: `DBCODE_HOOK_AUTO_APPROVE=true`
+- CI 자동 승인: `DHELIX_HOOK_AUTO_APPROVE=true`
 - 변수 보간 지원 (`$TOOL_NAME`, `$FILE_PATH` 등)
 
 **Agent Handler** (신규 구현):
@@ -470,12 +470,12 @@ interface AggregatedUsage {
 
 ### 한 줄 요약
 
-> dbcode v5는 **Core 엔진 7대 영역**(메모리, 보안, 비용, 컨텍스트, 멀티에이전트, 훅, 사용량)을
+> dhelix v5는 **Core 엔진 7대 영역**(메모리, 보안, 비용, 컨텍스트, 멀티에이전트, 훅, 사용량)을
 > 대규모 병렬 개발로 일괄 구현하여, **코어 레벨에서 Claude Code와 동등**한 완성도에 도달했다.
 
-### Claude Code 대비 dbcode의 포지셔닝 (v5 업데이트)
+### Claude Code 대비 dhelix의 포지셔닝 (v5 업데이트)
 
-| 관점              | Claude Code                                    | dbcode v5                                      |
+| 관점              | Claude Code                                    | dhelix v5                                      |
 | ----------------- | ---------------------------------------------- | ---------------------------------------------- |
 | **타겟**          | Anthropic 생태계                               | 모든 LLM 사용자                                |
 | **가격**          | Claude Pro/Max 필요                            | 무료 + BYOK                                    |
@@ -502,7 +502,7 @@ v6 (목표)    ███████████████████░ 9.5/
 
 ## Sources
 
-- v4 분석 문서: `docs/dbcode-vs-claude-code-v4.md`
+- v4 분석 문서: `docs/dhelix-vs-claude-code-v4.md`
 - [Claude Code Overview](https://code.claude.com/docs/en/overview)
 - [Claude Code How It Works](https://code.claude.com/docs/en/how-claude-code-works)
 - [Claude Code Hooks](https://code.claude.com/docs/en/hooks)
@@ -513,4 +513,4 @@ v6 (목표)    ███████████████████░ 9.5/
 - [Claude Code Memory](https://code.claude.com/docs/en/memory)
 - [Claude Code Security](https://code.claude.com/docs/en/security)
 - [Claude Code Sandboxing](https://www.anthropic.com/engineering/claude-code-sandboxing)
-- dbcode 소스 코드 분석 (Core-Level 7대 개선 구현 완료 후)
+- dhelix 소스 코드 분석 (Core-Level 7대 개선 구현 완료 후)

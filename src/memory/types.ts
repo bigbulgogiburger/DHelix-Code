@@ -4,7 +4,7 @@
  * 메모리 시스템은 AI가 세션 간에 학습한 내용(사용자 선호, 디버깅 패턴, 아키텍처 결정 등)을
  * 마크다운 파일로 저장하여 다음 세션에서 활용합니다.
  *
- * 저장 위치: ~/.dbcode/projects/{프로젝트해시}/memory/MEMORY.md
+ * 저장 위치: ~/.dhelix/projects/{프로젝트해시}/memory/MEMORY.md
  *
  * MEMORY.md 구조:
  * # Project Memory
@@ -24,7 +24,7 @@ export interface MemoryConfig {
   readonly maxLoadLines: number;
   /** MEMORY.md의 최대 줄 수 — 초과 시 오래된 섹션을 토픽 파일로 분리(overflow) */
   readonly maxMemoryLines: number;
-  /** 프로젝트 메모리 저장 기본 디렉토리 (~/.dbcode/projects/) */
+  /** 프로젝트 메모리 저장 기본 디렉토리 (~/.dhelix/projects/) */
   readonly projectsBaseDir: string;
 }
 
@@ -55,6 +55,23 @@ export interface MemoryLoadResult {
   readonly exists: boolean;
   /** 사용 가능한 토픽 파일 목록 (overflow로 분리된 파일들) */
   readonly topicFiles: readonly string[];
+}
+
+/**
+ * 메모리 검색 결과 인터페이스
+ *
+ * search() 호출 시 반환되는 개별 결과 항목입니다.
+ * 소스 파일, 섹션 제목, 매칭된 내용, 관련도 점수를 포함합니다.
+ */
+export interface MemorySearchResult {
+  /** 매칭된 파일 경로 (MEMORY.md 또는 토픽 파일명) */
+  readonly source: string;
+  /** 매칭이 발생한 섹션 제목 (## 헤더, 없으면 빈 문자열) */
+  readonly section: string;
+  /** 매칭된 내용과 주변 컨텍스트 */
+  readonly content: string;
+  /** 관련도 점수 (0.0~1.0, 높을수록 관련도 높음) */
+  readonly relevance: number;
 }
 
 /**

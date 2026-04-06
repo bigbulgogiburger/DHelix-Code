@@ -71,7 +71,7 @@ export default function SandboxNetworkPolicyPage() {
   POLICY["network-policy.ts<br/><small>규칙 엔진</small>"]
   SANDNET["sandboxed-network.ts<br/><small>정책 통합 샌드박스</small>"]
   SEATBELT["seatbelt.ts<br/><small>macOS 샌드박스</small>"]
-  CONFIG["설정 파일<br/><small>JSON / DBCODE.md</small>"]
+  CONFIG["설정 파일<br/><small>JSON / DHELIX.md</small>"]
 
   PROXY -->|"isHostAllowed()"| POLICY
   SANDNET --> PROXY

@@ -192,7 +192,7 @@ function formatAgentTable(agents: readonly AgentFileInfo[]): string {
 /**
  * /agents list 서브커맨드 — 모든 에이전트 정의 목록 표시
  *
- * 프로젝트 디렉토리(.dbcode/agents/)와 사용자 디렉토리(~/.dbcode/agents/)를
+ * 프로젝트 디렉토리(.dhelix/agents/)와 사용자 디렉토리(~/.dhelix/agents/)를
  * 동시에(Promise.all) 스캔하여 모든 에이전트를 병합된 목록으로 보여줍니다.
  *
  * @param workingDirectory - 현재 작업 디렉토리 (프로젝트 루트)

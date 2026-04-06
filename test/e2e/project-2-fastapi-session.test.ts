@@ -1,7 +1,7 @@
 /**
  * E2E Multi-turn Session Test: FastAPI + SQLite Todo API
  *
- * Uses dbcode's agent-loop to build a FastAPI project incrementally
+ * Uses dhelix's agent-loop to build a FastAPI project incrementally
  * across multiple conversation turns.
  */
 import { describe, it, expect, beforeAll, afterAll } from "vitest";

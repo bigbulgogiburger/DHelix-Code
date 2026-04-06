@@ -96,7 +96,7 @@ const SYSTEM_RO_PATHS = ["/usr", "/bin", "/lib", "/lib64", "/etc", "/sbin"] as c
 
 /** 홈 디렉토리에서 읽기 전용으로 마운트하는 하위 디렉토리들 */
 const HOME_RO_DIRS = [
-  ".dbcode",
+  ".dhelix",
   ".config",
   ".npm",
   ".cache",
@@ -158,7 +158,7 @@ async function detectWSL2WindowsHome(): Promise<string | null> {
  * 마운트 구성:
  * - 시스템 경로 (/usr, /bin, /lib, /lib64, /etc, /sbin): 읽기 전용
  * - /proc: procfs, /dev: devfs
- * - /tmp: tmpfs (휘발성, dbcode 전용 하위 디렉토리는 쓰기 가능)
+ * - /tmp: tmpfs (휘발성, dhelix 전용 하위 디렉토리는 쓰기 가능)
  * - 프로젝트 디렉토리: 읽기/쓰기
  * - 홈 디렉토리 설정 폴더: 읽기 전용
  * - 사용자 지정 추가 경로
@@ -215,9 +215,9 @@ export async function generateBubblewrapArgs(config: BubblewrapConfig): Promise<
   // /tmp는 tmpfs로 마운트 (격리된 임시 공간)
   bwrapArgs.push("--tmpfs", "/tmp");
 
-  // dbcode 전용 임시 디렉토리를 /tmp/dbcode에 쓰기 가능하게 마운트
+  // dhelix 전용 임시 디렉토리를 /tmp/dhelix에 쓰기 가능하게 마운트
   if (await pathExists(tmpDir)) {
-    bwrapArgs.push("--bind", tmpDir, "/tmp/dbcode");
+    bwrapArgs.push("--bind", tmpDir, "/tmp/dhelix");
   }
 
   // 프로젝트 디렉토리: 읽기/쓰기 마운트 (파일 수정 도구에 필요)

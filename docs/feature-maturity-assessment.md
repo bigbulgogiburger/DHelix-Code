@@ -1,4 +1,4 @@
-# dbcode Feature Maturity Assessment
+# dhelix Feature Maturity Assessment
 
 > **Date**: 2026-03-15
 > **Assessor**: Claude Opus 4.6 (Anthropic Claude Code)
@@ -9,7 +9,7 @@
 
 ## Executive Summary
 
-dbcode는 **CLI 기반 AI 코딩 어시스턴트**로, Node.js 20+ / TypeScript 5.x / Ink 5.x (React for CLI) / Vitest / tsup 기반으로 구축되었다. 4계층 아키텍처(CLI -> Core -> Infrastructure -> Leaf)를 엄격히 준수하며, 순환 의존성이 없는 깔끔한 구조를 갖추고 있다.
+dhelix는 **CLI 기반 AI 코딩 어시스턴트**로, Node.js 20+ / TypeScript 5.x / Ink 5.x (React for CLI) / Vitest / tsup 기반으로 구축되었다. 4계층 아키텍처(CLI -> Core -> Infrastructure -> Leaf)를 엄격히 준수하며, 순환 의존성이 없는 깔끔한 구조를 갖추고 있다.
 
 **종합 성숙도: 7.4 / 10**
 
@@ -311,7 +311,7 @@ dbcode는 **CLI 기반 AI 코딩 어시스턴트**로, Node.js 20+ / TypeScript 
 | OAuth 2.0               | ✅ 완성 | 토큰 관리 (379 LOC)                                        |
 | 도구 허용/거부 목록     | ✅ 완성 | 서버별 도구 필터링                                         |
 | 출력 지능 절단          | ✅ 완성 | 도구별 맞춤 절단 (427 LOC)                                 |
-| MCP 서버 모드           | ✅ 완성 | dbcode를 MCP 서버로 노출 (447 LOC)                         |
+| MCP 서버 모드           | ✅ 완성 | dhelix를 MCP 서버로 노출 (447 LOC)                         |
 
 ### 개선 방안
 
@@ -388,7 +388,7 @@ dbcode는 **CLI 기반 AI 코딩 어시스턴트**로, Node.js 20+ / TypeScript 
 | ----------------------- | ------- | ------------------------------------------- |
 | 5단계 설정 계층         | ✅ 완성 | defaults → user → project → env → CLI flags |
 | Zod 스키마 검증         | ✅ 완성 | 전체 설정 런타임 검증 (104 LOC)             |
-| 환경변수 지원           | ✅ 완성 | DBCODE*\*/OPENAI*\* 프리픽스                |
+| 환경변수 지원           | ✅ 완성 | DHELIX*\*/OPENAI*\* 프리픽스                |
 | 딥 머지                 | ✅ 완성 | 중첩 설정 정확 병합                         |
 | 소스 추적               | ✅ 완성 | 각 설정값의 출처(source) 기록               |
 | DEFAULT_MODEL 단일 소스 | ✅ 완성 | env 기반, 하드코딩 제거 완료                |
@@ -646,7 +646,7 @@ dbcode는 **CLI 기반 AI 코딩 어시스턴트**로, Node.js 20+ / TypeScript 
 
 ## 결론
 
-dbcode는 **아키텍처적으로 탁월한 프로젝트**이다. 4계층 의존성 규칙, 3계층 컨텍스트 압축, 전략 기반 에러 복구 등 핵심 엔진의 설계와 구현 품질이 높다. 50+ LLM 모델 지원, 16개 내장 도구, 7계층 보안 가드레일 등 기능 폭도 넓다.
+dhelix는 **아키텍처적으로 탁월한 프로젝트**이다. 4계층 의존성 규칙, 3계층 컨텍스트 압축, 전략 기반 에러 복구 등 핵심 엔진의 설계와 구현 품질이 높다. 50+ LLM 모델 지원, 16개 내장 도구, 7계층 보안 가드레일 등 기능 폭도 넓다.
 
 **주요 강점**:
 

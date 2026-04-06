@@ -25,7 +25,7 @@ export default function UtilsErrorPage() {
               <LayerBadge layer="leaf" />
             </div>
             <p className="text-[16px] text-gray-600 leading-relaxed">
-              dbcode 전체에서 사용하는 구조화된 에러 클래스 계층입니다. BaseError를 루트로 하여
+              dhelix 전체에서 사용하는 구조화된 에러 클래스 계층입니다. BaseError를 루트로 하여
               ConfigError, LLMError, ToolError 등 도메인별 에러를 체계적으로 관리합니다.
             </p>
           </div>
@@ -42,7 +42,7 @@ export default function UtilsErrorPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                <code className="text-cyan-600">BaseError</code>는 모든 dbcode 에러의 공통 기반
+                <code className="text-cyan-600">BaseError</code>는 모든 dhelix 에러의 공통 기반
                 클래스입니다. 표준 <code className="text-cyan-600">Error</code>를 확장하여 에러
                 코드(<code className="text-cyan-600">code</code>)와 불변 컨텍스트 객체(
                 <code className="text-cyan-600">context</code>)를 함께 전달합니다.
@@ -125,7 +125,7 @@ export default function UtilsErrorPage() {
               class BaseError extends Error
             </h3>
             <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
-              모든 dbcode 에러의 기본 클래스입니다. 에러 코드와 불변 컨텍스트 객체를 함께 담습니다.
+              모든 dhelix 에러의 기본 클래스입니다. 에러 코드와 불변 컨텍스트 객체를 함께 담습니다.
             </p>
 
             {/* Constructor */}

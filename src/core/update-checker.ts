@@ -8,7 +8,7 @@
  * - 앱 시작 시 npm에서 최신 버전을 확인하여 업데이트 안내를 표시합니다
  * - 매번 확인하면 느려지므로, 마지막 확인 시각을 저장해두고 7일마다 한 번만 확인합니다
  * - 네트워크 문제가 있어도 앱 실행에 영향을 주지 않습니다 (5초 타임아웃, 에러 무시)
- * - 확인 결과는 ~/.dbcode/update-check.json에 캐싱됩니다
+ * - 확인 결과는 ~/.dhelix/update-check.json에 캐싱됩니다
  */
 import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
@@ -33,7 +33,7 @@ const CHECK_INTERVAL_MS = 7 * 24 * 60 * 60 * 1000;
 
 /**
  * 업데이트 확인 상태 파일의 경로를 반환합니다.
- * ~/.dbcode/update-check.json 에 저장됩니다.
+ * ~/.dhelix/update-check.json 에 저장됩니다.
  */
 function getStateFilePath(): string {
   return join(homedir(), `.${APP_NAME}`, "update-check.json");

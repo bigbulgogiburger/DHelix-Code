@@ -57,8 +57,8 @@ export const DEFAULT_CONFIG: AppConfig = {
   },
   /** 상세 로깅 모드 (디버깅용) */
   verbose: false,
-  /** DBCODE.md 로딩 시 제외할 glob 패턴 */
-  dbcodeMdExcludes: [],
+  /** DHELIX.md 로딩 시 제외할 glob 패턴 */
+  dhelixMdExcludes: [],
   /** 응답 언어 (ISO 639-1 코드) */
   locale: "ko",
   /** 응답 톤/스타일 */

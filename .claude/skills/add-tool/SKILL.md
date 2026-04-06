@@ -8,7 +8,7 @@ argument-hint: "<tool_name> [description]"
 
 ## Why This Skill Exists
 
-dbcode의 도구 시스템은 정의(Zod 스키마) → 레지스트리 등록 → executor 실행 → 이벤트 발행 → UI 표시라는 파이프라인을 따릅니다. 이 파이프라인의 어느 한 단계라도 누락되면 도구가 동작하지 않거나 UI에 "Running X / Completed X"라는 generic 텍스트가 표시됩니다. 이 스킬은 파이프라인 전체를 빠짐없이 연결합니다.
+dhelix의 도구 시스템은 정의(Zod 스키마) → 레지스트리 등록 → executor 실행 → 이벤트 발행 → UI 표시라는 파이프라인을 따릅니다. 이 파이프라인의 어느 한 단계라도 누락되면 도구가 동작하지 않거나 UI에 "Running X / Completed X"라는 generic 텍스트가 표시됩니다. 이 스킬은 파이프라인 전체를 빠짐없이 연결합니다.
 
 ## 변경 대상 파일
 

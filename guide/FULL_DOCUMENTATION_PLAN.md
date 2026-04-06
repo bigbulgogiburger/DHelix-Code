@@ -1,4 +1,4 @@
-# dbcode 전체 소스 문서화 마스터 플랜 v2
+# dhelix 전체 소스 문서화 마스터 플랜 v2
 
 > 작성일: 2026-03-22
 > 전체 소스: 252개 파일 / 62,620 LOC
@@ -190,12 +190,12 @@
 | --- | ----------------------- | -------------------------- | --- | ------------------------ |
 | 76  | `mcp-client`            | `mcp/client.ts`            | 420 | JSON-RPC MCP 클라이언트  |
 | 77  | `mcp-scope-manager`     | `mcp/scope-manager.ts`     | 250 | 3-Scope 설정 관리        |
-| 78  | `mcp-tool-bridge`       | `mcp/tool-bridge.ts`       | 350 | MCP→dbcode 도구 변환     |
+| 78  | `mcp-tool-bridge`       | `mcp/tool-bridge.ts`       | 350 | MCP→dhelix 도구 변환     |
 | 79  | `mcp-tool-filter`       | `mcp/tool-filter.ts`       | 130 | 도구 허용/차단           |
 | 80  | `mcp-tool-search`       | `mcp/tool-search.ts`       | 180 | Deferred 도구 검색       |
 | 81  | `mcp-managed-config`    | `mcp/managed-config.ts`    | 520 | 관리형 MCP 설정          |
 | 82  | `mcp-output-limiter`    | `mcp/output-limiter.ts`    | 510 | 출력 크기 제한           |
-| 83  | `mcp-serve`             | `mcp/serve.ts`             | 580 | dbcode를 MCP 서버로 실행 |
+| 83  | `mcp-serve`             | `mcp/serve.ts`             | 580 | dhelix를 MCP 서버로 실행 |
 | 84  | `mcp-manager-connector` | `mcp/manager-connector.ts` | 540 | 매니저 커넥터            |
 | 85  | `mcp-oauth`             | `mcp/oauth.ts`             | 460 | OAuth 인증               |
 | 86  | `mcp-prompts`           | `mcp/prompts.ts`           | 140 | MCP 프롬프트 리소스      |
@@ -246,7 +246,7 @@
 
 | #   | slug                       | 파일                           | LOC | 설명                     |
 | --- | -------------------------- | ------------------------------ | --- | ------------------------ |
-| 109 | `instruction-parser`       | `instructions/parser.ts`       | 220 | DBCODE.md 파싱 + @import |
+| 109 | `instruction-parser`       | `instructions/parser.ts`       | 220 | DHELIX.md 파싱 + @import |
 | 110 | `instruction-path-matcher` | `instructions/path-matcher.ts` | 170 | 경로 조건부 매칭         |
 
 ### Layer 4: Memory (4페이지 신규)

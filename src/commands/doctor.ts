@@ -1,14 +1,14 @@
 /**
  * /doctor 명령어 핸들러 — 시스템 진단 및 환경 점검
  *
- * 사용자가 /doctor를 입력하면 dbcode 실행 환경의 12가지 항목을 자동 점검합니다:
+ * 사용자가 /doctor를 입력하면 dhelix 실행 환경의 12가지 항목을 자동 점검합니다:
  *   1. Node.js 버전 (20+ 필요)
  *   2. Git 설치 여부
  *   3. Git 저장소 여부
  *   4. 모델 설정 상태
  *   5. API 키 설정 여부
  *   6. 디스크 여유 공간
- *   7. 설정 디렉토리(~/.dbcode) 접근 권한
+ *   7. 설정 디렉토리(~/.dhelix) 접근 권한
  *   8. 구문 하이라이터(Shiki) 가용성
  *   9. LLM API 연결 상태
  *  10. 메모리 사용량
@@ -18,7 +18,7 @@
  * 각 항목은 ok(정상)/warn(경고)/fail(실패)로 표시되며,
  * 문제가 있는 항목에는 해결 방법(Fix)을 안내합니다.
  *
- * 사용 시점: dbcode가 제대로 동작하지 않을 때 원인을 진단하고 싶을 때
+ * 사용 시점: dhelix가 제대로 동작하지 않을 때 원인을 진단하고 싶을 때
  */
 import { execSync } from "node:child_process";
 import { existsSync, accessSync, constants, statSync } from "node:fs";
@@ -119,7 +119,7 @@ export const doctorCommand: SlashCommand = {
     // 5. Check API key validation
     const hasApiKey = Boolean(
       process.env["OPENAI_API_KEY"] ||
-        process.env["DBCODE_API_KEY"] ||
+        process.env["DHELIX_API_KEY"] ||
         process.env["ANTHROPIC_API_KEY"],
     );
     checks.push({
@@ -128,7 +128,7 @@ export const doctorCommand: SlashCommand = {
       detail: hasApiKey ? "configured" : "No API key found",
       fix: hasApiKey
         ? undefined
-        : "Set OPENAI_API_KEY, DBCODE_API_KEY, or ANTHROPIC_API_KEY environment variable",
+        : "Set OPENAI_API_KEY, DHELIX_API_KEY, or ANTHROPIC_API_KEY environment variable",
     });
 
     // 6. Check disk space
@@ -165,29 +165,29 @@ export const doctorCommand: SlashCommand = {
     }
 
     // 7. Check config directory
-    const configDir = join(homedir(), ".dbcode");
+    const configDir = join(homedir(), ".dhelix");
     try {
       if (existsSync(configDir)) {
         accessSync(configDir, constants.R_OK | constants.W_OK);
         checks.push({
           name: "Config directory",
           status: "ok",
-          detail: `~/.dbcode (writable)`,
+          detail: `~/.dhelix (writable)`,
         });
       } else {
         checks.push({
           name: "Config directory",
           status: "warn",
-          detail: "~/.dbcode does not exist",
-          fix: "Run dbcode once to create the config directory",
+          detail: "~/.dhelix does not exist",
+          fix: "Run dhelix once to create the config directory",
         });
       }
     } catch {
       checks.push({
         name: "Config directory",
         status: "fail",
-        detail: "~/.dbcode is not writable",
-        fix: "Fix permissions: chmod u+rw ~/.dbcode",
+        detail: "~/.dhelix is not writable",
+        fix: "Fix permissions: chmod u+rw ~/.dhelix",
       });
     }
 
@@ -204,7 +204,7 @@ export const doctorCommand: SlashCommand = {
         name: "Syntax highlighter",
         status: "warn",
         detail: "not initialized",
-        fix: "Run dbcode once to initialize Shiki",
+        fix: "Run dhelix once to initialize Shiki",
       });
     }
 
@@ -212,7 +212,7 @@ export const doctorCommand: SlashCommand = {
     try {
       const apiKey =
         process.env["OPENAI_API_KEY"] ||
-        process.env["DBCODE_API_KEY"] ||
+        process.env["DHELIX_API_KEY"] ||
         process.env["ANTHROPIC_API_KEY"];
       const baseUrl = process.env["OPENAI_BASE_URL"] || "https://api.openai.com/v1";
 
@@ -273,7 +273,7 @@ export const doctorCommand: SlashCommand = {
         name: "Memory usage",
         status: isHighMemory ? "warn" : "ok",
         detail: `RSS: ${formatBytes(rss)}, Heap: ${formatBytes(heapUsed)}/${formatBytes(heapTotal)} (${heapPct.toFixed(0)}%)`,
-        fix: isHighMemory ? "Consider restarting dbcode to free memory" : undefined,
+        fix: isHighMemory ? "Consider restarting dhelix to free memory" : undefined,
       });
     } catch {
       checks.push({
@@ -306,7 +306,7 @@ export const doctorCommand: SlashCommand = {
     // 12. Session lock freshness
     if (context.sessionId) {
       try {
-        const sessionsDir = join(homedir(), ".dbcode", "sessions");
+        const sessionsDir = join(homedir(), ".dhelix", "sessions");
         const lockDir = join(sessionsDir, context.sessionId, ".lock");
         if (existsSync(lockDir)) {
           const lockStat = statSync(lockDir);
@@ -321,7 +321,7 @@ export const doctorCommand: SlashCommand = {
             detail: isStale
               ? `Lock is ${ageMinutes}m old (may be stale)`
               : `Active (${ageMinutes < 1 ? "< 1" : ageMinutes}m old)`,
-            fix: isStale ? "Restart dbcode if session feels stuck" : undefined,
+            fix: isStale ? "Restart dhelix if session feels stuck" : undefined,
           });
         } else {
           checks.push({
@@ -352,7 +352,7 @@ export const doctorCommand: SlashCommand = {
       fail: "\u2717",
     };
 
-    const outputLines: string[] = ["dbcode Doctor", "=============", ""];
+    const outputLines: string[] = ["Dhelix Code Doctor", "=============", ""];
 
     for (const check of checks) {
       outputLines.push(`  ${statusSymbol[check.status]} ${check.name}: ${check.detail}`);

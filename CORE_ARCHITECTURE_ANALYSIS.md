@@ -1,4 +1,4 @@
-# DBCODE Core Architecture Analysis
+# DHELIX Core Architecture Analysis
 
 **Analysis Date:** 2026-03-11
 **Total Lines in Core:** ~3,500 LOC
@@ -144,7 +144,7 @@ User Input → Context Prepare → LLM Stream → Extract Calls → Permissions
 **Cold Storage Directory Structure:**
 
 ```
-~/.dbcode/sessions/{sessionId}/cold-storage/
+~/.dhelix/sessions/{sessionId}/cold-storage/
 ├── {hash}.json      # Tool result (tokenized, compressible)
 └── references.json  # Map of hash → (path + originalTokens)
 ```
@@ -194,7 +194,7 @@ User Input → Context Prepare → LLM Stream → Extract Calls → Permissions
 **Directory Structure:**
 
 ```
-~/.dbcode/sessions/
+~/.dhelix/sessions/
 ├── index.json                    # Session registry
 ├── {sessionId}/
 │   ├── metadata.json            # Created, lastAccessed, description
@@ -274,7 +274,7 @@ interface SessionMetadata {
 **Directory Structure:**
 
 ```
-~/.dbcode/sessions/{sessionId}/checkpoints/
+~/.dhelix/sessions/{sessionId}/checkpoints/
 ├── cp-001.json          # Metadata: files, hashes, messageIndex
 ├── cp-001/
 │   ├── src__index.ts    # Stored file content
@@ -388,8 +388,8 @@ interface PromptSection {
 | mcp                  | 82       | ~500     | MCP server information (if configured)          |
 | conventions          | 80       | ~1000    | Coding standards, ESM, TypeScript, etc.         |
 | skills               | 75       | ~1000    | Available skills (user-invocable commands)      |
-| project-instructions | 70       | ~4000    | DBCODE.md + CLAUDE.md + project rules           |
-| auto-memory          | 65       | ~2000    | Loaded from ~/.dbcode/MEMORY.md (if exists)     |
+| project-instructions | 70       | ~4000    | DHELIX.md + CLAUDE.md + project rules           |
+| auto-memory          | 65       | ~2000    | Loaded from ~/.dhelix/MEMORY.md (if exists)     |
 | custom-sections      | 50       | variable | User-provided sections                          |
 
 **Token Budget:**
@@ -526,7 +526,7 @@ const TOOL_TIMEOUTS = {
 
 - BackgroundProcessManager singleton tracks running processes
 - Supports `bash_exec` with `run_in_background: true`
-- Output captured to temp file: `~/.dbcode/sessions/{sessionId}/bg-{uuid}.log`
+- Output captured to temp file: `~/.dhelix/sessions/{sessionId}/bg-{uuid}.log`
 - Kill support: `kill_shell` command to stop background processes
 
 ### Built-in Tools (14 tools)
@@ -734,7 +734,7 @@ spawnSubagent({
 
 **Lifecycle:**
 
-1. `loadConfig()` - Read ~/.dbcode/mcp.json
+1. `loadConfig()` - Read ~/.dhelix/mcp.json
 2. `connectAll()` - Establish connections to servers
 3. `getTool(name)` - Get MCP tool definition
 4. `executeTool(name, args)` - Call remote tool
@@ -1007,7 +1007,7 @@ Ranked by impact on production readiness:
 
    - Missing: Disk-based resume history
    - Impact: Resume doesn't survive process restart
-   - Fix: Persist agentHistoryStore to ~/.dbcode/agents/{agentId}.jsonl
+   - Fix: Persist agentHistoryStore to ~/.dhelix/agents/{agentId}.jsonl
 
 5. **Checkpoint Compression** (Gap Size: SMALL)
 

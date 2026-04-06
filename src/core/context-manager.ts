@@ -23,6 +23,8 @@
 import { mkdir, writeFile, readFile, readdir, stat, unlink } from "node:fs/promises";
 import { join } from "node:path";
 import { createHash } from "node:crypto";
+import { promisify } from "node:util";
+import { gzip, gunzip } from "node:zlib";
 import { type ChatMessage, type LLMProvider } from "../llm/provider.js";
 import { countTokens, countMessageTokens } from "../llm/token-counter.js";
 import { AGENT_LOOP, TOKEN_DEFAULTS, SESSIONS_DIR } from "../constants.js";
@@ -30,6 +32,7 @@ import { loadInstructions } from "../instructions/loader.js";
 import { buildSystemPrompt } from "./system-prompt-builder.js";
 import type { CapabilityTier } from "../llm/model-capabilities.js";
 import { getLogger } from "../utils/logger.js";
+import { AsyncCompactionEngine } from "./runtime/async-compaction.js";
 
 /**
  * 모델 능력 수준(tier)별 컨텍스트 압축 설정을 반환합니다.
@@ -71,6 +74,16 @@ const REHYDRATION_FILE_COUNT = 5;
 
 /** 콜드 스토리지 파일의 기본 만료 시간 (24시간, 밀리초) */
 const COLD_STORAGE_TTL_MS = 24 * 60 * 60 * 1000;
+
+/** 콜드 스토리지 최대 총 용량 (100MB) — LRU eviction 기준 */
+const MAX_COLD_STORAGE_BYTES = 100 * 1024 * 1024;
+
+/** 주기적 GC 실행 간격 (5분, 밀리초) */
+const COLD_STORAGE_GC_INTERVAL_MS = 5 * 60 * 1000;
+
+/** gzip/gunzip promisified 헬퍼 */
+const gzipAsync = promisify(gzip);
+const gunzipAsync = promisify(gunzip);
 
 /** 파일을 수정/생성하는 도구 (핫 테일에서 높은 우선순위를 가짐) */
 const WRITE_TOOLS = new Set(["file_edit", "file_write"]);
@@ -192,6 +205,12 @@ export class ContextManager {
   /** Track cold storage ref access frequency (for smart hot tail) */
   private readonly coldRefAccessCount: Map<string, number> = new Map();
 
+  /** Async compaction engine — 비동기 백그라운드 압축 */
+  private asyncEngine: AsyncCompactionEngine | null = null;
+
+  /** 주기적 GC 타이머 — startColdStorageGC()로 시작, stopColdStorageGC()로 정지 */
+  private gcTimer: ReturnType<typeof setInterval> | null = null;
+
   /** Number of compactions performed (for boundary markers) */
   private compactionCount = 0;
 
@@ -290,7 +309,9 @@ export class ContextManager {
   /**
    * Clean up stale and orphaned cold storage files.
    * Removes files older than the configured TTL and files not referenced
-   * by any cold ref in memory.
+   * by any cold ref in memory. Also enforces the 100 MB capacity limit.
+   *
+   * Handles both legacy `.txt` files and compressed `.gz` files.
    */
   async cleanupColdStorage(): Promise<CleanupResult> {
     const coldStorageDir = join(SESSIONS_DIR, this.sessionId, "cold-storage");
@@ -309,10 +330,13 @@ export class ContextManager {
     const activeHashes = new Set(Array.from(this.coldRefs.keys()));
 
     for (const entry of entries) {
-      if (!entry.endsWith(".txt")) continue;
+      // Accept both compressed (.gz) and legacy plain-text (.txt) files
+      const isGz = entry.endsWith(".gz");
+      const isTxt = entry.endsWith(".txt");
+      if (!isGz && !isTxt) continue;
 
       const filePath = join(coldStorageDir, entry);
-      const hash = entry.replace(/\.txt$/, "");
+      const hash = entry.replace(/\.(gz|txt)$/, "");
 
       try {
         const fileStat = await stat(filePath);
@@ -342,7 +366,112 @@ export class ContextManager {
       }
     }
 
+    // Enforce 100 MB capacity limit via LRU eviction
+    const { removedFiles: evicted, bytesFreed: evictedBytes } =
+      await this.enforceColdStorageLimit(coldStorageDir);
+    removedFiles += evicted;
+    bytesFreed += evictedBytes;
+
     return { removedFiles, bytesFreed };
+  }
+
+  /**
+   * Enforce the cold storage capacity limit (MAX_COLD_STORAGE_BYTES = 100 MB).
+   * Uses LRU eviction — removes the oldest files (by mtime) until total size
+   * is below the limit.
+   *
+   * @param dir - Path to the cold-storage directory.
+   * @returns Number of files removed and bytes freed.
+   */
+  async enforceColdStorageLimit(dir: string): Promise<CleanupResult> {
+    let entries: string[];
+    try {
+      entries = await readdir(dir);
+    } catch {
+      return { removedFiles: 0, bytesFreed: 0 };
+    }
+
+    // Collect stats for all cold storage files
+    type FileEntry = { filePath: string; hash: string; size: number; mtimeMs: number };
+    const fileEntries: FileEntry[] = [];
+    let totalBytes = 0;
+
+    for (const entry of entries) {
+      const isGz = entry.endsWith(".gz");
+      const isTxt = entry.endsWith(".txt");
+      if (!isGz && !isTxt) continue;
+
+      const filePath = join(dir, entry);
+      const hash = entry.replace(/\.(gz|txt)$/, "");
+      try {
+        const fileStat = await stat(filePath);
+        fileEntries.push({ filePath, hash, size: fileStat.size, mtimeMs: fileStat.mtimeMs });
+        totalBytes += fileStat.size;
+      } catch {
+        // File may have been deleted concurrently — skip
+      }
+    }
+
+    if (totalBytes <= MAX_COLD_STORAGE_BYTES) {
+      return { removedFiles: 0, bytesFreed: 0 };
+    }
+
+    // Sort ascending by mtime — oldest files are evicted first (LRU)
+    fileEntries.sort((a, b) => a.mtimeMs - b.mtimeMs);
+
+    let removedFiles = 0;
+    let bytesFreed = 0;
+
+    for (const entry of fileEntries) {
+      if (totalBytes <= MAX_COLD_STORAGE_BYTES) break;
+      try {
+        await unlink(entry.filePath);
+        totalBytes -= entry.size;
+        bytesFreed += entry.size;
+        removedFiles++;
+
+        // Remove from in-memory tracking
+        this.coldRefs.delete(entry.hash);
+        this.coldRefAccessCount.delete(entry.hash);
+      } catch {
+        // File may already have been removed — skip
+      }
+    }
+
+    return { removedFiles, bytesFreed };
+  }
+
+  /**
+   * Start the periodic cold storage GC timer.
+   * Runs every COLD_STORAGE_GC_INTERVAL_MS (5 minutes) to:
+   *   1. Remove TTL-expired and orphaned files.
+   *   2. Enforce the 100 MB capacity limit via LRU eviction.
+   *
+   * Safe to call multiple times — subsequent calls are no-ops if already running.
+   * The timer is unref'd so it does not prevent Node.js from exiting.
+   */
+  startColdStorageGC(): void {
+    if (this.gcTimer !== null) return;
+    this.gcTimer = setInterval(() => {
+      this.cleanupColdStorage().catch(() => {
+        // GC errors are non-fatal — swallow silently
+      });
+    }, COLD_STORAGE_GC_INTERVAL_MS);
+    // Allow Node.js to exit even while the timer is active
+    if (this.gcTimer !== null && typeof (this.gcTimer as NodeJS.Timeout).unref === "function") {
+      (this.gcTimer as NodeJS.Timeout).unref();
+    }
+  }
+
+  /**
+   * Stop the periodic cold storage GC timer.
+   * Safe to call even when the timer is not running.
+   */
+  stopColdStorageGC(): void {
+    if (this.gcTimer !== null) {
+      clearInterval(this.gcTimer);
+      this.gcTimer = null;
+    }
   }
 
   /**
@@ -462,7 +591,7 @@ export class ContextManager {
   /**
    * Layer 2 + 3: Full compaction with structured summarization and rehydration.
    * Preserves system prompts and recent turns.
-   * Re-reads DBCODE.md from disk to pick up any changes made during the session.
+   * Re-reads DHELIX.md from disk to pick up any changes made during the session.
    * Returns compacted messages and a summary of what was removed.
    */
   async compact(
@@ -476,7 +605,7 @@ export class ContextManager {
     this.compactionCount++;
     this.lastCompactionAt = new Date().toISOString();
 
-    // Re-read DBCODE.md from disk to pick up changes made during session
+    // Re-read DHELIX.md from disk to pick up changes made during session
     const freshSystemMessage = await this.reloadSystemPrompt();
 
     // Separate system messages from conversation messages
@@ -560,6 +689,54 @@ export class ContextManager {
     focusTopic?: string,
   ): Promise<{ readonly messages: readonly ChatMessage[]; readonly result: CompactionResult }> {
     return this.compact(messages, focusTopic);
+  }
+
+  /**
+   * AsyncCompactionEngine을 초기화하고 반환합니다.
+   * 이미 초기화된 경우 기존 인스턴스를 반환합니다 (lazy singleton).
+   *
+   * @returns AsyncCompactionEngine 인스턴스
+   */
+  getAsyncCompactionEngine(): AsyncCompactionEngine {
+    if (!this.asyncEngine) {
+      this.asyncEngine = new AsyncCompactionEngine({
+        contextManager: this,
+      });
+    }
+    return this.asyncEngine;
+  }
+
+  /**
+   * 비동기 compaction 결과를 확인합니다.
+   * AsyncCompactionEngine에 보류 중인 결과가 있으면 반환합니다.
+   *
+   * @returns 압축된 메시지 배열 또는 null (결과 없음)
+   */
+  getAsyncCompactionResult(): readonly ChatMessage[] | null {
+    if (!this.asyncEngine) {
+      return null;
+    }
+    return this.asyncEngine.getCompactedMessages();
+  }
+
+  /**
+   * Proactive async compaction을 요청합니다.
+   * Agent loop를 차단하지 않고 백그라운드에서 압축을 수행합니다.
+   * 기존 동기 compaction(prepare/compact)은 fallback으로 유지됩니다.
+   *
+   * @param messages - 압축 대상 메시지 배열
+   */
+  async requestAsyncCompaction(messages: readonly ChatMessage[]): Promise<void> {
+    const engine = this.getAsyncCompactionEngine();
+    const usage = this.getUsage(messages);
+
+    if (usage.usageRatio >= engine.getReactiveThreshold()) {
+      // 85% 이상 — reactive (포그라운드, 결과 대기)
+      await engine.requestCompaction(messages, "reactive");
+    } else if (usage.usageRatio >= engine.getProactiveThreshold()) {
+      // 70% 이상 — proactive (백그라운드, 비차단)
+      await engine.requestCompaction(messages, "proactive");
+    }
   }
 
   /**
@@ -1019,17 +1196,27 @@ export class ContextManager {
     return dir;
   }
 
-  /** Write content to cold storage and return a reference */
+  /**
+   * Write content to cold storage using gzip compression.
+   * Files are stored as `<hash>.gz`. Content-addressable — if the file already
+   * exists (same hash), the write is skipped.
+   *
+   * @param dir  - Cold storage directory path.
+   * @param content - Plain-text content to compress and store.
+   * @returns A {@link ColdStorageRef} pointing to the compressed file.
+   */
   private async writeColdStorage(dir: string, content: string): Promise<ColdStorageRef> {
     const hash = createHash("sha256").update(content).digest("hex").slice(0, 16);
-    const filePath = join(dir, `${hash}.txt`);
+    const filePath = join(dir, `${hash}.gz`);
 
     // Don't rewrite if already exists (content-addressable)
     try {
-      await readFile(filePath, "utf-8");
+      await stat(filePath);
     } catch {
+      // File does not exist — compress and write
       try {
-        await writeFile(filePath, content, "utf-8");
+        const compressed = await gzipAsync(Buffer.from(content, "utf-8"));
+        await writeFile(filePath, compressed);
       } catch (writeErr) {
         // Re-throw so the caller keeps original content inline instead of a broken reference
         throw new Error(
@@ -1046,6 +1233,31 @@ export class ContextManager {
   }
 
   /**
+   * Read content from cold storage.
+   * Tries the compressed `.gz` file first; falls back to the legacy plain-text
+   * `.txt` file for backward compatibility with pre-compression sessions.
+   *
+   * @param filePath - Path to the `.gz` file (as stored in {@link ColdStorageRef}).
+   * @returns Decompressed plain-text content.
+   */
+  async readColdStorage(filePath: string): Promise<string> {
+    // Primary path: gzip-compressed file
+    try {
+      const compressed = await readFile(filePath);
+      const decompressed = await gunzipAsync(compressed);
+      return decompressed.toString("utf-8");
+    } catch {
+      // Fallback: try plain-text .txt sibling (legacy uncompressed files)
+      const txtPath = filePath.replace(/\.gz$/, ".txt");
+      try {
+        return await readFile(txtPath, "utf-8");
+      } catch {
+        throw new Error(`Cold storage read failed: file not found at ${filePath} or ${txtPath}`);
+      }
+    }
+  }
+
+  /**
    * Clean up all internal state to prevent memory leaks.
    * Call when a session ends or context is reset.
    */
@@ -1055,5 +1267,8 @@ export class ContextManager {
     this.fileAccessFrequency.clear();
     this.recentFiles.length = 0;
     this.totalCompressionRatios.length = 0;
+    this.stopColdStorageGC();
+    this.asyncEngine?.dispose();
+    this.asyncEngine = null;
   }
 }

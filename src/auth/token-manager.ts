@@ -69,7 +69,7 @@ export class TokenManager {
   async requireToken(): Promise<ResolvedToken> {
     const token = await this.getToken();
     if (!token) {
-      throw new AuthError("No API token configured. Set DBCODE_API_KEY or run 'dbcode auth'.");
+      throw new AuthError("No API token configured. Set DHELIX_API_KEY or run 'dhelix auth'.");
     }
     return token;
   }
@@ -77,7 +77,7 @@ export class TokenManager {
   /**
    * 새로운 토큰을 저장하고 캐시를 업데이트합니다.
    *
-   * 토큰을 자격 증명 파일(~/.dbcode/credentials.json)에 저장한 후,
+   * 토큰을 자격 증명 파일(~/.dhelix/credentials.json)에 저장한 후,
    * 메모리 캐시도 즉시 업데이트하여 다음 getToken() 호출에서
    * 새 토큰이 반환되도록 합니다.
    *

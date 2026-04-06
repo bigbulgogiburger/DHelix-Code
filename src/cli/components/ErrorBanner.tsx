@@ -56,7 +56,7 @@ function classifyError(message: string): ErrorClassification {
       type: "network",
       icon: "\uD83D\uDD0C",
       guide:
-        "\uB124\uD2B8\uC6CC\uD06C\uB97C \uD655\uC778\uD558\uC138\uC694. \uC11C\uBC84\uAC00 \uC2E4\uD589 \uC911\uC778\uC9C0 \uD655\uC778: dbcode --base-url <url>",
+        "\uB124\uD2B8\uC6CC\uD06C\uB97C \uD655\uC778\uD558\uC138\uC694. \uC11C\uBC84\uAC00 \uC2E4\uD589 \uC911\uC778\uC9C0 \uD655\uC778: dhelix --base-url <url>",
     };
   }
 

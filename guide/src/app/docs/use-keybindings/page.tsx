@@ -43,7 +43,7 @@ export default function UseKeybindingsPage() {
               <p>
                 <code className="text-cyan-600">useKeybindings</code>는 CLI 앱에서 키보드 단축키를
                 등록하고 감지하는 훅입니다. 7개의 기본 단축키가 내장되어 있으며, 사용자가{" "}
-                <code className="text-cyan-600">~/.dbcode/keybindings.json</code>으로 키 매핑을
+                <code className="text-cyan-600">~/.dhelix/keybindings.json</code>으로 키 매핑을
                 자유롭게 변경할 수 있습니다.
               </p>
               <p>
@@ -67,7 +67,7 @@ export default function UseKeybindingsPage() {
   APP["App.tsx<br/><small>메인 앱</small>"]
   KB["useKeybindings<br/><small>useKeybindings.ts</small>"]
   INK["Ink useInput<br/><small>키 입력 감지</small>"]
-  CFG["keybindings.json<br/><small>~/.dbcode/</small>"]
+  CFG["keybindings.json<br/><small>~/.dhelix/</small>"]
   DEF["DEFAULT_BINDINGS<br/><small>기본 7개 단축키</small>"]
   ACTIONS["Action Handlers<br/><small>cancel, exit, toggle 등</small>"]
 
@@ -255,7 +255,7 @@ export default function UseKeybindingsPage() {
               loadKeybindingConfig()
             </h3>
             <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
-              <code className="text-cyan-600">~/.dbcode/keybindings.json</code>에서 사용자 키바인딩
+              <code className="text-cyan-600">~/.dhelix/keybindings.json</code>에서 사용자 키바인딩
               설정을 로드합니다. 두 가지 파일 형식을 지원합니다.
             </p>
             <CodeBlock>
@@ -458,11 +458,11 @@ export default function UseKeybindingsPage() {
               고급 &mdash; 사용자 키바인딩 파일 작성
             </h3>
             <p className="text-[13px] text-gray-600 mb-4 leading-relaxed">
-              <code className="text-cyan-600">~/.dbcode/keybindings.json</code>을 작성하여 기본
+              <code className="text-cyan-600">~/.dhelix/keybindings.json</code>을 작성하여 기본
               단축키를 변경할 수 있습니다.
             </p>
             <CodeBlock>
-              <span className="cm">{"// ~/.dbcode/keybindings.json"}</span>
+              <span className="cm">{"// ~/.dhelix/keybindings.json"}</span>
               {"\n"}
               {"{"}
               {"\n"}
@@ -719,7 +719,7 @@ export default function UseKeybindingsPage() {
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">다음을 확인하세요:</p>
               <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
                 <li>
-                  파일 경로가 <code className="text-cyan-600">~/.dbcode/keybindings.json</code>이
+                  파일 경로가 <code className="text-cyan-600">~/.dhelix/keybindings.json</code>이
                   맞는지
                 </li>
                 <li>JSON 형식이 올바른지 (trailing comma 등 주의)</li>

@@ -211,7 +211,7 @@ describe("Core slash commands", () => {
 });
 
 describe("export command", () => {
-  const exportDir = join(tmpdir(), `dbcode-export-test-${Date.now()}`);
+  const exportDir = join(tmpdir(), `dhelix-export-test-${Date.now()}`);
 
   afterEach(async () => {
     await rm(exportDir, { recursive: true, force: true }).catch(() => {});
@@ -266,7 +266,7 @@ describe("export command", () => {
       workingDirectory: exportDir,
     });
     expect(result.success).toBe(true);
-    expect(result.output).toContain("dbcode-conversation-");
+    expect(result.output).toContain("dhelix-conversation-");
   });
 
   it("should handle write errors gracefully", async () => {
@@ -489,7 +489,7 @@ describe("fork command", () => {
   });
 
   it("should fork an existing session", async () => {
-    tmpDir = join(tmpdir(), `dbcode-fork-cmd-test-${Date.now()}`);
+    tmpDir = join(tmpdir(), `dhelix-fork-cmd-test-${Date.now()}`);
     const sessionManager = new SessionManager(tmpDir);
     const sessionId = await sessionManager.createSession({
       workingDirectory: process.cwd(),

@@ -42,7 +42,7 @@ export default function MemoryManagerPage() {
               <span>{"📦"}</span> 개요
             </h2>
             <p className="text-[14px] text-gray-600 leading-relaxed mb-4">
-              dbcode는 세션 간에 학습한 내용을 유지하기 위해 프로젝트별 메모리 시스템을 사용합니다.
+              dhelix는 세션 간에 학습한 내용을 유지하기 위해 프로젝트별 메모리 시스템을 사용합니다.
               <strong className="text-gray-900"> MemoryManager</strong>는 이 시스템의{" "}
               <span className="text-cyan-600 font-semibold">파사드(Facade)</span>로,
               <code className="text-cyan-600 text-xs"> loader</code>,{" "}
@@ -54,7 +54,7 @@ export default function MemoryManagerPage() {
             <Callout type="tip" icon="💡">
               <strong>저장 위치:</strong>{" "}
               <code className="text-cyan-600 text-xs">
-                ~/.dbcode/projects/{"{프로젝트해시}"}/memory/MEMORY.md
+                ~/.dhelix/projects/{"{프로젝트해시}"}/memory/MEMORY.md
               </code>
               &mdash; 프로젝트해시는{" "}
               <code className="text-cyan-600 text-xs">SHA-256(절대경로).slice(0, 16)</code>입니다.
@@ -68,7 +68,7 @@ export default function MemoryManagerPage() {
   LOADER["loader.ts<br/><small>loadProjectMemory<br/>loadTopicMemory<br/>listTopicFiles</small>"]
   WRITER["writer.ts<br/><small>appendMemory<br/>saveMemory<br/>writeTopicFile<br/>clearMemory</small>"]
   PATHS["paths.ts<br/><small>getMemoryDir<br/>getMemoryFilePath<br/>computeProjectHash</small>"]
-  DISK["~/.dbcode/projects/{hash}/memory/<br/><small>MEMORY.md + 토픽파일들</small>"]
+  DISK["~/.dhelix/projects/{hash}/memory/<br/><small>MEMORY.md + 토픽파일들</small>"]
 
   MM --> LOADER
   MM --> WRITER
@@ -453,7 +453,7 @@ export default function MemoryManagerPage() {
               <code className="text-cyan-600 text-xs"> maxLoadLines: 200</code>,
               <code className="text-cyan-600 text-xs"> maxMemoryLines: 200</code>이 기본값이며,
               <code className="text-cyan-600 text-xs"> projectsBaseDir</code>은
-              <code className="text-cyan-600 text-xs"> ~/.dbcode/projects</code>입니다.
+              <code className="text-cyan-600 text-xs"> ~/.dhelix/projects</code>입니다.
             </p>
 
             <CodeBlock>

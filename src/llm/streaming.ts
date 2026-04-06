@@ -12,7 +12,7 @@
 import { type ChatChunk, type TokenUsage, type ToolCallRequest } from "./provider.js";
 
 const trace = (tag: string, msg: string) => {
-  if (process.env.DBCODE_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
+  if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
 };
 
 /**

@@ -1,4 +1,4 @@
-# DBCODE.md 처리 개선 기획서
+# DHELIX.md 처리 개선 기획서
 
 > Date: 2026-03-07
 > Author: Claude Opus 4.6 (Anthropic AI Coding CLI Agent 전문가)
@@ -58,7 +58,7 @@ Contents of /Users/pyeondohun/.claude/rules/agents.md
 Contents of /Users/pyeondohun/.claude/rules/coding-style.md
   → PEP 8, type annotations, black/isort/ruff
 
-Contents of /Users/pyeondohun/development/dbcode/CLAUDE.md
+Contents of /Users/pyeondohun/development/dhelix/CLAUDE.md
   (project instructions, checked into the codebase):
   → 프로젝트 전체 아키텍처, 코딩 컨벤션, 레이어 구조
 ```
@@ -82,24 +82,24 @@ Contents of /Users/pyeondohun/development/dbcode/CLAUDE.md
 
 ---
 
-## 2. 현재 dbcode의 DBCODE.md 처리 현황
+## 2. 현재 dhelix의 DHELIX.md 처리 현황
 
 ### 2.1 현재 아키텍처
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  dbcode 현재 DBCODE.md 처리                                  │
+│  dhelix 현재 DHELIX.md 처리                                  │
 │                                                             │
 │  [Startup — 1회만]                                          │
 │    └─ buildSystemPrompt(workingDirectory)                   │
 │       └─ loadProjectInstructions(cwd)                       │
-│          ├─ {cwd}/.dbcode/DBCODE.md 확인                    │
-│          └─ {cwd}/DBCODE.md 확인                            │
+│          ├─ {cwd}/.dhelix/DHELIX.md 확인                    │
+│          └─ {cwd}/DHELIX.md 확인                            │
 │          → system message에 포함                             │
 │                                                             │
 │  [Agent Loop — 매 iteration]                                │
 │    └─ system message는 초기 값 그대로 사용                    │
-│       (DBCODE.md 변경/생성 반영 안 됨)                        │
+│       (DHELIX.md 변경/생성 반영 안 됨)                        │
 │                                                             │
 │  [Compaction 발생 시]                                        │
 │    └─ reloadSystemPrompt()                                  │
@@ -108,7 +108,7 @@ Contents of /Users/pyeondohun/development/dbcode/CLAUDE.md
 │          → 새 system message 생성                            │
 │                                                             │
 │  [/init 명령 실행 시]                                        │
-│    └─ DBCODE.md 파일 생성                                    │
+│    └─ DHELIX.md 파일 생성                                    │
 │       → 시스템 프롬프트에 반영 안 됨 ← ★ 핵심 문제            │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -122,45 +122,45 @@ Contents of /Users/pyeondohun/development/dbcode/CLAUDE.md
 const systemPrompt = buildSystemPrompt({ ... });
 messages.push({ role: "system", content: systemPrompt });
 
-// /init이 DBCODE.md를 생성해도, systemPrompt는 그대로
+// /init이 DHELIX.md를 생성해도, systemPrompt는 그대로
 ```
 
-**영향**: /init으로 DBCODE.md를 생성한 후에도 agent가 프로젝트 컨벤션을 인식하지 못함.
+**영향**: /init으로 DHELIX.md를 생성한 후에도 agent가 프로젝트 컨벤션을 인식하지 못함.
 
-#### Problem 2: Agent가 DBCODE.md를 자발적으로 읽지 않음
+#### Problem 2: Agent가 DHELIX.md를 자발적으로 읽지 않음
 
 E2E 테스트 로그 증거:
 
 ```json
 {
-  "dbcodeReads": 0,
-  "dbcodeReadTurns": [],
+  "dhelixReads": 0,
+  "dhelixReadTurns": [],
   "totalToolCalls": 67
 }
 ```
 
-67번의 tool call 중 DBCODE.md를 file_read한 횟수: **0회**.
-프롬프트에 "Refer to DBCODE.md"라고 요청해도 읽지 않음.
+67번의 tool call 중 DHELIX.md를 file_read한 횟수: **0회**.
+프롬프트에 "Refer to DHELIX.md"라고 요청해도 읽지 않음.
 
 #### Problem 3: Compaction에서만 갱신
 
-DBCODE.md가 시스템 프롬프트에 반영되는 유일한 경로는 **context compaction**.
+DHELIX.md가 시스템 프롬프트에 반영되는 유일한 경로는 **context compaction**.
 그런데 compaction은 토큰 사용량이 95%를 초과해야 발생 → 초기 턴에서는 작동하지 않음.
 
 #### Problem 4: E2E 테스트의 편법적 우회
 
 ```typescript
-// sendTurn() — user message에 DBCODE.md 내용을 직접 주입
-if (currentTurn > 1 && existsSync(dbcodePath)) {
-  const dbcodeContent = readFileSync(dbcodePath, "utf-8");
-  enrichedMessage = `[Project conventions from DBCODE.md]\n${dbcodeContent}\n\n---\n\n${userMessage}`;
+// sendTurn() — user message에 DHELIX.md 내용을 직접 주입
+if (currentTurn > 1 && existsSync(dhelixPath)) {
+  const dhelixContent = readFileSync(dhelixPath, "utf-8");
+  enrichedMessage = `[Project conventions from DHELIX.md]\n${dhelixContent}\n\n---\n\n${userMessage}`;
 }
 ```
 
 이 방식의 문제:
 
 - user message에 삽입 → compaction 시 제거될 수 있음
-- tool call로 추적되지 않음 (dbcodeReads = 0)
+- tool call로 추적되지 않음 (dhelixReads = 0)
 - 실제 프로덕션 동작과 다른 테스트 환경
 
 #### Problem 5: 5-layer 병합이 buildSystemPrompt에서는 미작동
@@ -168,11 +168,11 @@ if (currentTurn > 1 && existsSync(dbcodePath)) {
 `loadInstructions()`는 5계층 병합을 완벽 구현:
 
 ```
-1. ~/.dbcode/DBCODE.md          (global)
-2. ~/.dbcode/rules/*.md         (global rules)
-3. {project}/DBCODE.md          (project)
-4. {project}/.dbcode/rules/*.md (project rules)
-5. {project}/DBCODE.local.md    (local override)
+1. ~/.dhelix/DHELIX.md          (global)
+2. ~/.dhelix/rules/*.md         (global rules)
+3. {project}/DHELIX.md          (project)
+4. {project}/.dhelix/rules/*.md (project rules)
+5. {project}/DHELIX.local.md    (local override)
 ```
 
 그러나 `buildSystemPrompt()`는 `loadProjectInstructions()`만 사용 — 1,2,5 계층 무시.
@@ -183,9 +183,9 @@ if (currentTurn > 1 && existsSync(dbcodePath)) {
 
 ### 3.1 설계 원칙
 
-Claude Code의 접근법을 참고하되 dbcode의 아키텍처에 맞게 적용:
+Claude Code의 접근법을 참고하되 dhelix의 아키텍처에 맞게 적용:
 
-| 원칙         | Claude Code 방식     | dbcode 적용                     |
+| 원칙         | Claude Code 방식     | dhelix 적용                     |
 | ------------ | -------------------- | ------------------------------- |
 | 항상 존재    | 매 LLM call에 포함   | system message를 동적으로 갱신  |
 | 인프라 주입  | 프레임워크가 로드    | agent loop가 iteration마다 확인 |
@@ -197,7 +197,7 @@ Claude Code의 접근법을 참고하되 dbcode의 아키텍처에 맞게 적용
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  개선된 DBCODE.md 처리 아키텍처                                │
+│  개선된 DHELIX.md 처리 아키텍처                                │
 │                                                             │
 │  [InstructionManager — 새로운 모듈]                          │
 │    ├─ loadAll(cwd): LoadedInstructions                      │
@@ -207,7 +207,7 @@ Claude Code의 접근법을 참고하되 dbcode의 아키텍처에 맞게 적용
 │    │   └─ Claude Code 스타일 레이블 + 병합                    │
 │    │                                                        │
 │    ├─ isDirty(): boolean                                    │
-│    │   └─ DBCODE.md mtime 비교로 변경 감지                   │
+│    │   └─ DHELIX.md mtime 비교로 변경 감지                   │
 │    │                                                        │
 │    └─ refresh(): void                                       │
 │        └─ 디스크에서 재로드 + 캐시 갱신                       │
@@ -241,9 +241,9 @@ Claude Code의 접근법을 참고하되 dbcode의 아키텍처에 맞게 적용
 
 ```typescript
 /**
- * InstructionManager — DBCODE.md 라이프사이클 관리자
+ * InstructionManager — DHELIX.md 라이프사이클 관리자
  *
- * Claude Code가 CLAUDE.md를 처리하는 방식을 dbcode에 적용:
+ * Claude Code가 CLAUDE.md를 처리하는 방식을 dhelix에 적용:
  * - 5-layer 계층적 로딩 (global → rules → project → path-rules → local)
  * - 변경 감지 (mtime 기반)
  * - system prompt 섹션 생성 (출처 레이블 포함)
@@ -259,7 +259,7 @@ export class InstructionManager {
   /** 최초 로드 또는 캐시 반환 */
   async load(): Promise<LoadedInstructions>;
 
-  /** DBCODE.md 변경 여부 확인 (mtime 비교, I/O 최소화) */
+  /** DHELIX.md 변경 여부 확인 (mtime 비교, I/O 최소화) */
   isDirty(): boolean;
 
   /** 디스크에서 재로드 + 캐시 갱신 */
@@ -271,10 +271,10 @@ export class InstructionManager {
    * 출력 예:
    *   # Project Instructions
    *
-   *   Contents of ~/.dbcode/DBCODE.md (global user instructions):
+   *   Contents of ~/.dhelix/DHELIX.md (global user instructions):
    *   ... content ...
    *
-   *   Contents of /project/DBCODE.md (project instructions):
+   *   Contents of /project/DHELIX.md (project instructions):
    *   ... content ...
    */
   buildSection(): string;
@@ -308,7 +308,7 @@ export async function runAgentLoop(config, initialMessages) {
   const instructionManager = new InstructionManager(config.workingDirectory ?? process.cwd());
 
   while (iterations < maxIterations) {
-    // NEW: 매 iteration에서 DBCODE.md 변경 확인
+    // NEW: 매 iteration에서 DHELIX.md 변경 확인
     if (instructionManager.isDirty()) {
       await instructionManager.refresh();
       // system message (messages[0]) 갱신
@@ -438,10 +438,10 @@ export class ContextManager {
 ```typescript
 // init.ts
 export async function initProject(cwd: string, events?: AppEventEmitter) {
-  // ... DBCODE.md 생성 ...
+  // ... DHELIX.md 생성 ...
 
   // NEW: 생성 완료 이벤트 발행
-  events?.emit("instructions:changed", { path: dbcodePath });
+  events?.emit("instructions:changed", { path: dhelixPath });
 }
 
 // App.tsx (또는 agent loop 내)
@@ -470,24 +470,24 @@ Codebase and user instructions are shown below.
 IMPORTANT: These instructions OVERRIDE any default behavior
 and you MUST follow them exactly as written.
 
-Contents of /Users/user/.dbcode/DBCODE.md
+Contents of /Users/user/.dhelix/DHELIX.md
 (user's global instructions for all projects):
 
-[global DBCODE.md 내용]
+[global DHELIX.md 내용]
 
 ---
 
-Contents of /Users/user/.dbcode/rules/git-workflow.md
+Contents of /Users/user/.dhelix/rules/git-workflow.md
 (user's global rule):
 
 [rule 내용]
 
 ---
 
-Contents of /Users/user/project/DBCODE.md
+Contents of /Users/user/project/DHELIX.md
 (project instructions, checked into the codebase):
 
-[project DBCODE.md 내용]
+[project DHELIX.md 내용]
 ```
 
 **작업 항목:**
@@ -537,19 +537,19 @@ Phase 2 (Agent Loop 연동)  ←── 가장 임팩트 큰 변경
 
 ```
 Session start
-  └─ buildSystemPrompt() → DBCODE.md 1회 읽기 시도
+  └─ buildSystemPrompt() → DHELIX.md 1회 읽기 시도
       └─ 파일 없으면? → 시스템 프롬프트에 포함 안 됨
 
 /init 실행
-  └─ DBCODE.md 생성됨
+  └─ DHELIX.md 생성됨
       └─ 시스템 프롬프트? → 변경 없음 (stale)
 
 Turn 2~N
-  └─ Agent가 DBCODE.md를 file_read? → 안 함 (0회 관찰)
+  └─ Agent가 DHELIX.md를 file_read? → 안 함 (0회 관찰)
   └─ 컨벤션 인식? → 우연에 의존
 
 Compaction (토큰 95% 초과 시)
-  └─ reloadSystemPrompt() → 이때서야 DBCODE.md 반영
+  └─ reloadSystemPrompt() → 이때서야 DHELIX.md 반영
 ```
 
 ### After (개선 후)
@@ -561,7 +561,7 @@ Session start
       └─ 시스템 프롬프트에 레이블과 함께 포함
 
 /init 실행
-  └─ DBCODE.md 생성
+  └─ DHELIX.md 생성
   └─ events.emit("instructions:changed")
   └─ InstructionManager.refresh() → 즉시 반영
 
@@ -572,7 +572,7 @@ Session start
 
 Compaction
   └─ InstructionManager.refresh() 호출
-      └─ 항상 최신 DBCODE.md 보장
+      └─ 항상 최신 DHELIX.md 보장
 ```
 
 ---
@@ -582,10 +582,10 @@ Compaction
 | 지표                              | 현재            | 목표                 |
 | --------------------------------- | --------------- | -------------------- |
 | /init 후 첫 턴에서 컨벤션 인식    | NO              | YES                  |
-| Agent의 DBCODE.md file_read 필요  | 의존 (0회 실행) | 불필요 (시스템 주입) |
+| Agent의 DHELIX.md file_read 필요  | 의존 (0회 실행) | 불필요 (시스템 주입) |
 | E2E 테스트 user message 주입 필요 | YES (편법)      | NO (인프라 수준)     |
 | 5-layer 병합 in system prompt     | 1-layer만       | 5-layer 전체         |
-| DBCODE.md 변경 반영 시점          | Compaction 시   | 다음 iteration       |
+| DHELIX.md 변경 반영 시점          | Compaction 시   | 다음 iteration       |
 | 레이블/출처 표시                  | 없음            | Claude Code 스타일   |
 
 ---
@@ -594,10 +594,10 @@ Compaction
 
 ### 8.1 토큰 비용 증가
 
-DBCODE.md 내용이 매 LLM 호출에 포함되므로 토큰 소비가 증가한다.
+DHELIX.md 내용이 매 LLM 호출에 포함되므로 토큰 소비가 증가한다.
 하지만 Claude Code도 동일한 트레이드오프를 선택했다.
 
-**완화**: 대형 DBCODE.md (> 2000 tokens)는 경고 메시지 표시.
+**완화**: 대형 DHELIX.md (> 2000 tokens)는 경고 메시지 표시.
 
 ### 8.2 하위 호환성
 
@@ -613,17 +613,17 @@ InstructionManager가 없을 때는 기존 `loadProjectInstructions()` fallback.
 
 Phase 5 완료 후:
 
-- `sendTurn()`의 DBCODE.md 주입 로직 제거 가능
-- `dbcodeReads` 추적 방식 변경 → `instructions:refreshed` 이벤트 기반
+- `sendTurn()`의 DHELIX.md 주입 로직 제거 가능
+- `dhelixReads` 추적 방식 변경 → `instructions:refreshed` 이벤트 기반
 - 테스트 assertion: `expect(refreshEvents).toBeGreaterThanOrEqual(1)`
 
 ---
 
-## 9. 부록: Claude Code vs dbcode 상세 비교
+## 9. 부록: Claude Code vs dhelix 상세 비교
 
-| 항목            | Claude Code      | dbcode (현재)             | dbcode (개선 후)        |
+| 항목            | Claude Code      | dhelix (현재)             | dhelix (개선 후)        |
 | --------------- | ---------------- | ------------------------- | ----------------------- |
-| 설정 파일명     | CLAUDE.md        | DBCODE.md                 | DBCODE.md               |
+| 설정 파일명     | CLAUDE.md        | DHELIX.md                 | DHELIX.md               |
 | 로딩 시점       | 대화 시작 전     | buildSystemPrompt() 1회   | InstructionManager 연속 |
 | 갱신 주기       | 매 LLM call      | Compaction 시만           | 매 iteration (isDirty)  |
 | 계층 수         | 5                | 1 (system-prompt-builder) | 5 (loadInstructions)    |

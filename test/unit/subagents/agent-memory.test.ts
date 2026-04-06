@@ -34,7 +34,7 @@ beforeEach(() => {
 // =============================================================================
 
 describe("AgentMemoryManager.getMemoryDir", () => {
-  it("should resolve user scope to ~/.dbcode/agent-memory/{name}/", () => {
+  it("should resolve user scope to ~/.dhelix/agent-memory/{name}/", () => {
     const manager = new AgentMemoryManager("reviewer", "user", "/project");
     const dir = manager.getMemoryDir();
     expect(dir).toContain("testuser");
@@ -42,14 +42,14 @@ describe("AgentMemoryManager.getMemoryDir", () => {
     expect(dir).toContain("reviewer");
   });
 
-  it("should resolve project scope to .dbcode/agent-memory/{name}/ relative to working dir", () => {
+  it("should resolve project scope to .dhelix/agent-memory/{name}/ relative to working dir", () => {
     const manager = new AgentMemoryManager("planner", "project", "/my/project");
     const dir = manager.getMemoryDir();
     expect(dir).toContain("agent-memory");
     expect(dir).toContain("planner");
   });
 
-  it("should resolve local scope to .dbcode/agent-memory-local/{name}/ relative to working dir", () => {
+  it("should resolve local scope to .dhelix/agent-memory-local/{name}/ relative to working dir", () => {
     const manager = new AgentMemoryManager("builder", "local", "/my/project");
     const dir = manager.getMemoryDir();
     expect(dir).toContain("agent-memory-local");

@@ -1,6 +1,6 @@
 # LLM 통합 아키텍처 리서치
 
-> dbcode CLI를 위한 로컬/외부 LLM 통합 전략 종합 리서치
+> dhelix CLI를 위한 로컬/외부 LLM 통합 전략 종합 리서치
 > 작성일: 2026-03-05
 
 ---
@@ -50,7 +50,7 @@
 | 콜드 스타트 시간   | 빠름   | 느림      | 매우 빠름 |
 | RAM 사용량         | 보통   | 높음      | 낮음      |
 
-### dbcode를 위한 서버 선택 가이드
+### dhelix를 위한 서버 선택 가이드
 
 **개발/개인 사용 (권장: Ollama)**
 
@@ -99,7 +99,7 @@
 | **Hermes 2 Pro**       | 7B                | 우수                  | Hermes    | 도구 호출 특화 파인튜닝          |
 | **DeepSeek-V2/V3**     | 다양              | 보통                  | 커스텀    | MoE, 효율적이나 도구 호출 제한적 |
 
-### dbcode의 이중 전략 구현 상세
+### dhelix의 이중 전략 구현 상세
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -182,7 +182,7 @@
 | **mTLS**          | 어려움      | 매우 높음 | 폐쇄망 보안 통신              | `https.Agent({ cert, key, ca })` |
 | **Custom Header** | 쉬움        | 다양      | 내부 API 게이트웨이           | 설정 가능한 헤더명/값            |
 
-### dbcode 인증 구현 설계
+### dhelix 인증 구현 설계
 
 ```typescript
 // src/llm/auth.ts - 유연한 인증 인터페이스
@@ -307,7 +307,7 @@ interface LLMProviderConfig {
 ### 환경별 기본 설정 예시
 
 ```jsonc
-// .dbcode.json - 로컬 Ollama 설정
+// .dhelix.json - 로컬 Ollama 설정
 {
   "provider": {
     "name": "local-ollama",
@@ -322,7 +322,7 @@ interface LLMProviderConfig {
 ```
 
 ```jsonc
-// .dbcode.json - 외부 OpenAI 호환 API 설정
+// .dhelix.json - 외부 OpenAI 호환 API 설정
 {
   "provider": {
     "name": "company-llm",
@@ -330,7 +330,7 @@ interface LLMProviderConfig {
     "model": "gpt-4o",
     "auth": {
       "type": "bearer",
-      "tokenEnv": "DBCODE_API_TOKEN",
+      "tokenEnv": "DHELIX_API_TOKEN",
     },
     "toolCallStrategy": "native",
     "guardrails": {
@@ -535,7 +535,7 @@ OpenAI SDK (stream: true)
 │              Air-Gapped Network                  │
 │                                                  │
 │  ┌──────────┐  ┌──────────┐  ┌───────────────┐  │
-│  │ dbcode   │  │ Ollama   │  │ LLM Model     │  │
+│  │ dhelix   │  │ Ollama   │  │ LLM Model     │  │
 │  │ CLI      │→ │ Server   │→ │ (GGUF file)   │  │
 │  │          │  │          │  │               │  │
 │  └──────────┘  └──────────┘  └───────────────┘  │
@@ -560,15 +560,15 @@ OpenAI SDK (stream: true)
 
 ```bash
 # 인터넷 연결된 머신에서 준비
-npm pack                           # dbcode-1.0.0.tgz 생성
+npm pack                           # dhelix-1.0.0.tgz 생성
 npm install --global-style         # flat node_modules
-tar czf dbcode-offline.tar.gz \
-  dbcode-1.0.0.tgz \
+tar czf dhelix-offline.tar.gz \
+  dhelix-1.0.0.tgz \
   node_modules/
 
 # 에어갭 머신에서 설치
-tar xzf dbcode-offline.tar.gz
-npm install -g dbcode-1.0.0.tgz --offline
+tar xzf dhelix-offline.tar.gz
+npm install -g dhelix-1.0.0.tgz --offline
 
 # Ollama 모델 준비 (인터넷 머신에서)
 ollama pull qwen2.5-coder:14b
@@ -586,7 +586,7 @@ Node.js 20+에서는 SEA를 통해 단일 실행 파일 생성 가능:
 - Windows: `.exe` 파일 생성
 - macOS: 바이너리 생성
 - 의존성 포함, npm 불필요
-- dbcode의 에어갭 배포 시 가장 이상적인 방식
+- dhelix의 에어갭 배포 시 가장 이상적인 방식
 
 ---
 
@@ -602,7 +602,7 @@ Node.js 20+에서는 SEA를 통해 단일 실행 파일 생성 가능:
 | **transformers.js**      | 대부분         | 100%   | ~50MB+    | O            | 무거움, 풀 토크나이저 |
 | **SentencePiece (WASM)** | Llama, Mistral | 100%   | ~1MB      | O            | SP 모델 필요          |
 
-### dbcode 토큰 카운팅 전략
+### dhelix 토큰 카운팅 전략
 
 ```typescript
 // src/llm/token-counter.ts
@@ -747,7 +747,7 @@ const chain: ProviderChain = {
 | **Vercel AI SDK** | Provider 패턴 + 어댑터    | 깔끔한 TS 인터페이스, 20+ 프로바이더 | 웹 프레임워크 중심 |
 | **LiteLLMjs**     | JS 포팅                   | LiteLLM 호환                         | 미성숙             |
 
-### dbcode 추상화 레이어 아키텍처
+### dhelix 추상화 레이어 아키텍처
 
 ```
 ┌───────────────────────────────────────────────────────┐
@@ -1017,7 +1017,7 @@ User Request
 | 항목              | Windows                 | macOS                                  | 대응 방안                            |
 | ----------------- | ----------------------- | -------------------------------------- | ------------------------------------ |
 | **경로 구분자**   | `\`                     | `/`                                    | `path.join()`, `path.resolve()` 사용 |
-| **설정 경로**     | `%APPDATA%\dbcode`      | `~/Library/Application Support/dbcode` | `env-paths` npm 패키지               |
+| **설정 경로**     | `%APPDATA%\dhelix`      | `~/Library/Application Support/dhelix` | `env-paths` npm 패키지               |
 | **키체인**        | Credential Vault        | Keychain                               | `keytar` (네이티브 바인딩)           |
 | **셸**            | cmd.exe / PowerShell    | bash / zsh                             | 도구 실행 시 셸 감지                 |
 | **줄바꿈**        | `\r\n`                  | `\n`                                   | 파일 쓰기 시 정규화                  |

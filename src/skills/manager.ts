@@ -2,10 +2,10 @@
  * 스킬 매니저 — 여러 디렉토리에서 스킬을 로드하고 관리하는 중앙 허브
  *
  * 스킬 로딩 디렉토리 (우선순위 순서, 뒤의 것이 앞의 것을 덮어씀):
- * 1. ~/.dbcode/skills/ — 사용자 전역 스킬
- * 2. ~/.dbcode/commands/ — 사용자 전역 커맨드
- * 3. .dbcode/skills/ — 프로젝트 로컬 스킬
- * 4. .dbcode/commands/ — 프로젝트 로컬 커맨드 (가장 높은 우선순위)
+ * 1. ~/.dhelix/skills/ — 사용자 전역 스킬
+ * 2. ~/.dhelix/commands/ — 사용자 전역 커맨드
+ * 3. .dhelix/skills/ — 프로젝트 로컬 스킬
+ * 4. .dhelix/commands/ — 프로젝트 로컬 커맨드 (가장 높은 우선순위)
  *
  * 같은 이름의 스킬이 여러 디렉토리에 있으면, 프로젝트 레벨이 전역 레벨을 덮어씁니다.
  * 이를 통해 프로젝트별로 전역 스킬을 커스터마이징할 수 있습니다.
@@ -26,13 +26,13 @@ import { type SkillDefinition, type SkillContext, type SkillExecutionResult } fr
  * 조직화 목적으로 분리되어 있습니다.
  */
 const SKILL_DIRS = {
-  /** 프로젝트 레벨 커맨드: {프로젝트}/.dbcode/commands/ */
+  /** 프로젝트 레벨 커맨드: {프로젝트}/.dhelix/commands/ */
   projectCommands: (cwd: string) => join(cwd, `.${APP_NAME}`, "commands"),
-  /** 프로젝트 레벨 스킬: {프로젝트}/.dbcode/skills/ */
+  /** 프로젝트 레벨 스킬: {프로젝트}/.dhelix/skills/ */
   projectSkills: (cwd: string) => join(cwd, `.${APP_NAME}`, "skills"),
-  /** 사용자 전역 커맨드: ~/.dbcode/commands/ */
+  /** 사용자 전역 커맨드: ~/.dhelix/commands/ */
   globalCommands: () => join(homedir(), `.${APP_NAME}`, "commands"),
-  /** 사용자 전역 스킬: ~/.dbcode/skills/ */
+  /** 사용자 전역 스킬: ~/.dhelix/skills/ */
   globalSkills: () => join(homedir(), `.${APP_NAME}`, "skills"),
 } as const;
 

@@ -500,7 +500,7 @@ export default function CmdEffortPage() {
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 의도된 동작입니다. <code className="text-cyan-600">currentEffort</code>는 메모리 상
                 모듈 상태로, 프로세스 종료 시 초기화됩니다. 특정 수준을 기본값으로 유지하려면
-                프로젝트의 <code className="text-cyan-600">DBCODE.md</code>에 시작 지침으로
+                프로젝트의 <code className="text-cyan-600">DHELIX.md</code>에 시작 지침으로
                 추가하거나 <code className="text-cyan-600">/memory</code>에 기록해두고 세션 시작 시
                 적용하세요.
               </p>

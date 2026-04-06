@@ -3,9 +3,9 @@
  *
  * 설정 우선순위 (높은 것이 낮은 것을 덮어씀):
  * 5. CLI 플래그 (--model gpt-4o) — 가장 높은 우선순위
- * 4. 환경변수 (DBCODE_MODEL=gpt-4o)
- * 3. 프로젝트 설정 (.dbcode/config.json) — 프로젝트별 설정
- * 2. 사용자 설정 (~/.dbcode/config.json) — 사용자 전역 설정
+ * 4. 환경변수 (DHELIX_MODEL=gpt-4o)
+ * 3. 프로젝트 설정 (.dhelix/config.json) — 프로젝트별 설정
+ * 2. 사용자 설정 (~/.dhelix/config.json) — 사용자 전역 설정
  * 1. 기본값 (src/config/defaults.ts) — 가장 낮은 우선순위
  *
  * 각 레벨의 설정은 deepMerge로 병합되므로, 상위 레벨에서 특정 키만
@@ -42,14 +42,14 @@ async function loadJsonFile(filePath: string): Promise<Record<string, unknown> |
  * 환경변수에서 설정 관련 값을 추출하는 함수
  *
  * 환경변수 우선순위:
- * - DBCODE_* 변수가 OPENAI_* 변수보다 우선합니다.
+ * - DHELIX_* 변수가 OPENAI_* 변수보다 우선합니다.
  * - OPENAI_API_KEY만 설정되고 Base URL이 없으면 자동으로 OpenAI API URL을 사용합니다.
  *
  * 지원하는 환경변수:
- * - DBCODE_BASE_URL / OPENAI_BASE_URL: API 엔드포인트 URL
- * - DBCODE_API_KEY / OPENAI_API_KEY: API 인증 키
- * - DBCODE_MODEL / OPENAI_MODEL: 모델명
- * - DBCODE_VERBOSE: 상세 로깅 활성화 ("true")
+ * - DHELIX_BASE_URL / OPENAI_BASE_URL: API 엔드포인트 URL
+ * - DHELIX_API_KEY / OPENAI_API_KEY: API 인증 키
+ * - DHELIX_MODEL / OPENAI_MODEL: 모델명
+ * - DHELIX_VERBOSE: 상세 로깅 활성화 ("true")
  *
  * @returns 환경변수에서 추출된 부분 설정 객체
  */
@@ -57,24 +57,24 @@ function loadEnvConfig(): Partial<AppConfig> {
   const env: Partial<AppConfig> = {};
   const llm: Record<string, unknown> = {};
 
-  // Base URL 결정: LOCAL_API_BASE_URL > DBCODE_BASE_URL > OPENAI_BASE_URL > 기본값
+  // Base URL 결정: LOCAL_API_BASE_URL > DHELIX_BASE_URL > OPENAI_BASE_URL > 기본값
   if (process.env.LOCAL_API_BASE_URL) {
     llm.baseUrl = process.env.LOCAL_API_BASE_URL;
-  } else if (process.env.DBCODE_BASE_URL) {
-    llm.baseUrl = process.env.DBCODE_BASE_URL;
+  } else if (process.env.DHELIX_BASE_URL) {
+    llm.baseUrl = process.env.DHELIX_BASE_URL;
   } else if (process.env.OPENAI_BASE_URL) {
     llm.baseUrl = process.env.OPENAI_BASE_URL;
   }
 
-  // API 키 결정: LOCAL_API_KEY > DBCODE_API_KEY > OPENAI_API_KEY
+  // API 키 결정: LOCAL_API_KEY > DHELIX_API_KEY > OPENAI_API_KEY
   if (process.env.LOCAL_API_KEY) {
     llm.apiKey = process.env.LOCAL_API_KEY;
-  } else if (process.env.DBCODE_API_KEY) {
-    llm.apiKey = process.env.DBCODE_API_KEY;
+  } else if (process.env.DHELIX_API_KEY) {
+    llm.apiKey = process.env.DHELIX_API_KEY;
   } else if (process.env.OPENAI_API_KEY) {
     llm.apiKey = process.env.OPENAI_API_KEY;
     // OPENAI_API_KEY만 설정된 경우, Base URL이 없으면 OpenAI 공식 URL 자동 설정
-    if (!process.env.DBCODE_BASE_URL && !process.env.OPENAI_BASE_URL) {
+    if (!process.env.DHELIX_BASE_URL && !process.env.OPENAI_BASE_URL) {
       llm.baseUrl = "https://api.openai.com/v1";
     }
   }
@@ -84,11 +84,11 @@ function loadEnvConfig(): Partial<AppConfig> {
     llm.apiKeyHeader = process.env.LOCAL_API_KEY_HEADER;
   }
 
-  // 모델명 결정: LOCAL_MODEL > DBCODE_MODEL > OPENAI_MODEL > 기본값
+  // 모델명 결정: LOCAL_MODEL > DHELIX_MODEL > OPENAI_MODEL > 기본값
   if (process.env.LOCAL_MODEL) {
     llm.model = process.env.LOCAL_MODEL;
-  } else if (process.env.DBCODE_MODEL) {
-    llm.model = process.env.DBCODE_MODEL;
+  } else if (process.env.DHELIX_MODEL) {
+    llm.model = process.env.DHELIX_MODEL;
   } else if (process.env.OPENAI_MODEL) {
     llm.model = process.env.OPENAI_MODEL;
   }
@@ -98,8 +98,8 @@ function loadEnvConfig(): Partial<AppConfig> {
     env.llm = { ...DEFAULT_CONFIG.llm, ...llm };
   }
 
-  // DBCODE_VERBOSE=true이면 상세 로깅 활성화
-  if (process.env.DBCODE_VERBOSE === "true") {
+  // DHELIX_VERBOSE=true이면 상세 로깅 활성화
+  if (process.env.DHELIX_VERBOSE === "true") {
     env.verbose = true;
   }
 
@@ -111,8 +111,8 @@ function loadEnvConfig(): Partial<AppConfig> {
  *
  * 병합 순서 (낮은 → 높은 우선순위):
  * 1. defaults (기본값)
- * 2. user config (~/.dbcode/config.json)
- * 3. project config (.dbcode/config.json)
+ * 2. user config (~/.dhelix/config.json)
+ * 3. project config (.dhelix/config.json)
  * 4. environment variables (환경변수)
  * 5. CLI flags (명령줄 플래그)
  *
@@ -135,7 +135,7 @@ export async function loadConfig(
   let merged: Record<string, unknown> = { ...DEFAULT_CONFIG };
   sources.set("*", "defaults");
 
-  // Level 2: 사용자 전역 설정 (~/.dbcode/config.json)
+  // Level 2: 사용자 전역 설정 (~/.dhelix/config.json)
   const userConfigPath = joinPath(CONFIG_DIR, "config.json");
   const userConfig = await loadJsonFile(userConfigPath);
   if (userConfig) {
@@ -145,9 +145,9 @@ export async function loadConfig(
     }
   }
 
-  // Level 3: 프로젝트 설정 (.dbcode/config.json) — 프로젝트별 커스터마이징
+  // Level 3: 프로젝트 설정 (.dhelix/config.json) — 프로젝트별 커스터마이징
   if (projectDir) {
-    const projectConfigPath = joinPath(resolvePath(projectDir), ".dbcode", "config.json");
+    const projectConfigPath = joinPath(resolvePath(projectDir), ".dhelix", "config.json");
     const projectConfig = await loadJsonFile(projectConfigPath);
     if (projectConfig) {
       merged = deepMerge(merged, projectConfig);

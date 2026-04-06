@@ -8,8 +8,8 @@ const hasApiKey = !!process.env.OPENAI_API_KEY;
 const projectRoot = process.cwd();
 const cliPath = join(projectRoot, "dist", "index.js");
 
-/** Run dbcode in headless mode */
-function dbcode(prompt: string, cwd: string, timeoutMs = 60_000): string {
+/** Run dhelix in headless mode */
+function dhelix(prompt: string, cwd: string, timeoutMs = 60_000): string {
   return execSync(`node "${cliPath}" --print "${prompt.replace(/"/g, '\\"')}"`, {
     cwd,
     timeout: timeoutMs,
@@ -23,7 +23,7 @@ describe.skipIf(!hasApiKey)("E2E: Coding Ability", () => {
   let workDir: string;
 
   beforeAll(() => {
-    workDir = mkdtempSync(join(tmpdir(), "dbcode-e2e-coding-"));
+    workDir = mkdtempSync(join(tmpdir(), "dhelix-e2e-coding-"));
   });
 
   afterAll(() => {
@@ -35,14 +35,14 @@ describe.skipIf(!hasApiKey)("E2E: Coding Ability", () => {
   });
 
   it("should create a hello world Node.js file", () => {
-    dbcode(
-      "Create a file called hello.js that prints 'Hello from dbcode!' to the console. Only create the file, no explanation needed.",
+    dhelix(
+      "Create a file called hello.js that prints 'Hello from dhelix!' to the console. Only create the file, no explanation needed.",
       workDir,
     );
 
     expect(existsSync(join(workDir, "hello.js"))).toBe(true);
     const content = readFileSync(join(workDir, "hello.js"), "utf-8");
-    expect(content).toContain("Hello from dbcode!");
+    expect(content).toContain("Hello from dhelix!");
   }, 60_000);
 
   it("should run the created file", () => {
@@ -51,16 +51,16 @@ describe.skipIf(!hasApiKey)("E2E: Coding Ability", () => {
       return;
     }
 
-    const output = dbcode(
+    const output = dhelix(
       "Run 'node hello.js' and tell me what it outputs. Just state the output.",
       workDir,
     );
 
-    expect(output.toLowerCase()).toContain("hello from dbcode");
+    expect(output.toLowerCase()).toContain("hello from dhelix");
   }, 60_000);
 
   it("should create a package.json with npm init", () => {
-    dbcode(
+    dhelix(
       "Create a minimal package.json with name 'test-project', version '1.0.0', and type 'module'. Only create the file.",
       workDir,
     );

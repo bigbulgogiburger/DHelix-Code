@@ -1,4 +1,4 @@
-# dbcode 개발 보고서 (2026-03-16)
+# dhelix 개발 보고서 (2026-03-16)
 
 > **Anthropic Claude Code 책임 기획자** 작성
 > Claude Agent Teams 7명 병렬 개발 + 코어 감사 + 상용화 분석
@@ -37,7 +37,7 @@
 - gpt-5.1-codex-mini: 4,096 → **100,000** 토큰 (24x 확장)
 - gpt-4o: 4,096 → **16,384** 토큰 (4x 확장)
 - claude-opus-4: 4,096 → **16,384** 토큰 (4x 확장)
-- `/init` DBCODE.md 미생성 문제도 함께 해결
+- `/init` DHELIX.md 미생성 문제도 함께 해결
 
 ---
 
@@ -202,7 +202,7 @@ Agent 7이 수행한 프로덕션 준비도 분석 결과:
 
 ### Claude Code / Cursor / Windsurf 와의 비교
 
-| 기능                   | dbcode | Claude Code | Cursor | 비고             |
+| 기능                   | dhelix | Claude Code | Cursor | 비고             |
 | ---------------------- | ------ | ----------- | ------ | ---------------- |
 | 세션 크래시 복구       | ❌     | ✅          | ✅     | PM6 참조         |
 | 실시간 토큰 카운터     | ❌     | ✅          | ✅     | 스트리밍 중 표시 |

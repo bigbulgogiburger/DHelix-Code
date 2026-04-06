@@ -42,7 +42,7 @@ export default function VoiceRecorderPage() {
             </h2>
             <div className="text-[14px] text-gray-600 leading-[1.85] mb-8 space-y-3">
               <p>
-                dbcode의 <code className="text-cyan-600">/voice</code> 명령은 음성으로 프롬프트를
+                dhelix의 <code className="text-cyan-600">/voice</code> 명령은 음성으로 프롬프트를
                 입력할 수 있게 합니다. 이 모듈은 SoX 명령줄 도구를 자식 프로세스로 실행하여
                 마이크에서 오디오를 캡처합니다. 캡처된 오디오는 Whisper API로 전송되어 텍스트로
                 변환됩니다.

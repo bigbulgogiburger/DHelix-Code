@@ -62,7 +62,7 @@ export default function SkillLoaderPage() {
               title="스킬 로딩 파이프라인"
               titleColor="orange"
               chart={`flowchart LR
-  DIR["📁 스킬 디렉토리\\n~/.dbcode/skills/ 등"]
+  DIR["📁 스킬 디렉토리\\n~/.dhelix/skills/ 등"]
   SCAN["🔍 .md 파일 필터링\\nreaddir + extname"]
   READ["📄 파일 읽기\\nreadFile(utf-8)"]
   SPLIT["✂️ 프론트매터 분리\\n--- 구분자 기준"]
@@ -381,7 +381,7 @@ export default function SkillLoaderPage() {
               <span className="text-[#ff7b72]">await</span>{" "}
               <span className="text-[#d2a8ff]">loadSkill</span>
               <span className="text-[#c9d1d9]">(</span>
-              <span className="text-[#a5d6ff]">{'"~/.dbcode/skills/commit.md"'}</span>
+              <span className="text-[#a5d6ff]">{'"~/.dhelix/skills/commit.md"'}</span>
               <span className="text-[#c9d1d9]">);</span>
               {"\n\n"}
               <span className="text-[#8b949e]">{'// skill.frontmatter.name === "commit"'}</span>
@@ -423,7 +423,7 @@ export default function SkillLoaderPage() {
               <span className="text-[#ff7b72]">await</span>{" "}
               <span className="text-[#d2a8ff]">loadSkillsFromDirectory</span>
               <span className="text-[#c9d1d9]">(</span>
-              <span className="text-[#a5d6ff]">{'"~/.dbcode/skills"'}</span>
+              <span className="text-[#a5d6ff]">{'"~/.dhelix/skills"'}</span>
               <span className="text-[#c9d1d9]">);</span>
               {"\n\n"}
               <span className="text-[#8b949e]">{"// skills: readonly SkillDefinition[]"}</span>

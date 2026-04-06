@@ -83,7 +83,7 @@ describe("Phase 6 slash commands", () => {
     const tmpContext = { ...baseContext, workingDirectory: join(process.cwd(), "test", "tmp") };
     const result = await exportCommand.execute("", tmpContext);
     expect(result.success).toBe(true);
-    expect(result.output).toContain("dbcode-conversation");
+    expect(result.output).toContain("dhelix-conversation");
   });
 
   it("/fork should fail without active session", async () => {

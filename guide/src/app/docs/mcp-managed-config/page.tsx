@@ -44,7 +44,7 @@ export default function MCPManagedConfigPage() {
               <p>
                 <code className="text-cyan-600">MCPManagedConfig</code>는 관리자(Admin)가 MCP 서버
                 설정을 중앙에서 제어할 수 있도록 하는 정책 관리 모듈입니다. 설정 파일
-                <code className="text-cyan-600">~/.dbcode/managed-mcp.json</code>을 통해 서버 사전
+                <code className="text-cyan-600">~/.dhelix/managed-mcp.json</code>을 통해 서버 사전
                 등록, 도구 허용/차단 목록 강제, 사용자 서버 추가 제한 등의 정책을 적용합니다.
               </p>
               <p>
@@ -67,7 +67,7 @@ export default function MCPManagedConfigPage() {
               chart={`graph TD
   MGR["MCPManager<br/><small>mcp/manager.ts</small>"]
   MC["MCPManagedConfig<br/><small>mcp/managed-config.ts</small>"]
-  DISK["managed-mcp.json<br/><small>~/.dbcode/</small>"]
+  DISK["managed-mcp.json<br/><small>~/.dhelix/</small>"]
   USR["사용자/프로젝트 설정<br/><small>settings.json</small>"]
   MERGED["병합된 서버 설정"]
   TF["MCPToolFilter<br/><small>mcp/tool-filter.ts</small>"]
@@ -289,7 +289,7 @@ export default function MCPManagedConfigPage() {
                   name: "configPath",
                   type: "string | undefined",
                   required: false,
-                  desc: "설정 파일 경로 (기본: ~/.dbcode/managed-mcp.json)",
+                  desc: "설정 파일 경로 (기본: ~/.dhelix/managed-mcp.json)",
                 },
               ]}
             />
@@ -720,7 +720,7 @@ export default function MCPManagedConfigPage() {
               <ul className="text-[13px] text-gray-600 space-y-2 list-disc list-inside">
                 <li>
                   파일 경로가 정확한지 확인:{" "}
-                  <code className="text-cyan-600">~/.dbcode/managed-mcp.json</code>
+                  <code className="text-cyan-600">~/.dhelix/managed-mcp.json</code>
                 </li>
                 <li>
                   JSON 형식이 올바른지 확인: 잘못된 JSON이면{" "}

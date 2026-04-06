@@ -3,7 +3,7 @@ import PptxGenJS from "pptxgenjs";
 const pptx = new PptxGenJS();
 pptx.layout = "LAYOUT_WIDE"; // 16:9
 pptx.author = "DBInc";
-pptx.subject = "dbcode 프로젝트 개요";
+pptx.subject = "dhelix 프로젝트 개요";
 
 // ── 디자인 토큰 ──
 const C = {
@@ -56,7 +56,7 @@ function frame(slide, title, page) {
     color: C.sub,
     align: "right",
   });
-  slide.addText("dbcode", {
+  slide.addText("dhelix", {
     x: 0.5,
     y: 7.25,
     w: 1.5,
@@ -86,7 +86,7 @@ s1.addShape(pptx.shapes.RECTANGLE, {
   h: "100%",
   fill: { color: C.accent },
 });
-s1.addText("dbcode", {
+s1.addText("dhelix", {
   x: 1.2,
   y: 2.0,
   w: 10,
@@ -540,6 +540,6 @@ roadmap.forEach((item) => {
 });
 
 // ── 저장 ──
-const outPath = "C:/Users/DBInc/dbcode/dbcode-overview.pptx";
+const outPath = "C:/Users/DBInc/dhelix/dhelix-overview.pptx";
 await pptx.writeFile({ fileName: outPath });
 console.log(`PPT 저장 완료: ${outPath}`);

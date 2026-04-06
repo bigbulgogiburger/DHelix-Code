@@ -56,7 +56,7 @@ describe("CLI E2E", () => {
           env: {
             ...process.env,
             OPENAI_API_KEY: undefined,
-            DBCODE_API_KEY: undefined,
+            DHELIX_API_KEY: undefined,
           },
         });
       } catch (error) {

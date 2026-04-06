@@ -53,7 +53,7 @@ export default function CmdModelPage() {
                 전환할 수 있습니다.
               </p>
               <p>
-                선택한 모델은 <code className="text-cyan-600">~/.dbcode/config.json</code>에
+                선택한 모델은 <code className="text-cyan-600">~/.dhelix/config.json</code>에
                 영속화되어 다음 세션에서도 기본값으로 사용됩니다.
               </p>
             </div>
@@ -69,7 +69,7 @@ export default function CmdModelPage() {
   LOCAL["Local Provider<br/><small>LOCAL_MODEL +<br/>LOCAL_API_BASE_URL</small>"]
   OPENAI["OpenAI Provider<br/><small>OPENAI_MODEL +<br/>OPENAI_BASE_URL</small>"]
   CAPS["Model Capabilities<br/><small>model-capabilities.ts</small>"]
-  CONFIG["config.json<br/><small>~/.dbcode/config.json</small>"]
+  CONFIG["config.json<br/><small>~/.dhelix/config.json</small>"]
   CLIENT["LLM Client<br/><small>재생성</small>"]
 
   USER --> CMD
@@ -147,7 +147,7 @@ export default function CmdModelPage() {
               persistModelChoice(model)
             </h3>
             <p className="text-[13px] text-gray-600 mb-3 leading-relaxed">
-              선택한 모델을 <code className="text-cyan-600">~/.dbcode/config.json</code>의
+              선택한 모델을 <code className="text-cyan-600">~/.dhelix/config.json</code>의
               <code className="text-cyan-600">llm.model</code> 필드에 영속화합니다. 영속화 실패 시
               세션에 영향을 주지 않습니다 (silent fail).
             </p>
@@ -422,7 +422,7 @@ export default function CmdModelPage() {
   LOCAL_P["Local Provider<br/><small>model + baseURL + apiKey</small>"]
   OPENAI_P["OpenAI Provider<br/><small>model + baseURL + apiKey</small>"]
   NORMAL["일반 모델명<br/><small>getModelCapabilities()</small>"]
-  PERSIST["persistModelChoice()<br/><small>~/.dbcode/config.json</small>"]
+  PERSIST["persistModelChoice()<br/><small>~/.dhelix/config.json</small>"]
   RESULT["CommandResult<br/><small>newModel + newProvider?</small>"]
 
   INPUT -->|"예"| SELECT
@@ -577,7 +577,7 @@ export default function CmdModelPage() {
                 &quot;모델을 바꿨는데 다음 세션에서 유지되지 않아요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
-                <code className="text-cyan-600">~/.dbcode/config.json</code>의 쓰기 권한을
+                <code className="text-cyan-600">~/.dhelix/config.json</code>의 쓰기 권한을
                 확인하세요.
                 <code className="text-cyan-600">persistModelChoice()</code>는 실패해도 에러를
                 표시하지 않으므로, 직접 파일을 확인해야 합니다.
@@ -607,7 +607,7 @@ export default function CmdModelPage() {
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed">
                 선택한 모델이 네이티브 함수 호출(function calling)을 지원하지 않는다는 뜻입니다.
-                dbcode는 텍스트 파싱으로 도구 호출을 대체하지만, 정확도가 낮아질 수 있습니다.
+                dhelix는 텍스트 파싱으로 도구 호출을 대체하지만, 정확도가 낮아질 수 있습니다.
                 가능하면 함수 호출을 지원하는 모델을 사용하세요.
               </p>
             </div>

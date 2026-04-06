@@ -1,7 +1,7 @@
 /**
  * 애플리케이션 진입점(Entry Point) — CLI 명령 파싱부터 UI 렌더링까지의 부트스트랩
  *
- * 이 파일은 dbcode 애플리케이션의 메인 실행 파일입니다.
+ * 이 파일은 dhelix 애플리케이션의 메인 실행 파일입니다.
  * Commander.js로 CLI 인자를 파싱하고, 필요한 모듈을 동적 import하여
  * 최종적으로 Ink(React for CLI) 앱을 렌더링합니다.
  *
@@ -28,13 +28,13 @@ import { VERSION, APP_NAME, LLM_DEFAULTS } from "./constants.js";
 
 /** 시작 시간 기록 — 부트스트랩 성능 프로파일링용 */
 const _startupT0 = performance.now();
-/** 상세 모드 여부 — DBCODE_VERBOSE 환경변수로 제어 */
-const _verbose = !!process.env.DBCODE_VERBOSE;
+/** 상세 모드 여부 — DHELIX_VERBOSE 환경변수로 제어 */
+const _verbose = !!process.env.DHELIX_VERBOSE;
 
 /**
  * 성능 프로파일링 로그 출력 — 각 초기화 단계의 소요 시간 측정
  *
- * DBCODE_VERBOSE=true일 때만 stderr에 출력됩니다.
+ * DHELIX_VERBOSE=true일 때만 stderr에 출력됩니다.
  * 부트스트랩이 느릴 때 병목 지점을 찾는 데 유용합니다.
  *
  * @param label - 단계 이름 (예: "dotenv", "dynamic imports")
@@ -54,10 +54,10 @@ function _profileLog(label: string, since: number): number {
 // Commander.js 인스턴스 생성 — CLI 명령줄 파서
 const program = new Command();
 
-// 서브커맨드: dbcode init — 프로젝트 초기화
+// 서브커맨드: dhelix init — 프로젝트 초기화
 program
   .command("init")
-  .description("Initialize a dbcode project in the current directory")
+  .description("Initialize a dhelix project in the current directory")
   .action(async () => {
     const { initProject } = await import("./commands/init.js");
     const result = await initProject(process.cwd());
@@ -68,7 +68,7 @@ program
     }
   });
 
-// 메인 커맨드 정의 — dbcode [options] [prompt]
+// 메인 커맨드 정의 — dhelix [options] [prompt]
 program
   .name(APP_NAME)
   .description("AI coding assistant for local/external LLMs")
@@ -100,7 +100,7 @@ program
     }) => {
       // ── 단계 1: dotenv 로드 ──
       // 패키지 루트의 .env만 로드 (cwd의 .env는 읽지 않음)
-      // dbcode 자체의 기본 설정(API 키, 모델, base URL)을 제공
+      // dhelix 자체의 기본 설정(API 키, 모델, base URL)을 제공
       let _t = _profileLog("CLI parse", _startupT0);
       const { config: dotenvConfig } = await import("dotenv");
       const { fileURLToPath } = await import("node:url");
@@ -154,6 +154,13 @@ program
         { notebookEditTool },
         { createAgentTool },
         { todoWriteTool },
+        { symbolSearchTool },
+        { codeOutlineTool },
+        { findDependenciesTool },
+        { gotoDefinitionTool },
+        { findReferencesTool },
+        { getTypeInfoTool },
+        { safeRenameTool },
         { CommandRegistry },
         { clearCommand },
         { compactCommand },
@@ -219,6 +226,13 @@ program
         import("./tools/definitions/notebook-edit.js"),
         import("./tools/definitions/agent.js"),
         import("./tools/definitions/todo-write.js"),
+        import("./tools/definitions/symbol-search.js"),
+        import("./tools/definitions/code-outline.js"),
+        import("./tools/definitions/find-dependencies.js"),
+        import("./tools/definitions/goto-definition.js"),
+        import("./tools/definitions/find-references.js"),
+        import("./tools/definitions/get-type-info.js"),
+        import("./tools/definitions/safe-rename.js"),
         import("./commands/registry.js"),
         import("./commands/clear.js"),
         import("./commands/compact.js"),
@@ -300,7 +314,7 @@ program
           });
 
       // ── 단계 6: 도구(Tool) 등록 ──
-      // 16개의 기본 도구를 레지스트리에 등록
+      // 19개의 기본 도구를 레지스트리에 등록
       // 각 도구는 AI가 파일 읽기, 셸 명령 실행 등을 수행하는 데 사용
       const toolRegistry = new ToolRegistry();
       toolRegistry.registerAll([
@@ -319,6 +333,13 @@ program
         listDirTool,
         notebookEditTool,
         todoWriteTool,
+        symbolSearchTool,
+        codeOutlineTool,
+        findDependenciesTool,
+        gotoDefinitionTool,
+        findReferencesTool,
+        getTypeInfoTool,
+        safeRenameTool,
       ]);
 
       _t = _profileLog("tools registered", _t);
@@ -352,7 +373,7 @@ program
       });
 
       // 훅(Hook) 시스템 — 이벤트 기반 자동 작업 (예: 파일 저장 후 린트)
-      const hookConfig = await loadHookConfig(join(process.cwd(), ".dbcode"));
+      const hookConfig = await loadHookConfig(join(process.cwd(), ".dhelix"));
       const hookRunner = new HookRunner(hookConfig);
 
       _t = _profileLog("hooks loaded", _t);
@@ -612,7 +633,7 @@ function handleError(error: unknown): never {
   ) {
     const url = cause?.model ?? "the configured endpoint";
     process.stderr.write(
-      `Error: Cannot connect to ${url}.\nIs the server running? Check with: dbcode --base-url <url>\n`,
+      `Error: Cannot connect to ${url}.\nIs the server running? Check with: dhelix --base-url <url>\n`,
     );
     // 인증 에러 — API 키 설정 안내
   } else if (
@@ -621,7 +642,7 @@ function handleError(error: unknown): never {
     combined.includes("incorrect api key")
   ) {
     process.stderr.write(
-      `Error: Invalid API key.\nSet with: dbcode --api-key <key> or OPENAI_API_KEY env var\n`,
+      `Error: Invalid API key.\nSet with: dhelix --api-key <key> or OPENAI_API_KEY env var\n`,
     );
     // 모델 없음 에러 — 모델명 변경 안내
   } else if (
@@ -629,7 +650,7 @@ function handleError(error: unknown): never {
     (combined.includes("not found") && combined.includes("model"))
   ) {
     const model = cause?.model ?? "unknown";
-    process.stderr.write(`Error: Model '${model}' not found.\nTry: dbcode --model gpt-4o\n`);
+    process.stderr.write(`Error: Model '${model}' not found.\nTry: dhelix --model gpt-4o\n`);
     // 요청 제한 에러 — 잠시 후 재시도 안내
   } else if (combined.includes("rate limit") || combined.includes("429")) {
     process.stderr.write(`Error: Rate limited. Please wait a moment and try again.\n`);

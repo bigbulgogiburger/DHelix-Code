@@ -1,8 +1,8 @@
-# dbcode 개발 기획서: 52점 → 80점
+# dhelix 개발 기획서: 52점 → 80점
 
 > 작성자: 특급 Anthropic Claude Code 개발자 (신규 합류)
 > 작성일: 2026-03-07
-> 대상: dbcode CLI AI 코딩 어시스턴트
+> 대상: dhelix CLI AI 코딩 어시스턴트
 
 ---
 
@@ -13,7 +13,7 @@
 **생각보다 잘 만든 것:**
 
 - MCP 클라이언트 (`src/mcp/client.ts`) — JSON-RPC 2.0 완전 구현, stdio 트랜스포트, 환경변수 resolve까지. 스켈레톤이 아니라 **동작 가능한 수준**
-- Tool Bridge (`src/mcp/tool-bridge.ts`) — MCP 도구를 dbcode 도구 레지스트리에 자동 등록, 네임스페이싱(`mcp__server__tool`), deferred loading 판단까지 있음
+- Tool Bridge (`src/mcp/tool-bridge.ts`) — MCP 도구를 dhelix 도구 레지스트리에 자동 등록, 네임스페이싱(`mcp__server__tool`), deferred loading 판단까지 있음
 - Subagent spawner — 병렬 실행, 필터된 레지스트리, 격리된 이벤트 에미터. 구조가 Claude Code의 Agent tool과 거의 동일
 - Permission 시스템 — 3단계 체크(세션 승인 → 규칙 → 모드), 5가지 모드, glob 패턴 룰. 이건 프로덕션급
 
@@ -152,7 +152,7 @@ App.tsx → 3개 파일로 분리:
 **해야 할 것:**
 
 ```
-1. 설정 파일에서 MCP 서버 목록 로드 (~/.dbcode/mcp.json 또는 config)
+1. 설정 파일에서 MCP 서버 목록 로드 (~/.dhelix/mcp.json 또는 config)
 2. 부팅 시 각 서버에 connect()
 3. MCPToolBridge로 도구 자동 등록
 4. 시스템 프롬프트에 MCP 서버 안내 주입
@@ -392,14 +392,14 @@ App.tsx → 3개 파일로 분리:
 - [ ] `npm run ci` 스크립트: `typecheck && lint && test:coverage`
 - [ ] 커버리지 게이트: 70% 미만 시 CI 실패
 - [ ] npm 패키지 배포 준비 (`package.json` 정리, bin 필드)
-- [ ] `npx dbcode`로 실행 가능하도록 설정
+- [ ] `npx dhelix`로 실행 가능하도록 설정
 
 **예상 영향:** 프로덕션 준비도 40→55 (+1.5점)
 
 #### 4-3. README & 온보딩 (+1점)
 
 - [ ] README.md 정비 (설치, 설정, 사용법, 스크린샷)
-- [ ] `dbcode --help` 출력 개선
+- [ ] `dhelix --help` 출력 개선
 - [ ] 첫 실행 시 온보딩 플로우 (API 키 설정 가이드)
 
 ---
@@ -490,7 +490,7 @@ ROI     │   1-2 토큰     │  3-2 세션 복원 │
 
 ### Sprint 2 완료 기준
 
-- [ ] `~/.dbcode/mcp.json` 설정으로 MCP 서버 자동 연결
+- [ ] `~/.dhelix/mcp.json` 설정으로 MCP 서버 자동 연결
 - [ ] `rm -rf /` 명령 차단 확인
 - [ ] API 키가 tool result에 노출되지 않음 확인
 - [ ] 도구 11개 이상 등록
@@ -505,7 +505,7 @@ ROI     │   1-2 토큰     │  3-2 세션 복원 │
 
 - [ ] 테스트 커버리지 70% 이상
 - [ ] GitHub Actions CI 그린
-- [ ] `npx dbcode`로 설치 없이 실행 가능
+- [ ] `npx dhelix`로 설치 없이 실행 가능
 
 ---
 

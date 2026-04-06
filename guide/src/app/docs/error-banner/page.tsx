@@ -195,7 +195,7 @@ export default function ErrorBannerPage() {
                 <strong className="text-gray-900">network</strong> (&#128268;) &mdash; 키워드:{" "}
                 <code>econnrefused</code>, <code>timeout</code>, <code>network</code>,{" "}
                 <code>enotfound</code>, <code>socket</code> &rarr; &quot;네트워크를 확인하세요.
-                서버가 실행 중인지 확인: dbcode --base-url &lt;url&gt;&quot;
+                서버가 실행 중인지 확인: dhelix --base-url &lt;url&gt;&quot;
               </p>
               <p>
                 <strong className="text-gray-900">token_limit</strong> (&#128207;) &mdash; 키워드:{" "}

@@ -7,8 +7,8 @@
  *
  * 주니어 개발자를 위한 설명:
  * - 이 모듈은 AI 어시스턴트의 "장기 기억 저장소" 입니다
- * - 프로젝트 메모리: 해당 프로젝트에서만 사용되는 정보 ({프로젝트}/.dbcode/memory/)
- * - 전역 메모리: 모든 프로젝트에서 공유되는 정보 (~/.dbcode/memory/)
+ * - 프로젝트 메모리: 해당 프로젝트에서만 사용되는 정보 ({프로젝트}/.dhelix/memory/)
+ * - 전역 메모리: 모든 프로젝트에서 공유되는 정보 (~/.dhelix/memory/)
  * - 주제별 파일: 아키텍처, 디버깅, 패턴 등 주제별로 분리 저장 가능
  * - 파일이 너무 길어지지 않도록 줄 수 제한(maxMainLines, maxTopicLines)을 적용합니다
  */
@@ -22,7 +22,7 @@ import { BaseError } from "../utils/error.js";
  * 메모리 파일 저장 위치와 제한값 설정
  *
  * @property projectDir - 프로젝트 루트 디렉토리 경로
- * @property globalDir - 전역 메모리 디렉토리 경로 (~/.dbcode/memory/)
+ * @property globalDir - 전역 메모리 디렉토리 경로 (~/.dhelix/memory/)
  * @property maxMainLines - 메인 MEMORY.md의 최대 줄 수 (기본 200줄)
  * @property maxTopicLines - 주제별 파일의 최대 줄 수 (기본 500줄)
  */
@@ -59,7 +59,7 @@ export class MemoryStorageError extends BaseError {
   }
 }
 
-/** 프로젝트 메모리 디렉토리의 상대 경로 (.dbcode/memory/) */
+/** 프로젝트 메모리 디렉토리의 상대 경로 (.dhelix/memory/) */
 const PROJECT_MEMORY_DIR = `.${APP_NAME}/memory`;
 
 /** 메인 메모리 파일 이름 */
@@ -68,8 +68,8 @@ const MAIN_MEMORY_FILE = "MEMORY.md";
 /**
  * 프로젝트 디렉토리에 대한 기본 메모리 경로 설정을 생성합니다.
  *
- * 프로젝트 메모리: {projectDir}/.dbcode/memory/
- * 전역 메모리: ~/.dbcode/memory/
+ * 프로젝트 메모리: {projectDir}/.dhelix/memory/
+ * 전역 메모리: ~/.dhelix/memory/
  *
  * @param projectDir - 프로젝트 루트 디렉토리 경로
  * @returns 메모리 설정 객체
@@ -101,7 +101,7 @@ export async function readMainMemory(config: MemoryConfig): Promise<string> {
 
 /**
  * 주제별 메모리 파일을 읽습니다.
- * 예: readTopicMemory(config, "debugging") → .dbcode/memory/debugging.md를 읽음
+ * 예: readTopicMemory(config, "debugging") → .dhelix/memory/debugging.md를 읽음
  *
  * @param config - 메모리 설정
  * @param topic - 주제 이름 (예: "debugging", "patterns")

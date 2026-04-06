@@ -4,11 +4,11 @@
  * API 토큰은 LLM 서비스(OpenAI, Anthropic 등)에 인증하기 위한
  * 비밀 키입니다. 이 모듈은 두 가지 소스에서 토큰을 찾습니다:
  *
- * 1. 환경 변수 (최우선): DBCODE_API_KEY 또는 OPENAI_API_KEY
+ * 1. 환경 변수 (최우선): DHELIX_API_KEY 또는 OPENAI_API_KEY
  *    - CI/CD 파이프라인이나 Docker 환경에서 주로 사용
  *    - 파일에 토큰을 저장하지 않아 보안적으로 우수
  *
- * 2. 자격 증명 파일: ~/.dbcode/credentials.json
+ * 2. 자격 증명 파일: ~/.dhelix/credentials.json
  *    - 로컬 개발 환경에서 편리하게 사용
  *    - 파일 권한 0o600으로 소유자만 읽기/쓰기 가능하게 저장
  *
@@ -22,14 +22,14 @@ import { joinPath } from "../utils/path.js";
 import { CONFIG_DIR } from "../constants.js";
 import { AuthError } from "../utils/error.js";
 
-// 자격 증명 파일 경로: ~/.dbcode/credentials.json
+// 자격 증명 파일 경로: ~/.dhelix/credentials.json
 const TOKEN_FILE = joinPath(CONFIG_DIR, "credentials.json");
 
 /**
  * 환경 변수에서 API 토큰을 로드합니다.
  *
  * 확인하는 환경 변수 (우선순위 순):
- * 1. DBCODE_API_KEY — dbcode 전용 API 키
+ * 1. DHELIX_API_KEY — dhelix 전용 API 키
  * 2. OPENAI_API_KEY — OpenAI 호환 API 키 (많은 LLM 서비스가 이 이름을 사용)
  *
  * 환경 변수에서 로드된 토큰은 기본적으로 Bearer 인증 방식을 사용합니다.
@@ -38,7 +38,7 @@ const TOKEN_FILE = joinPath(CONFIG_DIR, "credentials.json");
  */
 function loadFromEnv(): TokenConfig | undefined {
   // || 연산자: 첫 번째 truthy 값을 반환 (빈 문자열도 falsy로 처리)
-  const apiKey = process.env.DBCODE_API_KEY || process.env.OPENAI_API_KEY;
+  const apiKey = process.env.DHELIX_API_KEY || process.env.OPENAI_API_KEY;
   if (apiKey) {
     return { method: "bearer", token: apiKey };
   }
@@ -46,7 +46,7 @@ function loadFromEnv(): TokenConfig | undefined {
 }
 
 /**
- * 자격 증명 파일(~/.dbcode/credentials.json)에서 토큰을 로드합니다.
+ * 자격 증명 파일(~/.dhelix/credentials.json)에서 토큰을 로드합니다.
  *
  * 파일 형식:
  * ```json
@@ -87,8 +87,8 @@ async function loadFromFile(): Promise<TokenConfig | undefined> {
  * 사용 가능한 모든 소스에서 API 토큰을 찾아 반환합니다.
  *
  * 우선순위:
- * 1. 환경 변수 (DBCODE_API_KEY, OPENAI_API_KEY) — 최우선
- * 2. 자격 증명 파일 (~/.dbcode/credentials.json) — 차선
+ * 1. 환경 변수 (DHELIX_API_KEY, OPENAI_API_KEY) — 최우선
+ * 2. 자격 증명 파일 (~/.dhelix/credentials.json) — 차선
  *
  * 모든 소스에서 토큰을 찾지 못하면 undefined를 반환합니다.
  *
@@ -124,7 +124,7 @@ export async function resolveToken(): Promise<ResolvedToken | undefined> {
  */
 export async function saveToken(config: TokenConfig): Promise<void> {
   try {
-    // 디렉토리가 없으면 생성 (~/.dbcode/)
+    // 디렉토리가 없으면 생성 (~/.dhelix/)
     await mkdir(CONFIG_DIR, { recursive: true });
 
     // JSON으로 직렬화 (보기 좋게 2칸 들여쓰기)

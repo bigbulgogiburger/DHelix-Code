@@ -47,7 +47,7 @@ export default function UseInputPage() {
                 동일한 UX를 제공합니다.
               </p>
               <p>
-                히스토리는 <code className="text-cyan-600">~/.dbcode/input-history.json</code>에
+                히스토리는 <code className="text-cyan-600">~/.dhelix/input-history.json</code>에
                 JSON 배열로 영속 저장됩니다. 앱을 재시작해도 이전 입력을 복원할 수 있으며, 중복
                 입력은 자동으로 제거되고 최신 위치로 이동합니다.
               </p>
@@ -64,7 +64,7 @@ export default function UseInputPage() {
               chart={`graph TD
   APP["App.tsx<br/><small>메인 앱 컴포넌트</small>"]
   INPUT["useInputHistory<br/><small>useInput.ts</small>"]
-  DISK["input-history.json<br/><small>~/.dbcode/</small>"]
+  DISK["input-history.json<br/><small>~/.dhelix/</small>"]
   UI["TextInput 컴포넌트<br/><small>입력창 UI</small>"]
   KB["useKeybindings<br/><small>키보드 단축키</small>"]
 
@@ -83,7 +83,7 @@ export default function UseInputPage() {
 
             <Callout type="info" icon="💡">
               <strong>비유:</strong> 터미널 쉘에서 위 화살표를 누르면 이전 명령어가 나오는 것처럼,
-              이 훅은 dbcode CLI에서 같은 경험을 제공합니다. 히스토리는 파일로 저장되어 앱을
+              이 훅은 dhelix CLI에서 같은 경험을 제공합니다. 히스토리는 파일로 저장되어 앱을
               종료하고 다시 열어도 유지됩니다.
             </Callout>
           </section>
@@ -526,7 +526,7 @@ export default function UseInputPage() {
                 &quot;앱을 재시작하면 히스토리가 사라져요&quot;
               </h4>
               <p className="text-[13px] text-gray-600 leading-relaxed mb-3">
-                <code className="text-cyan-600">~/.dbcode/input-history.json</code> 파일이
+                <code className="text-cyan-600">~/.dhelix/input-history.json</code> 파일이
                 존재하는지, 올바른 JSON 형식인지 확인하세요. 파일이 손상되면{" "}
                 <code className="text-cyan-600">loadHistory()</code>가 빈 배열을 반환합니다.
               </p>

@@ -797,7 +797,7 @@ export default function TokenCounterPage() {
                 <p className="text-[13px] text-gray-600 leading-relaxed">
                   현재 <code className="text-cyan-600 text-[12px]">o200k_base</code> 인코딩(OpenAI
                   계열)만 지원합니다. Claude, Llama 등 다른 모델은 자체 토크나이저를 사용하므로 실제
-                  토큰 수와 차이가 있을 수 있습니다. 그러나 dbcode는 OpenAI 호환 API를 사용하는 것이
+                  토큰 수와 차이가 있을 수 있습니다. 그러나 dhelix는 OpenAI 호환 API를 사용하는 것이
                   기본이므로, 대부분의 경우 이 인코딩으로 충분합니다. 향후 모델별 인코딩 전환 기능이
                   추가될 수 있습니다.
                 </p>

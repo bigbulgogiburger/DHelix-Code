@@ -11,7 +11,7 @@
 
 ```
 사용자: /init 실행
-dbcode: 파일 몇 개 읽고 (3~4번) → 갑자기 종료
+dhelix: 파일 몇 개 읽고 (3~4번) → 갑자기 종료
 상태바: "ready" (완료된 것처럼 보임)
 사용자: 작업이 끝난 건지 기다려야 하는 건지 알 수 없음
 ```
@@ -148,7 +148,7 @@ config.events.emit("agent:complete", { iterations, aborted: false });
 | 서브에이전트      | spawner.ts:717            | `[subagent] Spawning {type}: client={class}, model={model}`                     |
 | 서브에이전트 종료 | spawner.ts:848            | `[subagent] {type} ended: iterations={n}, response.length={n}`                  |
 
-**로그 조건**: `DBCODE_VERBOSE=1` 또는 `--verbose` 플래그 시에만 출력 (stderr)
+**로그 조건**: `DHELIX_VERBOSE=1` 또는 `--verbose` 플래그 시에만 출력 (stderr)
 
 ### Phase 2: 진짜 원인 확인 후 코드 수정
 

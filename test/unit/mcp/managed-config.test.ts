@@ -43,7 +43,7 @@ describe("MCPManagedConfig", () => {
   describe("constructor", () => {
     it("should use default path when no path provided", () => {
       const mc = new MCPManagedConfig();
-      // We verify default path indirectly by loading — it reads from ~/.dbcode/managed-mcp.json
+      // We verify default path indirectly by loading — it reads from ~/.dhelix/managed-mcp.json
       expect(mc).toBeDefined();
     });
 
@@ -906,14 +906,14 @@ describe("MCPManagedConfig", () => {
   // ─── Default config path ──────────────────────────────────────────
 
   describe("default config path", () => {
-    it("should read from ~/.dbcode/managed-mcp.json by default", async () => {
+    it("should read from ~/.dhelix/managed-mcp.json by default", async () => {
       mockReadFile.mockRejectedValueOnce(new Error("ENOENT"));
 
       const mc = new MCPManagedConfig();
       await mc.load();
 
       expect(mockReadFile).toHaveBeenCalledWith(
-        join(homedir(), ".dbcode", "managed-mcp.json"),
+        join(homedir(), ".dhelix", "managed-mcp.json"),
         "utf-8",
       );
     });

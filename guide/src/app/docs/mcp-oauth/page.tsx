@@ -48,7 +48,7 @@ export default function MCPOAuthPage() {
               </p>
               <p>
                 발급된 토큰은 메모리에 캐시하고 디스크 (
-                <code className="text-cyan-600">~/.dbcode/oauth-tokens/</code>)에 영속 저장합니다.
+                <code className="text-cyan-600">~/.dhelix/oauth-tokens/</code>)에 영속 저장합니다.
                 프로그램 재시작 시 디스크에서 토큰을 로드하여 재인증을 방지합니다. 액세스 토큰이
                 만료되면 리프레시 토큰으로 자동 갱신합니다.
               </p>
@@ -68,7 +68,7 @@ export default function MCPOAuthPage() {
   CALLBACK -->|"4. 인증 코드 전달"| MGR
   MGR -->|"5. 코드 → 토큰 교환"| AUTH["인증 서버<br/><small>토큰 엔드포인트</small>"]
   AUTH -->|"6. 토큰 발급"| MGR
-  MGR -->|"7. 저장"| DISK["디스크 저장<br/><small>~/.dbcode/oauth-tokens/</small>"]
+  MGR -->|"7. 저장"| DISK["디스크 저장<br/><small>~/.dhelix/oauth-tokens/</small>"]
 
   style MGR fill:#ede9fe,stroke:#8b5cf6,color:#1e293b,stroke-width:3px
   style USER fill:#e0e7ff,stroke:#3b82f6,color:#1e293b
@@ -335,7 +335,7 @@ export default function MCPOAuthPage() {
               <li>
                 토큰 파일은{" "}
                 <code className="text-cyan-600">
-                  ~/.dbcode/oauth-tokens/{"{"}서버이름{"}"}.json
+                  ~/.dhelix/oauth-tokens/{"{"}서버이름{"}"}.json
                 </code>
                 에 저장됩니다. 이 디렉토리의 권한을 적절히 관리하세요.
               </li>
@@ -460,7 +460,7 @@ export default function MCPOAuthPage() {
               <span className="fn">revokeToken</span>(
               <span className="str">&quot;my-server&quot;</span>);
               {"\n"}
-              <span className="cm">{"// ~/.dbcode/oauth-tokens/my-server.json 파일도 삭제됨"}</span>
+              <span className="cm">{"// ~/.dhelix/oauth-tokens/my-server.json 파일도 삭제됨"}</span>
             </CodeBlock>
 
             <Callout type="tip" icon="*">
@@ -480,7 +480,7 @@ export default function MCPOAuthPage() {
                 </p>
                 <p>
                   <strong className="text-gray-900">2. 디스크 로드</strong> &mdash; 메모리에 없으면{" "}
-                  <code className="text-cyan-600">~/.dbcode/oauth-tokens/</code>에서 읽습니다.
+                  <code className="text-cyan-600">~/.dhelix/oauth-tokens/</code>에서 읽습니다.
                 </p>
                 <p>
                   <strong className="text-gray-900">3. 만료 확인</strong> &mdash; 토큰을 찾았으면
@@ -668,7 +668,7 @@ export default function MCPOAuthPage() {
                   수 있습니다. 인증 서버의 설정에서 리프레시 토큰 발급을 확인하세요.
                 </li>
                 <li>
-                  토큰 파일(<code className="text-cyan-600">~/.dbcode/oauth-tokens/</code>)의 쓰기
+                  토큰 파일(<code className="text-cyan-600">~/.dhelix/oauth-tokens/</code>)의 쓰기
                   권한이 없으면 디스크에 저장되지 않아, 프로그램 재시작 시 토큰이 사라집니다.
                 </li>
               </ul>

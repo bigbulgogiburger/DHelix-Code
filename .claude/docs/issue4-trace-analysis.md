@@ -2,7 +2,7 @@
 
 > 작성일: 2026-03-19
 > 심각도: **P0 (프로덕션 블로커)**
-> 근거: `DBCODE_VERBOSE=1` 트레이스 로그 실측 데이터
+> 근거: `DHELIX_VERBOSE=1` 트레이스 로그 실측 데이터
 
 ---
 
@@ -256,7 +256,7 @@ for (const callId of functionCallIds) {
 
 수정 후:
 
-- [ ] `DBCODE_VERBOSE=1`로 실행
+- [ ] `DHELIX_VERBOSE=1`로 실행
 - [ ] `/init` → explore 서브에이전트가 5회 이상 반복하는지 확인
 - [ ] circuit breaker가 도구 호출 중에는 발동하지 않는지 확인
 - [ ] 서브에이전트 실패 후 메인 루프가 400 에러 없이 계속하는지 확인

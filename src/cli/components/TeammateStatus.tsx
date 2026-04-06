@@ -64,11 +64,11 @@ const STATUS_ICONS: Record<string, string> = {
   cancelled: "\u2298", // ⊘
 };
 
-/** 팀 멤버 상태별 색상 — 대기=회색, 실행 중=노랑, 완료=초록, 실패=빨강, 취소=회색 */
+/** 팀 멤버 상태별 색상 — 대기=회색, 실행 중=노랑, 완료=밝은시안, 실패=빨강, 취소=회색 */
 const STATUS_COLORS: Record<string, string> = {
   pending: "gray",
   running: "yellow",
-  completed: "green",
+  completed: "#00E5FF",
   failed: "red",
   cancelled: "gray",
 };
@@ -187,7 +187,7 @@ export const TeammateIndicator = React.memo(function TeammateIndicator({
   }
 
   const allDone = aggregate.completed === aggregate.total && aggregate.total > 0;
-  const indicatorColor = allDone ? "green" : "yellow";
+  const indicatorColor = allDone ? "#00E5FF" : "yellow";
 
   return (
     <Box>
@@ -219,7 +219,7 @@ export const TeammateDetailPanel = React.memo(function TeammateDetailPanel({
         const progress = getTeamProgress(team.members);
         const displayTeamName = truncateString(team.name, MAX_TEAM_NAME_LENGTH);
         const isTeamDone = progress.completed === progress.total && progress.total > 0;
-        const borderColor = isTeamDone ? "green" : "yellow";
+        const borderColor = isTeamDone ? "#00E5FF" : "yellow";
 
         return (
           <Box

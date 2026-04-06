@@ -228,7 +228,7 @@ export class OTelExporter {
     }> = [];
 
     for (const [key, values] of counterData) {
-      // 키에서 메트릭 이름 추출 (예: "dbcode.tokens.total{type=input}" → "dbcode.tokens.total")
+      // 키에서 메트릭 이름 추출 (예: "dhelix.tokens.total{type=input}" → "dhelix.tokens.total")
       const name = key.split("{")[0];
       const dataPoints: OTLPDataPoint[] = values.map((v) => ({
         attributes: Object.entries(v.labels).map(([k, val]) => ({

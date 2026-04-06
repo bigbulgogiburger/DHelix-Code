@@ -10,6 +10,10 @@ function makeSkill(overrides: {
   readonly description?: string;
   readonly userInvocable?: boolean;
   readonly argumentHint?: string;
+  readonly context?: "inline" | "fork";
+  readonly agent?: "explore" | "plan" | "general";
+  readonly model?: string | null;
+  readonly allowedTools?: readonly string[];
 }): SkillDefinition {
   return {
     frontmatter: {
@@ -18,8 +22,10 @@ function makeSkill(overrides: {
       userInvocable: overrides.userInvocable ?? true,
       disableModelInvocation: false,
       argumentHint: overrides.argumentHint,
-      model: null,
-      context: "inline",
+      model: overrides.model ?? null,
+      context: overrides.context ?? "inline",
+      agent: overrides.agent,
+      allowedTools: overrides.allowedTools as string[] | undefined,
       hooks: [],
     },
     body: `Body of ${overrides.name}`,
@@ -48,7 +54,6 @@ function makeMockSkillManager(options: {
   return {
     getUserInvocable: vi.fn().mockReturnValue(invocableSkills),
     execute: vi.fn().mockResolvedValue(executeResult),
-    // Include other methods to satisfy the type (unused but present)
     getAll: vi.fn().mockReturnValue([]),
     get: vi.fn().mockReturnValue(undefined),
     has: vi.fn().mockReturnValue(false),
@@ -65,9 +70,12 @@ describe("createSkillCommands", () => {
     vi.clearAllMocks();
   });
 
+  // -------------------------------------------------------------------------
+  // Command creation
+  // -------------------------------------------------------------------------
+
   it("should return empty array when no user-invocable skills exist", () => {
     mockManager = makeMockSkillManager({ invocableSkills: [] });
-
     const commands = createSkillCommands(mockManager);
     expect(commands).toEqual([]);
   });
@@ -78,7 +86,6 @@ describe("createSkillCommands", () => {
       makeSkill({ name: "review", description: "Review code" }),
     ];
     mockManager = makeMockSkillManager({ invocableSkills: skills });
-
     const commands = createSkillCommands(mockManager);
     expect(commands).toHaveLength(2);
   });
@@ -86,7 +93,6 @@ describe("createSkillCommands", () => {
   it("should set correct name on generated command", () => {
     const skills = [makeSkill({ name: "deploy" })];
     mockManager = makeMockSkillManager({ invocableSkills: skills });
-
     const commands = createSkillCommands(mockManager);
     expect(commands[0].name).toBe("deploy");
   });
@@ -94,7 +100,6 @@ describe("createSkillCommands", () => {
   it("should prefix description with [skill]", () => {
     const skills = [makeSkill({ name: "lint", description: "Run linter" })];
     mockManager = makeMockSkillManager({ invocableSkills: skills });
-
     const commands = createSkillCommands(mockManager);
     expect(commands[0].description).toBe("[skill] Run linter");
   });
@@ -102,7 +107,6 @@ describe("createSkillCommands", () => {
   it("should set usage with argument hint when present", () => {
     const skills = [makeSkill({ name: "review", argumentHint: "<file>" })];
     mockManager = makeMockSkillManager({ invocableSkills: skills });
-
     const commands = createSkillCommands(mockManager);
     expect(commands[0].usage).toBe("/review <file>");
   });
@@ -110,13 +114,25 @@ describe("createSkillCommands", () => {
   it("should set usage without argument hint when absent", () => {
     const skills = [makeSkill({ name: "status" })];
     mockManager = makeMockSkillManager({ invocableSkills: skills });
-
     const commands = createSkillCommands(mockManager);
     expect(commands[0].usage).toBe("/status");
   });
 
+  it("should only include userInvocable skills (non-invocable are excluded)", () => {
+    // getUserInvocable already filters — this verifies the contract
+    const invocable = [makeSkill({ name: "public-cmd" })];
+    mockManager = makeMockSkillManager({ invocableSkills: invocable });
+    const commands = createSkillCommands(mockManager);
+    expect(commands).toHaveLength(1);
+    expect(commands[0].name).toBe("public-cmd");
+  });
+
+  // -------------------------------------------------------------------------
+  // Execute — inline skill
+  // -------------------------------------------------------------------------
+
   describe("execute — inline skill", () => {
-    it("should return shouldInjectAsUserMessage for inline skills", async () => {
+    it("should return shouldInjectAsUserMessage=true for inline skills", async () => {
       const inlineResult: SkillExecutionResult = {
         prompt: "Please commit the changes",
         fork: false,
@@ -127,8 +143,7 @@ describe("createSkillCommands", () => {
       });
 
       const commands = createSkillCommands(mockManager);
-      const ctx = makeCommandContext();
-      const result = await commands[0].execute("fix auth", ctx);
+      const result = await commands[0].execute("fix auth", makeCommandContext());
 
       expect(result.success).toBe(true);
       expect(result.shouldInjectAsUserMessage).toBe(true);
@@ -150,6 +165,23 @@ describe("createSkillCommands", () => {
       const result = await commands[0].execute("", makeCommandContext());
 
       expect(result.modelOverride).toBe("claude-opus-4-20250514");
+    });
+
+    it("should NOT have modelOverride when skill does not specify model", async () => {
+      const inlineResult: SkillExecutionResult = {
+        prompt: "output",
+        fork: false,
+        // model is undefined
+      };
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "simple" })],
+        executeResult: inlineResult,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const result = await commands[0].execute("", makeCommandContext());
+
+      expect(result.modelOverride).toBeUndefined();
     });
 
     it("should pass args and context to skillManager.execute", async () => {
@@ -177,21 +209,9 @@ describe("createSkillCommands", () => {
     });
   });
 
-  describe("execute — skill not found / execution failure", () => {
-    it("should return error result when skill execution returns null", async () => {
-      mockManager = makeMockSkillManager({
-        invocableSkills: [makeSkill({ name: "broken" })],
-        executeResult: null,
-      });
-
-      const commands = createSkillCommands(mockManager);
-      const result = await commands[0].execute("", makeCommandContext());
-
-      expect(result.success).toBe(false);
-      expect(result.output).toContain("broken");
-      expect(result.output).toContain("failed");
-    });
-  });
+  // -------------------------------------------------------------------------
+  // Execute — fork skill
+  // -------------------------------------------------------------------------
 
   describe("execute — fork skill", () => {
     it("should emit skill:fork event for fork skills", async () => {
@@ -220,6 +240,23 @@ describe("createSkillCommands", () => {
         agentType: "explore",
         allowedTools: ["file_read", "grep_search"],
       });
+    });
+
+    it("should NOT set shouldInjectAsUserMessage for fork skills", async () => {
+      const forkResult: SkillExecutionResult = {
+        prompt: "Fork prompt",
+        fork: true,
+        agentType: "general",
+      };
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "fork-cmd" })],
+        executeResult: forkResult,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const result = await commands[0].execute("", makeCommandContext());
+
+      expect(result.shouldInjectAsUserMessage).toBeUndefined();
     });
 
     it("should use 'general' as default agent type label when agentType is undefined", async () => {
@@ -264,7 +301,64 @@ describe("createSkillCommands", () => {
         allowedTools: undefined,
       });
     });
+
+    it("should emit skill:fork with allowedTools from result", async () => {
+      const forkResult: SkillExecutionResult = {
+        prompt: "Restricted fork",
+        fork: true,
+        agentType: "explore",
+        allowedTools: ["bash", "file_read"],
+      };
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "restricted-fork" })],
+        executeResult: forkResult,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const emitFn = vi.fn();
+      await commands[0].execute("", makeCommandContext({ emit: emitFn }));
+
+      const emittedData = emitFn.mock.calls[0][1] as Record<string, unknown>;
+      expect(emittedData.allowedTools).toEqual(["bash", "file_read"]);
+    });
   });
+
+  // -------------------------------------------------------------------------
+  // Execute — failure
+  // -------------------------------------------------------------------------
+
+  describe("execute — skill execution failure", () => {
+    it("should return success=false when skill execution returns null", async () => {
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "broken" })],
+        executeResult: null,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const result = await commands[0].execute("", makeCommandContext());
+
+      expect(result.success).toBe(false);
+      expect(result.output).toContain("broken");
+      expect(result.output).toContain("failed");
+    });
+
+    it("should NOT emit skill:fork event when execution fails", async () => {
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "fail-fork" })],
+        executeResult: null,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const emitFn = vi.fn();
+      await commands[0].execute("", makeCommandContext({ emit: emitFn }));
+
+      expect(emitFn).not.toHaveBeenCalled();
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Multiple commands independence
+  // -------------------------------------------------------------------------
 
   describe("multiple commands independence", () => {
     it("should generate independent commands that target their own skill name", async () => {
