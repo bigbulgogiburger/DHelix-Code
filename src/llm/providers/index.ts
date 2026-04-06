@@ -63,3 +63,12 @@ export {
   GROQ_MANIFEST,
   resolveGroqApiKey,
 } from "./groq.js";
+
+// Local model 프로바이더 (Ollama/LMStudio)
+export {
+  LocalModelProvider,
+  LOCAL_MODEL_MANIFEST,
+  resolveOllamaEndpoint,
+  resolveLMStudioEndpoint,
+  resolveLocalEndpoint,
+} from "./local.js";

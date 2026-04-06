@@ -33,3 +33,9 @@ export {
   type StageMetrics,
   type RuntimeMetricsSnapshot,
 } from "./metrics.js";
+
+export {
+  AsyncCompactionEngine,
+  type CompactionTicket,
+  type CompactionResult,
+} from "./async-compaction.js";

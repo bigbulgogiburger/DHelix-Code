@@ -37,6 +37,7 @@ import { AZURE_OPENAI_MANIFEST } from "./azure-openai.js";
 import { AWS_BEDROCK_MANIFEST } from "./aws-bedrock.js";
 import { MISTRAL_MANIFEST } from "./mistral.js";
 import { GROQ_MANIFEST } from "./groq.js";
+import { LOCAL_MODEL_MANIFEST } from "./local.js";
 
 // ─── 기본 프로바이더 매니페스트 ───────────────────────────────────────
 
@@ -460,6 +461,17 @@ export class ProviderRegistry {
       );
     });
 
+    // Local model 프로바이더 등록 (Ollama/LMStudio)
+    registry.register(LOCAL_MODEL_MANIFEST, () => {
+      if (overrides.localFactory) {
+        return overrides.localFactory();
+      }
+      throw new LLMError(
+        "Local model provider factory not configured. " +
+          "Use ProviderRegistry.create({ localFactory }) or register manually.",
+      );
+    });
+
     return registry;
   }
 }
@@ -484,4 +496,6 @@ export interface DefaultRegistryOverrides {
   readonly mistralFactory?: ProviderFactory;
   /** Groq 프로바이더 팩토리 */
   readonly groqFactory?: ProviderFactory;
+  /** Local model (Ollama/LMStudio) 프로바이더 팩토리 */
+  readonly localFactory?: ProviderFactory;
 }
