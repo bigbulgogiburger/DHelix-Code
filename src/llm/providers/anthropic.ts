@@ -19,16 +19,18 @@
  * - 529 상태 코드 (Anthropic 과부하)를 Rate Limit으로 처리
  */
 import {
-  type LLMProvider,
   type ChatRequest,
   type ChatResponse,
   type ChatChunk,
   type ChatMessage,
   type ToolCallRequest,
   type ToolDefinitionForLLM,
+  type TokenUsage,
 } from "../provider.js";
 import { LLMError } from "../../utils/error.js";
 import type { AppEventEmitter } from "../../utils/events.js";
+import type { UnifiedLLMProvider, ProviderHealthStatus, CostEstimate } from "./types.js";
+import { ANTHROPIC_MANIFEST } from "./registry.js";
 
 // ─── API 상수 ────────────────────────────────────────────────────────
 
@@ -511,7 +513,7 @@ async function* parseSSEStream(
  * - Extended Thinking: 모델의 내부 사고 과정을 받아올 수 있음
  * - 스트리밍 유휴 타임아웃: 청크 수신 시 타이머를 리셋하여 느린 응답도 허용
  */
-export class AnthropicProvider implements LLMProvider {
+export class AnthropicProvider implements UnifiedLLMProvider {
   readonly name = "anthropic";
   /** API 인증 키 */
   private readonly apiKey: string;
@@ -1043,5 +1045,74 @@ export class AnthropicProvider implements LLMProvider {
    */
   countTokens(text: string): number {
     return Math.ceil(text.length / 4);
+  }
+
+  // ─── UnifiedLLMProvider 구현 ──────────────────────────────────────
+
+  /** 프로바이더 매니페스트 — 모델 목록, 기능, 인증 방식 */
+  readonly manifest = ANTHROPIC_MANIFEST;
+
+  /**
+   * Anthropic API 연결 상태를 확인합니다.
+   *
+   * `/v1/models` 엔드포인트로 간단한 GET 요청을 보내
+   * 인증 + 연결 상태를 검증합니다.
+   */
+  async healthCheck(): Promise<ProviderHealthStatus> {
+    const start = Date.now();
+    try {
+      const response = await fetch(`${this.baseURL}/v1/models`, {
+        method: "GET",
+        headers: {
+          "x-api-key": this.apiKey,
+          "anthropic-version": "2023-06-01",
+        },
+        signal: AbortSignal.timeout(5_000),
+      });
+
+      if (!response.ok) {
+        return {
+          healthy: false,
+          latencyMs: Date.now() - start,
+          error: `HTTP ${response.status}: ${response.statusText}`,
+        };
+      }
+
+      return {
+        healthy: true,
+        latencyMs: Date.now() - start,
+      };
+    } catch (err) {
+      return {
+        healthy: false,
+        latencyMs: Date.now() - start,
+        error: err instanceof Error ? err.message : String(err),
+      };
+    }
+  }
+
+  /**
+   * 토큰 사용 비용을 예측합니다.
+   *
+   * Anthropic 모델별 가격을 기반으로 정확한 비용을 계산합니다.
+   *
+   * @param tokens - 토큰 사용량
+   * @param modelId - 모델 ID (선택적)
+   */
+  estimateCost(tokens: TokenUsage, modelId?: string): CostEstimate {
+    const model = modelId
+      ? this.manifest.models.find((m) => modelId.startsWith(m.id))
+      : undefined;
+    const pricing = model?.pricing ?? this.manifest.models[0]!.pricing;
+
+    const inputCost = (tokens.promptTokens / 1_000_000) * pricing.input;
+    const outputCost = (tokens.completionTokens / 1_000_000) * pricing.output;
+
+    return {
+      inputCost,
+      outputCost,
+      totalCost: inputCost + outputCost,
+      currency: "USD",
+    };
   }
 }

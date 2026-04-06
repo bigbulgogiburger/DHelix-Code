@@ -372,16 +372,21 @@ export class ProviderRegistry {
 
     // Anthropic 프로바이더 등록
     registry.register(ANTHROPIC_MANIFEST, () => {
-      // 동적 import를 피하고, 호출자가 제공한 팩토리 사용 또는 기본 로직
       if (overrides.anthropicFactory) {
         return overrides.anthropicFactory();
       }
-      // 기본 팩토리: AnthropicProvider를 직접 생성하지 않고,
-      // 호출 시점에 동적으로 import하여 순환 의존성 방지
-      throw new LLMError(
-        "Anthropic provider factory not configured. " +
-          "Use ProviderRegistry.create({ anthropicFactory }) or register manually.",
-      );
+      // AnthropicProvider는 UnifiedLLMProvider를 직접 구현하므로 어댑터 불필요
+      try {
+        // lazy import로 순환 의존성 방지 — 실제 resolve 시점에만 로드
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        const { AnthropicProvider } = require("./anthropic.js") as { AnthropicProvider: new () => UnifiedLLMProvider };
+        return new AnthropicProvider();
+      } catch {
+        throw new LLMError(
+          "Anthropic provider factory not configured. " +
+            "Use ProviderRegistry.create({ anthropicFactory }) or register manually.",
+        );
+      }
     });
 
     // OpenAI Compatible 프로바이더 등록
