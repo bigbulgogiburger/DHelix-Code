@@ -44,6 +44,8 @@ interface StatusBarProps {
   readonly thinkingEnabled?: boolean;
   /** MCP 연결 상태 메시지 (일시적으로 표시됨) */
   readonly mcpStatus?: string;
+  /** Names of currently executing tools */
+  readonly activeToolNames?: readonly string[];
 }
 
 /** 토큰 수와 모델 가격 정보로 세션 비용을 계산 — model-capabilities가 단일 진실 공급원(SSOT) */
@@ -89,6 +91,7 @@ export const StatusBar = React.memo(function StatusBar({
   verboseMode,
   thinkingEnabled,
   mcpStatus,
+  activeToolNames,
 }: StatusBarProps) {
   const usage = maxTokens > 0 ? Math.round((tokenCount / maxTokens) * 100) : 0;
   const ratio = maxTokens > 0 ? tokenCount / maxTokens : 0;
@@ -135,13 +138,19 @@ export const StatusBar = React.memo(function StatusBar({
       <Box gap={1}>
         {mcpStatus ? <Text color="cyan">{mcpStatus}</Text> : null}
         {(() => {
-          if (agentPhase === "llm-thinking") return <Text color="yellow">thinking...</Text>;
-          if (agentPhase === "llm-streaming") return <Text color="yellow">streaming...</Text>;
-          if (agentPhase === "tools-running") return <Text color="cyan">tools running...</Text>;
-          if (agentPhase === "tools-done") return <Text color="cyan">preparing...</Text>;
-          if (isStreaming) return <Text color="yellow">streaming...</Text>;
-          return <Text color="gray">ready</Text>;
+          if (agentPhase === "llm-thinking") return <Text color="yellow">{"🧠 thinking..."}</Text>;
+          if (agentPhase === "llm-streaming") return <Text color="yellow">{"✍️ writing..."}</Text>;
+          if (agentPhase === "tools-running") return <Text color="cyan">{"⚙️ executing tools..."}</Text>;
+          if (agentPhase === "tools-done") return <Text color="cyan">{"📋 reviewing results..."}</Text>;
+          if (isStreaming) return <Text color="yellow">{"✍️ writing..."}</Text>;
+          return <Text color="green">{"● ready"}</Text>;
         })()}
+        {activeToolNames && activeToolNames.length > 0 && (
+          <Text dimColor>({activeToolNames.join(", ")})</Text>
+        )}
+        {!isStreaming && !agentPhase && (
+          <Text dimColor> · / for commands</Text>
+        )}
       </Box>
     </Box>
   );

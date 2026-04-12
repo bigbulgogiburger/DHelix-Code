@@ -16,6 +16,7 @@
  */
 import { z } from "zod";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
+import { createToolStreamEmitter } from "../streaming.js";
 
 // --- 15분 응답 캐시 ---
 
@@ -275,11 +276,14 @@ async function fetchWithRedirectTracking(
  * @returns 가져온 텍스트 콘텐츠
  */
 async function execute(params: Params, context: ToolContext): Promise<ToolResult> {
+  // 스트리밍 emitter 생성 — 다운로드 진행 상태를 실시간으로 발행
+  const stream = createToolStreamEmitter(context, context.toolCallId ?? "unknown", "web_fetch");
   const url = params.url;
 
   // 1단계: 캐시에서 먼저 확인 — 15분 이내에 같은 URL을 요청했으면 캐시에서 반환
   const cached = getCachedEntry(url);
   if (cached) {
+    stream.complete("Fetch complete (cached)", { bytesProcessed: cached.content.length });
     let output = cached.content;
     const truncated = output.length > params.maxLength;
     if (truncated) {
@@ -307,6 +311,8 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       },
     };
   }
+
+  stream.progress("Fetching URL...", { percentComplete: 0 });
 
   // 2단계: HTTP → HTTPS 업그레이드 — http:// URL은 보안을 위해 https://로 먼저 시도
   const httpsUrl = upgradeToHttps(url);
@@ -393,6 +399,8 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     }
 
     parts.push(output);
+
+    stream.complete("Fetch complete", { bytesProcessed: text.length });
 
     return {
       output: parts.join("\n\n"),

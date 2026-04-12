@@ -38,6 +38,23 @@ export interface RecoveryStrategy {
  */
 export const RECOVERY_STRATEGIES: readonly RecoveryStrategy[] = [
   {
+    // Rate limit (429) — the LLM client may have already retried with Retry-After,
+    // but if it surfaces to the agent loop, we should wait longer
+    errorPattern: /429|rate.?limit|too many requests/i,
+    action: "retry",
+    maxRetries: 2,
+    backoffMs: 5000,
+    description: "Rate limited — waiting before retry",
+  },
+  {
+    // Server overload (503) — brief wait before retry
+    errorPattern: /503|service unavailable|overloaded/i,
+    action: "retry",
+    maxRetries: 1,
+    backoffMs: 3000,
+    description: "Server temporarily overloaded — retrying shortly",
+  },
+  {
     // 컨텍스트 윈도우(대화 길이) 초과 에러
     // -> 오래된 메시지를 요약·압축하여 토큰 수를 줄인 뒤 재시도
     errorPattern: /request too large|context.*exceed|token.*limit/i,
@@ -104,4 +121,23 @@ export const RECOVERY_STRATEGIES: readonly RecoveryStrategy[] = [
  */
 export function findRecoveryStrategy(error: Error): RecoveryStrategy | undefined {
   return RECOVERY_STRATEGIES.find((s) => s.errorPattern.test(error.message));
+}
+
+/**
+ * Returns a user-facing explanation of the recovery action being taken.
+ * Used by the UI to show clear, non-technical messages during error recovery.
+ */
+export function getRecoveryExplanation(strategy: RecoveryStrategy, attempt: number): string {
+  const { action, description, maxRetries } = strategy;
+
+  switch (action) {
+    case "compact":
+      return `Context too large — compressing conversation history to continue (${description})`;
+    case "retry":
+      return `${description} (attempt ${attempt}/${maxRetries})`;
+    case "fallback-strategy":
+      return `Switching to alternative approach — ${description}`;
+    default:
+      return description;
+  }
 }

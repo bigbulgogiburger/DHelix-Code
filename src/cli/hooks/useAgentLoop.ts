@@ -562,6 +562,13 @@ export function useAgentLoop({
               }
             : undefined;
 
+        // Apply effort level to maxTokens — /effort command adjusts reasoning depth
+        // "low" = 1024, "medium" = 2048, "high" = 4096 (default), "max" = 8192
+        // Cap at model's maxOutputTokens to avoid API errors
+        const { getEffortLevel, getEffortConfig } = await import("../../commands/effort.js");
+        const effortConfig = getEffortConfig(getEffortLevel());
+        const effectiveMaxTokens = Math.min(effortConfig.maxTokens, modelCaps.maxOutputTokens);
+
         const result = await runAgentLoop(
           {
             client: clientRef.current,
@@ -571,7 +578,7 @@ export function useAgentLoop({
             events,
             useStreaming: true,
             maxContextTokens: modelCaps.maxContextTokens,
-            maxTokens: modelCaps.maxOutputTokens,
+            maxTokens: effectiveMaxTokens,
             checkPermission,
             checkpointManager,
             sessionId,

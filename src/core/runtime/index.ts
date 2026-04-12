@@ -40,4 +40,4 @@ export {
   type CompactionResult,
 } from "./async-compaction.js";
 
-export { createRuntimeContext, type CreateContextOptions } from "./context-factory.js";
+export { createRuntimeContext } from "./context-factory.js";

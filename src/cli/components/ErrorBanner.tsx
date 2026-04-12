@@ -36,63 +36,87 @@ interface ErrorClassification {
 function classifyError(message: string): ErrorClassification {
   const lower = message.toLowerCase();
 
-  if (lower.includes("429") || lower.includes("rate limit") || lower.includes("rate_limit")) {
+  // Rate limiting
+  if (lower.includes("429") || lower.includes("rate limit") || lower.includes("rate_limit") || lower.includes("too many requests")) {
     return {
       type: "rate_limit",
       icon: "\u23F3",
-      guide:
-        "API \uC0AC\uC6A9\uB7C9\uC774 \uCD08\uACFC\uB418\uC5C8\uC2B5\uB2C8\uB2E4. \uC7A0\uC2DC \uD6C4 \uB2E4\uC2DC \uC2DC\uB3C4\uD574\uC8FC\uC138\uC694.",
+      guide: "Rate limit exceeded. Will retry automatically. / API \uC0AC\uC6A9\uB7C9 \uCD08\uACFC, \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uD569\uB2C8\uB2E4.",
     };
   }
 
+  // Network errors
   if (
     lower.includes("econnrefused") ||
+    lower.includes("econnreset") ||
     lower.includes("timeout") ||
     lower.includes("network") ||
     lower.includes("enotfound") ||
-    lower.includes("socket")
+    lower.includes("socket") ||
+    lower.includes("etimedout")
   ) {
     return {
       type: "network",
       icon: "\uD83D\uDD0C",
-      guide:
-        "\uB124\uD2B8\uC6CC\uD06C\uB97C \uD655\uC778\uD558\uC138\uC694. \uC11C\uBC84\uAC00 \uC2E4\uD589 \uC911\uC778\uC9C0 \uD655\uC778: dhelix --base-url <url>",
+      guide: "Check your network connection and server status. / \uB124\uD2B8\uC6CC\uD06C \uC5F0\uACB0\uC744 \uD655\uC778\uD558\uC138\uC694.",
     };
   }
 
+  // Context/token limit
   if (
     lower.includes("too many tokens") ||
     lower.includes("request too large") ||
-    lower.includes("context_length")
+    lower.includes("context_length") ||
+    lower.includes("context") && lower.includes("exceed") ||
+    lower.includes("token") && lower.includes("limit")
   ) {
     return {
       type: "token_limit",
       icon: "\uD83D\uDCCF",
-      guide:
-        "\uB300\uD654\uAC00 \uB108\uBB34 \uAE41\uB2C8\uB2E4. /compact\uB85C \uC555\uCD95\uD558\uC138\uC694.",
+      guide: "Conversation too long. Use /compact to compress. / \uB300\uD654\uAC00 \uB108\uBB34 \uAE41\uB2C8\uB2E4. /compact\uB85C \uC555\uCD95\uD558\uC138\uC694.",
     };
   }
 
+  // Authentication
   if (
     lower.includes("401") ||
     lower.includes("unauthorized") ||
     lower.includes("api key") ||
-    lower.includes("api_key")
+    lower.includes("api_key") ||
+    lower.includes("invalid") && lower.includes("key") ||
+    lower.includes("forbidden")
   ) {
     return {
       type: "auth",
       icon: "\uD83D\uDD11",
-      guide:
-        "API \uD0A4\uAC00 \uC720\uD6A8\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4. --api-key \uB610\uB294 \uD658\uACBD\uBCC0\uC218\uB97C \uD655\uC778\uD558\uC138\uC694.",
+      guide: "Invalid API key. Check --api-key or environment variable. / API \uD0A4\uAC00 \uC720\uD6A8\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.",
     };
   }
 
+  // Model not found
   if (lower.includes("404") && lower.includes("model")) {
     return {
       type: "model_not_found",
       icon: "\uD83E\uDD16",
-      guide:
-        "\uBAA8\uB378\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. /model\uB85C \uBCC0\uACBD\uD558\uC138\uC694.",
+      guide: "Model not found. Use /model to switch. / \uBAA8\uB378\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. /model\uB85C \uBCC0\uACBD\uD558\uC138\uC694.",
+    };
+  }
+
+  // Server error (500/502/503)
+  if (lower.includes("500") || lower.includes("502") || lower.includes("503") || lower.includes("internal server error") || lower.includes("bad gateway")) {
+    return {
+      type: "unknown",
+      icon: "\uD83D\uDD27",
+      guide: "Server error \u2014 will retry automatically. / \uC11C\uBC84 \uC624\uB958, \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uD569\uB2C8\uB2E4.",
+    };
+  }
+
+  // Recovery strategy messages (show them as info, not errors)
+  if (lower.includes("recovery strategy") || lower.includes("auto-compact")) {
+    return {
+      type: "unknown",
+      icon: "\uD83D\uDD04",
+      guide: "",
     };
   }
 
@@ -105,12 +129,19 @@ function classifyError(message: string): ErrorClassification {
 
 /** 터미널에 표시되는 비차단(Non-blocking) 에러 배너 — 에러가 발생해도 앱은 계속 실행됨 */
 export function ErrorBanner({ message, details }: ErrorBannerProps) {
+  const timestamp = new Date().toLocaleTimeString();
   const classification = classifyError(message + (details ?? ""));
+  const isRecovery = message.toLowerCase().includes("recovery") ||
+                     message.toLowerCase().includes("retrying") ||
+                     message.toLowerCase().includes("retry");
+
+  const borderColor = isRecovery ? "yellow" : "red";
+  const textColor = isRecovery ? "yellow" : "red";
 
   return (
-    <Box flexDirection="column" borderStyle="round" borderColor="red" paddingX={1}>
-      <Text color="red" bold>
-        {classification.icon} Error: {message}
+    <Box flexDirection="column" borderStyle="round" borderColor={borderColor} paddingX={1}>
+      <Text color={textColor} bold>
+        {classification.icon} {isRecovery ? "Recovery" : "Error"}: {message}
       </Text>
       {details ? (
         <Text color="gray" dimColor>
@@ -118,6 +149,7 @@ export function ErrorBanner({ message, details }: ErrorBannerProps) {
         </Text>
       ) : null}
       {classification.guide ? <Text dimColor>{classification.guide}</Text> : null}
+      <Text dimColor>{timestamp}</Text>
     </Box>
   );
 }

@@ -20,6 +20,28 @@ import { z } from "zod";
  *
  * 프론트매터(frontmatter)는 마크다운 파일 상단의 --- 사이에 있는
  * YAML 형식의 메타데이터 블록입니다.
+ *
+ * 스킬은 dhelix의 5가지 확장 포인트 중 하나입니다:
+ *
+ * 1. **Commands** — 내장 슬래시 명령어 (/commit, /model 등)
+ *    위치: src/commands/
+ *    호출: /command-name
+ *
+ * 2. **Skills** — 사용자 정의 프롬프트 템플릿 (이 모듈)
+ *    위치: .dhelix/skills/ 또는 ~/.dhelix/skills/
+ *    호출: /skill-name (userInvocable: true일 때)
+ *
+ * 3. **Subagents** — 매니페스트 기반 AI 에이전트
+ *    위치: src/subagents/manifests/
+ *    호출: create_agent 도구 또는 /agents 명령어
+ *
+ * 4. **Plugins** — 외부 ESM 모듈 (라이프사이클 훅 제공)
+ *    위치: .dhelix/plugins/
+ *    호출: 로드 시 자동 실행
+ *
+ * 5. **Tools** — LLM이 호출할 수 있는 함수
+ *    위치: src/tools/definitions/
+ *    호출: LLM이 실행 시점을 결정
  */
 export const skillFrontmatterSchema = z.object({
   /** 스킬 이름 — /command 이름으로 사용됨 (예: "commit" → /commit) */

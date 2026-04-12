@@ -11,73 +11,9 @@ import { type RuntimeStage, type RuntimeContext } from "../types.js";
 import { type ChatResponse } from "../../../llm/provider.js";
 import { LLMError } from "../../../utils/error.js";
 import { consumeStream } from "../../../llm/streaming.js";
-import { findRecoveryStrategy } from "../../recovery-strategy.js";
+import { findRecoveryStrategy, getRecoveryExplanation } from "../../recovery-strategy.js";
 import { executeRecovery } from "../../recovery-executor.js";
-
-/**
- * LLM 에러 분류 — 재시도 전략을 결정하는 데 사용
- */
-type LLMErrorClass = "transient" | "overload" | "permanent";
-
-/**
- * LLM 에러를 분류하여 재시도 전략을 결정합니다.
- *
- * @param error - 발생한 에러
- * @returns 에러 분류
- */
-function classifyLLMError(error: unknown): LLMErrorClass {
-  if (!(error instanceof Error)) return "permanent";
-
-  const message = error.message.toLowerCase();
-
-  if (message.includes("request too large") || message.includes("too many tokens")) {
-    return "permanent";
-  }
-
-  if (
-    message.includes("rate limit") ||
-    message.includes("429") ||
-    message.includes("overload") ||
-    message.includes("503") ||
-    message.includes("capacity")
-  ) {
-    return "overload";
-  }
-
-  if (
-    message.includes("timeout") ||
-    message.includes("econnreset") ||
-    message.includes("econnrefused") ||
-    message.includes("500") ||
-    message.includes("502") ||
-    message.includes("504") ||
-    message.includes("network")
-  ) {
-    return "transient";
-  }
-
-  return "permanent";
-}
-
-/**
- * AbortSignal을 존중하면서 지정된 시간만큼 대기합니다.
- *
- * @param ms - 대기할 밀리초
- * @param signal - 취소 신호
- */
-function waitWithAbort(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (signal?.aborted) {
-      reject(new LLMError("Aborted"));
-      return;
-    }
-    const timer = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
-      clearTimeout(timer);
-      reject(new LLMError("Aborted"));
-    });
-  });
-}
+import { classifyLLMError, waitWithAbort } from "../../error-classification.js";
 
 /**
  * SampleLLM stage를 생성합니다.
@@ -152,14 +88,29 @@ export function createSampleLLMStage(): RuntimeStage {
           lastError = error;
           const errorClass = classifyLLMError(error);
 
-          // Check recovery strategies
-          if (error instanceof Error) {
+          // Check recovery strategies and execute them
+          // Skip recovery for overload errors — they should be thrown immediately
+          // since the LLM client already retried with Retry-After headers.
+          // Allow "compact" recovery for permanent errors (e.g., "request too large")
+          // since compacting context can fix the issue.
+          if (error instanceof Error && errorClass !== "overload") {
             const recovery = findRecoveryStrategy(error);
-            if (recovery) {
+            // For permanent errors, only allow compact recovery (not retry)
+            const shouldAttemptRecovery = recovery &&
+              (errorClass !== "permanent" || recovery.action === "compact");
+            if (shouldAttemptRecovery) {
               events.emit("llm:error", {
                 error: new Error(`Recovery strategy: ${recovery.description}`),
               });
+              events.emit("agent:recovery", {
+                strategy: recovery.description,
+                action: recovery.action,
+                attempt: attempt + 1,
+                maxRetries: recovery.maxRetries,
+                explanation: getRecoveryExplanation(recovery, attempt + 1),
+              });
 
+              // Emit retry event before recovery execution so UI can show countdown
               if (recovery.action === "retry" && recovery.backoffMs) {
                 events.emit("agent:retry", {
                   delayMs: recovery.backoffMs * Math.pow(2, attempt),
@@ -175,11 +126,12 @@ export function createSampleLLMStage(): RuntimeStage {
                   signal: config.signal,
                 });
                 if (recoveryResult.action === "retry") {
+                  // Apply compacted messages if recovery provided them
                   if (recoveryResult.messages) {
                     ctx.messages.length = 0;
                     ctx.messages.push(...recoveryResult.messages);
                   }
-                  continue;
+                  continue; // Restart the iteration with recovered state
                 }
               } catch {
                 // Recovery failed — fall through to normal error handling
@@ -187,7 +139,7 @@ export function createSampleLLMStage(): RuntimeStage {
             }
           }
 
-          if (errorClass === "overload" || errorClass === "permanent") {
+          if (errorClass === "overload" || errorClass === "permanent" || errorClass === "auth") {
             throw error;
           }
 

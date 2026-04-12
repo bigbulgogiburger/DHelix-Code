@@ -10,7 +10,7 @@
 import { type RuntimeStage, type RuntimeContext } from "../types.js";
 import { type ExtractedToolCall } from "../../../tools/types.js";
 import { type ChatMessage } from "../../../llm/provider.js";
-import { filterValidToolCalls } from "../../agent-loop.js";
+import { filterValidToolCalls } from "../../tool-call-utils.js";
 
 const trace = (tag: string, msg: string) => {
   if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);

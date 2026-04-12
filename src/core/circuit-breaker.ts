@@ -172,6 +172,28 @@ export class CircuitBreaker {
   }
 
   /**
+   * Returns a user-friendly explanation of why the circuit breaker opened.
+   * Provides actionable advice for the user to resolve the situation.
+   */
+  getUserFriendlyReason(): string {
+    if (this.currentState !== "open") return "";
+
+    if (this.iterationCount >= this.maxIterations) {
+      return `Reached the maximum number of steps (${this.maxIterations}). The task may be too complex for a single run. Try breaking it into smaller parts or increasing the limit with --max-iterations.`;
+    }
+
+    if (this.consecutiveNoChangeCount >= NO_CHANGE_THRESHOLD) {
+      return `No progress detected after ${NO_CHANGE_THRESHOLD} consecutive attempts. The agent may be stuck. Try rephrasing your request or providing more specific instructions.`;
+    }
+
+    if (this.consecutiveSameErrorCount >= SAME_ERROR_THRESHOLD) {
+      return `The same error occurred ${SAME_ERROR_THRESHOLD} times in a row: "${this.lastError}". This suggests a persistent issue that retrying won't fix. Check the error details and try a different approach.`;
+    }
+
+    return this.openReason ?? "Unknown reason";
+  }
+
+  /**
    * 서킷 브레이커를 초기 상태로 리셋합니다.
    * 새 에이전트 루프를 시작하거나 수동 복구 후에 사용합니다.
    */
