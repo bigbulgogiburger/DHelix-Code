@@ -17,6 +17,7 @@ import fg from "fast-glob";
 import { stat } from "node:fs/promises";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath, normalizePath } from "../../utils/path.js";
+import { createToolStreamEmitter } from "../streaming.js";
 import { join } from "node:path";
 
 /**
@@ -45,10 +46,15 @@ type Params = z.infer<typeof paramSchema>;
  * @returns 매칭된 파일 경로 목록 (줄바꿈으로 구분)
  */
 async function execute(params: Params, context: ToolContext): Promise<ToolResult> {
+  // 스트리밍 emitter 생성 — 글로브 검색 진행 상태를 실시간으로 발행
+  const stream = createToolStreamEmitter(context, context.toolCallId ?? "unknown", "glob_search");
+
   // 검색 디렉토리 결정 — path가 지정되면 해당 디렉토리, 아니면 작업 디렉토리
   const searchDir = params.path
     ? resolvePath(context.workingDirectory, params.path)
     : context.workingDirectory;
+
+  stream.progress("Searching for files...", { percentComplete: 0 });
 
   try {
     // 파일 경로와 수정 시간을 함께 저장할 배열
@@ -71,8 +77,11 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     matches.sort((a, b) => b.mtime - a.mtime);
 
     if (matches.length === 0) {
+      stream.complete("No files found", { itemsFound: 0 });
       return { output: "No files found matching the pattern.", isError: false };
     }
+
+    stream.complete(`Found ${matches.length} files`, { itemsFound: matches.length });
 
     // 파일 경로만 추출하여 줄바꿈으로 연결
     const output = matches.map((m) => m.path).join("\n");
@@ -83,6 +92,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    stream.warning(`Glob search failed: ${message}`);
     return { output: `Glob search failed: ${message}`, isError: true };
   }
 }

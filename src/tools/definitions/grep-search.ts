@@ -26,6 +26,7 @@ import fg from "fast-glob";
 import { join } from "node:path";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath, normalizePath, autoResolveGitBashPath } from "../../utils/path.js";
+import { createToolStreamEmitter } from "../streaming.js";
 
 /** execFile의 Promise 버전 — 콜백 대신 async/await로 사용 */
 const execFileAsync = promisify(execFile);
@@ -337,12 +338,17 @@ async function searchWithJavaScript(
  * @returns 검색 결과
  */
 async function execute(params: Params, context: ToolContext): Promise<ToolResult> {
+  // 스트리밍 emitter 생성 — 검색 진행 상태를 실시간으로 발행
+  const stream = createToolStreamEmitter(context, context.toolCallId ?? "unknown", "grep_search");
+
   // 검색 경로 결정 — path가 지정되면 해당 경로, 아니면 작업 디렉토리
   // Git Bash 형식 경로(/c/Users/...)를 Windows 경로로 변환 후 resolve
   const resolvedParam = params.path ? autoResolveGitBashPath(params.path) : undefined;
   const searchPath = resolvedParam
     ? resolvePath(context.workingDirectory, resolvedParam)
     : context.workingDirectory;
+
+  stream.progress("Searching...", { percentComplete: 0 });
 
   try {
     // ripgrep이 사용 가능하면 우선적으로 사용
@@ -351,8 +357,15 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
         const result = await searchWithRipgrep(params, searchPath, context.workingDirectory);
 
         if (result.matchCount === 0) {
+          stream.complete("No matches found", { itemsFound: 0 });
           return { output: "No matches found.", isError: false };
         }
+
+        // 매칭된 파일 수 계산
+        const fileCount = new Set(
+          result.output.split("\n").filter((l) => l !== "--" && /^.+?:\d+:/.test(l)).map((l) => l.split(":")[0]),
+        ).size;
+        stream.complete(`Found ${result.matchCount} matches in ${fileCount} files`, { itemsFound: result.matchCount });
 
         return {
           output: result.output,
@@ -372,9 +385,17 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     }
 
     // ripgrep이 없거나 에러가 발생한 경우 JavaScript 구현으로 폴백
-    return await searchWithJavaScript(params, searchPath, context.workingDirectory);
+    const jsResult = await searchWithJavaScript(params, searchPath, context.workingDirectory);
+    const jsMatchCount = (jsResult.metadata as Record<string, unknown>)?.matchCount;
+    if (typeof jsMatchCount === "number") {
+      stream.complete(`Found ${jsMatchCount} matches (JS fallback)`, { itemsFound: jsMatchCount });
+    } else {
+      stream.complete("Search complete (JS fallback)", { itemsFound: 0 });
+    }
+    return jsResult;
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
+    stream.warning(`Grep search failed: ${message}`);
     return { output: `Grep search failed: ${message}`, isError: true };
   }
 }

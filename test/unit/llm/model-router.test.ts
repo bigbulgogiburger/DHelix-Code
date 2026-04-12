@@ -311,7 +311,7 @@ describe("ModelRouter", () => {
         maxTokens: 100,
         signal: controller.signal,
       }),
-    ).rejects.toThrow("Request aborted");
+    ).rejects.toThrow("Aborted");
 
     // Only the first attempt before abort
     expect(primary.chat).toHaveBeenCalledTimes(1);
@@ -357,7 +357,7 @@ describe("ModelRouter", () => {
         maxTokens: 100,
         signal: controller.signal,
       }),
-    ).rejects.toThrow("Request aborted");
+    ).rejects.toThrow("Aborted");
 
     expect(callCount).toBe(1);
   });

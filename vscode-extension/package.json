@@ -1,0 +1,79 @@
+{
+  "name": "dhelix-code",
+  "displayName": "Dhelix Code — IDE Bridge",
+  "description": "Bridge VS Code's language intelligence to the Dhelix CLI AI coding assistant",
+  "version": "0.1.0",
+  "publisher": "dhelix",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "dhelix.startBridge",
+        "title": "Dhelix: Start LSP Bridge"
+      },
+      {
+        "command": "dhelix.stopBridge",
+        "title": "Dhelix: Stop LSP Bridge"
+      },
+      {
+        "command": "dhelix.showStatus",
+        "title": "Dhelix: Show Bridge Status"
+      }
+    ],
+    "configuration": {
+      "title": "Dhelix Code",
+      "properties": {
+        "dhelix.bridge.autoStart": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically start the LSP bridge when a workspace is opened"
+        },
+        "dhelix.bridge.socketPath": {
+          "type": "string",
+          "default": "",
+          "description": "Custom socket path for IPC communication (auto-generated if empty)"
+        },
+        "dhelix.bridge.diagnosticsDebounceMs": {
+          "type": "number",
+          "default": 300,
+          "description": "Debounce interval for diagnostics forwarding (ms)"
+        },
+        "dhelix.bridge.enableDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Forward real-time diagnostics to Dhelix CLI"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "package": "vsce package",
+    "vscode:prepublish": "node esbuild.js --production",
+    "lint": "eslint src/ --ext .ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "@vscode/vsce": "^3.0.0",
+    "esbuild": "^0.21.0",
+    "eslint": "^9.0.0",
+    "typescript": "^5.4.0"
+  },
+  "dependencies": {
+    "vscode-jsonrpc": "^8.2.0"
+  }
+}

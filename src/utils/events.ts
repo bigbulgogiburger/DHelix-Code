@@ -187,6 +187,15 @@ export type AppEvents = {
     readonly maxRetries: number;
   };
 
+  /** Agent is performing error recovery — UI should show recovery status */
+  "agent:recovery": {
+    readonly strategy: string;
+    readonly action: string;
+    readonly attempt: number;
+    readonly maxRetries: number;
+    readonly explanation: string;
+  };
+
   /** 도구 그룹 실행이 시작됨 — UI에서 "도구 실행 중" 상태를 표시 */
   "agent:tools-executing": {
     readonly toolNames: readonly string[];
@@ -196,6 +205,19 @@ export type AppEvents = {
   "agent:tools-done": {
     readonly count: number;
     readonly nextAction: string;
+  };
+
+  /** Summary of tool execution group — emitted after all tools in a group complete */
+  "agent:tools-summary": {
+    readonly toolCount: number;
+    readonly successCount: number;
+    readonly errorCount: number;
+    readonly totalDurationMs: number;
+    readonly tools: readonly {
+      readonly name: string;
+      readonly durationMs: number;
+      readonly isError: boolean;
+    }[];
   };
 
   /** fork 스킬이 실행되어 서브에이전트 생성이 필요함 */

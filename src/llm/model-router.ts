@@ -17,6 +17,7 @@ import {
   type ChatChunk,
 } from "./provider.js";
 import { LLMError } from "../utils/error.js";
+import { classifyLLMError as classifyError, waitWithAbort as sleep } from "../core/error-classification.js";
 import { AnthropicProvider } from "./providers/anthropic.js";
 import { OpenAICompatibleClient } from "./client.js";
 import { ResponsesAPIClient, isResponsesOnlyModel } from "./responses-client.js";
@@ -39,88 +40,8 @@ export interface ModelRouterConfig {
   readonly complexityThreshold?: number;
 }
 
-/**
- * 에러 분류 — 재시도/폴백 결정에 사용
- *
- * - "transient": 일시적 에러 (타임아웃, 네트워크) → 재시도 가능
- * - "overload": 과부하/Rate Limit → 대체 모델로 즉시 전환
- * - "auth": 인증/권한 에러 → 재시도 불가
- * - "permanent": 영구적 에러 → 재시도 불가
- */
-type ErrorClass = "transient" | "overload" | "auth" | "permanent";
-
-/**
- * 에러를 분류하여 적절한 처리 방식을 결정
- *
- * 에러 메시지에 포함된 키워드를 기반으로 에러 종류를 분류합니다.
- *
- * @param error - 분류할 에러 객체
- * @returns 에러 분류 결과
- */
-function classifyError(error: unknown): ErrorClass {
-  if (!(error instanceof Error)) return "permanent";
-
-  const message = error.message.toLowerCase();
-
-  // Rate Limit 또는 과부하 — 대체 모델로 즉시 전환하는 것이 효과적
-  if (
-    message.includes("rate limit") ||
-    message.includes("429") ||
-    message.includes("overload") ||
-    message.includes("503") ||
-    message.includes("capacity")
-  ) {
-    return "overload";
-  }
-
-  // 일시적 네트워크 에러 — 재시도하면 해결될 가능성 높음
-  if (
-    message.includes("timeout") ||
-    message.includes("econnreset") ||
-    message.includes("econnrefused") ||
-    message.includes("500") ||
-    message.includes("502") ||
-    message.includes("504") ||
-    message.includes("network")
-  ) {
-    return "transient";
-  }
-
-  // 인증/권한 에러 — 재시도해도 해결 안 됨 (API 키 확인 필요)
-  if (
-    message.includes("401") ||
-    message.includes("403") ||
-    message.includes("unauthorized") ||
-    message.includes("forbidden")
-  ) {
-    return "auth";
-  }
-
-  return "permanent";
-}
-
-/**
- * 지정된 밀리초만큼 대기 — AbortSignal로 취소 가능
- *
- * @param ms - 대기할 밀리초
- * @param signal - 취소 신호 (사용자가 Esc를 누르면 대기 중단)
- */
-function sleep(ms: number, signal?: AbortSignal): Promise<void> {
-  return new Promise((resolve, reject) => {
-    // 이미 취소된 상태이면 즉시 reject
-    if (signal?.aborted) {
-      reject(new LLMError("Request aborted"));
-      return;
-    }
-
-    const timer = setTimeout(resolve, ms);
-    // 대기 중 취소 신호가 오면 타이머를 정리하고 reject
-    signal?.addEventListener("abort", () => {
-      clearTimeout(timer);
-      reject(new LLMError("Request aborted"));
-    });
-  });
-}
+// classifyError and sleep — imported from core/error-classification.js (deduplicated)
+// classifyError = classifyLLMError (aliased), sleep = waitWithAbort (aliased)
 
 /**
  * 모델 라우터 — 주 모델과 대체 모델 간 자동 전환을 제공하는 LLM 프로바이더

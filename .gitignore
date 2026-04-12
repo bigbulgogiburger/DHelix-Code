@@ -27,3 +27,6 @@ sample.db
 openapi.yaml
 screenshot-settlement-confirmation.png
 www.naver.com.png
+
+# MCP 로컬 설정
+.mcp.json

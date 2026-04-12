@@ -16,6 +16,61 @@ import { useState, useEffect } from "react";
 import { Box, Text, useInput } from "ink";
 import { type SlashCommand } from "../../commands/registry.js";
 
+/** Command categories for organized display */
+const COMMAND_CATEGORIES: Record<string, string> = {
+  // Workflow
+  commit: "Workflow",
+  review: "Workflow",
+  plan: "Workflow",
+  diff: "Workflow",
+  undo: "Workflow",
+  rewind: "Workflow",
+
+  // Session
+  clear: "Session",
+  compact: "Session",
+  fork: "Session",
+  resume: "Session",
+  export: "Session",
+  rename: "Session",
+
+  // Config
+  model: "Config",
+  config: "Config",
+  fast: "Config",
+  effort: "Config",
+  tone: "Config",
+
+  // Info
+  help: "Info",
+  status: "Info",
+  stats: "Info",
+  cost: "Info",
+  context: "Info",
+  doctor: "Info",
+
+  // System
+  mcp: "System",
+  memory: "System",
+  agents: "System",
+  debug: "System",
+};
+
+/** カテゴリの表示順序 */
+const CATEGORY_ORDER: readonly string[] = ["Workflow", "Session", "Config", "Info", "System", "Other"];
+
+/** 명령어를 카테고리별로 정렬 — 같은 카테고리 내에서는 이름순 */
+function sortByCategory(commands: readonly SlashCommand[]): readonly SlashCommand[] {
+  return [...commands].sort((a, b) => {
+    const catA = COMMAND_CATEGORIES[a.name] ?? "Other";
+    const catB = COMMAND_CATEGORIES[b.name] ?? "Other";
+    const orderA = CATEGORY_ORDER.indexOf(catA);
+    const orderB = CATEGORY_ORDER.indexOf(catB);
+    if (orderA !== orderB) return orderA - orderB;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 /**
  * SlashCommandMenu 컴포넌트의 Props
  *
@@ -104,20 +159,30 @@ export function SlashCommandMenu({
       {visibleItems.map((cmd, idx) => {
         const actualIndex = scrollOffset + idx;
         const isSelected = actualIndex === selectedIndex;
+        const category = COMMAND_CATEGORIES[cmd.name] ?? "Other";
+        // 같은 카테고리의 첫 번째 항목인지 확인 — 카테고리 헤더 표시용
+        const prevCmd = idx > 0 ? visibleItems[idx - 1] : (scrollOffset > 0 ? filtered[scrollOffset - 1] : undefined);
+        const prevCategory = prevCmd ? (COMMAND_CATEGORIES[prevCmd.name] ?? "Other") : undefined;
+        const showCategoryHeader = category !== prevCategory;
         return (
-          <Box key={cmd.name}>
-            <Text color={isSelected ? "cyan" : "gray"} bold={isSelected} dimColor={!isSelected}>
-              {isSelected ? "▸ " : "  "}
-            </Text>
-            <Text color={isSelected ? "cyan" : "gray"} bold={isSelected} dimColor={!isSelected}>
-              {"/" + cmd.name}
-            </Text>
-            <Text color="gray" dimColor>
-              {" — "}
-            </Text>
-            <Text color="gray" dimColor>
-              {cmd.description}
-            </Text>
+          <Box key={cmd.name} flexDirection="column">
+            {showCategoryHeader && (
+              <Text color="#0097A7" dimColor bold>{"  [" + category + "]"}</Text>
+            )}
+            <Box>
+              <Text color={isSelected ? "cyan" : "gray"} bold={isSelected} dimColor={!isSelected}>
+                {isSelected ? "▸ " : "  "}
+              </Text>
+              <Text color={isSelected ? "cyan" : "gray"} bold={isSelected} dimColor={!isSelected}>
+                {"/" + cmd.name}
+              </Text>
+              <Text color="gray" dimColor>
+                {" — "}
+              </Text>
+              <Text color="gray" dimColor>
+                {cmd.description}
+              </Text>
+            </Box>
           </Box>
         );
       })}
@@ -145,5 +210,5 @@ export function getMatchingCommands(
   const prefix = trimmed.slice(1).toLowerCase();
   if (prefix.includes(" ")) return []; // Already has args, don't show menu
 
-  return allCommands.filter((cmd) => cmd.name.startsWith(prefix));
+  return sortByCategory(allCommands.filter((cmd) => cmd.name.startsWith(prefix)));
 }

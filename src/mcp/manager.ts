@@ -20,6 +20,7 @@ import { MCPToolBridge } from "./tool-bridge.js";
 import { type MCPServerConfig } from "./types.js";
 import { type ToolRegistry } from "../tools/registry.js";
 import { BaseError } from "../utils/error.js";
+import { McpHealthMonitor, type McpServerHealth } from "./health-monitor.js";
 
 /**
  * MCP 매니저 에러 클래스
@@ -82,6 +83,8 @@ export class MCPManager {
   private readonly configPath: string;
   /** 스코프 기반 설정 관리자 (작업 디렉토리가 있을 때만 활성화) */
   private readonly scopeManager: MCPScopeManager | null;
+  /** MCP 서버 헬스 모니터 */
+  private readonly healthMonitor: McpHealthMonitor;
 
   constructor(config: MCPManagerConfig) {
     this.configPath = config.configPath ?? DEFAULT_CONFIG_PATH;
@@ -90,6 +93,11 @@ export class MCPManager {
     this.scopeManager = config.workingDirectory
       ? new MCPScopeManager(config.workingDirectory)
       : null;
+    this.healthMonitor = new McpHealthMonitor({
+      pingIntervalMs: 30_000,
+      degradedAfter: 2,
+      unreachableAfter: 5,
+    });
   }
 
   /**
@@ -203,6 +211,20 @@ export class MCPManager {
       }
     }
 
+    // Register connected servers with health monitor and start monitoring
+    for (const serverName of connected) {
+      const client = this.clients.get(serverName);
+      if (client) {
+        this.healthMonitor.registerServer(serverName, serverName, async () => {
+          await client.listTools();
+        });
+      }
+    }
+
+    if (connected.length > 0) {
+      this.healthMonitor.start();
+    }
+
     return { connected, failed };
   }
 
@@ -273,6 +295,7 @@ export class MCPManager {
    * 나머지 서버는 정상적으로 해제됩니다.
    */
   async disconnectAll(): Promise<void> {
+    this.healthMonitor.stop();
     const disconnects = [...this.clients.values()].map((client) => client.disconnect());
     await Promise.allSettled(disconnects);
     this.clients.clear();
@@ -298,5 +321,12 @@ export class MCPManager {
    */
   getConnectedServers(): readonly string[] {
     return [...this.clients.keys()];
+  }
+
+  /**
+   * 모든 MCP 서버의 헬스 상태를 반환합니다.
+   */
+  getServerHealthStatus(): readonly McpServerHealth[] {
+    return this.healthMonitor.getAllHealth();
   }
 }

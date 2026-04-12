@@ -1,0 +1,10 @@
+.gitignore
+.vscode/**
+src/**
+tsconfig.json
+esbuild.js
+**/*.map
+**/*.ts
+!dist/**
+node_modules/**
+!node_modules/vscode-jsonrpc/**

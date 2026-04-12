@@ -20,7 +20,8 @@ import { type AppEventEmitter } from "../../utils/events.js";
 import { type CircuitBreaker } from "../circuit-breaker.js";
 import { type ContextManager } from "../context-manager.js";
 import { type DualModelRouter } from "../../llm/dual-model-router.js";
-import { type AgentLoopConfig, type AggregatedUsage } from "../agent-loop.js";
+import { type AgentLoopConfig } from "../agent-loop-config.js";
+import { type AggregatedUsage } from "../usage-aggregator.js";
 
 /**
  * Stage 고유 이름 — metrics, logging, hooks에서 stage를 식별하는 데 사용됩니다.

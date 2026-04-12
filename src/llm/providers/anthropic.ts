@@ -921,15 +921,30 @@ export class AnthropicProvider implements UnifiedLLMProvider {
       // 시스템 프롬프트를 캐시 가능한 블록으로 분할
       body.system = this.buildCachableSystemBlocks(system);
     }
-    if (request.temperature !== undefined) {
-      body.temperature = request.temperature;
+    // Extended Thinking 설정 (Claude 모델 전용)
+    // Anthropic API 제약: thinking 활성화 시 temperature는 설정 불가 (또는 1이어야 함)
+    // 또한 max_tokens는 thinking budget_tokens보다 커야 함 (thinking + output 합산)
+    if (request.thinking && request.thinking.type === "enabled") {
+      body.thinking = request.thinking;
+      // temperature 충돌 방지: thinking 활성 시 temperature를 설정하지 않음
+      // (Anthropic API가 자동으로 temperature=1을 적용)
+      const thinkingBudget = request.thinking.budget_tokens ?? 16384;
+      const currentMax = (body.max_tokens as number) ?? 4096;
+      // max_tokens는 thinking budget + 최소 출력 토큰(4096)을 보장
+      if (currentMax <= thinkingBudget) {
+        body.max_tokens = thinkingBudget + 4096;
+      }
+    } else {
+      if (request.temperature !== undefined) {
+        body.temperature = request.temperature;
+      }
+      // Non-thinking request with thinking config that's not enabled
+      if (request.thinking) {
+        body.thinking = request.thinking;
+      }
     }
     if (request.tools && request.tools.length > 0) {
       body.tools = toAnthropicTools(request.tools);
-    }
-    // Extended Thinking 설정 (Claude 모델 전용)
-    if (request.thinking) {
-      body.thinking = request.thinking;
     }
 
     return body;

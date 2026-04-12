@@ -80,6 +80,12 @@ export interface CommandContext {
   readonly messages?: readonly { readonly role: string; readonly content: string }[];
   /** MCP 매니저 인스턴스 (/mcp 명령어에서 서버 관리에 사용) */
   readonly mcpManager?: import("../mcp/manager.js").MCPManager;
+  /** 등록된 도구 수 (/extensions 표시용) */
+  readonly toolCount?: number;
+  /** 로드된 스킬 수 (/extensions 표시용) */
+  readonly skillCount?: number;
+  /** 명령어 레지스트리 참조 (/extensions 자기 탐색용) */
+  readonly commandRegistry?: CommandRegistry;
 }
 
 /**

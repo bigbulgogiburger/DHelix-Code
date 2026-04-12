@@ -40,6 +40,14 @@ const STATUS_MESSAGES: readonly string[] = [
   "코드 분석 중… 근데 이제 AI를 곁들인",
 ] as const;
 
+/** Phase-specific status messages — shown when a specific execution phase is active */
+const PHASE_MESSAGES: Record<string, readonly string[]> = {
+  thinking: ["Analyzing your request…", "Reasoning about the approach…", "Thinking through the problem…"],
+  planning: ["Planning the implementation…", "Breaking down the task…", "Designing the approach…"],
+  executing: ["Running tools…", "Executing the plan…", "Working on it…"],
+  reviewing: ["Reviewing the results…", "Checking the output…", "Verifying the work…"],
+};
+
 /** 별 애니메이션 프레임 — ✦와 ✧가 번갈아 표시됨 */
 const STAR_FRAMES = ["✦", "✧"] as const;
 /** 별 깜빡임 간격 (400ms) */
@@ -52,6 +60,8 @@ const ELAPSED_INTERVAL = 1000;
  */
 interface AgentStatusProps {
   readonly tokenCount?: number;
+  /** Current execution phase — when provided, shows phase-specific message */
+  readonly phase?: "thinking" | "planning" | "executing" | "reviewing";
 }
 
 /** 경과 시간을 "N초" 또는 "N분 N초" 형식의 한국어 문자열로 변환 */
@@ -76,7 +86,7 @@ function buildMeta(elapsed: number, tokenCount: number): string {
  * 한국어 메시지 + 경과 시간 + 토큰 수를 표시합니다.
  * 3개의 독립적인 타이머로 각각 별, 시간, 메시지를 업데이트합니다.
  */
-export const AgentStatus = React.memo(function AgentStatus({ tokenCount = 0 }: AgentStatusProps) {
+export const AgentStatus = React.memo(function AgentStatus({ tokenCount = 0, phase }: AgentStatusProps) {
   const [starIndex, setStarIndex] = useState(0);
   const [elapsed, setElapsed] = useState(0);
   const [messageIndex] = useState(() => Math.floor(Math.random() * STATUS_MESSAGES.length));
@@ -100,7 +110,10 @@ export const AgentStatus = React.memo(function AgentStatus({ tokenCount = 0 }: A
   // AgentStatus가 표시될 때마다 새 메시지가 선택됨
 
   const star = STAR_FRAMES[starIndex];
-  const message = STATUS_MESSAGES[messageIndex];
+  const phaseMessages = phase ? PHASE_MESSAGES[phase] : undefined;
+  const message = phaseMessages
+    ? phaseMessages[messageIndex % phaseMessages.length]
+    : STATUS_MESSAGES[messageIndex];
   const meta = buildMeta(elapsed, tokenCount);
 
   return (

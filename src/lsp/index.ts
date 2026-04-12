@@ -28,3 +28,40 @@ export {
   getServerConfig,
   isServerInstalled,
 } from "./language-detector.js";
+
+// IDE Bridge (Tier 3)
+export {
+  IDEBridgeClient,
+  IDEBridgeError,
+  getIDEBridge,
+  tryConnectIDEBridge,
+  disposeIDEBridge,
+} from "./ide-bridge.js";
+export type {
+  IDEBridgeState,
+  IDEBridgeConfig,
+  IDEBridgeEvents,
+} from "./ide-bridge.js";
+
+// Smart Session (unified acquisition)
+export {
+  acquireSmartSession,
+  isIDEBridgeAvailable,
+  getExtToLangMap,
+  disposeAllLSP,
+} from "./ide-bridge-manager.js";
+export type { SmartSessionResult } from "./ide-bridge-manager.js";
+
+// Protocol
+export { getSocketPath, IDE_BRIDGE_PROTOCOL_VERSION } from "./ide-bridge-protocol.js";
+export type {
+  IDEBridgeMethod,
+  IDEBridgeRequestMap,
+  DocumentPosition,
+  DocumentRange,
+  DiagnosticEntry,
+  WorkspaceSymbolEntry,
+  DocumentSymbolEntry,
+  CodeActionEntry,
+  CallHierarchyItem,
+} from "./ide-bridge-protocol.js";

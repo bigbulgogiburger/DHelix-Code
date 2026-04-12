@@ -39,3 +39,5 @@ export {
   type CompactionTicket,
   type CompactionResult,
 } from "./async-compaction.js";
+
+export { createRuntimeContext } from "./context-factory.js";

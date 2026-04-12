@@ -58,8 +58,13 @@ export function createEvaluateContinuationStage(): RuntimeStage {
       const { config, events, response, extractedCalls, circuitBreaker } = ctx;
       if (!response) return;
 
-      // No tool calls — evaluate completion conditions
-      if (extractedCalls.length === 0) {
+      // Check if this iteration had any tool involvement (including denied calls).
+      // If all tool calls were denied by preflight-policy, extractedCalls is empty but
+      // toolResults has denied results — the loop should continue to give LLM feedback.
+      const hadToolResults = ctx.toolResults.length > 0;
+
+      // No tool calls and no tool results — evaluate completion conditions
+      if (extractedCalls.length === 0 && !hadToolResults) {
         // Subagent auto-retry
         if (config.isSubagent && ctx.iteration <= 2) {
           const toolNames = config.toolRegistry
@@ -130,6 +135,13 @@ export function createEvaluateContinuationStage(): RuntimeStage {
         return;
       }
 
+      // All tool calls were denied by preflight — results exist but no executable calls.
+      // Continue the loop so LLM sees the denial feedback and can respond.
+      if (extractedCalls.length === 0 && hadToolResults) {
+        ctx.shouldContinueLoop = true;
+        return;
+      }
+
       // --- Tool calls exist: evaluate continuation ---
 
       // Duplicate tool call loop detection
@@ -158,6 +170,37 @@ export function createEvaluateContinuationStage(): RuntimeStage {
       } else {
         ctx.lastToolCallSignature = currentSignature;
         ctx.duplicateToolCallCount = 1;
+      }
+
+      // Stale conversation detection — if the LLM is generating text but
+      // not making meaningful tool calls (e.g., just explaining what it would do
+      // instead of doing it), nudge it to take action.
+      const hasOnlyTextOutput = response.content.length > 200 && extractedCalls.length <= 1;
+      const isRepetitiveText = ctx.iteration > 3 && hasOnlyTextOutput;
+
+      if (isRepetitiveText && ctx.iteration > 5) {
+        const textLenHistory = ctx.messages
+          .filter((m: ChatMessage) => m.role === "assistant")
+          .slice(-3)
+          .map((m: ChatMessage) => typeof m.content === "string" ? m.content.length : 0);
+
+        // If last 3 assistant messages are all long text with few tool calls,
+        // the agent may be "thinking out loud" instead of acting
+        if (textLenHistory.every((len: number) => len > 200)) {
+          events.emit("llm:error", {
+            error: new Error(
+              "Agent appears to be generating explanations instead of taking action. Nudging to use tools.",
+            ),
+          });
+          const actionNudge: ChatMessage = {
+            role: "user",
+            content:
+              "[System] You have been generating explanations for several turns without making progress. " +
+              "Please take concrete action now by calling the appropriate tools. " +
+              "If you are stuck, explain what is blocking you.",
+          };
+          ctx.messages.push(actionNudge);
+        }
       }
 
       // Circuit breaker recording

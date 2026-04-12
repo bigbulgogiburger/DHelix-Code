@@ -1,35 +1,21 @@
 /**
- * ExecuteTools Stage — 도구 그룹화, 병렬 실행, 체크포인트, 결과 수집
+ * ExecuteTools Stage — 도구 그룹화, ToolPipeline 실행, 체크포인트, 결과 수집
  *
- * 승인된 도구 호출을 병렬 그룹으로 분류하고 실행합니다.
+ * 승인된 도구 호출을 ToolPipeline을 통해 실행합니다.
  * 파일 수정 도구 실행 전에는 자동으로 체크포인트를 생성합니다.
+ * agent-loop.ts와 동일한 ToolPipeline 경로를 사용하여 테스트 호환성을 보장합니다.
  *
  * @module core/runtime/stages/execute-tools
  */
 
 import { type RuntimeStage, type RuntimeContext } from "../types.js";
-import { type ExtractedToolCall, type ToolCallResult } from "../../../tools/types.js";
-import { executeToolCall } from "../../../tools/executor.js";
+import { type ToolCallResult, type ToolContext } from "../../../tools/types.js";
+import { ToolPipeline } from "../../../tools/pipeline.js";
 import { applyOutputGuardrails } from "../../../guardrails/index.js";
-import { groupToolCalls } from "../../agent-loop.js";
+import { groupToolCalls, FILE_WRITE_TOOLS, extractFilePath } from "../../tool-call-utils.js";
 import { getModelCapabilities } from "../../../llm/model-capabilities.js";
-
-/** 파일에 쓰는 도구들 */
-const FILE_WRITE_TOOLS = new Set(["file_write", "file_edit"]);
-
-/**
- * 도구 호출의 인자에서 파일 경로를 추출합니다.
- *
- * @param call - 도구 호출 정보
- * @returns 파일 경로 문자열, 없으면 undefined
- */
-function extractFilePath(call: ExtractedToolCall): string | undefined {
-  const args = call.arguments as Record<string, unknown>;
-  if (typeof args["file_path"] === "string") return args["file_path"];
-  if (typeof args["path"] === "string") return args["path"];
-  if (typeof args["filePath"] === "string") return args["filePath"];
-  return undefined;
-}
+import { TOOL_TIMEOUTS } from "../../../constants.js";
+import { getPlatform } from "../../../utils/platform.js";
 
 const trace = (tag: string, msg: string) => {
   if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
@@ -38,11 +24,10 @@ const trace = (tag: string, msg: string) => {
 /**
  * ExecuteTools stage를 생성합니다.
  *
- * 1. 도구 호출을 병렬 그룹으로 분류
- * 2. 파일 수정 전 자동 체크포인트 생성
- * 3. 그룹 내 병렬 실행, 그룹 간 순차 실행
- * 4. 출력 가드레일 적용
- * 5. preflight에서 거부된 결과와 합산
+ * 1. 파일 수정 전 자동 체크포인트 생성
+ * 2. ToolPipeline을 통해 도구 호출 실행 (스케줄링, 재시도, 후처리 포함)
+ * 3. 출력 가드레일 적용
+ * 4. preflight에서 거부된 결과와 합산
  *
  * @returns ExecuteTools stage 인스턴스
  */
@@ -69,6 +54,9 @@ export function createExecuteToolsStage(): RuntimeStage {
           .map((tc) => tc.name)
           .join(", ")}]`,
       );
+
+      // 4-stage ToolPipeline for structured tool execution
+      const toolPipeline = new ToolPipeline(config.toolRegistry);
 
       for (const group of groups) {
         // Auto-checkpoint before file-modifying tools
@@ -102,67 +90,55 @@ export function createExecuteToolsStage(): RuntimeStage {
           }
         }
 
-        // Execute all calls in the group in parallel
-        const settled = await Promise.allSettled(
-          group.map(async (call) => {
-            let result = await executeToolCall(config.toolRegistry, call, {
-              workingDirectory: config.workingDirectory ?? process.cwd(),
-              signal: config.signal,
-              events: events,
-              activeClient: activeClient,
-              activeModel: activeModel,
-              capabilityTier: getModelCapabilities(activeModel).capabilityTier,
-              checkPermission: config.checkPermission,
-              checkpointManager: config.checkpointManager,
-              sessionId: config.sessionId,
-              thinking: config.thinking,
-            });
+        // Execute approved calls through the 4-stage ToolPipeline
+        const pipelineContext = {
+          workingDirectory: config.workingDirectory ?? process.cwd(),
+          abortSignal: config.signal ?? new AbortController().signal,
+          timeoutMs: TOOL_TIMEOUTS.default,
+          platform: getPlatform(),
+          events: events,
+          activeClient: activeClient,
+          activeModel: activeModel,
+          capabilityTier: getModelCapabilities(activeModel).capabilityTier,
+          checkPermission: config.checkPermission,
+          checkpointManager: config.checkpointManager,
+          sessionId: config.sessionId,
+          thinking: config.thinking,
+        } satisfies ToolContext;
 
-            // Apply output guardrails
-            if (config.enableGuardrails !== false) {
-              const outputCheck = applyOutputGuardrails(result.output);
-              if (outputCheck.modified) {
-                result = { ...result, output: outputCheck.modified };
-              }
-            }
-
-            return result;
-          }),
+        const pipelineResult = await toolPipeline.execute(
+          group,
+          pipelineContext,
+          {
+            // Skip pipeline preflight — preflight-policy stage already handled permission + guardrails
+            preflightChecks: [],
+            enableGuardrails: false,
+            postprocess: {
+              maxOutputLength: ctx.maxToolResultChars,
+            },
+          },
         );
 
-        // Collect results preserving original order
-        for (let i = 0; i < group.length; i++) {
-          const call = group[i];
-          const settledResult = settled[i];
-          if (settledResult.status === "fulfilled") {
-            const result = settledResult.value;
-            results.push(result);
-            events.emit("tool:complete", {
-              name: call.name,
-              id: call.id,
-              isError: result.isError,
-              output: result.output,
-              metadata: result.metadata,
-            });
-          } else {
-            const errorMessage =
-              settledResult.reason instanceof Error
-                ? settledResult.reason.message
-                : String(settledResult.reason);
-            const errorResult: ToolCallResult = {
-              id: call.id,
-              name: call.name,
-              output: `Tool execution failed: ${errorMessage}`,
-              isError: true,
-            };
-            results.push(errorResult);
-            events.emit("tool:complete", {
-              name: call.name,
-              id: call.id,
-              isError: true,
-              output: errorResult.output,
-            });
+        // Collect pipeline execution results and apply output guardrails
+        for (const result of pipelineResult.results) {
+          let finalResult = result;
+
+          // Apply output guardrails (pipeline does not handle output guardrails)
+          if (config.enableGuardrails !== false) {
+            const outputCheck = applyOutputGuardrails(finalResult.output);
+            if (outputCheck.modified) {
+              finalResult = { ...finalResult, output: outputCheck.modified };
+            }
           }
+
+          results.push(finalResult);
+          events.emit("tool:complete", {
+            name: finalResult.name,
+            id: finalResult.id,
+            isError: finalResult.isError,
+            output: finalResult.output,
+            metadata: finalResult.metadata,
+          });
         }
       }
 
