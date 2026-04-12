@@ -4,8 +4,10 @@ import { type ExtractedToolCall } from "../../../src/tools/types.js";
 import { type AppEventEmitter } from "../../../src/utils/events.js";
 
 // Mock dependencies that agent-loop.ts imports
-vi.mock("../../../src/tools/executor.js", () => ({
-  executeToolCall: vi.fn(),
+vi.mock("../../../src/tools/pipeline.js", () => ({
+  ToolPipeline: vi.fn().mockImplementation(() => ({
+    execute: vi.fn().mockResolvedValue({ results: [], rejectedCount: 0, executedCount: 0, totalTimeMs: 0 }),
+  })),
 }));
 
 vi.mock("../../../src/llm/streaming.js", () => ({

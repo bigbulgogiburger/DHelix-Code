@@ -161,6 +161,10 @@ program
         { findReferencesTool },
         { getTypeInfoTool },
         { safeRenameTool },
+        { applyPatchTool },
+        { batchFileOpsTool },
+        { codeModeTool },
+        { refactorTool },
         { CommandRegistry },
         { clearCommand },
         { compactCommand },
@@ -233,6 +237,10 @@ program
         import("./tools/definitions/find-references.js"),
         import("./tools/definitions/get-type-info.js"),
         import("./tools/definitions/safe-rename.js"),
+        import("./tools/definitions/apply-patch.js"),
+        import("./tools/definitions/batch-file-ops.js"),
+        import("./tools/definitions/code-mode.js"),
+        import("./tools/definitions/refactor.js"),
         import("./commands/registry.js"),
         import("./commands/clear.js"),
         import("./commands/compact.js"),
@@ -340,6 +348,10 @@ program
         findReferencesTool,
         getTypeInfoTool,
         safeRenameTool,
+        applyPatchTool,
+        batchFileOpsTool,
+        codeModeTool,
+        refactorTool,
       ]);
 
       _t = _profileLog("tools registered", _t);

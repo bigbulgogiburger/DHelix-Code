@@ -19,17 +19,22 @@ import { type ExtractedToolCall, type ToolCallResult } from "../../../src/tools/
 import { type AppEventEmitter } from "../../../src/utils/events.js";
 import { LLMError } from "../../../src/utils/error.js";
 
-// Mock the executor to avoid needing real tool definitions
-const mockExecuteToolCall = vi.fn().mockResolvedValue({
-  id: "tc-1",
-  name: "test_tool",
-  output: "tool output",
-  isError: false,
+// Mock the ToolPipeline to avoid needing real tool definitions
+const mockPipelineExecute = vi.fn().mockResolvedValue({
+  results: [],
+  rejectedCount: 0,
+  executedCount: 0,
+  totalTimeMs: 1,
 });
 
-vi.mock("../../../src/tools/executor.js", () => ({
-  executeToolCall: (...args: unknown[]) => mockExecuteToolCall(...args),
+vi.mock("../../../src/tools/pipeline.js", () => ({
+  ToolPipeline: vi.fn().mockImplementation(() => ({
+    execute: (...args: unknown[]) => mockPipelineExecute(...args),
+  })),
 }));
+
+// Keep backward-compatible alias for tests that reference the old mock name
+const mockExecuteToolCall = vi.fn();
 
 // Mock the streaming module
 vi.mock("../../../src/llm/streaming.js", () => ({
@@ -371,11 +376,16 @@ describe("runAgentLoop", () => {
       { role: "tool", content: "file contents" },
     ]);
 
-    mockExecuteToolCall.mockResolvedValue({
-      id: "tc-1",
-      name: "file_read",
-      output: "file contents",
-      isError: false,
+    mockPipelineExecute.mockResolvedValue({
+      results: [{
+        id: "tc-1",
+        name: "file_read",
+        output: "file contents",
+        isError: false,
+      }],
+      rejectedCount: 0,
+      executedCount: 1,
+      totalTimeMs: 1,
     });
 
     const config: AgentLoopConfig = {
@@ -440,12 +450,17 @@ describe("runAgentLoop", () => {
         { role: "tool", content: "result" },
       ]);
 
-      mockExecuteToolCall.mockImplementation(async (_reg: unknown, call: ExtractedToolCall) => ({
-        id: call.id,
-        name: call.name,
-        output: `output-${call.id}`,
-        isError: false,
-      }));
+      mockPipelineExecute.mockResolvedValue({
+        results: toolCalls.map((call) => ({
+          id: call.id,
+          name: call.name,
+          output: `output-${call.id}`,
+          isError: false,
+        })),
+        rejectedCount: 0,
+        executedCount: 2,
+        totalTimeMs: 1,
+      });
 
       const config: AgentLoopConfig = {
         client,
@@ -457,8 +472,8 @@ describe("runAgentLoop", () => {
 
       const result = await runAgentLoop(config, [{ role: "user", content: "Read files" }]);
 
-      // Both tools should have been executed
-      expect(mockExecuteToolCall).toHaveBeenCalledTimes(2);
+      // Pipeline should have been called with both tool calls
+      expect(mockPipelineExecute).toHaveBeenCalledTimes(1);
       expect(result.aborted).toBe(false);
     });
 
@@ -486,12 +501,18 @@ describe("runAgentLoop", () => {
         { role: "tool", content: "result" },
       ]);
 
-      mockExecuteToolCall.mockImplementation(async (_reg: unknown, call: ExtractedToolCall) => ({
-        id: call.id,
-        name: call.name,
-        output: `output-${call.id}`,
-        isError: false,
-      }));
+      // Pipeline receives only the approved call (file_read), not the denied one (file_write)
+      mockPipelineExecute.mockResolvedValue({
+        results: [{
+          id: "tc-1",
+          name: "file_read",
+          output: "output-tc-1",
+          isError: false,
+        }],
+        rejectedCount: 0,
+        executedCount: 1,
+        totalTimeMs: 1,
+      });
 
       const config: AgentLoopConfig = {
         client,
@@ -509,8 +530,11 @@ describe("runAgentLoop", () => {
 
       await runAgentLoop(config, [{ role: "user", content: "Work" }]);
 
-      // Only file_read should have been executed; file_write was denied
-      expect(mockExecuteToolCall).toHaveBeenCalledTimes(1);
+      // Pipeline should have been called once with only the approved call
+      expect(mockPipelineExecute).toHaveBeenCalledTimes(1);
+      const pipelineCalls = mockPipelineExecute.mock.calls[0][0] as ExtractedToolCall[];
+      expect(pipelineCalls).toHaveLength(1);
+      expect(pipelineCalls[0].name).toBe("file_read");
 
       // formatToolResults should have received 2 results (1 denied + 1 executed)
       const formatCall = (strategy.formatToolResults as ReturnType<typeof vi.fn>).mock
@@ -544,14 +568,15 @@ describe("runAgentLoop", () => {
         { role: "tool", content: "result" },
       ]);
 
-      // First call succeeds, second throws
-      let callCount = 0;
-      mockExecuteToolCall.mockImplementation(async () => {
-        callCount++;
-        if (callCount === 2) {
-          throw new Error("Unexpected executor crash");
-        }
-        return { id: "tc-1", name: "file_read", output: "ok", isError: false };
+      // Pipeline returns one success and one error (pipeline handles errors internally)
+      mockPipelineExecute.mockResolvedValue({
+        results: [
+          { id: "tc-1", name: "file_read", output: "ok", isError: false },
+          { id: "tc-2", name: "file_read", output: 'Tool "file_read" failed: Unexpected executor crash', isError: true },
+        ],
+        rejectedCount: 0,
+        executedCount: 2,
+        totalTimeMs: 1,
       });
 
       const config: AgentLoopConfig = {
@@ -562,12 +587,12 @@ describe("runAgentLoop", () => {
         events,
       };
 
-      // Should not throw - rejected promises are handled
+      // Should not throw - pipeline handles errors internally
       const result = await runAgentLoop(config, [{ role: "user", content: "Read" }]);
 
       expect(result.aborted).toBe(false);
 
-      // Check that the rejected result was captured as an error
+      // Check that the error result was captured
       const formatCall = (strategy.formatToolResults as ReturnType<typeof vi.fn>).mock
         .calls[0][0] as ToolCallResult[];
       const errorResult = formatCall.find((r: ToolCallResult) => r.isError);
@@ -729,13 +754,18 @@ describe("MCP tool failure recovery", () => {
 
     const client = createMockClient([toolCallResponse, recoveryResponse]);
 
-    // Mock tool execution to return MCP timeout error
-    mockExecuteToolCall.mockResolvedValueOnce({
-      id: "tc-mcp-1",
-      name: "mcp__playwright__browser_navigate",
-      output: "MCP tool error: Request timed out: tools/call",
-      isError: true,
-      metadata: { serverName: "playwright", mcpErrorType: "timeout" },
+    // Mock pipeline execution to return MCP timeout error
+    mockPipelineExecute.mockResolvedValueOnce({
+      results: [{
+        id: "tc-mcp-1",
+        name: "mcp__playwright__browser_navigate",
+        output: "MCP tool error: Request timed out: tools/call",
+        isError: true,
+        metadata: { serverName: "playwright", mcpErrorType: "timeout" },
+      }],
+      rejectedCount: 0,
+      executedCount: 1,
+      totalTimeMs: 1,
     });
 
     // Strategy extracts tool calls from first response

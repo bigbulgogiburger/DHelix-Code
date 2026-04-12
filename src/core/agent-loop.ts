@@ -35,15 +35,16 @@ import {
   type ToolCallResult,
   type ToolDefinitionForLLM,
 } from "../tools/types.js";
-import { executeToolCall } from "../tools/executor.js";
+import { ToolPipeline } from "../tools/pipeline.js";
 import { consumeStream } from "../llm/streaming.js";
 import { type AppEventEmitter } from "../utils/events.js";
-import { AGENT_LOOP } from "../constants.js";
+import { AGENT_LOOP, TOOL_TIMEOUTS } from "../constants.js";
 import { LLMError } from "../utils/error.js";
 import { ContextManager } from "./context-manager.js";
 import { type CheckpointManager } from "./checkpoint-manager.js";
 import { applyInputGuardrails, applyOutputGuardrails } from "../guardrails/index.js";
-import { countTokens } from "../llm/token-counter.js";
+import { getPlatform } from "../utils/platform.js";
+// countTokens import removed — pipeline postprocess handles truncation
 import { findRecoveryStrategy } from "./recovery-strategy.js";
 import { executeRecovery, resetRetryState } from "./recovery-executor.js";
 import { CircuitBreaker } from "./circuit-breaker.js";
@@ -414,56 +415,7 @@ export function groupToolCalls(toolCalls: readonly ExtractedToolCall[]): Extract
   return groups;
 }
 
-/**
- * 도구 결과를 토큰 예산에 맞게 잘라냅니다.
- *
- * maxToolResultTokens가 설정된 경우 토큰 단위로 잘라내고,
- * 그렇지 않으면 문자 수 기반으로 잘라냅니다.
- * 이진 탐색(binary search) 방식으로 적절한 잘라내기 지점을 찾습니다.
- *
- * @param result - 잘라낼 도구 결과
- * @param maxChars - 최대 문자 수 (토큰 기반이 아닐 때 사용)
- * @param maxTokens - 최대 토큰 수 (설정 시 토큰 기반 잘라내기 사용)
- * @returns 잘라내진 도구 결과 (또는 원본 그대로)
- */
-function truncateToolResult(
-  result: ToolCallResult,
-  maxChars: number,
-  maxTokens?: number,
-): ToolCallResult {
-  if (maxTokens !== undefined) {
-    const tokenCount = countTokens(result.output);
-    if (tokenCount <= maxTokens) return result;
-
-    // Binary search for the right truncation point
-    // Start with a character estimate (tokens * 4 for English, conservative)
-    let charLimit = Math.floor(maxTokens * 3);
-    let truncated = result.output.slice(0, charLimit);
-    let truncatedTokens = countTokens(truncated);
-
-    // Adjust if over budget
-    while (truncatedTokens > maxTokens && charLimit > 100) {
-      charLimit = Math.floor(charLimit * 0.8);
-      truncated = result.output.slice(0, charLimit);
-      truncatedTokens = countTokens(truncated);
-    }
-
-    return {
-      ...result,
-      output:
-        truncated + `\n\n[... truncated, showing ~${truncatedTokens} of ${tokenCount} tokens]`,
-    };
-  }
-
-  // Fallback to character-based truncation
-  if (result.output.length <= maxChars) return result;
-  return {
-    ...result,
-    output:
-      result.output.slice(0, maxChars) +
-      `\n\n[... truncated, showing first ${maxChars} of ${result.output.length} chars]`,
-  };
-}
+// Note: truncateToolResult removed — ToolPipeline postprocess now handles output truncation
 
 /**
  * ReAct 에이전트 루프를 실행합니다.
@@ -518,6 +470,9 @@ export async function runAgentLoop(
 
   // 선제적 컴팩션: 마지막 컴팩션이 발생한 반복 번호를 추적하여 이중 컴팩션 방지
   let lastCompactionIteration = -Infinity;
+
+  // 4-stage ToolPipeline for structured tool execution
+  const toolPipeline = new ToolPipeline(config.toolRegistry);
 
   // Context manager for auto-compaction when token budget is exceeded
   const contextManager = new ContextManager({
@@ -1084,78 +1039,66 @@ export async function runAgentLoop(
         }
       }
 
-      // Execute all approved calls in the group in parallel
-      const settled = await Promise.allSettled(
-        executableCalls.map(async (call) => {
-          let result = await executeToolCall(config.toolRegistry, call, {
-            workingDirectory: config.workingDirectory ?? process.cwd(),
-            signal: config.signal,
-            events: config.events,
-            activeClient: activeClient,
-            activeModel: activeModel,
-            capabilityTier: getModelCapabilities(activeModel).capabilityTier,
-            checkPermission: config.checkPermission,
-            checkpointManager: config.checkpointManager,
-            sessionId: config.sessionId,
-            thinking: config.thinking,
-          });
+      // Execute approved calls through the 4-stage ToolPipeline
+      // Pipeline handles: scheduling (parallel vs sequential), retry, postprocessing (truncation)
+      // Note: Permission checks and input guardrails already handled above, so pipeline
+      // preflight is skipped by passing empty preflightChecks
+      const pipelineContext = {
+        workingDirectory: config.workingDirectory ?? process.cwd(),
+        abortSignal: config.signal ?? new AbortController().signal,
+        timeoutMs: TOOL_TIMEOUTS.default,
+        platform: getPlatform(),
+        events: config.events,
+        activeClient: activeClient,
+        activeModel: activeModel,
+        capabilityTier: getModelCapabilities(activeModel).capabilityTier,
+        checkPermission: config.checkPermission,
+        checkpointManager: config.checkpointManager,
+        sessionId: config.sessionId,
+        thinking: config.thinking,
+      } satisfies import("../tools/types.js").ToolContext;
 
-          // Apply output guardrails
-          if (config.enableGuardrails !== false) {
-            const outputCheck = applyOutputGuardrails(result.output);
-            if (outputCheck.modified) {
-              result = { ...result, output: outputCheck.modified };
-            }
-          }
-
-          return result;
-        }),
+      const pipelineResult = await toolPipeline.execute(
+        executableCalls,
+        pipelineContext,
+        {
+          // Skip pipeline preflight — agent-loop already handled permission + guardrails
+          preflightChecks: [],
+          enableGuardrails: false,
+          postprocess: {
+            maxOutputLength: maxToolResultChars,
+          },
+        },
       );
 
-      // Collect results preserving original order within the group
+      // Collect preflight-rejected results (permission denied / guardrail blocked)
       for (const call of group) {
-        // Check if it was handled in preflight
         const preflightResult = preflightResults.get(call.id);
         if (preflightResult) {
           results.push(preflightResult);
-          continue;
+        }
+      }
+
+      // Collect pipeline execution results and apply output guardrails
+      for (const result of pipelineResult.results) {
+        let finalResult = result;
+
+        // Apply output guardrails (pipeline does not handle output guardrails)
+        if (config.enableGuardrails !== false) {
+          const outputCheck = applyOutputGuardrails(finalResult.output);
+          if (outputCheck.modified) {
+            finalResult = { ...finalResult, output: outputCheck.modified };
+          }
         }
 
-        // Find the settled result for this call
-        const execIndex = executableCalls.indexOf(call);
-        if (execIndex === -1) continue;
-
-        const settledResult = settled[execIndex];
-        if (settledResult.status === "fulfilled") {
-          const result = settledResult.value;
-          results.push(result);
-          config.events.emit("tool:complete", {
-            name: call.name,
-            id: call.id,
-            isError: result.isError,
-            output: result.output,
-            metadata: result.metadata,
-          });
-        } else {
-          // Promise.allSettled rejected — unexpected execution error
-          const errorMessage =
-            settledResult.reason instanceof Error
-              ? settledResult.reason.message
-              : String(settledResult.reason);
-          const errorResult: ToolCallResult = {
-            id: call.id,
-            name: call.name,
-            output: `Tool execution failed: ${errorMessage}`,
-            isError: true,
-          };
-          results.push(errorResult);
-          config.events.emit("tool:complete", {
-            name: call.name,
-            id: call.id,
-            isError: true,
-            output: errorResult.output,
-          });
-        }
+        results.push(finalResult);
+        config.events.emit("tool:complete", {
+          name: finalResult.name,
+          id: finalResult.id,
+          isError: finalResult.isError,
+          output: finalResult.output,
+          metadata: finalResult.metadata,
+        });
       }
     }
 
@@ -1178,13 +1121,8 @@ export async function runAgentLoop(
       }
     }
 
-    // Truncate oversized tool results (token-based or character-based)
-    const truncatedResults = results.map((r) =>
-      truncateToolResult(r, maxToolResultChars, config.maxToolResultTokens),
-    );
-
-    // Append tool results as messages
-    const toolMessages = config.strategy.formatToolResults(truncatedResults);
+    // Append tool results as messages (pipeline postprocess already handled truncation)
+    const toolMessages = config.strategy.formatToolResults(results);
     messages.push(...toolMessages);
 
     // MCP 도구 실패 감지 → LLM에 recovery 가이드 메시지 주입

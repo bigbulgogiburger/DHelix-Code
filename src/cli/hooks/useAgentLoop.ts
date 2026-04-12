@@ -43,6 +43,7 @@ import { loadInstructions } from "../../instructions/loader.js";
 import { getModelCapabilities } from "../../llm/model-capabilities.js";
 import { calculateThinkingBudget } from "../../llm/thinking-budget.js";
 import { createEventEmitter } from "../../utils/events.js";
+import { createHookAdapter } from "../../hooks/event-emitter-adapter.js";
 import { ActivityCollector, type TurnActivity } from "../../core/activity.js";
 import { MemoryManager } from "../../memory/manager.js";
 import { metrics, COUNTERS } from "../../telemetry/metrics.js";
@@ -404,6 +405,21 @@ export function useAgentLoop({
       events.off("agent:tools-done", onToolsDone);
     };
   }, [events, appendText, syncCurrentTurn]);
+
+  // Wire up Hook Event Adapter — connects AppEventEmitter to HookRunner
+  useEffect(() => {
+    if (!hookRunner) return;
+
+    const adapter = createHookAdapter(events, hookRunner, {
+      sessionId,
+      workingDirectory: process.cwd(),
+    });
+    adapter.attach();
+
+    return () => {
+      adapter.detach();
+    };
+  }, [events, hookRunner, sessionId]);
 
   // P0-3: Wire up input:abort event to abort the current agent loop
   useEffect(() => {
