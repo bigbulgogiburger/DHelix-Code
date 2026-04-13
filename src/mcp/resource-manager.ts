@@ -176,7 +176,10 @@ const URI_TEMPLATE_VAR_PATTERN = /\{([^}]+)\}/g;
  */
 export class ResourceManager {
   /** 서버 이름 → MCPClient (또는 최소 인터페이스 구현체) 맵 */
-  private readonly clients = new Map<string, MCPClient | ResourceCapableClient | PromptCapableClient>();
+  private readonly clients = new Map<
+    string,
+    MCPClient | ResourceCapableClient | PromptCapableClient
+  >();
 
   /** 리소스 변경 구독자 맵: "serverId::uri" → callback 배열 */
   private readonly subscriptions = new Map<string, Set<(uri: string) => void>>();
@@ -191,7 +194,10 @@ export class ResourceManager {
    * @param serverId - 서버 식별자
    * @param client - MCPClient 또는 호환 인터페이스 구현체
    */
-  registerClient(serverId: string, client: MCPClient | ResourceCapableClient | PromptCapableClient): void {
+  registerClient(
+    serverId: string,
+    client: MCPClient | ResourceCapableClient | PromptCapableClient,
+  ): void {
     this.clients.set(serverId, client);
   }
 
@@ -249,14 +255,11 @@ export class ResourceManager {
       const text = await client.readResource(uri);
       return { uri, text };
     } catch (error) {
-      throw new ResourceManagerError(
-        `Failed to read resource "${uri}" from server "${serverId}"`,
-        {
-          serverId,
-          uri,
-          cause: error instanceof Error ? error.message : String(error),
-        },
-      );
+      throw new ResourceManagerError(`Failed to read resource "${uri}" from server "${serverId}"`, {
+        serverId,
+        uri,
+        cause: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -379,15 +382,12 @@ export class ResourceManager {
         messages: response.messages,
       };
     } catch (error) {
-      throw new ResourceManagerError(
-        `Failed to get prompt "${name}" from server "${serverId}"`,
-        {
-          serverId,
-          name,
-          args,
-          cause: error instanceof Error ? error.message : String(error),
-        },
-      );
+      throw new ResourceManagerError(`Failed to get prompt "${name}" from server "${serverId}"`, {
+        serverId,
+        name,
+        args,
+        cause: error instanceof Error ? error.message : String(error),
+      });
     }
   }
 
@@ -414,11 +414,7 @@ export class ResourceManager {
    * // 나중에 구독 해제:
    * unsubscribe();
    */
-  subscribeToChanges(
-    serverId: string,
-    uri: string,
-    callback: (uri: string) => void,
-  ): () => void {
+  subscribeToChanges(serverId: string, uri: string, callback: (uri: string) => void): () => void {
     const key = this.buildSubscriptionKey(serverId, uri);
 
     if (!this.subscriptions.has(key)) {

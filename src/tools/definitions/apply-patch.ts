@@ -266,7 +266,7 @@ function hunkMatches(
     const prefix = hunkLine[0];
     const content = hunkLine.slice(1);
 
-    if (prefix === "+" ) {
+    if (prefix === "+") {
       // 추가 라인은 원본에서 비교할 내용 없음
       continue;
     }
@@ -371,9 +371,7 @@ function applyHunksToContent(
   const rawLines = originalContent.split("\n");
   // 마지막 빈 문자열 제거 (split("\n")의 부작용)
   const fileLines: string[] =
-    endsWithNewline && rawLines[rawLines.length - 1] === ""
-      ? rawLines.slice(0, -1)
-      : [...rawLines];
+    endsWithNewline && rawLines[rawLines.length - 1] === "" ? rawLines.slice(0, -1) : [...rawLines];
 
   let currentLines: readonly string[] = fileLines;
   let offset = 0;
@@ -506,10 +504,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
 
   const prefix = params.dry_run ? "[dry-run] Would apply" : "Applied";
   const fileList = results
-    .map(
-      (r) =>
-        `  ${r.path}: ${r.hunksApplied} hunk(s), +${r.linesAdded}/-${r.linesRemoved} lines`,
-    )
+    .map((r) => `  ${r.path}: ${r.hunksApplied} hunk(s), +${r.linesAdded}/-${r.linesRemoved} lines`)
     .join("\n");
 
   let output = `${prefix} patch to ${results.length} file(s):\n${fileList}`;

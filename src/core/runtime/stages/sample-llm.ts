@@ -96,8 +96,8 @@ export function createSampleLLMStage(): RuntimeStage {
           if (error instanceof Error && errorClass !== "overload") {
             const recovery = findRecoveryStrategy(error);
             // For permanent errors, only allow compact recovery (not retry)
-            const shouldAttemptRecovery = recovery &&
-              (errorClass !== "permanent" || recovery.action === "compact");
+            const shouldAttemptRecovery =
+              recovery && (errorClass !== "permanent" || recovery.action === "compact");
             if (shouldAttemptRecovery) {
               events.emit("llm:error", {
                 error: new Error(`Recovery strategy: ${recovery.description}`),

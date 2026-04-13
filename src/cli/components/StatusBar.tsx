@@ -140,17 +140,17 @@ export const StatusBar = React.memo(function StatusBar({
         {(() => {
           if (agentPhase === "llm-thinking") return <Text color="yellow">{"🧠 thinking..."}</Text>;
           if (agentPhase === "llm-streaming") return <Text color="yellow">{"✍️ writing..."}</Text>;
-          if (agentPhase === "tools-running") return <Text color="cyan">{"⚙️ executing tools..."}</Text>;
-          if (agentPhase === "tools-done") return <Text color="cyan">{"📋 reviewing results..."}</Text>;
+          if (agentPhase === "tools-running")
+            return <Text color="cyan">{"⚙️ executing tools..."}</Text>;
+          if (agentPhase === "tools-done")
+            return <Text color="cyan">{"📋 reviewing results..."}</Text>;
           if (isStreaming) return <Text color="yellow">{"✍️ writing..."}</Text>;
           return <Text color="green">{"● ready"}</Text>;
         })()}
         {activeToolNames && activeToolNames.length > 0 && (
           <Text dimColor>({activeToolNames.join(", ")})</Text>
         )}
-        {!isStreaming && !agentPhase && (
-          <Text dimColor> · / for commands</Text>
-        )}
+        {!isStreaming && !agentPhase && <Text dimColor> · / for commands</Text>}
       </Box>
     </Box>
   );

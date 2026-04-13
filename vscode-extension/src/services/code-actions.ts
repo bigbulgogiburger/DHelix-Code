@@ -33,12 +33,7 @@ export interface CodeActionGroup {
 // Kind ordering — quickfix before refactor before source before other
 // ---------------------------------------------------------------------------
 
-const KIND_PRIORITY: readonly string[] = [
-  "quickfix",
-  "refactor",
-  "source",
-  "other",
-] as const;
+const KIND_PRIORITY: readonly string[] = ["quickfix", "refactor", "source", "other"] as const;
 
 // ---------------------------------------------------------------------------
 // Service
@@ -69,12 +64,7 @@ export class CodeActionsService {
     endColumn: number,
   ): Promise<readonly CodeActionGroup[]> {
     const uri = vscode.Uri.file(filePath);
-    const range = new vscode.Range(
-      startLine - 1,
-      startColumn - 1,
-      endLine - 1,
-      endColumn - 1,
-    );
+    const range = new vscode.Range(startLine - 1, startColumn - 1, endLine - 1, endColumn - 1);
 
     let actions: vscode.CodeAction[];
     try {
@@ -111,9 +101,7 @@ export class CodeActionsService {
 
     // Sort entries within each group: preferred first
     for (const entries of groups.values()) {
-      entries.sort(
-        (a, b) => (b.isPreferred ? 1 : 0) - (a.isPreferred ? 1 : 0),
-      );
+      entries.sort((a, b) => (b.isPreferred ? 1 : 0) - (a.isPreferred ? 1 : 0));
     }
 
     // Assemble result in kind-priority order

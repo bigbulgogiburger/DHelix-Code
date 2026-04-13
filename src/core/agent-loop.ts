@@ -57,7 +57,12 @@ export interface AgentLoopResult {
 // classifyLLMError and waitWithAbort — imported from ./error-classification.js (deduplicated)
 
 // Re-export shared tool-call utilities for backward compatibility
-export { filterValidToolCalls, groupToolCalls, extractFilePath, FILE_WRITE_TOOLS } from "./tool-call-utils.js";
+export {
+  filterValidToolCalls,
+  groupToolCalls,
+  extractFilePath,
+  FILE_WRITE_TOOLS,
+} from "./tool-call-utils.js";
 
 // Note: truncateToolResult removed — ToolPipeline postprocess now handles output truncation
 

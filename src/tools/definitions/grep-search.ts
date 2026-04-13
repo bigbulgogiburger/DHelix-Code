@@ -363,9 +363,14 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
 
         // 매칭된 파일 수 계산
         const fileCount = new Set(
-          result.output.split("\n").filter((l) => l !== "--" && /^.+?:\d+:/.test(l)).map((l) => l.split(":")[0]),
+          result.output
+            .split("\n")
+            .filter((l) => l !== "--" && /^.+?:\d+:/.test(l))
+            .map((l) => l.split(":")[0]),
         ).size;
-        stream.complete(`Found ${result.matchCount} matches in ${fileCount} files`, { itemsFound: result.matchCount });
+        stream.complete(`Found ${result.matchCount} matches in ${fileCount} files`, {
+          itemsFound: result.matchCount,
+        });
 
         return {
           output: result.output,

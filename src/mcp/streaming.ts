@@ -302,10 +302,12 @@ export class McpStreamHandler {
     for await (const item of iterable) {
       const elapsed = Date.now() - startTime;
       if (elapsed > timeoutMs) {
-        throw new McpStreamError(
-          `Stream timed out after ${elapsed}ms (limit: ${timeoutMs}ms)`,
-          { serverId, toolName, elapsedMs: elapsed, timeoutMs },
-        );
+        throw new McpStreamError(`Stream timed out after ${elapsed}ms (limit: ${timeoutMs}ms)`, {
+          serverId,
+          toolName,
+          elapsedMs: elapsed,
+          timeoutMs,
+        });
       }
       yield item;
     }

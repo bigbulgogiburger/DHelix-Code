@@ -204,7 +204,10 @@ function buildReplacer(maskChar: string, preservePrefix: number): (match: string
  * // r2.masked === "sk-proj-*****..."
  * ```
  */
-export function maskSecrets(output: string, config: OutputMaskingConfig = { enabled: true }): MaskingResult {
+export function maskSecrets(
+  output: string,
+  config: OutputMaskingConfig = { enabled: true },
+): MaskingResult {
   // 비활성화 시 즉시 반환
   if (!config.enabled) {
     return { masked: output, maskCount: 0, patternsMatched: [] };

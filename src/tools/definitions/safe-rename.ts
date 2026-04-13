@@ -59,11 +59,7 @@ const paramSchema = z.object({
   /** 새 이름 */
   new_name: z.string().describe("새 이름"),
   /** 변경 미리보기만 (실제 적용 안 함) */
-  dry_run: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("변경 미리보기만 (실제 적용 안 함)"),
+  dry_run: z.boolean().optional().default(true).describe("변경 미리보기만 (실제 적용 안 함)"),
 });
 
 type Params = z.infer<typeof paramSchema>;
@@ -203,9 +199,7 @@ async function applyEdits(
         const line = lines[startLineIdx];
         if (line !== undefined) {
           lines[startLineIdx] =
-            line.slice(0, edit.startColumn - 1) +
-            edit.newText +
-            line.slice(edit.endColumn - 1);
+            line.slice(0, edit.startColumn - 1) + edit.newText + line.slice(edit.endColumn - 1);
         }
       } else {
         // 다중 줄 편집
@@ -253,7 +247,8 @@ async function fallbackSuggestion(
       [
         "--line-number",
         "--no-heading",
-        "--color", "never",
+        "--color",
+        "never",
         "--count-matches",
         `\\b${symbolName}\\b`,
         cwd,
@@ -261,7 +256,10 @@ async function fallbackSuggestion(
       { maxBuffer: 5 * 1024 * 1024, timeout: 15_000 },
     );
 
-    const matchLines = stdout.trimEnd().split("\n").filter((l) => l.trim());
+    const matchLines = stdout
+      .trimEnd()
+      .split("\n")
+      .filter((l) => l.trim());
     let totalMatches = 0;
     for (const matchLine of matchLines) {
       const count = parseInt(matchLine.split(":").pop() ?? "0", 10);

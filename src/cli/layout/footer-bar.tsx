@@ -101,15 +101,9 @@ export const FooterBar = React.memo(function FooterBar({
       paddingX={1}
       justifyContent="space-between"
     >
-      <Box gap={1}>
-        {left.map((item, idx) => renderItem(item, colors, idx))}
-      </Box>
-      <Box gap={1}>
-        {center.map((item, idx) => renderItem(item, colors, idx))}
-      </Box>
-      <Box gap={1}>
-        {right.map((item, idx) => renderItem(item, colors, idx))}
-      </Box>
+      <Box gap={1}>{left.map((item, idx) => renderItem(item, colors, idx))}</Box>
+      <Box gap={1}>{center.map((item, idx) => renderItem(item, colors, idx))}</Box>
+      <Box gap={1}>{right.map((item, idx) => renderItem(item, colors, idx))}</Box>
     </Box>
   );
 });

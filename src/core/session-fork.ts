@@ -207,11 +207,7 @@ export class SessionForkManager {
    * @throws SessionError - 부모 세션이 존재하지 않거나, fromMessageIndex가 범위를 벗어난 경우
    */
   async createFork(options: ForkOptions): Promise<SessionFork> {
-    const {
-      parentSessionId,
-      description,
-      inheritToolResults = true,
-    } = options;
+    const { parentSessionId, description, inheritToolResults = true } = options;
 
     // 부모 세션의 메시지 로드
     const parentMessages = await this.sessionManager.loadMessages(parentSessionId);
@@ -357,8 +353,7 @@ export class SessionForkManager {
       }
       case "summary-only": {
         const summaryText =
-          mergeOptions?.summaryText ??
-          this.generateForkSummary(fork, newMessages);
+          mergeOptions?.summaryText ?? this.generateForkSummary(fork, newMessages);
         mergedMessages = [
           {
             role: "system" as const,
@@ -371,10 +366,7 @@ export class SessionForkManager {
 
     // 부모 세션에 메시지 추가
     if (mergedMessages.length > 0) {
-      await this.sessionManager.appendMessages(
-        fork.parentSessionId,
-        mergedMessages,
-      );
+      await this.sessionManager.appendMessages(fork.parentSessionId, mergedMessages);
     }
 
     // Fork 상태를 merged로 업데이트
@@ -446,10 +438,7 @@ export class SessionForkManager {
   /**
    * Fork 메시지로부터 간단한 요약을 생성합니다 (summary-only 전략용).
    */
-  private generateForkSummary(
-    fork: SessionFork,
-    newMessages: readonly ChatMessage[],
-  ): string {
+  private generateForkSummary(fork: SessionFork, newMessages: readonly ChatMessage[]): string {
     const userMsgs = newMessages.filter((m) => m.role === "user").length;
     const assistantMsgs = newMessages.filter((m) => m.role === "assistant").length;
     const toolMsgs = newMessages.filter((m) => m.role === "tool").length;
@@ -475,10 +464,7 @@ export class SessionForkManager {
   /**
    * Fork 메타데이터를 forks.json에 저장합니다.
    */
-  private async saveForkMetadata(
-    parentSessionId: string,
-    fork: SessionFork,
-  ): Promise<void> {
+  private async saveForkMetadata(parentSessionId: string, fork: SessionFork): Promise<void> {
     const data = await this.loadForksFile(parentSessionId);
     const updatedForks = [...data.forks, fork];
     const filePath = this.forksFilePath(parentSessionId);
@@ -496,9 +482,7 @@ export class SessionForkManager {
     status: ForkStatus,
   ): Promise<void> {
     const data = await this.loadForksFile(parentSessionId);
-    const updatedForks = data.forks.map((f) =>
-      f.id === forkId ? { ...f, status } : f,
-    );
+    const updatedForks = data.forks.map((f) => (f.id === forkId ? { ...f, status } : f));
     const filePath = this.forksFilePath(parentSessionId);
     await writeFile(filePath, JSON.stringify({ forks: updatedForks }, null, 2), "utf-8");
   }
@@ -516,9 +500,7 @@ export class SessionForkManager {
   private async listSessionDirs(): Promise<readonly string[]> {
     try {
       const entries = await readdir(this.sessionsDir, { withFileTypes: true });
-      return entries
-        .filter((e) => e.isDirectory() && !e.name.startsWith("."))
-        .map((e) => e.name);
+      return entries.filter((e) => e.isDirectory() && !e.name.startsWith(".")).map((e) => e.name);
     } catch {
       return [];
     }
@@ -669,9 +651,7 @@ export class CheckpointManager {
    * checkpointId로 checkpoint 데이터를 찾습니다.
    * 모든 세션의 checkpoints 디렉토리를 탐색합니다.
    */
-  private async findCheckpointData(
-    checkpointId: string,
-  ): Promise<CheckpointData | undefined> {
+  private async findCheckpointData(checkpointId: string): Promise<CheckpointData | undefined> {
     let sessionDirs: string[];
     try {
       const entries = await readdir(this.sessionsDir, { withFileTypes: true });

@@ -12,8 +12,8 @@
  * @module cloud/agent-runner
  */
 
-import type { CloudArtifact, CloudConfig, CloudJob, CloudJobResult } from './types.js';
-import { DEFAULT_CLOUD_CONFIG } from './types.js';
+import type { CloudArtifact, CloudConfig, CloudJob, CloudJobResult } from "./types.js";
+import { DEFAULT_CLOUD_CONFIG } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // Internal helpers
@@ -35,17 +35,21 @@ function simulateExecution(prompt: string): CloudJobResult {
   // 프롬프트 키워드 기반으로 아티팩트 생성
   const artifacts: CloudArtifact[] = [];
 
-  if (lowerPrompt.includes('file') || lowerPrompt.includes('edit') || lowerPrompt.includes('write')) {
+  if (
+    lowerPrompt.includes("file") ||
+    lowerPrompt.includes("edit") ||
+    lowerPrompt.includes("write")
+  ) {
     artifacts.push({
-      type: 'file-change',
-      path: 'simulated/output.ts',
+      type: "file-change",
+      path: "simulated/output.ts",
       content: `// Simulated file change for: ${prompt.slice(0, 100)}`,
     });
   }
 
-  if (lowerPrompt.includes('test') || lowerPrompt.includes('spec')) {
+  if (lowerPrompt.includes("test") || lowerPrompt.includes("spec")) {
     artifacts.push({
-      type: 'test-result',
+      type: "test-result",
       content: JSON.stringify({
         total: 5,
         passed: 5,
@@ -55,9 +59,13 @@ function simulateExecution(prompt: string): CloudJobResult {
     });
   }
 
-  if (lowerPrompt.includes('analy') || lowerPrompt.includes('review') || lowerPrompt.includes('explore')) {
+  if (
+    lowerPrompt.includes("analy") ||
+    lowerPrompt.includes("review") ||
+    lowerPrompt.includes("explore")
+  ) {
     artifacts.push({
-      type: 'analysis',
+      type: "analysis",
       content: `Analysis result for: ${prompt.slice(0, 100)}\n\nNo issues found in simulated analysis.`,
     });
   }
@@ -65,7 +73,7 @@ function simulateExecution(prompt: string): CloudJobResult {
   // 기본 아티팩트가 없으면 analysis 추가
   if (artifacts.length === 0) {
     artifacts.push({
-      type: 'analysis',
+      type: "analysis",
       content: `Processed prompt: ${prompt.slice(0, 200)}`,
     });
   }
@@ -145,11 +153,11 @@ export class AgentRunner {
 
       return result;
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown execution error';
+      const errorMessage = error instanceof Error ? error.message : "Unknown execution error";
 
       return {
         success: false,
-        output: '',
+        output: "",
         artifacts: [],
         tokensUsed: 0,
         durationMs: 0,
@@ -215,7 +223,7 @@ export class AgentRunner {
     // 비동기 시뮬레이션 (실제 환경에서는 LLM API 호출)
     await new Promise<void>((resolve, reject) => {
       if (signal.aborted) {
-        reject(new Error('Job cancelled'));
+        reject(new Error("Job cancelled"));
         return;
       }
 
@@ -223,20 +231,20 @@ export class AgentRunner {
 
       const onAbort = (): void => {
         clearTimeout(timer);
-        reject(new Error('Job cancelled'));
+        reject(new Error("Job cancelled"));
       };
 
-      signal.addEventListener('abort', onAbort, { once: true });
+      signal.addEventListener("abort", onAbort, { once: true });
     });
 
     if (signal.aborted) {
       return {
         success: false,
-        output: '',
+        output: "",
         artifacts: [],
         tokensUsed: 0,
         durationMs: 0,
-        error: 'Job cancelled',
+        error: "Job cancelled",
       };
     }
 
@@ -257,7 +265,7 @@ export class AgentRunner {
       const timer = setTimeout(() => {
         resolve({
           success: false,
-          output: '',
+          output: "",
           artifacts: [],
           tokensUsed: 0,
           durationMs: timeoutMs,
@@ -265,9 +273,13 @@ export class AgentRunner {
         });
       }, timeoutMs);
 
-      signal.addEventListener('abort', () => {
-        clearTimeout(timer);
-      }, { once: true });
+      signal.addEventListener(
+        "abort",
+        () => {
+          clearTimeout(timer);
+        },
+        { once: true },
+      );
     });
   }
 }

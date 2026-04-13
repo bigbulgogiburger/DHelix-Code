@@ -139,8 +139,10 @@ async function fallbackGrep(symbolName: string, cwd: string): Promise<string> {
       [
         "--line-number",
         "--no-heading",
-        "--color", "never",
-        "--max-count", "10",
+        "--color",
+        "never",
+        "--max-count",
+        "10",
         combinedPattern,
         cwd,
       ],

@@ -72,7 +72,7 @@ export const AGENT_LOOP = {
   /** 자동 컴팩션(compaction) 트리거 임계치 — 컨텍스트 윈도우의 83.5% 사용 시 */
   compactionThreshold: 0.835,
   /** 선제적 컴팩션 임계치 — LLM 호출 전 80% 도달 시 미리 컴팩션 실행 */
-  preemptiveCompactionThreshold: 0.80,
+  preemptiveCompactionThreshold: 0.8,
   /** LLM 응답용 토큰 예약 비율 — 컨텍스트 윈도우의 20%를 응답에 남겨둠 */
   responseReserveRatio: 0.2,
 } as const;

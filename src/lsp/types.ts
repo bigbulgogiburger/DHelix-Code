@@ -15,7 +15,14 @@ export interface LSPServerConfig {
 }
 
 /** 서버 인스턴스 상태 */
-export type LSPServerState = "starting" | "ready" | "running" | "error" | "stopping" | "stopped" | "shutdown";
+export type LSPServerState =
+  | "starting"
+  | "ready"
+  | "running"
+  | "error"
+  | "stopping"
+  | "stopped"
+  | "shutdown";
 
 /** 서버 인스턴스 정보 */
 export interface LSPServerInstance {
@@ -88,11 +95,7 @@ export interface LSPSession {
   ): Promise<readonly ReferenceResult[]>;
 
   /** 타입 정보 조회 */
-  getTypeInfo(
-    filePath: string,
-    line: number,
-    column: number,
-  ): Promise<TypeInfoResult | undefined>;
+  getTypeInfo(filePath: string, line: number, column: number): Promise<TypeInfoResult | undefined>;
 
   /** 심볼 리네이밍 */
   rename(
@@ -112,9 +115,7 @@ export interface LSPSession {
 /** LSP 매니저 인터페이스 */
 export interface LSPManagerInterface {
   /** 프로젝트에서 사용 가능한 LSP 서버 확인 */
-  detectAvailableServers(
-    projectDir: string,
-  ): Promise<readonly LSPLanguageId[]>;
+  detectAvailableServers(projectDir: string): Promise<readonly LSPLanguageId[]>;
 
   /** LSP 세션 획득 (서버 자동 시작) */
   acquire(language: LSPLanguageId, projectDir: string): Promise<LSPSession>;

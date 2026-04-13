@@ -20,7 +20,7 @@ const PROJECT_INDICATORS: Record<string, LSPLanguageId> = {
   "pyproject.toml": "python",
   "setup.py": "python",
   "requirements.txt": "python",
-  "Pipfile": "python",
+  Pipfile: "python",
   "go.mod": "go",
   "Cargo.toml": "rust",
   "pom.xml": "java",
@@ -73,14 +73,12 @@ export async function detectProjectLanguages(
 ): Promise<readonly LSPLanguageId[]> {
   const detected = new Set<LSPLanguageId>();
 
-  const checks = Object.entries(PROJECT_INDICATORS).map(
-    async ([fileName, language]) => {
-      const exists = await fileExists(join(projectDir, fileName));
-      if (exists) {
-        detected.add(language);
-      }
-    },
-  );
+  const checks = Object.entries(PROJECT_INDICATORS).map(async ([fileName, language]) => {
+    const exists = await fileExists(join(projectDir, fileName));
+    if (exists) {
+      detected.add(language);
+    }
+  });
 
   await Promise.all(checks);
 
@@ -88,9 +86,7 @@ export async function detectProjectLanguages(
 }
 
 /** 시스템에 LSP 서버가 설치되어 있는지 확인 */
-export async function isServerInstalled(
-  language: LSPLanguageId,
-): Promise<boolean> {
+export async function isServerInstalled(language: LSPLanguageId): Promise<boolean> {
   const config = SERVER_CONFIGS[language];
   try {
     await execFileAsync("which", [config.command]);
@@ -118,7 +114,5 @@ export async function detectAvailableServers(
     }),
   );
 
-  return results.filter(
-    (lang): lang is LSPLanguageId => lang !== undefined,
-  );
+  return results.filter((lang): lang is LSPLanguageId => lang !== undefined);
 }

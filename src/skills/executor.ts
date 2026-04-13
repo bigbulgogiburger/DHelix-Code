@@ -90,14 +90,19 @@ async function executeShellCommand(command: string, cwd: string): Promise<string
   return new Promise<string>((resolve) => {
     // execFile로 /bin/sh -c에 명령을 단일 인자로 전달하여 제어된 셸 실행 수행
     // 실행 순서 변경으로 사용자 입력이 이 함수에 도달할 수 없지만, defense-in-depth로 유지
-    execFile("/bin/sh", ["-c", command], { timeout: COMMAND_TIMEOUT_MS, cwd }, (error, stdout, stderr) => {
-      if (error) {
-        // 실패해도 프로세스를 중단하지 않고 에러 메시지를 본문에 삽입
-        resolve(`[Command failed: ${stderr.trim() || error.message}]`);
-        return;
-      }
-      resolve(stdout.trim());
-    });
+    execFile(
+      "/bin/sh",
+      ["-c", command],
+      { timeout: COMMAND_TIMEOUT_MS, cwd },
+      (error, stdout, stderr) => {
+        if (error) {
+          // 실패해도 프로세스를 중단하지 않고 에러 메시지를 본문에 삽입
+          resolve(`[Command failed: ${stderr.trim() || error.message}]`);
+          return;
+        }
+        resolve(stdout.trim());
+      },
+    );
   });
 }
 

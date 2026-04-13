@@ -21,8 +21,4 @@ export {
   createInitialScrollState,
 } from "./transcript-frame.js";
 
-export {
-  FooterBar,
-  type FooterBarItem,
-  type FooterBarProps,
-} from "./footer-bar.js";
+export { FooterBar, type FooterBarItem, type FooterBarProps } from "./footer-bar.js";

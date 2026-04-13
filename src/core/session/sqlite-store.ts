@@ -102,7 +102,10 @@ export interface SessionStore {
   /** 세션 삭제 */
   deleteSession(sessionId: string): boolean;
   /** 세션 메타데이터 업데이트 */
-  updateSession(sessionId: string, updates: Partial<Pick<SessionRecord, "title" | "status" | "message_count" | "total_tokens">>): boolean;
+  updateSession(
+    sessionId: string,
+    updates: Partial<Pick<SessionRecord, "title" | "status" | "message_count" | "total_tokens">>,
+  ): boolean;
   /** 리소스 정리 */
   close(): void;
 }
@@ -326,9 +329,7 @@ export class SQLiteSessionStore implements SessionStore {
     params.push(new Date().toISOString());
     params.push(sessionId);
 
-    const stmt = this.db.prepare(
-      `UPDATE sessions SET ${setClauses.join(", ")} WHERE id = ?`,
-    );
+    const stmt = this.db.prepare(`UPDATE sessions SET ${setClauses.join(", ")} WHERE id = ?`);
     const result = stmt.run(...params);
     return result.changes > 0;
   }

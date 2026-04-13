@@ -37,11 +37,17 @@ function classifyError(message: string): ErrorClassification {
   const lower = message.toLowerCase();
 
   // Rate limiting
-  if (lower.includes("429") || lower.includes("rate limit") || lower.includes("rate_limit") || lower.includes("too many requests")) {
+  if (
+    lower.includes("429") ||
+    lower.includes("rate limit") ||
+    lower.includes("rate_limit") ||
+    lower.includes("too many requests")
+  ) {
     return {
       type: "rate_limit",
       icon: "\u23F3",
-      guide: "Rate limit exceeded. Will retry automatically. / API \uC0AC\uC6A9\uB7C9 \uCD08\uACFC, \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uD569\uB2C8\uB2E4.",
+      guide:
+        "Rate limit exceeded. Will retry automatically. / API \uC0AC\uC6A9\uB7C9 \uCD08\uACFC, \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uD569\uB2C8\uB2E4.",
     };
   }
 
@@ -58,7 +64,8 @@ function classifyError(message: string): ErrorClassification {
     return {
       type: "network",
       icon: "\uD83D\uDD0C",
-      guide: "Check your network connection and server status. / \uB124\uD2B8\uC6CC\uD06C \uC5F0\uACB0\uC744 \uD655\uC778\uD558\uC138\uC694.",
+      guide:
+        "Check your network connection and server status. / \uB124\uD2B8\uC6CC\uD06C \uC5F0\uACB0\uC744 \uD655\uC778\uD558\uC138\uC694.",
     };
   }
 
@@ -67,13 +74,14 @@ function classifyError(message: string): ErrorClassification {
     lower.includes("too many tokens") ||
     lower.includes("request too large") ||
     lower.includes("context_length") ||
-    lower.includes("context") && lower.includes("exceed") ||
-    lower.includes("token") && lower.includes("limit")
+    (lower.includes("context") && lower.includes("exceed")) ||
+    (lower.includes("token") && lower.includes("limit"))
   ) {
     return {
       type: "token_limit",
       icon: "\uD83D\uDCCF",
-      guide: "Conversation too long. Use /compact to compress. / \uB300\uD654\uAC00 \uB108\uBB34 \uAE41\uB2C8\uB2E4. /compact\uB85C \uC555\uCD95\uD558\uC138\uC694.",
+      guide:
+        "Conversation too long. Use /compact to compress. / \uB300\uD654\uAC00 \uB108\uBB34 \uAE41\uB2C8\uB2E4. /compact\uB85C \uC555\uCD95\uD558\uC138\uC694.",
     };
   }
 
@@ -83,13 +91,14 @@ function classifyError(message: string): ErrorClassification {
     lower.includes("unauthorized") ||
     lower.includes("api key") ||
     lower.includes("api_key") ||
-    lower.includes("invalid") && lower.includes("key") ||
+    (lower.includes("invalid") && lower.includes("key")) ||
     lower.includes("forbidden")
   ) {
     return {
       type: "auth",
       icon: "\uD83D\uDD11",
-      guide: "Invalid API key. Check --api-key or environment variable. / API \uD0A4\uAC00 \uC720\uD6A8\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.",
+      guide:
+        "Invalid API key. Check --api-key or environment variable. / API \uD0A4\uAC00 \uC720\uD6A8\uD558\uC9C0 \uC54A\uC2B5\uB2C8\uB2E4.",
     };
   }
 
@@ -98,16 +107,24 @@ function classifyError(message: string): ErrorClassification {
     return {
       type: "model_not_found",
       icon: "\uD83E\uDD16",
-      guide: "Model not found. Use /model to switch. / \uBAA8\uB378\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. /model\uB85C \uBCC0\uACBD\uD558\uC138\uC694.",
+      guide:
+        "Model not found. Use /model to switch. / \uBAA8\uB378\uC744 \uCC3E\uC744 \uC218 \uC5C6\uC2B5\uB2C8\uB2E4. /model\uB85C \uBCC0\uACBD\uD558\uC138\uC694.",
     };
   }
 
   // Server error (500/502/503)
-  if (lower.includes("500") || lower.includes("502") || lower.includes("503") || lower.includes("internal server error") || lower.includes("bad gateway")) {
+  if (
+    lower.includes("500") ||
+    lower.includes("502") ||
+    lower.includes("503") ||
+    lower.includes("internal server error") ||
+    lower.includes("bad gateway")
+  ) {
     return {
       type: "unknown",
       icon: "\uD83D\uDD27",
-      guide: "Server error \u2014 will retry automatically. / \uC11C\uBC84 \uC624\uB958, \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uD569\uB2C8\uB2E4.",
+      guide:
+        "Server error \u2014 will retry automatically. / \uC11C\uBC84 \uC624\uB958, \uC790\uB3D9 \uC7AC\uC2DC\uB3C4\uD569\uB2C8\uB2E4.",
     };
   }
 
@@ -131,9 +148,10 @@ function classifyError(message: string): ErrorClassification {
 export function ErrorBanner({ message, details }: ErrorBannerProps) {
   const timestamp = new Date().toLocaleTimeString();
   const classification = classifyError(message + (details ?? ""));
-  const isRecovery = message.toLowerCase().includes("recovery") ||
-                     message.toLowerCase().includes("retrying") ||
-                     message.toLowerCase().includes("retry");
+  const isRecovery =
+    message.toLowerCase().includes("recovery") ||
+    message.toLowerCase().includes("retrying") ||
+    message.toLowerCase().includes("retry");
 
   const borderColor = isRecovery ? "yellow" : "red";
   const textColor = isRecovery ? "yellow" : "red";

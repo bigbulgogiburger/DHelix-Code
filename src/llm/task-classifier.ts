@@ -95,7 +95,15 @@ const REVIEW_KEYWORDS_KO = ["확인", "검토", "테스트", "점검", "검증"]
 const REVIEW_KEYWORDS_EN = ["check", "verify", "test", "validate", "inspect", "audit"] as const;
 
 /** 이전 plan 결과 후 실행 전환을 나타내는 키워드 */
-const PROCEED_KEYWORDS = ["진행해줘", "진행", "시작해줘", "go ahead", "proceed", "start", "do it"] as const;
+const PROCEED_KEYWORDS = [
+  "진행해줘",
+  "진행",
+  "시작해줘",
+  "go ahead",
+  "proceed",
+  "start",
+  "do it",
+] as const;
 
 /** 파일 쓰기/편집 관련 도구 이름 — execute 단계 신호 */
 const FILE_MUTATION_TOOLS = ["file_write", "file_edit", "bash_exec"] as const;
@@ -225,9 +233,7 @@ export class TaskClassifier {
    * 대기 중인 도구 호출에 파일 변경 도구가 포함되어 있는지 확인
    */
   private hasFileMutationTools(toolCalls: readonly string[]): boolean {
-    return toolCalls.some((tc) =>
-      FILE_MUTATION_TOOLS.some((ft) => tc.includes(ft)),
-    );
+    return toolCalls.some((tc) => FILE_MUTATION_TOOLS.some((ft) => tc.includes(ft)));
   }
 
   /**

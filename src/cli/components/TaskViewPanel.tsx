@@ -328,7 +328,13 @@ export const TaskViewPanel = React.memo(function TaskViewPanel({
   const headerTitle = teamName ? `Task View ─── ${teamName}` : "Task View";
 
   return (
-    <Box flexDirection="column" borderStyle="single" borderColor="#0097A7" paddingX={1} paddingY={0}>
+    <Box
+      flexDirection="column"
+      borderStyle="single"
+      borderColor="#0097A7"
+      paddingX={1}
+      paddingY={0}
+    >
       {/* Header */}
       <Box marginBottom={1}>
         <Text bold color="cyan">

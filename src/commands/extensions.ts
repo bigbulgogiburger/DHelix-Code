@@ -82,9 +82,7 @@ export const extensionsCommand: SlashCommand = {
     if (!category || category === "commands") {
       const commands = context.commandRegistry?.getAll() ?? [];
       sections.push(`## Commands (${commands.length})`);
-      sections.push(
-        "Built-in slash commands. Type / to see the menu.\n",
-      );
+      sections.push("Built-in slash commands. Type / to see the menu.\n");
 
       // 카테고리별 그룹핑
       const grouped: Record<string, string[]> = {};
@@ -126,9 +124,7 @@ export const extensionsCommand: SlashCommand = {
       sections.push(
         "  Available types: explore, plan, architect, editor, implement, test, debug, general",
       );
-      sections.push(
-        "  Use /agents to manage, or the create_agent tool to spawn programmatically.",
-      );
+      sections.push("  Use /agents to manage, or the create_agent tool to spawn programmatically.");
       sections.push("");
     }
 

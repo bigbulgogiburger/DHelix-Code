@@ -66,7 +66,10 @@ const refactorSchema = z.object({
    * - true: 파일을 변경하지 않고 예상 결과만 반환
    * - false (기본값): 실제로 파일을 변경
    */
-  dry_run: z.boolean().default(false).describe("If true, preview changes without modifying the file"),
+  dry_run: z
+    .boolean()
+    .default(false)
+    .describe("If true, preview changes without modifying the file"),
 });
 
 type Params = z.infer<typeof refactorSchema>;
@@ -228,7 +231,8 @@ function applyInlineVariable(
 
   if (!declMatch) {
     return {
-      error: `Line ${startLine} does not contain a valid variable declaration. ` +
+      error:
+        `Line ${startLine} does not contain a valid variable declaration. ` +
         `Expected: const/let/var <name> = <value>;`,
     };
   }

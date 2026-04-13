@@ -27,10 +27,7 @@ import {
   type Hover,
   type WorkspaceEdit,
 } from "vscode-languageserver-protocol";
-import {
-  StreamMessageReader,
-  StreamMessageWriter,
-} from "vscode-languageserver-protocol/node";
+import { StreamMessageReader, StreamMessageWriter } from "vscode-languageserver-protocol/node";
 
 /** 요청 타임아웃 (ms) */
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -66,9 +63,7 @@ export class LSPServerConnection {
     });
 
     if (!this.process.stdout || !this.process.stdin) {
-      throw new Error(
-        `Failed to spawn LSP server: ${this.command} ${this.args.join(" ")}`,
-      );
+      throw new Error(`Failed to spawn LSP server: ${this.command} ${this.args.join(" ")}`);
     }
 
     this.process.on("exit", () => {
@@ -87,36 +82,33 @@ export class LSPServerConnection {
 
     const rootUri = pathToFileURL(this.projectRoot).toString();
 
-    this.capabilities = await this.connection.sendRequest(
-      InitializeRequest.type,
-      {
-        processId: process.pid,
-        rootUri,
-        workspaceFolders: [{ uri: rootUri, name: "workspace" }],
-        capabilities: {
-          textDocument: {
-            definition: { dynamicRegistration: false },
-            references: { dynamicRegistration: false },
-            hover: {
-              contentFormat: ["plaintext", "markdown"],
-              dynamicRegistration: false,
-            },
-            rename: {
-              prepareSupport: false,
-              dynamicRegistration: false,
-            },
-            synchronization: {
-              didSave: false,
-              willSave: false,
-              dynamicRegistration: false,
-            },
+    this.capabilities = await this.connection.sendRequest(InitializeRequest.type, {
+      processId: process.pid,
+      rootUri,
+      workspaceFolders: [{ uri: rootUri, name: "workspace" }],
+      capabilities: {
+        textDocument: {
+          definition: { dynamicRegistration: false },
+          references: { dynamicRegistration: false },
+          hover: {
+            contentFormat: ["plaintext", "markdown"],
+            dynamicRegistration: false,
           },
-          workspace: {
-            workspaceFolders: true,
+          rename: {
+            prepareSupport: false,
+            dynamicRegistration: false,
+          },
+          synchronization: {
+            didSave: false,
+            willSave: false,
+            dynamicRegistration: false,
           },
         },
+        workspace: {
+          workspaceFolders: true,
+        },
       },
-    );
+    });
 
     await this.connection.sendNotification(InitializedNotification.type, {});
     this.initialized = true;
@@ -128,17 +120,14 @@ export class LSPServerConnection {
     if (this.openDocuments.has(uri)) return;
 
     const content = await readFile(filePath, "utf-8");
-    await this.ensureConnection().sendNotification(
-      DidOpenTextDocumentNotification.type,
-      {
-        textDocument: {
-          uri,
-          languageId: this.language,
-          version: 1,
-          text: content,
-        },
+    await this.ensureConnection().sendNotification(DidOpenTextDocumentNotification.type, {
+      textDocument: {
+        uri,
+        languageId: this.language,
+        version: 1,
+        text: content,
       },
-    );
+    });
     this.openDocuments.add(uri);
   }
 
@@ -147,12 +136,9 @@ export class LSPServerConnection {
     const uri = pathToFileURL(filePath).toString();
     if (!this.openDocuments.has(uri)) return;
 
-    await this.ensureConnection().sendNotification(
-      DidCloseTextDocumentNotification.type,
-      {
-        textDocument: { uri },
-      },
-    );
+    await this.ensureConnection().sendNotification(DidCloseTextDocumentNotification.type, {
+      textDocument: { uri },
+    });
     this.openDocuments.delete(uri);
   }
 
@@ -164,17 +150,12 @@ export class LSPServerConnection {
   ): Promise<Location[] | LocationLink[]> {
     try {
       await this.openDocument(filePath);
-      const result = await this.sendRequest(
-        DefinitionRequest.type,
-        {
-          textDocument: { uri: pathToFileURL(filePath).toString() },
-          position: { line: line - 1, character: column - 1 },
-        },
-      );
+      const result = await this.sendRequest(DefinitionRequest.type, {
+        textDocument: { uri: pathToFileURL(filePath).toString() },
+        position: { line: line - 1, character: column - 1 },
+      });
       if (!result) return [];
-      return Array.isArray(result)
-        ? (result as Location[] | LocationLink[])
-        : [result as Location];
+      return Array.isArray(result) ? (result as Location[] | LocationLink[]) : [result as Location];
     } catch {
       return [];
     }
@@ -189,14 +170,11 @@ export class LSPServerConnection {
   ): Promise<Location[]> {
     try {
       await this.openDocument(filePath);
-      const result = await this.sendRequest(
-        ReferencesRequest.type,
-        {
-          textDocument: { uri: pathToFileURL(filePath).toString() },
-          position: { line: line - 1, character: column - 1 },
-          context: { includeDeclaration },
-        },
-      );
+      const result = await this.sendRequest(ReferencesRequest.type, {
+        textDocument: { uri: pathToFileURL(filePath).toString() },
+        position: { line: line - 1, character: column - 1 },
+        context: { includeDeclaration },
+      });
       return (result as Location[] | null) ?? [];
     } catch {
       return [];
@@ -204,20 +182,13 @@ export class LSPServerConnection {
   }
 
   /** textDocument/hover — 1-based 좌표의 호버 정보를 반환 */
-  async getHover(
-    filePath: string,
-    line: number,
-    column: number,
-  ): Promise<Hover | null> {
+  async getHover(filePath: string, line: number, column: number): Promise<Hover | null> {
     try {
       await this.openDocument(filePath);
-      const result = await this.sendRequest(
-        HoverRequest.type,
-        {
-          textDocument: { uri: pathToFileURL(filePath).toString() },
-          position: { line: line - 1, character: column - 1 },
-        },
-      );
+      const result = await this.sendRequest(HoverRequest.type, {
+        textDocument: { uri: pathToFileURL(filePath).toString() },
+        position: { line: line - 1, character: column - 1 },
+      });
       return (result as Hover | null) ?? null;
     } catch {
       return null;
@@ -233,14 +204,11 @@ export class LSPServerConnection {
   ): Promise<WorkspaceEdit | null> {
     try {
       await this.openDocument(filePath);
-      const result = await this.sendRequest(
-        RenameRequest.type,
-        {
-          textDocument: { uri: pathToFileURL(filePath).toString() },
-          position: { line: line - 1, character: column - 1 },
-          newName,
-        },
-      );
+      const result = await this.sendRequest(RenameRequest.type, {
+        textDocument: { uri: pathToFileURL(filePath).toString() },
+        position: { line: line - 1, character: column - 1 },
+        newName,
+      });
       return (result as WorkspaceEdit | null) ?? null;
     } catch {
       return null;
@@ -254,12 +222,9 @@ export class LSPServerConnection {
     try {
       // 열린 문서 모두 닫기
       for (const uri of this.openDocuments) {
-        await this.connection.sendNotification(
-          DidCloseTextDocumentNotification.type,
-          {
-            textDocument: { uri },
-          },
-        );
+        await this.connection.sendNotification(DidCloseTextDocumentNotification.type, {
+          textDocument: { uri },
+        });
       }
       this.openDocuments.clear();
 
@@ -297,16 +262,10 @@ export class LSPServerConnection {
   }
 
   /** 타임아웃 포함 요청 전송 헬퍼 */
-  private async sendRequest(
-    type: { method: string },
-    params: unknown,
-  ): Promise<unknown> {
+  private async sendRequest(type: { method: string }, params: unknown): Promise<unknown> {
     const conn = this.ensureConnection();
     const controller = new AbortController();
-    const timeout = setTimeout(
-      () => controller.abort(),
-      REQUEST_TIMEOUT_MS,
-    );
+    const timeout = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
     try {
       const result = await Promise.race([

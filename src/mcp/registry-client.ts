@@ -199,8 +199,7 @@ export class McpRegistryClient {
    */
   constructor(config: RegistryClientConfig = {}) {
     this.registryUrl = config.registryUrl ?? DEFAULT_REGISTRY_URL;
-    this.cacheDir =
-      config.cacheDir ?? join(homedir(), ".dhelix", "mcp-registry-cache");
+    this.cacheDir = config.cacheDir ?? join(homedir(), ".dhelix", "mcp-registry-cache");
     this.cacheTtlMs = config.cacheTtlMs ?? DEFAULT_CACHE_TTL_MS;
   }
 
@@ -278,10 +277,10 @@ export class McpRegistryClient {
     }
 
     if (!server.installCommand) {
-      throw new McpRegistryClientError(
-        `No installCommand defined for server: ${serverId}`,
-        { serverId, serverName: server.name },
-      );
+      throw new McpRegistryClientError(`No installCommand defined for server: ${serverId}`, {
+        serverId,
+        serverName: server.name,
+      });
     }
 
     const command = server.installCommand;
@@ -469,8 +468,7 @@ export class McpRegistryClient {
       author: typeof obj["author"] === "string" ? obj["author"] : undefined,
       homepage: typeof obj["homepage"] === "string" ? obj["homepage"] : undefined,
       transport,
-      installCommand:
-        typeof obj["installCommand"] === "string" ? obj["installCommand"] : undefined,
+      installCommand: typeof obj["installCommand"] === "string" ? obj["installCommand"] : undefined,
       tools: Array.isArray(obj["tools"])
         ? (obj["tools"] as unknown[]).filter((t): t is string => typeof t === "string")
         : [],

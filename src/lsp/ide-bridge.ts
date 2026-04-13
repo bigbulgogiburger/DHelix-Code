@@ -74,7 +74,10 @@ export class IDEBridgeError extends BaseError {
 /** Event callbacks for IDE Bridge state changes and notifications */
 export interface IDEBridgeEvents {
   readonly onStateChange?: (state: IDEBridgeState) => void;
-  readonly onDiagnosticsChanged?: (filePath: string, diagnostics: readonly DiagnosticEntry[]) => void;
+  readonly onDiagnosticsChanged?: (
+    filePath: string,
+    diagnostics: readonly DiagnosticEntry[],
+  ) => void;
   readonly onDocumentChanged?: (filePath: string, version: number) => void;
   readonly onDisconnected?: () => void;
 }
@@ -84,9 +87,9 @@ export interface IDEBridgeEvents {
 /** IDE Bridge client configuration */
 export interface IDEBridgeConfig {
   readonly workspacePath: string;
-  readonly reconnectIntervalMs?: number;    // Default: 5000
-  readonly maxReconnectAttempts?: number;   // Default: 3
-  readonly requestTimeoutMs?: number;       // Default: 10000
+  readonly reconnectIntervalMs?: number; // Default: 5000
+  readonly maxReconnectAttempts?: number; // Default: 3
+  readonly requestTimeoutMs?: number; // Default: 10000
   readonly events?: IDEBridgeEvents;
 }
 
@@ -552,10 +555,7 @@ export class IDEBridgeClient {
         break;
 
       case "document/changed":
-        this.config.events?.onDocumentChanged?.(
-          p["filePath"] as string,
-          p["version"] as number,
-        );
+        this.config.events?.onDocumentChanged?.(p["filePath"] as string, p["version"] as number);
         break;
 
       default:
@@ -596,7 +596,11 @@ export class IDEBridgeClient {
     }, delay);
 
     // Prevent the timer from keeping the process alive
-    if (this.reconnectTimer && typeof this.reconnectTimer === "object" && "unref" in this.reconnectTimer) {
+    if (
+      this.reconnectTimer &&
+      typeof this.reconnectTimer === "object" &&
+      "unref" in this.reconnectTimer
+    ) {
       (this.reconnectTimer as NodeJS.Timeout).unref();
     }
   }
@@ -613,10 +617,7 @@ let singletonBridge: IDEBridgeClient | undefined;
 export function getIDEBridge(workspacePath?: string): IDEBridgeClient | undefined {
   if (!workspacePath) return singletonBridge;
 
-  if (
-    !singletonBridge ||
-    singletonBridge.getSocketPath() !== getSocketPath(workspacePath)
-  ) {
+  if (!singletonBridge || singletonBridge.getSocketPath() !== getSocketPath(workspacePath)) {
     singletonBridge = new IDEBridgeClient({ workspacePath });
   }
   return singletonBridge;

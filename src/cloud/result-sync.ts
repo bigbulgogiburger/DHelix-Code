@@ -12,7 +12,7 @@
  * @module cloud/result-sync
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
 import type {
   ApplyResult,
@@ -21,7 +21,7 @@ import type {
   PendingFileChange,
   SyncRecord,
   SyncResult,
-} from './types.js';
+} from "./types.js";
 
 // ---------------------------------------------------------------------------
 // ResultSyncManager
@@ -84,19 +84,19 @@ export class ResultSyncManager {
 
     for (const artifact of result.artifacts) {
       switch (artifact.type) {
-        case 'file-change':
+        case "file-change":
           if (artifact.path !== undefined) {
             this.addPendingChange(jobId, artifact);
             pendingFileChanges++;
           }
           break;
 
-        case 'test-result':
+        case "test-result":
           this.testResults.set(`${jobId}-${randomUUID().slice(0, 8)}`, artifact.content);
           testResultCount++;
           break;
 
-        case 'analysis':
+        case "analysis":
           this.analysisResults.set(`${jobId}-${randomUUID().slice(0, 8)}`, artifact.content);
           analysisCount++;
           break;
@@ -171,7 +171,7 @@ export class ResultSyncManager {
         applied++;
       } catch (error: unknown) {
         failed++;
-        const message = error instanceof Error ? error.message : 'Unknown error';
+        const message = error instanceof Error ? error.message : "Unknown error";
         errors[changeId] = message;
       }
     }
@@ -219,7 +219,7 @@ export class ResultSyncManager {
     const change: PendingFileChange = {
       changeId,
       jobId,
-      filePath: artifact.path ?? '',
+      filePath: artifact.path ?? "",
       content: artifact.content,
       createdAt: Date.now(),
     };

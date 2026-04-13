@@ -34,10 +34,7 @@ export interface PreflightCheck {
   /** 검사 이름 (디버깅/로깅용) */
   readonly name: string;
   /** 검사 실행 함수 */
-  readonly check: (
-    call: ExtractedToolCall,
-    context: PreflightContext,
-  ) => Promise<PreflightResult>;
+  readonly check: (call: ExtractedToolCall, context: PreflightContext) => Promise<PreflightResult>;
 }
 
 /**

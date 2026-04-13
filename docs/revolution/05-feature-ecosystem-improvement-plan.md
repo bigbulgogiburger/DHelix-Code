@@ -25,43 +25,46 @@
 
 ### 1.1 Rating Scale
 
-| Rating | Meaning | Description |
-|--------|---------|-------------|
-| A (90%+) | Production-grade | 경쟁사 수준 이상, 안정적 |
-| B (75-89%) | Functional | 핵심 동작하나 edge-case/polish 부족 |
-| C (50-74%) | Partial | 기본 기능만 존재, 주요 gap 다수 |
-| D (25-49%) | Skeletal | 구조만 존재, 실질 동작 미흡 |
-| F (<25%) | Missing | 미구현 또는 placeholder |
+| Rating     | Meaning          | Description                         |
+| ---------- | ---------------- | ----------------------------------- |
+| A (90%+)   | Production-grade | 경쟁사 수준 이상, 안정적            |
+| B (75-89%) | Functional       | 핵심 동작하나 edge-case/polish 부족 |
+| C (50-74%) | Partial          | 기본 기능만 존재, 주요 gap 다수     |
+| D (25-49%) | Skeletal         | 구조만 존재, 실질 동작 미흡         |
+| F (<25%)   | Missing          | 미구현 또는 placeholder             |
 
 ### 1.2 Feature Matrix
 
-| Feature | DHelix Rating | OpenCode | Codex | Gap Priority |
-|---------|--------------|----------|-------|-------------|
-| **MCP** | C (72%) | A (92%) | A (88%) | **P0** |
-| **Skills** | C (65%) | A (90%) | B (78%) | **P0** |
-| **Commands** | B (76%) | B (82%) | C (55%) | P1 |
-| **LSP** | C (71%) | A (93%) | C (60%) | **P0** |
-| **Hooks** | D (42%) | B (80%) | D (35%) | P1 |
-| **Memory** | B (75%) | A (88%) | B (82%) | P1 |
-| **Config** | B (78%) | A (85%) | B (76%) | P2 |
-| **Indexing** | C (68%) | B (75%) | C (55%) | P1 |
-| **Git** | B (77%) | A (91%) | B (80%) | P2 |
-| **Plugin Platform** | F (10%) | B (80%) | D (40%) | P1 |
+| Feature             | DHelix Rating | OpenCode | Codex   | Gap Priority |
+| ------------------- | ------------- | -------- | ------- | ------------ |
+| **MCP**             | C (72%)       | A (92%)  | A (88%) | **P0**       |
+| **Skills**          | C (65%)       | A (90%)  | B (78%) | **P0**       |
+| **Commands**        | B (76%)       | B (82%)  | C (55%) | P1           |
+| **LSP**             | C (71%)       | A (93%)  | C (60%) | **P0**       |
+| **Hooks**           | D (42%)       | B (80%)  | D (35%) | P1           |
+| **Memory**          | B (75%)       | A (88%)  | B (82%) | P1           |
+| **Config**          | B (78%)       | A (85%)  | B (76%) | P2           |
+| **Indexing**        | C (68%)       | B (75%)  | C (55%) | P1           |
+| **Git**             | B (77%)       | A (91%)  | B (80%) | P2           |
+| **Plugin Platform** | F (10%)       | B (80%)  | D (40%) | P1           |
 
 ### 1.3 Critical Gap Summary
 
 **Immediate P0 (v0.5 target):**
+
 - MCP: health check, reconnection, streaming, granular filtering 강화
 - Skills: typed manifest 없음, composition 불가, trust model 부재
 - LSP: tree-sitter 5개 언어 (TS/JS, Python, Go, Rust, Java), incremental indexing 없음, semantic search 없음
 
 **Short-term P1 (v0.5-0.6 target):**
+
 - Hooks: event coverage 42%, typed backend 미구현
 - Plugin: 플러그인 시스템 자체가 미존재
 - Commands: 42개 명령어 sprawl, 통합 command graph 필요
 - Indexing: file watcher 기반 incremental 재인덱싱 필요
 
 **Medium-term P2 (v0.6+ target):**
+
 - Config: managed preferences (MDM plist) 미지원
 - Git: Effect-based safety flags 미구현
 - Memory: SQLite migration, snapshot diffing
@@ -69,6 +72,7 @@
 ### 1.4 Competitive Landscape Detail
 
 #### OpenCode의 강점 (DHelix가 배워야 할 것)
+
 - **MCP**: Full SDK integration with OAuth 2.0, tool list change notifications (`notifications/tools/list_changed`), resource/prompt support, 3 transports (stdio/SSE/streamable HTTP). DHelix는 3 transport 구현 있으나 SSE/HTTP 안정성 미검증.
 - **Skills**: SKILL.md frontmatter 기반 declarative manifest, recursive discovery (5+ directories), remote URL pulling, agent-filtered skill delivery. DHelix는 단순 파일 로딩만.
 - **Commands**: Template-based unified system (config + MCP prompts + skills 3개 소스에서 merge), variable substitution (`{{selection}}`, `{{file}}`), subtask support. DHelix는 모놀리식 명령 모듈.
@@ -76,6 +80,7 @@
 - **LSP**: 20+ language server 지원, auto-launch per language, symbol discovery, hover, diagnostics, call hierarchy. DHelix는 TS/JS만 안정.
 
 #### Codex의 강점 (DHelix가 배워야 할 것)
+
 - **MCP**: rmcp Rust SDK 기반 고성능, tool aggregation with qualified names (`{server}_{tool}`), pagination, resource templates, elicitation flow. DHelix의 tool naming은 비표준.
 - **Sandbox**: Platform-specific sandbox (Seatbelt macOS / Landlock Linux / restricted-token Windows). DHelix는 sandbox 없음.
 - **Execution Policy**: TOML-based rules, pattern matching on executables, approval tracking with audit. DHelix는 5-mode permission만.
@@ -107,6 +112,7 @@ src/mcp/
 ```
 
 **현재 동작하는 것:**
+
 - stdio/SSE/HTTP transport를 통한 MCP 서버 연결
 - 3-scope config merge (global > project > session)
 - Tool bridge로 agent loop에 MCP 도구 노출
@@ -114,6 +120,7 @@ src/mcp/
 - Output limiting on tool outputs
 
 **동작하지 않거나 부족한 것:**
+
 - Health check 메커니즘 없음 -- 서버가 죽어도 다음 호출 시점에야 발견
 - Auto-reconnection 없음 -- 연결 끊기면 수동 재시작 필요
 - SSE/Streamable HTTP transport 존재하나 안정성 미검증
@@ -130,7 +137,7 @@ src/mcp/
 // src/mcp/health/health-monitor.ts
 interface McpServerHealth {
   readonly serverId: string;
-  readonly status: 'healthy' | 'degraded' | 'unreachable';
+  readonly status: "healthy" | "degraded" | "unreachable";
   readonly lastPingMs: number;
   readonly lastSuccessfulCall: Date;
   readonly consecutiveFailures: number;
@@ -139,14 +146,15 @@ interface McpServerHealth {
 }
 
 interface HealthCheckConfig {
-  readonly intervalMs: number;          // default: 30_000
-  readonly timeoutMs: number;           // default: 5_000
-  readonly degradedThreshold: number;   // consecutive failures before degraded
+  readonly intervalMs: number; // default: 30_000
+  readonly timeoutMs: number; // default: 5_000
+  readonly degradedThreshold: number; // consecutive failures before degraded
   readonly unreachableThreshold: number; // consecutive failures before unreachable
 }
 ```
 
 구현 세부사항:
+
 - `ping` method를 MCP 프로토콜의 `ping` request로 구현
 - Health status 변화 시 EventBus로 `mcp:health:changed` 이벤트 발행
 - CLI에서 `dhelix mcp status` 명령으로 전체 서버 health 테이블 출력
@@ -157,15 +165,16 @@ interface HealthCheckConfig {
 ```typescript
 // src/mcp/client/reconnection-strategy.ts
 interface ReconnectionStrategy {
-  readonly maxRetries: number;           // default: 5
-  readonly baseDelayMs: number;          // default: 1_000
-  readonly maxDelayMs: number;           // default: 30_000
-  readonly backoffMultiplier: number;    // default: 2.0
-  readonly jitterPercent: number;        // default: 0.2
+  readonly maxRetries: number; // default: 5
+  readonly baseDelayMs: number; // default: 1_000
+  readonly maxDelayMs: number; // default: 30_000
+  readonly backoffMultiplier: number; // default: 2.0
+  readonly jitterPercent: number; // default: 0.2
 }
 ```
 
 구현 세부사항:
+
 - Exponential backoff with jitter
 - 재연결 중 pending tool call은 queue에 보관, 연결 복구 후 replay
 - 재연결 실패 시 사용자에게 `mcp:reconnect:failed` 이벤트로 알림
@@ -178,7 +187,7 @@ interface ReconnectionStrategy {
 interface McpFailureRecord {
   readonly serverId: string;
   readonly timestamp: Date;
-  readonly errorType: 'connection' | 'auth' | 'timeout' | 'protocol' | 'unknown';
+  readonly errorType: "connection" | "auth" | "timeout" | "protocol" | "unknown";
   readonly errorMessage: string;
   readonly reconnectAttempts: number;
   readonly resolved: boolean;
@@ -203,9 +212,9 @@ servers:
     tools:
       allow:
         - "github_create_issue"
-        - "github_search_*"          # glob pattern 지원
+        - "github_search_*" # glob pattern 지원
       deny:
-        - "github_delete_*"          # deny가 allow보다 우선
+        - "github_delete_*" # deny가 allow보다 우선
     resources:
       allow: ["repo://*"]
     prompts:
@@ -213,6 +222,7 @@ servers:
 ```
 
 구현 세부사항:
+
 - `McpToolFilter` 클래스: allow/deny 리스트 + glob pattern matching
 - Deny-first evaluation: deny 매치 시 무조건 차단, 이후 allow 매치 확인
 - Dynamic re-filtering: MCP 서버가 `notifications/tools/list_changed` 보내면 필터 재적용
@@ -224,6 +234,7 @@ servers:
 **현재 문제:** MCP tool call은 전체 결과가 올 때까지 blocking. 대용량 결과(예: 파일 목록, 검색 결과)에서 UX 지연.
 
 **목표:**
+
 - Progressive result streaming via SSE/Streamable HTTP transport
 - Partial result display in CLI (streaming table, streaming text)
 
@@ -242,6 +253,7 @@ interface McpStreamingResult {
 ```
 
 구현 세부사항:
+
 - SSE transport 구현: `EventSource` 기반, reconnection 내장
 - Streamable HTTP transport: HTTP/2 기반, bidirectional streaming
 - Agent loop의 tool result handler에 streaming adapter 추가
@@ -252,6 +264,7 @@ interface McpStreamingResult {
 **현재 문제:** MCP resource와 prompt template이 구현은 되어있으나 agent loop에서 활용하지 않음.
 
 **목표:**
+
 - Resource를 context로 자동 주입 (agent가 필요 시 fetch)
 - Prompt template을 slash command로 자동 노출
 - Resource subscription으로 real-time context update
@@ -269,6 +282,7 @@ interface ResourceContextEntry {
 ```
 
 구현 세부사항:
+
 - `resources/list` -> UI에서 browsable resource tree 표시
 - `resources/read` -> agent context에 resource content 주입
 - `resources/subscribe` -> resource 변경 시 자동 context refresh
@@ -287,15 +301,16 @@ interface OAuth21Config {
   readonly clientId: string;
   readonly scopes: ReadonlyArray<string>;
   readonly pkce: {
-    readonly codeVerifierLength: number;  // 43-128
-    readonly codeChallengeMethod: 'S256'; // plain은 금지
+    readonly codeVerifierLength: number; // 43-128
+    readonly codeChallengeMethod: "S256"; // plain은 금지
   };
-  readonly tokenStorage: 'keychain' | 'encrypted-file';
-  readonly refreshStrategy: 'proactive' | 'on-demand';
+  readonly tokenStorage: "keychain" | "encrypted-file";
+  readonly refreshStrategy: "proactive" | "on-demand";
 }
 ```
 
 구현 세부사항:
+
 - PKCE S256 code challenge 생성 (crypto.subtle 사용)
 - Token storage: macOS Keychain / Linux secret-service / Windows Credential Manager
 - Proactive token refresh: 만료 5분 전 자동 갱신
@@ -307,6 +322,7 @@ interface OAuth21Config {
 **2026 MCP 트렌드:** Q3 2026에 Agent-to-Agent MCP 프로토콜 draft 예상.
 
 **준비 사항:**
+
 - DHelix의 subagent가 MCP server로 동작 가능하도록 interface 설계
 - Agent capability advertisement: 각 subagent가 자신의 tool/resource를 MCP로 노출
 - Agent discovery: 로컬 네트워크 또는 registry에서 다른 agent 탐색
@@ -316,11 +332,11 @@ interface OAuth21Config {
 // src/mcp/agent-to-agent/agent-mcp-server.ts
 interface AgentMcpCapability {
   readonly agentId: string;
-  readonly agentType: 'subagent' | 'external';
+  readonly agentType: "subagent" | "external";
   readonly capabilities: ReadonlyArray<string>;
   readonly tools: ReadonlyArray<McpToolDefinition>;
   readonly resources: ReadonlyArray<McpResourceDefinition>;
-  readonly trustLevel: 'local' | 'verified' | 'untrusted';
+  readonly trustLevel: "local" | "verified" | "untrusted";
 }
 ```
 
@@ -347,14 +363,15 @@ interface McpServerEntry {
   readonly verified: boolean;
   readonly downloads: number;
   readonly rating: number;
-  readonly transports: ReadonlyArray<'stdio' | 'sse' | 'http'>;
+  readonly transports: ReadonlyArray<"stdio" | "sse" | "http">;
   readonly tools: ReadonlyArray<string>;
   readonly resources: ReadonlyArray<string>;
-  readonly requiredAuth: 'none' | 'api-key' | 'oauth';
+  readonly requiredAuth: "none" | "api-key" | "oauth";
 }
 ```
 
 구현 세부사항:
+
 - `dhelix mcp search <query>` -- registry 검색
 - `dhelix mcp install <server>` -- 자동 config 생성 + 의존성 설치
 - `dhelix mcp update` -- 전체 MCP 서버 업데이트 확인
@@ -366,6 +383,7 @@ interface McpServerEntry {
 **2026 표준:** `{service}_{action}_{resource}` 패턴.
 
 DHelix bridge에서 MCP tool을 agent에 노출할 때:
+
 - 원본 이름 보존 (MCP 서버가 정의한 이름)
 - Qualified name 생성: `{serverName}:{originalToolName}`
 - 충돌 시 qualified name 강제 사용
@@ -387,12 +405,14 @@ src/skills/
 ```
 
 **현재 동작하는 것:**
+
 - 4개 디렉토리에서 skill 파일 발견 (global, project, local, built-in)
 - Skill-to-command bridge (command-bridge.ts)
 - Fork execution으로 skill 격리 실행 (executor.ts)
 - Skill lifecycle management (manager.ts)
 
 **동작하지 않거나 부족한 것:**
+
 - Typed manifest 없음 -- skill은 단순 markdown 파일
 - Skill composition 불가 -- skill A가 skill B를 호출할 수 없음
 - Trust model 없음 -- 모든 skill이 동일 권한으로 실행
@@ -446,6 +466,7 @@ agent_filter:
 ```
 
 구현 세부사항:
+
 - Frontmatter parser: `gray-matter` 라이브러리로 YAML frontmatter 파싱
 - Zod schema로 frontmatter 유효성 검증
 - `SkillManifest` 타입 정의 -- immutable readonly interface
@@ -465,7 +486,7 @@ interface SkillManifest {
   readonly outputs: Readonly<Record<string, SkillOutput>>;
   readonly requires: SkillRequirements;
   readonly agentFilter: SkillAgentFilter;
-  readonly trustLevel?: 'built-in' | 'project' | 'community' | 'untrusted';
+  readonly trustLevel?: "built-in" | "project" | "community" | "untrusted";
 }
 ```
 
@@ -496,6 +517,7 @@ aggregate:
 ```
 
 구현 세부사항:
+
 - `SkillComposer` 클래스: DAG 기반 skill 실행 그래프
 - Sequential composition: `compose` 배열 순서대로 실행
 - Parallel composition: `parallel: true`인 skill들은 동시 실행
@@ -542,6 +564,7 @@ dhelix skill verify @community/advanced-code-reviewer
 ```
 
 구현 세부사항:
+
 - Registry API: REST endpoint (GitHub Packages 또는 자체 호스팅)
 - Skill package format: `.dhelix-skill` (tar.gz with manifest + content + signature)
 - Namespace: `@{author}/{skill-name}` (npm 스타일)
@@ -554,13 +577,13 @@ dhelix skill verify @community/advanced-code-reviewer
 
 **Trust Tiers:**
 
-| Tier | Source | Permissions | Review Required |
-|------|--------|-------------|----------------|
-| **T0: Built-in** | `src/skills/built-in/` | Full | No |
-| **T1: Project** | `{project}/.dhelix/skills/` | Full (project scope) | No |
-| **T2: Verified** | Marketplace (signed) | Declared permissions only | First install |
-| **T3: Community** | Marketplace (unsigned) | Read-only + sandboxed | Every execution |
-| **T4: Remote URL** | Arbitrary URL | Sandboxed, no file write | Every execution |
+| Tier               | Source                      | Permissions               | Review Required |
+| ------------------ | --------------------------- | ------------------------- | --------------- |
+| **T0: Built-in**   | `src/skills/built-in/`      | Full                      | No              |
+| **T1: Project**    | `{project}/.dhelix/skills/` | Full (project scope)      | No              |
+| **T2: Verified**   | Marketplace (signed)        | Declared permissions only | First install   |
+| **T3: Community**  | Marketplace (unsigned)      | Read-only + sandboxed     | Every execution |
+| **T4: Remote URL** | Arbitrary URL               | Sandboxed, no file write  | Every execution |
 
 ```typescript
 // src/skills/trust/trust-evaluator.ts
@@ -571,11 +594,12 @@ interface TrustEvaluation {
   readonly permissionsGranted: ReadonlyArray<string>;
   readonly permissionsDenied: ReadonlyArray<string>;
   readonly requiresApproval: boolean;
-  readonly riskAssessment: 'low' | 'medium' | 'high';
+  readonly riskAssessment: "low" | "medium" | "high";
 }
 ```
 
 구현 세부사항:
+
 - Ed25519 서명 검증 (built-in + verified skill)
 - Permission intersection: skill이 선언한 `requires` vs tier가 허용하는 권한
 - Sandbox execution: T3/T4 skill은 별도 프로세스에서 실행, fs 접근 차단
@@ -595,11 +619,13 @@ src/commands/
 ```
 
 **현재 동작하는 것:**
+
 - 42개 slash command (`/help`, `/model`, `/mcp`, `/skill`, `/config`, `/memory` 등)
 - Tab completion 기반 discoverability
 - 명령어별 독립 handler
 
 **문제점:**
+
 - **Sprawl risk**: 42개 명령이 체계 없이 나열, 사용자가 원하는 명령을 찾기 어려움
 - **Inconsistent parameter parsing**: 명령마다 다른 argument 파싱 방식
 - **No unified source**: built-in 명령만 존재, MCP prompt이나 skill에서 생성된 명령은 별도 경로
@@ -612,34 +638,34 @@ src/commands/
 ```typescript
 // src/commands/command-graph.ts
 interface CommandNode {
-  readonly id: string;                          // unique identifier
-  readonly name: string;                        // display name (e.g., "mcp status")
-  readonly aliases: ReadonlyArray<string>;       // alternative names
+  readonly id: string; // unique identifier
+  readonly name: string; // display name (e.g., "mcp status")
+  readonly aliases: ReadonlyArray<string>; // alternative names
   readonly source: CommandSource;
   readonly category: CommandCategory;
   readonly parameters: ReadonlyArray<CommandParameter>;
   readonly description: string;
   readonly examples: ReadonlyArray<string>;
-  readonly stability: 'stable' | 'beta' | 'experimental' | 'deprecated';
-  readonly usageCount: number;                  // session-level analytics
+  readonly stability: "stable" | "beta" | "experimental" | "deprecated";
+  readonly usageCount: number; // session-level analytics
   readonly children: ReadonlyArray<CommandNode>; // subcommands
 }
 
 type CommandSource =
-  | { readonly type: 'built-in'; readonly module: string }
-  | { readonly type: 'mcp-prompt'; readonly serverId: string; readonly promptName: string }
-  | { readonly type: 'plugin'; readonly pluginId: string }
-  | { readonly type: 'skill'; readonly skillName: string };
+  | { readonly type: "built-in"; readonly module: string }
+  | { readonly type: "mcp-prompt"; readonly serverId: string; readonly promptName: string }
+  | { readonly type: "plugin"; readonly pluginId: string }
+  | { readonly type: "skill"; readonly skillName: string };
 
 type CommandCategory =
-  | 'navigation'    // /cd, /project
-  | 'editing'       // /file, /edit
-  | 'intelligence'  // /symbol, /outline, /references
-  | 'agent'         // /model, /thinking, /verbose
-  | 'extension'     // /mcp, /skill, /plugin
-  | 'system'        // /config, /memory, /permissions
-  | 'help'          // /help, /docs
-  | 'workflow';     // /commit, /pr, /test
+  | "navigation" // /cd, /project
+  | "editing" // /file, /edit
+  | "intelligence" // /symbol, /outline, /references
+  | "agent" // /model, /thinking, /verbose
+  | "extension" // /mcp, /skill, /plugin
+  | "system" // /config, /memory, /permissions
+  | "help" // /help, /docs
+  | "workflow"; // /commit, /pr, /test
 ```
 
 **Command Source Merge 전략:**
@@ -652,6 +678,7 @@ Skill-generated Cmds    ──┘                            ──> Help System
 ```
 
 구현 세부사항:
+
 - Command registry를 static import에서 dynamic registration으로 전환
 - MCP `prompts/list` 결과를 `/mcp:{promptName}` 명령으로 자동 등록
 - Skill의 `triggers` 필드를 `/skill:{skillName}` 명령으로 자동 등록
@@ -666,7 +693,7 @@ Skill-generated Cmds    ──┘                            ──> Help System
 // src/commands/parameters.ts
 interface CommandParameter {
   readonly name: string;
-  readonly type: 'string' | 'number' | 'boolean' | 'enum' | 'file-path';
+  readonly type: "string" | "number" | "boolean" | "enum" | "file-path";
   readonly required: boolean;
   readonly default?: unknown;
   readonly description: string;
@@ -676,6 +703,7 @@ interface CommandParameter {
 ```
 
 구현 세부사항:
+
 - Zod 기반 parameter validation (기존 프로젝트 패턴과 일관)
 - Positional + named parameter 지원: `/search query --type=file --limit=10`
 - Dynamic completions: parameter 값에 대한 tab completion (파일 경로, 모델 이름 등)
@@ -701,6 +729,7 @@ interface CommandParameter {
 ```
 
 구현 세부사항:
+
 - **Fuzzy search**: Fuse.js 기반 명령어 이름 + 설명 + 태그 fuzzy matching
 - **Category browsing**: `/help --category=intelligence` 로 카테고리별 탐색
 - **Usage-based ranking**: 자주 사용하는 명령을 상위에 노출
@@ -763,12 +792,14 @@ src/indexing/
 ```
 
 **현재 동작하는 것:**
+
 - Tree-sitter: 5개 언어 구문 분석 (TypeScript/JavaScript, Python, Go, Rust, Java)
 - LSP on-demand: 언어 서버를 필요 시 시작, 5분 idle 후 종료
 - 4개 LSP tool: `goto_definition`, `find_references`, `get_type_info`, `safe_rename`
 - `symbol_search`, `code_outline`, `find_dependencies` (tree-sitter 기반)
 
 **동작하지 않거나 부족한 것:**
+
 - TS/JS 외 언어의 LSP는 기본 수준 (Python: pyright 연동 불안정, Go: gopls 미테스트)
 - Incremental indexing 없음 -- 파일 변경 시 전체 재인덱싱
 - Semantic search (vector-based) 없음
@@ -784,7 +815,7 @@ src/indexing/
 ```typescript
 // src/indexing/incremental/incremental-engine.ts
 interface IncrementalIndexState {
-  readonly fileHashes: ReadonlyMap<string, string>;  // path -> content hash
+  readonly fileHashes: ReadonlyMap<string, string>; // path -> content hash
   readonly dependencyGraph: ReadonlyMap<string, ReadonlySet<string>>; // path -> dependents
   readonly lastFullIndexTimestamp: Date;
   readonly staleFiles: ReadonlySet<string>;
@@ -801,6 +832,7 @@ interface IndexUpdateResult {
 ```
 
 구현 세부사항:
+
 - **File watcher**: `chokidar` 기반 file system watcher
   - `.gitignore` + `.dhelixignore` 패턴 존중
   - Debounce: 500ms 내 중복 변경 무시
@@ -814,30 +846,31 @@ interface IndexUpdateResult {
 
 **Target: 20+ languages**
 
-| Priority | Language | LSP Server | Tree-sitter | Status |
-|----------|----------|-----------|------------|--------|
-| P0 | TypeScript/JS | typescript-language-server | tree-sitter-typescript | Stable |
-| P0 | Python | pyright / pylsp | tree-sitter-python | Needs fixing |
-| P0 | Go | gopls | tree-sitter-go | Needs testing |
-| P0 | Rust | rust-analyzer | tree-sitter-rust | Needs testing |
-| P1 | Java | jdtls | tree-sitter-java | Basic |
-| P1 | C/C++ | clangd | tree-sitter-c / tree-sitter-cpp | Not implemented (no query file) |
-| P1 | C# | OmniSharp | tree-sitter-c-sharp | Not implemented |
-| P1 | Swift | sourcekit-lsp | tree-sitter-swift | Not implemented |
-| P1 | Kotlin | kotlin-language-server | tree-sitter-kotlin | Not implemented |
-| P2 | Ruby | solargraph | tree-sitter-ruby | Not implemented |
-| P2 | PHP | intelephense | tree-sitter-php | Not implemented |
-| P2 | Dart | dart analyze | tree-sitter-dart | Not implemented |
-| P2 | Zig | zls | tree-sitter-zig | Not implemented |
-| P2 | Elixir | elixir-ls | tree-sitter-elixir | Not implemented |
-| P2 | Lua | lua-language-server | tree-sitter-lua | Not implemented |
-| P2 | Haskell | haskell-language-server | tree-sitter-haskell | Not implemented |
-| P3 | Scala | metals | tree-sitter-scala | Not implemented |
-| P3 | OCaml | ocamllsp | tree-sitter-ocaml | Not implemented |
-| P3 | Clojure | clojure-lsp | tree-sitter-clojure | Not implemented |
-| P3 | Julia | LanguageServer.jl | tree-sitter-julia | Not implemented |
+| Priority | Language      | LSP Server                 | Tree-sitter                     | Status                          |
+| -------- | ------------- | -------------------------- | ------------------------------- | ------------------------------- |
+| P0       | TypeScript/JS | typescript-language-server | tree-sitter-typescript          | Stable                          |
+| P0       | Python        | pyright / pylsp            | tree-sitter-python              | Needs fixing                    |
+| P0       | Go            | gopls                      | tree-sitter-go                  | Needs testing                   |
+| P0       | Rust          | rust-analyzer              | tree-sitter-rust                | Needs testing                   |
+| P1       | Java          | jdtls                      | tree-sitter-java                | Basic                           |
+| P1       | C/C++         | clangd                     | tree-sitter-c / tree-sitter-cpp | Not implemented (no query file) |
+| P1       | C#            | OmniSharp                  | tree-sitter-c-sharp             | Not implemented                 |
+| P1       | Swift         | sourcekit-lsp              | tree-sitter-swift               | Not implemented                 |
+| P1       | Kotlin        | kotlin-language-server     | tree-sitter-kotlin              | Not implemented                 |
+| P2       | Ruby          | solargraph                 | tree-sitter-ruby                | Not implemented                 |
+| P2       | PHP           | intelephense               | tree-sitter-php                 | Not implemented                 |
+| P2       | Dart          | dart analyze               | tree-sitter-dart                | Not implemented                 |
+| P2       | Zig           | zls                        | tree-sitter-zig                 | Not implemented                 |
+| P2       | Elixir        | elixir-ls                  | tree-sitter-elixir              | Not implemented                 |
+| P2       | Lua           | lua-language-server        | tree-sitter-lua                 | Not implemented                 |
+| P2       | Haskell       | haskell-language-server    | tree-sitter-haskell             | Not implemented                 |
+| P3       | Scala         | metals                     | tree-sitter-scala               | Not implemented                 |
+| P3       | OCaml         | ocamllsp                   | tree-sitter-ocaml               | Not implemented                 |
+| P3       | Clojure       | clojure-lsp                | tree-sitter-clojure             | Not implemented                 |
+| P3       | Julia         | LanguageServer.jl          | tree-sitter-julia               | Not implemented                 |
 
 구현 세부사항:
+
 - **Auto-detection**: 프로젝트 파일 확장자 스캔 -> 필요한 LSP 서버 자동 판별
 - **Auto-install**: LSP 서버가 없으면 설치 제안 (npm/pip/go install/cargo 등)
 - **Config template**: 각 언어별 기본 LSP config 내장
@@ -875,6 +908,7 @@ dhelix> "사용자 인증을 처리하는 함수 찾아줘"
 ```
 
 구현 세부사항:
+
 - **Embedding model**: local model 우선 (sentence-transformers 또는 ONNX runtime)
   - Fallback: OpenAI `text-embedding-3-small` (API key 있을 때)
 - **Chunking strategy**: Function/class 단위 chunking (tree-sitter AST 기반)
@@ -895,7 +929,7 @@ interface SemanticSearchResult {
   readonly symbolType: string;
   readonly snippet: string;
   readonly confidence: number;
-  readonly matchType: 'semantic' | 'keyword' | 'hybrid';
+  readonly matchType: "semantic" | "keyword" | "hybrid";
 }
 ```
 
@@ -905,14 +939,14 @@ interface SemanticSearchResult {
 
 **지원할 리팩토링 작업:**
 
-| Refactoring | LSP Method | Description |
-|-------------|-----------|-------------|
-| Rename | `textDocument/rename` | 이미 구현 (`safe_rename`) |
-| Extract Function | `textDocument/codeAction` | 선택 영역을 함수로 추출 |
-| Extract Variable | `textDocument/codeAction` | 표현식을 변수로 추출 |
-| Inline Variable | `textDocument/codeAction` | 변수를 inline으로 치환 |
-| Move Symbol | workspace edit | 심볼을 다른 파일로 이동 |
-| Change Signature | `textDocument/codeAction` | 함수 시그니처 변경 |
+| Refactoring      | LSP Method                | Description               |
+| ---------------- | ------------------------- | ------------------------- |
+| Rename           | `textDocument/rename`     | 이미 구현 (`safe_rename`) |
+| Extract Function | `textDocument/codeAction` | 선택 영역을 함수로 추출   |
+| Extract Variable | `textDocument/codeAction` | 표현식을 변수로 추출      |
+| Inline Variable  | `textDocument/codeAction` | 변수를 inline으로 치환    |
+| Move Symbol      | workspace edit            | 심볼을 다른 파일로 이동   |
+| Change Signature | `textDocument/codeAction` | 함수 시그니처 변경        |
 
 ```typescript
 // src/lsp/tools/refactor-tool.ts
@@ -920,9 +954,9 @@ interface RefactorRequest {
   readonly type: RefactorType;
   readonly filePath: string;
   readonly range: Range;
-  readonly newName?: string;        // for rename
-  readonly targetPath?: string;     // for move
-  readonly preview: boolean;        // dry-run으로 변경사항 미리보기
+  readonly newName?: string; // for rename
+  readonly targetPath?: string; // for move
+  readonly preview: boolean; // dry-run으로 변경사항 미리보기
 }
 
 interface RefactorPreview {
@@ -931,7 +965,7 @@ interface RefactorPreview {
     readonly edits: ReadonlyArray<TextEdit>;
     readonly description: string;
   }>;
-  readonly riskLevel: 'safe' | 'moderate' | 'risky';
+  readonly riskLevel: "safe" | "moderate" | "risky";
   readonly affectedFiles: number;
   readonly affectedSymbols: number;
 }
@@ -940,6 +974,7 @@ interface RefactorPreview {
 ### 5.6 Phase 5: Advanced LSP Features (v0.6)
 
 **Call Hierarchy:**
+
 ```typescript
 // textDocument/prepareCallHierarchy + callHierarchy/incomingCalls + callHierarchy/outgoingCalls
 interface CallHierarchyResult {
@@ -951,6 +986,7 @@ interface CallHierarchyResult {
 ```
 
 **Type Hierarchy:**
+
 ```typescript
 // textDocument/prepareTypeHierarchy + typeHierarchy/supertypes + typeHierarchy/subtypes
 interface TypeHierarchyResult {
@@ -961,12 +997,14 @@ interface TypeHierarchyResult {
 ```
 
 **Diagnostics Integration:**
+
 - LSP `textDocument/publishDiagnostics`를 실시간 수신
 - Agent에게 현재 파일의 diagnostics를 context로 제공
 - Error/warning count를 CLI status bar에 표시
 - `dhelix diagnostics` 명령으로 프로젝트 전체 diagnostics 요약
 
 **Hover Information:**
+
 - `textDocument/hover` 결과를 agent context에 활용
 - 타입 정보, docstring, 정의 위치를 agent가 참조 가능
 
@@ -986,11 +1024,13 @@ src/hooks/
 ```
 
 **현재 동작하는 것:**
+
 - PostToolUse hook (파일 편집 후 자동 lint/format)
 - Event-driven hook runner
 - Hook timeout (default 30초)
 
 **동작하지 않거나 부족한 것:**
+
 - Event coverage 42% -- 많은 lifecycle 이벤트에 hook 미지원
 - Hook 실행 결과 추적/디버깅 없음
 - Typed execution backend 없음 (모든 hook이 shell 기반)
@@ -1001,29 +1041,30 @@ src/hooks/
 
 **목표:** 모든 주요 lifecycle 이벤트에 hook point 제공.
 
-| Event | Phase | Description | Current |
-|-------|-------|-------------|---------|
-| `session:start` | Pre/Post | 세션 시작 | Missing |
-| `session:end` | Pre/Post | 세션 종료 | Missing |
-| `message:send` | Pre/Post | 사용자 메시지 전송 | Missing |
-| `message:receive` | Pre/Post | LLM 응답 수신 | Missing |
-| `tool:call` | Pre/Post | 도구 호출 | Post only |
-| `tool:result` | Pre/Post | 도구 결과 수신 | Missing |
-| `file:read` | Pre/Post | 파일 읽기 | Missing |
-| `file:write` | Pre/Post | 파일 쓰기 | Partial (lint) |
-| `file:edit` | Pre/Post | 파일 편집 | Partial (lint) |
-| `command:execute` | Pre/Post | 슬래시 명령 실행 | Missing |
-| `mcp:connect` | Pre/Post | MCP 서버 연결 | Missing |
-| `mcp:disconnect` | Pre/Post | MCP 서버 연결 해제 | Missing |
-| `mcp:tool:call` | Pre/Post | MCP 도구 호출 | Missing |
-| `agent:spawn` | Pre/Post | 서브에이전트 생성 | Missing |
-| `agent:complete` | Pre/Post | 서브에이전트 완료 | Missing |
-| `context:compact` | Pre/Post | 컨텍스트 압축 | Missing |
-| `permission:request` | Pre/Post | 권한 요청 | Missing |
-| `permission:grant` | Post | 권한 승인 | Missing |
-| `error:recover` | Post | 에러 복구 | Missing |
+| Event                | Phase    | Description        | Current        |
+| -------------------- | -------- | ------------------ | -------------- |
+| `session:start`      | Pre/Post | 세션 시작          | Missing        |
+| `session:end`        | Pre/Post | 세션 종료          | Missing        |
+| `message:send`       | Pre/Post | 사용자 메시지 전송 | Missing        |
+| `message:receive`    | Pre/Post | LLM 응답 수신      | Missing        |
+| `tool:call`          | Pre/Post | 도구 호출          | Post only      |
+| `tool:result`        | Pre/Post | 도구 결과 수신     | Missing        |
+| `file:read`          | Pre/Post | 파일 읽기          | Missing        |
+| `file:write`         | Pre/Post | 파일 쓰기          | Partial (lint) |
+| `file:edit`          | Pre/Post | 파일 편집          | Partial (lint) |
+| `command:execute`    | Pre/Post | 슬래시 명령 실행   | Missing        |
+| `mcp:connect`        | Pre/Post | MCP 서버 연결      | Missing        |
+| `mcp:disconnect`     | Pre/Post | MCP 서버 연결 해제 | Missing        |
+| `mcp:tool:call`      | Pre/Post | MCP 도구 호출      | Missing        |
+| `agent:spawn`        | Pre/Post | 서브에이전트 생성  | Missing        |
+| `agent:complete`     | Pre/Post | 서브에이전트 완료  | Missing        |
+| `context:compact`    | Pre/Post | 컨텍스트 압축      | Missing        |
+| `permission:request` | Pre/Post | 권한 요청          | Missing        |
+| `permission:grant`   | Post     | 권한 승인          | Missing        |
+| `error:recover`      | Post     | 에러 복구          | Missing        |
 
 구현 세부사항:
+
 - 각 event에 `Pre`/`Post` 두 가지 hook point
 - `Pre` hook은 실행을 취소하거나 입력을 변형 가능 (return `{ cancel: true }` 또는 `{ transform: newInput }`)
 - `Post` hook은 결과를 관찰하거나 부수 효과 실행 (결과 변형 불가)
@@ -1036,32 +1077,31 @@ src/hooks/
 ```yaml
 # .dhelix/settings.json
 {
-  "hooks": {
-    "file:write:post": [
-      {
-        "type": "shell",
-        "command": "prettier --write {{file}}"
-      },
-      {
-        "type": "typescript",
-        "module": "./.dhelix/hooks/custom-validator.ts",
-        "function": "validateOutput"
-      },
-      {
-        "type": "mcp-tool",
-        "server": "linter",
-        "tool": "lint_file",
-        "args": { "path": "{{file}}" }
-      }
-    ]
-  }
+  "hooks":
+    {
+      "file:write:post":
+        [
+          { "type": "shell", "command": "prettier --write {{file}}" },
+          {
+            "type": "typescript",
+            "module": "./.dhelix/hooks/custom-validator.ts",
+            "function": "validateOutput",
+          },
+          {
+            "type": "mcp-tool",
+            "server": "linter",
+            "tool": "lint_file",
+            "args": { "path": "{{file}}" },
+          },
+        ],
+    },
 }
 ```
 
 ```typescript
 // src/hooks/backends/hook-backend.ts
 interface HookBackend {
-  readonly type: 'shell' | 'typescript' | 'mcp-tool' | 'wasm';
+  readonly type: "shell" | "typescript" | "mcp-tool" | "wasm";
   execute(context: HookContext): Promise<HookResult>;
   validate(): Promise<boolean>;
   getTimeout(): number;
@@ -1069,7 +1109,7 @@ interface HookBackend {
 
 interface HookContext {
   readonly event: string;
-  readonly phase: 'pre' | 'post';
+  readonly phase: "pre" | "post";
   readonly data: Readonly<Record<string, unknown>>;
   readonly signal: AbortSignal;
 }
@@ -1079,7 +1119,7 @@ interface HookResult {
   readonly output?: string;
   readonly error?: string;
   readonly transform?: Record<string, unknown>; // pre-hook only
-  readonly cancel?: boolean;                     // pre-hook only
+  readonly cancel?: boolean; // pre-hook only
   readonly durationMs: number;
 }
 ```
@@ -1112,6 +1152,7 @@ dhelix> /hooks trace file:write:post
 ```
 
 구현 세부사항:
+
 - `/hooks status`: 전체 hook 등록 현황 + 실행 통계
 - `/hooks trace <event>`: 특정 이벤트의 hook 실행 실시간 로그
 - `/hooks dry-run <event>`: hook을 실제 실행하지 않고 어떤 handler가 트리거될지 미리보기
@@ -1138,7 +1179,7 @@ interface PluginManifest {
   readonly description: string;
   readonly author: string;
   readonly license: string;
-  readonly dhelixVersion: string;           // 호환 DHelix 버전 범위
+  readonly dhelixVersion: string; // 호환 DHelix 버전 범위
   readonly surfaces: ReadonlyArray<PluginSurface>;
   readonly permissions: ReadonlyArray<string>;
   readonly dependencies: Readonly<Record<string, string>>; // 다른 플러그인 의존
@@ -1157,9 +1198,10 @@ type PluginSurface =
 ### 7.3 Plugin Surfaces
 
 **7.3.1 Command Surface**
+
 ```typescript
 interface PluginCommandSurface {
-  readonly type: 'command';
+  readonly type: "command";
   readonly commands: ReadonlyArray<{
     readonly name: string;
     readonly description: string;
@@ -1170,9 +1212,10 @@ interface PluginCommandSurface {
 ```
 
 **7.3.2 Tool Surface**
+
 ```typescript
 interface PluginToolSurface {
-  readonly type: 'tool';
+  readonly type: "tool";
   readonly tools: ReadonlyArray<{
     readonly name: string;
     readonly description: string;
@@ -1184,12 +1227,13 @@ interface PluginToolSurface {
 ```
 
 **7.3.3 Hook Surface**
+
 ```typescript
 interface PluginHookSurface {
-  readonly type: 'hook';
+  readonly type: "hook";
   readonly hooks: ReadonlyArray<{
     readonly event: string;
-    readonly phase: 'pre' | 'post';
+    readonly phase: "pre" | "post";
     readonly handler: string;
     readonly priority: number;
   }>;
@@ -1197,22 +1241,24 @@ interface PluginHookSurface {
 ```
 
 **7.3.4 Agent Surface**
+
 ```typescript
 interface PluginAgentSurface {
-  readonly type: 'agent';
+  readonly type: "agent";
   readonly agents: ReadonlyArray<{
     readonly name: string;
     readonly systemPrompt: string;
-    readonly tools: ReadonlyArray<string>;  // available tool names
+    readonly tools: ReadonlyArray<string>; // available tool names
     readonly model?: string;
   }>;
 }
 ```
 
 **7.3.5 MCP Surface**
+
 ```typescript
 interface PluginMcpSurface {
-  readonly type: 'mcp';
+  readonly type: "mcp";
   readonly servers: ReadonlyArray<{
     readonly name: string;
     readonly config: McpServerConfig;
@@ -1222,17 +1268,18 @@ interface PluginMcpSurface {
 ```
 
 **7.3.6 Output/Theme Surface**
+
 ```typescript
 interface PluginOutputSurface {
-  readonly type: 'output';
+  readonly type: "output";
   readonly formatters: ReadonlyArray<{
-    readonly contentType: string;       // 'markdown' | 'code' | 'table' | 'diagram'
+    readonly contentType: string; // 'markdown' | 'code' | 'table' | 'diagram'
     readonly renderer: string;
   }>;
 }
 
 interface PluginThemeSurface {
-  readonly type: 'theme';
+  readonly type: "theme";
   readonly theme: {
     readonly colors: Partial<ThemeColors>;
     readonly icons: Partial<ThemeIcons>;
@@ -1255,24 +1302,24 @@ interface PluginLoader {
 
 **Loading sources:**
 
-| Source | Format | Example |
-|--------|--------|---------|
-| npm | `dhelix-plugin-{name}` | `npm install dhelix-plugin-docker` |
-| Local | Directory with `dhelix-plugin.json` | `.dhelix/plugins/my-plugin/` |
-| Git | Repository URL | `git+https://github.com/user/plugin.git` |
-| URL | Direct download | `https://registry.dhelix.dev/plugins/docker/v1.0.0` |
+| Source | Format                              | Example                                             |
+| ------ | ----------------------------------- | --------------------------------------------------- |
+| npm    | `dhelix-plugin-{name}`              | `npm install dhelix-plugin-docker`                  |
+| Local  | Directory with `dhelix-plugin.json` | `.dhelix/plugins/my-plugin/`                        |
+| Git    | Repository URL                      | `git+https://github.com/user/plugin.git`            |
+| URL    | Direct download                     | `https://registry.dhelix.dev/plugins/docker/v1.0.0` |
 
 ### 7.5 Trust Model & Security (v0.6)
 
 ```typescript
 // src/plugins/security/plugin-sandbox.ts
 interface PluginSecurityPolicy {
-  readonly trustLevel: 'official' | 'verified' | 'community' | 'local';
+  readonly trustLevel: "official" | "verified" | "community" | "local";
   readonly permissions: {
-    readonly fileSystem: 'none' | 'read-only' | 'project-only' | 'full';
-    readonly network: 'none' | 'localhost' | 'allowlist' | 'full';
-    readonly shell: 'none' | 'sandboxed' | 'full';
-    readonly env: 'none' | 'allowlist' | 'full';
+    readonly fileSystem: "none" | "read-only" | "project-only" | "full";
+    readonly network: "none" | "localhost" | "allowlist" | "full";
+    readonly shell: "none" | "sandboxed" | "full";
+    readonly env: "none" | "allowlist" | "full";
   };
   readonly resourceLimits: {
     readonly maxMemoryMb: number;
@@ -1284,6 +1331,7 @@ interface PluginSecurityPolicy {
 ```
 
 구현 세부사항:
+
 - Official plugins: DHelix 팀 서명, 모든 권한 허용
 - Verified plugins: 제3자 서명, 선언된 권한만 허용
 - Community plugins: 서명 없음, 최소 권한 + 사용자 승인 필요
@@ -1300,15 +1348,11 @@ interface PluginHotReload {
   getState(pluginId: string): PluginState;
 }
 
-type PluginState =
-  | 'loading'
-  | 'active'
-  | 'reloading'
-  | 'error'
-  | 'disabled';
+type PluginState = "loading" | "active" | "reloading" | "error" | "disabled";
 ```
 
 구현 세부사항:
+
 - File watcher on plugin source directory
 - State preservation: reload 시 플러그인의 in-memory state 저장/복원
 - Graceful reload: 진행 중인 hook/command 완료 후 reload
@@ -1322,11 +1366,13 @@ type PluginState =
 ### 8.1 Memory System
 
 **8.1.1 Current State**
+
 - Project-scoped persistence (`~/.dhelix/memory/{projectHash}/`)
 - Search API (keyword-based)
 - Auto-memory from conversation
 
 **8.1.2 Gaps vs Competitors**
+
 - OpenCode: SQLite-backed with forking, snapshot diffing
 - Codex: Built-in memory with structured storage
 
@@ -1346,20 +1392,21 @@ interface MemoryStore {
 
 interface MemoryEntry {
   readonly id: string;
-  readonly type: 'fact' | 'preference' | 'decision' | 'context' | 'error-resolution';
+  readonly type: "fact" | "preference" | "decision" | "context" | "error-resolution";
   readonly content: string;
-  readonly source: 'auto' | 'user' | 'agent';
-  readonly confidence: number;          // 0-1
+  readonly source: "auto" | "user" | "agent";
+  readonly confidence: number; // 0-1
   readonly createdAt: Date;
   readonly lastAccessedAt: Date;
   readonly accessCount: number;
   readonly tags: ReadonlyArray<string>;
   readonly relatedEntries: ReadonlyArray<string>; // entry IDs
-  readonly embedding?: ReadonlyArray<number>;     // for semantic search
+  readonly embedding?: ReadonlyArray<number>; // for semantic search
 }
 ```
 
 구현 세부사항:
+
 - `better-sqlite3` 사용 (synchronous API, 빠른 읽기)
 - Full-text search: SQLite FTS5 extension
 - Semantic search: embedding 컬럼 + cosine similarity
@@ -1395,11 +1442,11 @@ interface MemoryDiff {
 ```typescript
 interface MemoryQualityMetrics {
   readonly totalEntries: number;
-  readonly duplicateRate: number;       // 중복 비율
-  readonly contradictionCount: number;  // 모순 항목 수
-  readonly staleEntries: number;        // 30일 이상 미접근
+  readonly duplicateRate: number; // 중복 비율
+  readonly contradictionCount: number; // 모순 항목 수
+  readonly staleEntries: number; // 30일 이상 미접근
   readonly averageConfidence: number;
-  readonly coverageScore: number;       // 프로젝트 주요 영역 커버리지
+  readonly coverageScore: number; // 프로젝트 주요 영역 커버리지
 }
 ```
 
@@ -1411,10 +1458,12 @@ interface MemoryQualityMetrics {
 ### 8.2 Config System
 
 **8.2.1 Current State**
+
 - 5-layer merge: default < global < project < local < env
 - `.dhelix/` 디렉토리 기반 설정
 
 **8.2.2 Gaps**
+
 - Managed preferences (macOS MDM plist) 미지원 -- OpenCode는 지원
 - Config validation이 runtime에서만 발생 (타입 에러가 늦게 발견)
 - Config diff/debug 도구 없음
@@ -1473,11 +1522,11 @@ dhelix> /config debug model.default
 ```typescript
 // src/config/managed/managed-preferences.ts
 interface ManagedPreferences {
-  loadFromMdm(): Promise<Partial<DhelixConfig>>;    // macOS MDM plist
-  loadFromGpo(): Promise<Partial<DhelixConfig>>;    // Windows GPO
-  loadFromLdap(): Promise<Partial<DhelixConfig>>;   // Enterprise LDAP
-  getManagedKeys(): ReadonlyArray<string>;            // 관리자가 잠근 키 목록
-  isLocked(key: string): boolean;                    // 사용자가 변경 불가한 키
+  loadFromMdm(): Promise<Partial<DhelixConfig>>; // macOS MDM plist
+  loadFromGpo(): Promise<Partial<DhelixConfig>>; // Windows GPO
+  loadFromLdap(): Promise<Partial<DhelixConfig>>; // Enterprise LDAP
+  getManagedKeys(): ReadonlyArray<string>; // 관리자가 잠근 키 목록
+  isLocked(key: string): boolean; // 사용자가 변경 불가한 키
 }
 ```
 
@@ -1491,56 +1540,63 @@ interface ManagedPreferences {
 
 ### 9.1 Feature Completeness Targets
 
-| Feature | Current | v0.5 Target | v0.6 Target | v1.0 Target |
-|---------|---------|-------------|-------------|-------------|
-| MCP | 72% | 82% | 90% | 95% |
-| Skills | 65% | 78% | 88% | 93% |
-| Commands | 76% | 82% | 88% | 92% |
-| LSP | 71% | 80% | 88% | 95% |
-| Hooks | 42% | 65% | 80% | 90% |
-| Memory | 75% | 80% | 88% | 92% |
-| Config | 78% | 85% | 90% | 95% |
-| Indexing | 68% | 78% | 85% | 92% |
-| Git | 77% | 82% | 88% | 93% |
-| Plugin | 10% | 30% | 60% | 85% |
+| Feature  | Current | v0.5 Target | v0.6 Target | v1.0 Target |
+| -------- | ------- | ----------- | ----------- | ----------- |
+| MCP      | 72%     | 82%         | 90%         | 95%         |
+| Skills   | 65%     | 78%         | 88%         | 93%         |
+| Commands | 76%     | 82%         | 88%         | 92%         |
+| LSP      | 71%     | 80%         | 88%         | 95%         |
+| Hooks    | 42%     | 65%         | 80%         | 90%         |
+| Memory   | 75%     | 80%         | 88%         | 92%         |
+| Config   | 78%     | 85%         | 90%         | 95%         |
+| Indexing | 68%     | 78%         | 85%         | 92%         |
+| Git      | 77%     | 82%         | 88%         | 93%         |
+| Plugin   | 10%     | 30%         | 60%         | 85%         |
 
 ### 9.2 Quantitative KPIs
 
 **MCP:**
+
 - Reconnection success rate > 95%
 - Health check false positive rate < 2%
 - Tool filtering latency overhead < 5ms
 - OAuth token refresh success rate > 99%
 
 **Skills:**
+
 - Typed manifest adoption > 80% of project skills
 - Skill composition success rate > 90%
 - Remote skill load time p95 < 2s
 - Trust evaluation latency < 50ms
 
 **Commands:**
+
 - Command discovery time (user finds desired command) < 5s
 - Parameter parse error rate < 3%
 - Tab completion relevance score > 0.8
 
 **LSP:**
+
 - Language server startup time p95 < 3s
 - Incremental re-index time p95 < 500ms (for single file change)
 - Semantic search relevance (MRR@5) > 0.7
 - 15+ languages with stable LSP support
 
 **Hooks:**
+
 - Event coverage > 90% of lifecycle events
 - Hook execution overhead < 10% of total operation time
 - Hook failure visibility: 100% (no silent failures)
 
 **Plugins:**
+
 - Plugin load time p95 < 1s
 - Hot-reload downtime < 100ms
 - Plugin isolation: 0 cross-plugin state leaks
 - Marketplace: 20+ verified plugins at v1.0
 
 **Memory:**
+
 - Memory search latency p95 < 100ms
 - Contradiction detection recall > 80%
 - Memory consolidation quality score > 0.85
@@ -1549,18 +1605,21 @@ interface ManagedPreferences {
 ### 9.3 Qualitative Goals
 
 **Developer Experience:**
+
 - 새 언어 프로젝트를 열었을 때 LSP + indexing이 30초 내 자동 활성화
 - MCP 서버 장애 시 사용자가 인지하기 전에 자동 복구
 - Skill 작성자가 typed manifest 덕분에 IDE autocomplete 지원 받음
 - Plugin 개발자가 hot-reload로 edit-test cycle < 3초
 
 **Competitive Parity:**
+
 - OpenCode 대비 MCP feature 90% coverage (v0.5)
 - OpenCode 대비 LSP feature 85% coverage (v0.5)
 - Codex 대비 sandbox/security feature 80% coverage (v0.6)
 - 고유 차별화: unified command graph, skill composition, multi-surface plugins
 
 **Enterprise Readiness:**
+
 - Managed preferences로 대규모 팀 배포 지원
 - Plugin trust model로 supply-chain 보안 확보
 - MCP OAuth 2.1로 enterprise SSO 연동
@@ -1595,15 +1654,15 @@ EFFORT                  │                     EFFORT
 
 ### 9.5 Risk Register
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|-----------|
-| MCP spec 변경 (OAuth 2.1 -> 2.2) | High | Medium | Abstraction layer로 격리, adapter pattern |
-| Plugin security breach | Critical | Low | Sandbox isolation, permission audit, signing |
-| LSP server compatibility issues | Medium | High | Fallback to tree-sitter, per-language test suite |
-| Skill marketplace adoption 부진 | Medium | Medium | 풍부한 built-in skills, easy migration path |
-| Memory SQLite corruption | High | Low | WAL mode, periodic backup, integrity checks |
-| Hook performance overhead | Medium | Medium | Async execution, timeout enforcement, bypass flag |
-| Plugin API breaking changes | High | Medium | Semantic versioning, deprecation period, compatibility shim |
+| Risk                             | Impact   | Probability | Mitigation                                                  |
+| -------------------------------- | -------- | ----------- | ----------------------------------------------------------- |
+| MCP spec 변경 (OAuth 2.1 -> 2.2) | High     | Medium      | Abstraction layer로 격리, adapter pattern                   |
+| Plugin security breach           | Critical | Low         | Sandbox isolation, permission audit, signing                |
+| LSP server compatibility issues  | Medium   | High        | Fallback to tree-sitter, per-language test suite            |
+| Skill marketplace adoption 부진  | Medium   | Medium      | 풍부한 built-in skills, easy migration path                 |
+| Memory SQLite corruption         | High     | Low         | WAL mode, periodic backup, integrity checks                 |
+| Hook performance overhead        | Medium   | Medium      | Async execution, timeout enforcement, bypass flag           |
+| Plugin API breaking changes      | High     | Medium      | Semantic versioning, deprecation period, compatibility shim |
 
 ---
 
@@ -1657,38 +1716,38 @@ v0.7 (Q1 2027) — Wave 5: GUI & Advanced
 
 ## Appendix B: File-Level Change Map
 
-| New/Modified File | Feature | Phase |
-|-------------------|---------|-------|
-| `src/mcp/health/health-monitor.ts` | MCP health checks | v0.5 |
-| `src/mcp/health/failure-store.ts` | MCP failure persistence | v0.5 |
-| `src/mcp/client/reconnection-strategy.ts` | MCP auto-reconnect | v0.5 |
-| `src/mcp/tool-filter.ts` | Granular tool filtering (glob 패턴 확장) | v0.5 |
-| `src/mcp/client/streaming-handler.ts` | MCP streaming | v0.5 |
-| `src/mcp/resource/resource-context-provider.ts` | Resource integration | v0.5 |
-| `src/mcp/auth/oauth21-handler.ts` | OAuth 2.1 + PKCE | v0.6 |
-| `src/mcp/agent-to-agent/agent-mcp-server.ts` | Agent-to-Agent | v0.6 |
-| `src/mcp/registry/registry-client.ts` | MCP Registry | v0.7 |
-| `src/skills/manifest.ts` | Typed skill manifest | v0.5 |
-| `src/skills/composer.ts` | Skill composition | v0.5 |
-| `src/skills/marketplace/client.ts` | Marketplace client | v0.6 |
-| `src/skills/trust/trust-evaluator.ts` | Trust tiers | v0.6 |
-| `src/commands/command-graph.ts` | Unified command graph | v0.5 |
-| `src/commands/parameters.ts` | Consistent parsing | v0.5 |
-| `src/commands/discovery.ts` | Command discovery | v0.5 |
-| `src/commands/analytics.ts` | Usage analytics | v0.6 |
-| `src/indexing/incremental/incremental-engine.ts` | Incremental indexing | v0.5 |
-| `src/indexing/semantic/semantic-search-engine.ts` | Semantic search | v0.6 |
-| `src/lsp/language-registry.ts` | Multi-language config | v0.6 |
-| `src/lsp/tools/refactor-tool.ts` | Refactoring support | v0.6 |
-| `src/hooks/backends/hook-backend.ts` | Typed hook backends | v0.5 |
-| `src/hooks/debug/hook-tracer.ts` | Hook debugging | v0.5 |
-| `src/plugins/plugin-manifest.ts` | Plugin manifest | v0.6 |
-| `src/plugins/loader/plugin-loader.ts` | Plugin loading | v0.6 |
-| `src/plugins/security/plugin-sandbox.ts` | Plugin security | v0.6 |
-| `src/plugins/lifecycle/hot-reload.ts` | Hot-reload | v0.6 |
-| `src/memory/sqlite-store.ts` | SQLite migration | v0.6 |
-| `src/config/schema.ts` | Config validation | v0.5 |
-| `src/config/managed/managed-preferences.ts` | Managed prefs | v0.6 |
+| New/Modified File                                 | Feature                                  | Phase |
+| ------------------------------------------------- | ---------------------------------------- | ----- |
+| `src/mcp/health/health-monitor.ts`                | MCP health checks                        | v0.5  |
+| `src/mcp/health/failure-store.ts`                 | MCP failure persistence                  | v0.5  |
+| `src/mcp/client/reconnection-strategy.ts`         | MCP auto-reconnect                       | v0.5  |
+| `src/mcp/tool-filter.ts`                          | Granular tool filtering (glob 패턴 확장) | v0.5  |
+| `src/mcp/client/streaming-handler.ts`             | MCP streaming                            | v0.5  |
+| `src/mcp/resource/resource-context-provider.ts`   | Resource integration                     | v0.5  |
+| `src/mcp/auth/oauth21-handler.ts`                 | OAuth 2.1 + PKCE                         | v0.6  |
+| `src/mcp/agent-to-agent/agent-mcp-server.ts`      | Agent-to-Agent                           | v0.6  |
+| `src/mcp/registry/registry-client.ts`             | MCP Registry                             | v0.7  |
+| `src/skills/manifest.ts`                          | Typed skill manifest                     | v0.5  |
+| `src/skills/composer.ts`                          | Skill composition                        | v0.5  |
+| `src/skills/marketplace/client.ts`                | Marketplace client                       | v0.6  |
+| `src/skills/trust/trust-evaluator.ts`             | Trust tiers                              | v0.6  |
+| `src/commands/command-graph.ts`                   | Unified command graph                    | v0.5  |
+| `src/commands/parameters.ts`                      | Consistent parsing                       | v0.5  |
+| `src/commands/discovery.ts`                       | Command discovery                        | v0.5  |
+| `src/commands/analytics.ts`                       | Usage analytics                          | v0.6  |
+| `src/indexing/incremental/incremental-engine.ts`  | Incremental indexing                     | v0.5  |
+| `src/indexing/semantic/semantic-search-engine.ts` | Semantic search                          | v0.6  |
+| `src/lsp/language-registry.ts`                    | Multi-language config                    | v0.6  |
+| `src/lsp/tools/refactor-tool.ts`                  | Refactoring support                      | v0.6  |
+| `src/hooks/backends/hook-backend.ts`              | Typed hook backends                      | v0.5  |
+| `src/hooks/debug/hook-tracer.ts`                  | Hook debugging                           | v0.5  |
+| `src/plugins/plugin-manifest.ts`                  | Plugin manifest                          | v0.6  |
+| `src/plugins/loader/plugin-loader.ts`             | Plugin loading                           | v0.6  |
+| `src/plugins/security/plugin-sandbox.ts`          | Plugin security                          | v0.6  |
+| `src/plugins/lifecycle/hot-reload.ts`             | Hot-reload                               | v0.6  |
+| `src/memory/sqlite-store.ts`                      | SQLite migration                         | v0.6  |
+| `src/config/schema.ts`                            | Config validation                        | v0.5  |
+| `src/config/managed/managed-preferences.ts`       | Managed prefs                            | v0.6  |
 
 ## Appendix C: Dependency Map
 

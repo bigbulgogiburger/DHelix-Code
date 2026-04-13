@@ -197,15 +197,20 @@ const TS_IMPORT_PATTERN = /^import\s+.*from\s+['"]([^'"]+)['"]/;
 
 /** TS/JS 심볼 패턴 */
 const TS_PATTERNS = {
-  classDecl: /^(?:export\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w,\s]+)?/,
+  classDecl:
+    /^(?:export\s+)?(?:abstract\s+)?class\s+(\w+)(?:\s+extends\s+\w+)?(?:\s+implements\s+[\w,\s]+)?/,
   interfaceDecl: /^(?:export\s+)?interface\s+(\w+)(?:\s+extends\s+[\w,\s]+)?/,
   typeDecl: /^(?:export\s+)?type\s+(\w+)\s*[=<]/,
   enumDecl: /^(?:export\s+)?(?:const\s+)?enum\s+(\w+)/,
-  functionDecl: /^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*(.+?))?(?:\s*\{|$)/,
-  arrowFunctionDecl: /^(?:export\s+)?const\s+(\w+)\s*(?::\s*[^=]+)?\s*=\s*(?:async\s+)?(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*(.+?))?\s*=>/,
+  functionDecl:
+    /^(?:export\s+)?(?:async\s+)?function\s+(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*(.+?))?(?:\s*\{|$)/,
+  arrowFunctionDecl:
+    /^(?:export\s+)?const\s+(\w+)\s*(?::\s*[^=]+)?\s*=\s*(?:async\s+)?(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*(.+?))?\s*=>/,
   constDecl: /^(?:export\s+)?const\s+(\w+)\s*[=:]/,
-  methodDecl: /^\s+(?:(?:public|private|protected|static|readonly|async|abstract|override|get|set)\s+)*(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*(.+?))?(?:\s*\{|;|$)/,
-  propertyDecl: /^\s+(?:(?:public|private|protected|static|readonly)\s+)+(\w+)\s*[?!]?\s*(?::\s*(.+?))?(?:\s*[=;]|$)/,
+  methodDecl:
+    /^\s+(?:(?:public|private|protected|static|readonly|async|abstract|override|get|set)\s+)*(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*(.+?))?(?:\s*\{|;|$)/,
+  propertyDecl:
+    /^\s+(?:(?:public|private|protected|static|readonly)\s+)+(\w+)\s*[?!]?\s*(?::\s*(.+?))?(?:\s*[=;]|$)/,
 } as const;
 
 // ── Python 패턴 ──
@@ -235,8 +240,10 @@ const RUST_PATTERNS = {
   enumDecl: /^(?:pub(?:\([^)]*\))?\s+)?enum\s+(\w+)/,
   traitDecl: /^(?:pub(?:\([^)]*\))?\s+)?trait\s+(\w+)/,
   implDecl: /^impl(?:<[^>]*>)?\s+(?:(\w+)\s+for\s+)?(\w+)/,
-  functionDecl: /^(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*->\s*(.+?))?\s*(?:\{|where)/,
-  methodDecl: /^\s+(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*->\s*(.+?))?\s*(?:\{|where)/,
+  functionDecl:
+    /^(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*->\s*(.+?))?\s*(?:\{|where)/,
+  methodDecl:
+    /^\s+(?:pub(?:\([^)]*\))?\s+)?(?:async\s+)?fn\s+(\w+)\s*(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*->\s*(.+?))?\s*(?:\{|where)/,
 } as const;
 
 // ── Java/Kotlin/C# 패턴 ──
@@ -245,7 +252,8 @@ const JAVA_PATTERNS = {
   classDecl: /^(?:(?:public|private|protected|abstract|final|static)\s+)*class\s+(\w+)/,
   interfaceDecl: /^(?:(?:public|private|protected)\s+)*interface\s+(\w+)/,
   enumDecl: /^(?:(?:public|private|protected)\s+)*enum\s+(\w+)/,
-  methodDecl: /^\s+(?:(?:public|private|protected|static|final|abstract|synchronized|native|override|open)\s+)*(?:\w+(?:<[^>]*>)?)\s+(\w+)\s*\(([^)]*)\)/,
+  methodDecl:
+    /^\s+(?:(?:public|private|protected|static|final|abstract|synchronized|native|override|open)\s+)*(?:\w+(?:<[^>]*>)?)\s+(\w+)\s*\(([^)]*)\)/,
 } as const;
 
 // ── 언어 패밀리 분류 ──
@@ -305,7 +313,12 @@ function extractTsSymbols(lines: readonly string[]): {
     const lineNum = i + 1;
 
     // 빈 줄, 주석 건너뛰기
-    if (trimmed.length === 0 || trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
+    if (
+      trimmed.length === 0 ||
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("/*") ||
+      trimmed.startsWith("*")
+    ) {
       continue;
     }
 
@@ -328,11 +341,16 @@ function extractTsSymbols(lines: readonly string[]): {
     if (isInsideContainer && currentContainer) {
       // 메서드
       const methodMatch = trimmed.match(TS_PATTERNS.methodDecl);
-      if (methodMatch && methodMatch[1] !== "constructor" || (methodMatch && methodMatch[1] === "constructor")) {
+      if (
+        (methodMatch && methodMatch[1] !== "constructor") ||
+        (methodMatch && methodMatch[1] === "constructor")
+      ) {
         const name = methodMatch![1];
         const params = methodMatch![2] ?? "";
         const returnType = methodMatch![3] ?? "";
-        const sig = returnType ? `(${truncateSignature(params)}): ${truncateSignature(returnType)}` : `(${truncateSignature(params)})`;
+        const sig = returnType
+          ? `(${truncateSignature(params)}): ${truncateSignature(returnType)}`
+          : `(${truncateSignature(params)})`;
         const endIdx = findBlockEnd(lines, i);
         currentContainer.children.push({
           name,
@@ -632,7 +650,8 @@ function extractGoSymbols(lines: readonly string[]): {
       continue;
     }
 
-    const isExported = /^(?:type|func)\s+[A-Z]/.test(trimmed) || /^func\s+\([^)]+\)\s+[A-Z]/.test(trimmed);
+    const isExported =
+      /^(?:type|func)\s+[A-Z]/.test(trimmed) || /^func\s+\([^)]+\)\s+[A-Z]/.test(trimmed);
 
     // struct
     const structMatch = trimmed.match(GO_PATTERNS.structDecl);
@@ -822,7 +841,12 @@ function extractJavaSymbols(lines: readonly string[]): {
     const trimmed = line.trim();
     const lineNum = i + 1;
 
-    if (trimmed.length === 0 || trimmed.startsWith("//") || trimmed.startsWith("/*") || trimmed.startsWith("*")) {
+    if (
+      trimmed.length === 0 ||
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("/*") ||
+      trimmed.startsWith("*")
+    ) {
       continue;
     }
 
@@ -923,7 +947,8 @@ function extractGenericSymbols(lines: readonly string[]): {
 } {
   const imports: string[] = [];
   const symbols: OutlineSymbol[] = [];
-  const genericPattern = /^(?:export\s+)?(?:pub\s+)?(?:async\s+)?(?:static\s+)?(function|class|interface|type|struct|enum|def|fn|const|let|var)\s+(\w+)/;
+  const genericPattern =
+    /^(?:export\s+)?(?:pub\s+)?(?:async\s+)?(?:static\s+)?(function|class|interface|type|struct|enum|def|fn|const|let|var)\s+(\w+)/;
 
   for (let i = 0; i < lines.length; i++) {
     const trimmed = lines[i].trim();
@@ -932,7 +957,11 @@ function extractGenericSymbols(lines: readonly string[]): {
     if (trimmed.length === 0 || trimmed.startsWith("//") || trimmed.startsWith("#")) continue;
 
     // import/require 추출
-    if (trimmed.startsWith("import ") || trimmed.startsWith("from ") || trimmed.includes("require(")) {
+    if (
+      trimmed.startsWith("import ") ||
+      trimmed.startsWith("from ") ||
+      trimmed.includes("require(")
+    ) {
       imports.push(trimmed);
       continue;
     }
@@ -1076,7 +1105,12 @@ function renderSymbolTree(
 
     // 자식 심볼 렌더링 (재귀)
     if (sym.children.length > 0) {
-      const childLines = renderSymbolTree(sym.children, childPrefix, includeSignatures, includeLineNumbers);
+      const childLines = renderSymbolTree(
+        sym.children,
+        childPrefix,
+        includeSignatures,
+        includeLineNumbers,
+      );
       result.push(...childLines);
     }
   }
@@ -1131,9 +1165,7 @@ function renderOutline(
   }
 
   // Exports 섹션
-  const exported = outline.symbols
-    .filter((s) => s.exported)
-    .map((s) => s.name);
+  const exported = outline.symbols.filter((s) => s.exported).map((s) => s.name);
   if (exported.length > 0) {
     parts.push("");
     parts.push(`Exports: ${exported.join(", ")}`);
@@ -1151,23 +1183,11 @@ const paramSchema = z.object({
   /** 분석할 파일의 절대 경로 */
   file_path: z.string().describe("분석할 파일의 절대 경로"),
   /** import 목록 포함 여부 (기본: false) */
-  include_imports: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("import 목록 포함"),
+  include_imports: z.boolean().optional().default(false).describe("import 목록 포함"),
   /** 함수 시그니처 포함 여부 (기본: true) */
-  include_signatures: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("함수 시그니처 포함"),
+  include_signatures: z.boolean().optional().default(true).describe("함수 시그니처 포함"),
   /** 줄 번호 포함 여부 (기본: true) */
-  include_line_numbers: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("줄 번호 포함"),
+  include_line_numbers: z.boolean().optional().default(true).describe("줄 번호 포함"),
 });
 
 type Params = z.infer<typeof paramSchema>;

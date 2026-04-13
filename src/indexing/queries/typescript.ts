@@ -42,10 +42,7 @@ export interface ExtractionResult {
  * Extract the leading doc-comment (JSDoc or line comments) immediately
  * preceding a declaration node. Returns the first summary line.
  */
-function extractDocComment(
-  node: Node,
-  _source: string,
-): string | undefined {
+function extractDocComment(node: Node, _source: string): string | undefined {
   const prev = node.previousNamedSibling;
   if (!prev || prev.type !== "comment") return undefined;
 
@@ -227,9 +224,10 @@ export function extractTypeScriptSymbols(
       if (exportClause) {
         for (const spec of exportClause.namedChildren) {
           if (spec.type === "export_specifier") {
-            const exportedName = spec.childForFieldName("alias")?.text
-              ?? spec.childForFieldName("name")?.text
-              ?? spec.text;
+            const exportedName =
+              spec.childForFieldName("alias")?.text ??
+              spec.childForFieldName("name")?.text ??
+              spec.text;
             exports.push(exportedName);
           }
         }
@@ -250,9 +248,10 @@ export function extractTypeScriptSymbols(
     if (exportClause) {
       for (const spec of exportClause.namedChildren) {
         if (spec.type === "export_specifier") {
-          const exportedName = spec.childForFieldName("alias")?.text
-            ?? spec.childForFieldName("name")?.text
-            ?? spec.text;
+          const exportedName =
+            spec.childForFieldName("alias")?.text ??
+            spec.childForFieldName("name")?.text ??
+            spec.text;
           exports.push(exportedName);
         }
       }
@@ -267,10 +266,7 @@ export function extractTypeScriptSymbols(
 
     // Track the exported name for the declaration child
     const declaration = node.namedChildren.find(
-      (c) =>
-        c.type !== "export_clause" &&
-        c.type !== "string" &&
-        c.type !== "comment",
+      (c) => c.type !== "export_clause" && c.type !== "string" && c.type !== "comment",
     );
     if (declaration) {
       const declName = nameOf(declaration);
@@ -290,10 +286,7 @@ export function extractTypeScriptSymbols(
 
   // ── Functions ───────────────────────────────────────────────────────
 
-  function handleFunctionDeclaration(
-    node: Node,
-    isExported: boolean,
-  ): void {
+  function handleFunctionDeclaration(node: Node, isExported: boolean): void {
     const name = nameOf(node);
     if (!name) return;
 
@@ -315,10 +308,7 @@ export function extractTypeScriptSymbols(
 
   // ── Classes ─────────────────────────────────────────────────────────
 
-  function handleClassDeclaration(
-    node: Node,
-    isExported: boolean,
-  ): void {
+  function handleClassDeclaration(node: Node, isExported: boolean): void {
     const name = nameOf(node);
     if (!name) return;
 
@@ -345,11 +335,7 @@ export function extractTypeScriptSymbols(
     }
   }
 
-  function extractClassMembers(
-    body: Node,
-    className: string,
-    classExported: boolean,
-  ): void {
+  function extractClassMembers(body: Node, className: string, classExported: boolean): void {
     for (const member of body.namedChildren) {
       switch (member.type) {
         case "method_definition":
@@ -363,11 +349,7 @@ export function extractTypeScriptSymbols(
     }
   }
 
-  function handleMethodDefinition(
-    node: Node,
-    className: string,
-    classExported: boolean,
-  ): void {
+  function handleMethodDefinition(node: Node, className: string, classExported: boolean): void {
     const name = nameOf(node);
     if (!name) return;
 
@@ -400,10 +382,7 @@ export function extractTypeScriptSymbols(
 
   // ── Interfaces ──────────────────────────────────────────────────────
 
-  function handleInterfaceDeclaration(
-    node: Node,
-    isExported: boolean,
-  ): void {
+  function handleInterfaceDeclaration(node: Node, isExported: boolean): void {
     const name = nameOf(node);
     if (!name) return;
 
@@ -425,10 +404,7 @@ export function extractTypeScriptSymbols(
 
   // ── Type aliases ────────────────────────────────────────────────────
 
-  function handleTypeAlias(
-    node: Node,
-    isExported: boolean,
-  ): void {
+  function handleTypeAlias(node: Node, isExported: boolean): void {
     const name = nameOf(node);
     if (!name) return;
 
@@ -450,10 +426,7 @@ export function extractTypeScriptSymbols(
 
   // ── Enums ───────────────────────────────────────────────────────────
 
-  function handleEnumDeclaration(
-    node: Node,
-    isExported: boolean,
-  ): void {
+  function handleEnumDeclaration(node: Node, isExported: boolean): void {
     const name = nameOf(node);
     if (!name) return;
 
@@ -473,10 +446,7 @@ export function extractTypeScriptSymbols(
 
   // ── Lexical declarations (const/let/var) ────────────────────────────
 
-  function handleLexicalDeclaration(
-    node: Node,
-    isExported: boolean,
-  ): void {
+  function handleLexicalDeclaration(node: Node, isExported: boolean): void {
     // Only process const declarations at top level
     const kindNode = node.children.find(
       (c) => c.type === "const" || c.type === "let" || c.type === "var",
@@ -513,9 +483,7 @@ export function extractTypeScriptSymbols(
 
         // Extract type annotation if present
         const typeAnnotation = declarator.childForFieldName("type");
-        const sig = typeAnnotation
-          ? typeAnnotation.text.replace(/^:\s*/, "")
-          : undefined;
+        const sig = typeAnnotation ? typeAnnotation.text.replace(/^:\s*/, "") : undefined;
 
         symbols.push({
           name,
@@ -598,9 +566,6 @@ function stripQuotes(text: string): string {
   return text;
 }
 
-function findChild(
-  node: Node,
-  type: string,
-): Node | undefined {
+function findChild(node: Node, type: string): Node | undefined {
   return node.namedChildren.find((c) => c.type === type);
 }

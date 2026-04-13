@@ -468,10 +468,7 @@ export class IncrementalIndexer {
     this.incrementalUpdateCount++;
 
     const durationMs = Date.now() - startTime;
-    log.debug(
-      { indexed, removed, skipped, errors: errors.length, durationMs },
-      "증분 인덱싱 완료",
-    );
+    log.debug({ indexed, removed, skipped, errors: errors.length, durationMs }, "증분 인덱싱 완료");
 
     return {
       indexed,

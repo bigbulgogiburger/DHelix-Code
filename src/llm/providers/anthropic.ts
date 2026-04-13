@@ -1115,9 +1115,7 @@ export class AnthropicProvider implements UnifiedLLMProvider {
    * @param modelId - 모델 ID (선택적)
    */
   estimateCost(tokens: TokenUsage, modelId?: string): CostEstimate {
-    const model = modelId
-      ? this.manifest.models.find((m) => modelId.startsWith(m.id))
-      : undefined;
+    const model = modelId ? this.manifest.models.find((m) => modelId.startsWith(m.id)) : undefined;
     const pricing = model?.pricing ?? this.manifest.models[0]!.pricing;
 
     const inputCost = (tokens.promptTokens / 1_000_000) * pricing.input;

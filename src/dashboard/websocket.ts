@@ -91,7 +91,7 @@ export class DashboardEventBridge {
     res.writeHead(200, {
       "Content-Type": "text/event-stream",
       "Cache-Control": "no-cache",
-      "Connection": "keep-alive",
+      Connection: "keep-alive",
       "Access-Control-Allow-Origin": "*",
     });
 
@@ -247,7 +247,11 @@ export class DashboardEventBridge {
     }, HEARTBEAT_INTERVAL_MS);
 
     // Node.js 프로세스 종료를 방해하지 않도록 unref
-    if (this.heartbeatTimer && typeof this.heartbeatTimer === 'object' && 'unref' in this.heartbeatTimer) {
+    if (
+      this.heartbeatTimer &&
+      typeof this.heartbeatTimer === "object" &&
+      "unref" in this.heartbeatTimer
+    ) {
       (this.heartbeatTimer as { unref: () => void }).unref();
     }
   }

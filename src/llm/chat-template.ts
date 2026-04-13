@@ -313,10 +313,7 @@ export function detectChatTemplate(modelName: string): ChatTemplate {
  * ], template);
  * ```
  */
-export function applyTemplate(
-  messages: readonly ChatMessage[],
-  template: ChatTemplate,
-): string {
+export function applyTemplate(messages: readonly ChatMessage[], template: ChatTemplate): string {
   let prompt = template.bos;
   let systemContent: string | undefined;
 
@@ -394,10 +391,7 @@ export function applyTemplate(
  * @param modelName - 모델 이름 (템플릿 자동 감지에 사용)
  * @returns raw 프롬프트 문자열
  */
-export function formatPromptForModel(
-  messages: readonly ChatMessage[],
-  modelName: string,
-): string {
+export function formatPromptForModel(messages: readonly ChatMessage[], modelName: string): string {
   const template = detectChatTemplate(modelName);
   return applyTemplate(messages, template);
 }

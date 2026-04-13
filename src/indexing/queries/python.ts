@@ -9,7 +9,15 @@ import type { Node } from "web-tree-sitter";
 
 interface ParsedSymbol {
   readonly name: string;
-  readonly kind: "function" | "class" | "interface" | "type" | "variable" | "method" | "enum" | "constant";
+  readonly kind:
+    | "function"
+    | "class"
+    | "interface"
+    | "type"
+    | "variable"
+    | "method"
+    | "enum"
+    | "constant";
   readonly filePath: string;
   readonly startLine: number;
   readonly endLine: number;
@@ -52,7 +60,10 @@ function extractDocstring(bodyNode: Node | null): string | undefined {
       if (expr && (expr.type === "string" || expr.type === "concatenated_string")) {
         // Strip triple-quote markers
         const raw = expr.text;
-        return raw.replace(/^("""|''')\s*/, "").replace(/\s*("""|''')$/, "").trim();
+        return raw
+          .replace(/^("""|''')\s*/, "")
+          .replace(/\s*("""|''')$/, "")
+          .trim();
       }
       // First non-docstring statement means no docstring
       return undefined;
@@ -137,11 +148,7 @@ function extractAllList(rootNode: Node, _source: string): Set<string> | null {
 /**
  * Extract methods from a class body.
  */
-function extractClassMethods(
-  bodyNode: Node,
-  className: string,
-  filePath: string,
-): ParsedSymbol[] {
+function extractClassMethods(bodyNode: Node, className: string, filePath: string): ParsedSymbol[] {
   const methods: ParsedSymbol[] = [];
 
   for (let i = 0; i < bodyNode.namedChildCount; i++) {
@@ -224,12 +231,14 @@ export function extractPythonSymbols(
         if (!nameNode) continue;
 
         if (nameNode.type === "dotted_name" || nameNode.type === "aliased_import") {
-          const moduleName = nameNode.type === "aliased_import"
-            ? (nameNode.childForFieldName("name")?.text ?? nameNode.text)
-            : nameNode.text;
-          const alias = nameNode.type === "aliased_import"
-            ? (nameNode.childForFieldName("alias")?.text ?? moduleName)
-            : moduleName;
+          const moduleName =
+            nameNode.type === "aliased_import"
+              ? (nameNode.childForFieldName("name")?.text ?? nameNode.text)
+              : nameNode.text;
+          const alias =
+            nameNode.type === "aliased_import"
+              ? (nameNode.childForFieldName("alias")?.text ?? moduleName)
+              : moduleName;
 
           imports.push({
             source: moduleName,
@@ -256,9 +265,12 @@ export function extractPythonSymbols(
         if (!specNode) continue;
 
         if (specNode.type === "dotted_name" || specNode.type === "aliased_import") {
-          const name = specNode.type === "aliased_import"
-            ? (specNode.childForFieldName("alias")?.text ?? specNode.childForFieldName("name")?.text ?? specNode.text)
-            : specNode.text;
+          const name =
+            specNode.type === "aliased_import"
+              ? (specNode.childForFieldName("alias")?.text ??
+                specNode.childForFieldName("name")?.text ??
+                specNode.text)
+              : specNode.text;
           // Skip the module name itself
           if (specNode !== moduleNode) {
             specifiers.push(name);
@@ -309,7 +321,8 @@ export function extractPythonSymbols(
         name,
         kind: "function",
         filePath,
-        startLine: (child.type === "decorated_definition" ? child : targetNode).startPosition.row + 1,
+        startLine:
+          (child.type === "decorated_definition" ? child : targetNode).startPosition.row + 1,
         endLine: targetNode.endPosition.row + 1,
         exported,
         signature: sig,
@@ -331,15 +344,14 @@ export function extractPythonSymbols(
 
       // Build signature with base classes
       const superclasses = targetNode.childForFieldName("superclasses");
-      const sig = superclasses
-        ? `class ${name}(${superclasses.text})`
-        : `class ${name}`;
+      const sig = superclasses ? `class ${name}(${superclasses.text})` : `class ${name}`;
 
       symbols.push({
         name,
         kind: "class",
         filePath,
-        startLine: (child.type === "decorated_definition" ? child : targetNode).startPosition.row + 1,
+        startLine:
+          (child.type === "decorated_definition" ? child : targetNode).startPosition.row + 1,
         endLine: targetNode.endPosition.row + 1,
         exported,
         signature: sig,

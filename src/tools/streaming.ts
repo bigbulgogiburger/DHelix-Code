@@ -94,11 +94,7 @@ export class ToolStreamEmitter {
    * @param toolName   - 스트림을 발행하는 도구 이름
    * @param events     - AppEventEmitter 인스턴스 (undefined이면 no-op)
    */
-  constructor(
-    toolCallId: string,
-    toolName: string,
-    events: AppEventEmitter | undefined,
-  ) {
+  constructor(toolCallId: string, toolName: string, events: AppEventEmitter | undefined) {
     this.toolCallId = toolCallId;
     this.toolName = toolName;
     this.events = events;

@@ -110,11 +110,7 @@ export const GOOGLE_GEMINI_MANIFEST: ProviderManifest = {
  * @returns API 키 또는 undefined
  */
 export function resolveGeminiApiKey(): string | undefined {
-  const keys = [
-    "DHELIX_GOOGLE_API_KEY",
-    "GOOGLE_API_KEY",
-    "GEMINI_API_KEY",
-  ] as const;
+  const keys = ["DHELIX_GOOGLE_API_KEY", "GOOGLE_API_KEY", "GEMINI_API_KEY"] as const;
 
   for (const key of keys) {
     const value = process.env[key];
@@ -197,10 +193,7 @@ function toOpenAITools(tools: readonly ToolDefinitionForLLM[]): readonly Record<
  * @param attempt - 현재 재시도 횟수
  * @returns 재시도 가능 여부와 지연 시간 (ms), 또는 null (재시도 불가)
  */
-function getRetryInfo(
-  status: number,
-  attempt: number,
-): { readonly delayMs: number } | null {
+function getRetryInfo(status: number, attempt: number): { readonly delayMs: number } | null {
   // Rate Limit
   if (status === 429) {
     if (attempt >= MAX_RETRIES_RATE_LIMIT) return null;
@@ -232,10 +225,14 @@ async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
       return;
     }
     const timer = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
-      clearTimeout(timer);
-      reject(new LLMError("Request aborted"));
-    }, { once: true });
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(new LLMError("Request aborted"));
+      },
+      { once: true },
+    );
   });
 }
 
@@ -263,15 +260,12 @@ export class GoogleGeminiProvider implements UnifiedLLMProvider {
   private readonly apiKey: string;
   private readonly baseUrl: string;
 
-  constructor(options?: {
-    readonly apiKey?: string;
-    readonly baseUrl?: string;
-  }) {
+  constructor(options?: { readonly apiKey?: string; readonly baseUrl?: string }) {
     const key = options?.apiKey ?? resolveGeminiApiKey();
     if (!key) {
       throw new LLMError(
         "Google Gemini API key not found. " +
-        "Set DHELIX_GOOGLE_API_KEY, GOOGLE_API_KEY, or GEMINI_API_KEY environment variable.",
+          "Set DHELIX_GOOGLE_API_KEY, GOOGLE_API_KEY, or GEMINI_API_KEY environment variable.",
       );
     }
     this.apiKey = key;
@@ -457,15 +451,12 @@ export class GoogleGeminiProvider implements UnifiedLLMProvider {
   async healthCheck(): Promise<ProviderHealthStatus> {
     const start = Date.now();
     try {
-      const response = await fetch(
-        `${this.baseUrl}/models`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${this.apiKey}`,
-          },
+      const response = await fetch(`${this.baseUrl}/models`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
         },
-      );
+      });
 
       if (!response.ok) {
         return {
@@ -499,9 +490,7 @@ export class GoogleGeminiProvider implements UnifiedLLMProvider {
    * @returns 비용 예측 결과
    */
   estimateCost(tokens: TokenUsage, modelId?: string): CostEstimate {
-    const model = modelId
-      ? this.manifest.models.find((m) => modelId.startsWith(m.id))
-      : undefined;
+    const model = modelId ? this.manifest.models.find((m) => modelId.startsWith(m.id)) : undefined;
     const pricing = model?.pricing ?? this.manifest.models[0]!.pricing;
 
     const inputCost = (tokens.promptTokens / 1_000_000) * pricing.input;
@@ -568,9 +557,7 @@ export class GoogleGeminiProvider implements UnifiedLLMProvider {
       const retryInfo = getRetryInfo(response.status, attempt);
       if (!retryInfo) {
         const errorText = await response.text().catch(() => "");
-        throw new LLMError(
-          `Gemini API error (HTTP ${response.status}): ${errorText}`,
-        );
+        throw new LLMError(`Gemini API error (HTTP ${response.status}): ${errorText}`);
       }
 
       await sleep(retryInfo.delayMs, signal);

@@ -9,7 +9,15 @@ import type { Node } from "web-tree-sitter";
 
 interface ParsedSymbol {
   readonly name: string;
-  readonly kind: "function" | "class" | "interface" | "type" | "variable" | "method" | "enum" | "constant";
+  readonly kind:
+    | "function"
+    | "class"
+    | "interface"
+    | "type"
+    | "variable"
+    | "method"
+    | "enum"
+    | "constant";
   readonly filePath: string;
   readonly startLine: number;
   readonly endLine: number;

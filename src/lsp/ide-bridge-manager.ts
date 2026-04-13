@@ -154,9 +154,7 @@ async function tryLSPManager(
  * Uses dynamic import to avoid circular dependencies and does not
  * create the singleton client if it doesn't already exist.
  */
-export async function isIDEBridgeAvailable(
-  workspacePath: string,
-): Promise<boolean> {
+export async function isIDEBridgeAvailable(workspacePath: string): Promise<boolean> {
   try {
     const { getIDEBridge } = await import("./ide-bridge.js");
     const bridge = getIDEBridge(workspacePath);

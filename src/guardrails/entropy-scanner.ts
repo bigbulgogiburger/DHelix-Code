@@ -55,7 +55,11 @@ function safeRegexExec(pattern: RegExp, input: string): RegExpExecArray | null {
   if (input.length > SAFE_REGEX_INPUT_LIMIT) {
     const logger = getLogger();
     logger.warn(
-      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      {
+        inputLength: input.length,
+        limit: SAFE_REGEX_INPUT_LIMIT,
+        pattern: pattern.source.slice(0, 60),
+      },
       "ReDoS protection: input truncated for entropy scanner regex exec",
     );
     const truncated = input.slice(0, SAFE_REGEX_INPUT_LIMIT);

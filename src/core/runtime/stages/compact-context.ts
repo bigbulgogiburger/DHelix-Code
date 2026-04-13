@@ -39,10 +39,7 @@ export function createCompactContextStage(): RuntimeStage {
       // Step 1: AsyncCompactionEngine의 pending 결과 확인
       const asyncResult = ctx.contextManager.getAsyncCompactionResult();
       if (asyncResult) {
-        trace(
-          "compact-context",
-          "Applying async compaction result from previous iteration",
-        );
+        trace("compact-context", "Applying async compaction result from previous iteration");
         ctx.managedMessages = [...asyncResult];
         ctx.lastCompactionIteration = ctx.iteration;
         trace(

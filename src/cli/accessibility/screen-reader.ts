@@ -53,10 +53,7 @@ export function stripAnsi(text: string): string {
  * @param annotation - ARIA 어노테이션 메타데이터
  * @returns 스크린 리더가 읽기 쉬운 포매팅된 텍스트
  */
-export function annotateForScreenReader(
-  content: string,
-  annotation: AriaAnnotation
-): string {
+export function annotateForScreenReader(content: string, annotation: AriaAnnotation): string {
   const plain = stripAnsi(content);
   const liveLevel = annotation.live ?? getDefaultLive(annotation.role);
   const parts: string[] = [];

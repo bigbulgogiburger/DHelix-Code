@@ -188,19 +188,14 @@ export class MemoryManager {
     await this.searchDirectory(projectMemoryDir, query, results);
 
     // 2. 전역 메모리 검색
-    const globalMemoryDir = joinPath(
-      CONFIG_DIR,
-      MEMORY_DIR,
-    );
+    const globalMemoryDir = joinPath(CONFIG_DIR, MEMORY_DIR);
     // 전역 디렉토리가 프로젝트 디렉토리와 다른 경우에만 검색 (중복 방지)
     if (globalMemoryDir !== projectMemoryDir) {
       await this.searchDirectory(globalMemoryDir, query, results);
     }
 
     // 3. 관련도순 정렬 후 상위 10건 반환
-    return results
-      .sort((a, b) => b.relevance - a.relevance)
-      .slice(0, 10);
+    return results.sort((a, b) => b.relevance - a.relevance).slice(0, 10);
   }
 
   /**
@@ -386,9 +381,7 @@ export class MemoryManager {
     }
 
     const sortedIndices = [...matchedLineIndices].sort((a, b) => a - b);
-    const contextLines = sortedIndices
-      .slice(0, 10)
-      .map((i) => lines[i]);
+    const contextLines = sortedIndices.slice(0, 10).map((i) => lines[i]);
 
     return contextLines.join("\n").trim();
   }

@@ -67,32 +67,18 @@ interface SingleTabProps {
  * 비활성 탭은 dimColor 로 표시합니다.
  * 마지막 탭이 아니면 구분자(" │ ")가 뒤에 붙습니다.
  */
-const SingleTab = React.memo(function SingleTab({
-  tab,
-  index,
-  isActive,
-  isLast,
-}: SingleTabProps) {
+const SingleTab = React.memo(function SingleTab({ tab, index, isActive, isLast }: SingleTabProps) {
   const color = isActive ? getTabColor("active") : getTabColor(tab.status);
   const label = formatTabLabel(tab, index);
   const shortcut = getTabShortcut(index);
 
   return (
     <>
-      <Text
-        color={color}
-        bold={isActive}
-        dimColor={!isActive}
-        underline={isActive}
-      >
+      <Text color={color} bold={isActive} dimColor={!isActive} underline={isActive}>
         {label}
       </Text>
-      {shortcut !== "" && !isActive ? (
-        <Text dimColor> </Text>
-      ) : null}
-      {!isLast ? (
-        <Text dimColor>{TAB_SEPARATOR}</Text>
-      ) : null}
+      {shortcut !== "" && !isActive ? <Text dimColor> </Text> : null}
+      {!isLast ? <Text dimColor>{TAB_SEPARATOR}</Text> : null}
     </>
   );
 });
@@ -122,10 +108,7 @@ const SingleTab = React.memo(function SingleTab({
  *  [1] main │ [2] worker-1 (3)
  * ```
  */
-export const AgentTabs = React.memo(function AgentTabs({
-  tabs,
-  activeTabId,
-}: AgentTabsProps) {
+export const AgentTabs = React.memo(function AgentTabs({ tabs, activeTabId }: AgentTabsProps) {
   // 탭이 1개 이하면 탭 바 불필요
   if (tabs.length <= 1) {
     return null;

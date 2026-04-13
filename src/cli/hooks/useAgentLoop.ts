@@ -750,16 +750,16 @@ export function useAgentLoop({
         projectInstructions,
         autoMemoryContent,
         repoMapContent,
-      }).then((result) => {
-        if (result.response) {
-          void processMessage(
-            `[Subagent (${result.type}) completed]\n\n${result.response}`,
-          );
-        }
-      }).catch((err: unknown) => {
-        const msg = err instanceof Error ? err.message : String(err);
-        setError(`Subagent fork failed: ${msg}`);
-      });
+      })
+        .then((result) => {
+          if (result.response) {
+            void processMessage(`[Subagent (${result.type}) completed]\n\n${result.response}`);
+          }
+        })
+        .catch((err: unknown) => {
+          const msg = err instanceof Error ? err.message : String(err);
+          setError(`Subagent fork failed: ${msg}`);
+        });
     };
 
     events.on("skill:fork", handleSkillFork);

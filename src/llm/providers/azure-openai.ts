@@ -121,10 +121,7 @@ export const AZURE_OPENAI_MANIFEST: ProviderManifest = {
  * @returns API 키 또는 undefined
  */
 export function resolveAzureApiKey(): string | undefined {
-  const keys = [
-    "DHELIX_AZURE_API_KEY",
-    "AZURE_OPENAI_API_KEY",
-  ] as const;
+  const keys = ["DHELIX_AZURE_API_KEY", "AZURE_OPENAI_API_KEY"] as const;
 
   for (const key of keys) {
     const value = process.env[key];
@@ -207,10 +204,7 @@ function toOpenAITools(tools: readonly ToolDefinitionForLLM[]): readonly Record<
  * @param attempt - 현재 재시도 횟수
  * @returns 재시도 가능 여부와 지연 시간 (ms), 또는 null (재시도 불가)
  */
-function getRetryInfo(
-  status: number,
-  attempt: number,
-): { readonly delayMs: number } | null {
+function getRetryInfo(status: number, attempt: number): { readonly delayMs: number } | null {
   // Rate Limit
   if (status === 429) {
     if (attempt >= MAX_RETRIES_RATE_LIMIT) return null;
@@ -242,10 +236,14 @@ async function sleep(ms: number, signal?: AbortSignal): Promise<void> {
       return;
     }
     const timer = setTimeout(resolve, ms);
-    signal?.addEventListener("abort", () => {
-      clearTimeout(timer);
-      reject(new LLMError("Request aborted"));
-    }, { once: true });
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(new LLMError("Request aborted"));
+      },
+      { once: true },
+    );
   });
 }
 
@@ -291,7 +289,7 @@ export class AzureOpenAIProvider implements UnifiedLLMProvider {
     if (!key) {
       throw new LLMError(
         "Azure OpenAI API key not found. " +
-        "Set DHELIX_AZURE_API_KEY or AZURE_OPENAI_API_KEY environment variable.",
+          "Set DHELIX_AZURE_API_KEY or AZURE_OPENAI_API_KEY environment variable.",
       );
     }
     this.apiKey = key;
@@ -300,12 +298,13 @@ export class AzureOpenAIProvider implements UnifiedLLMProvider {
     if (!resource) {
       throw new LLMError(
         "Azure OpenAI resource name not found. " +
-        "Pass resourceName option or set AZURE_OPENAI_RESOURCE_NAME environment variable.",
+          "Pass resourceName option or set AZURE_OPENAI_RESOURCE_NAME environment variable.",
       );
     }
     this.resourceName = resource;
 
-    const deployment = options?.deploymentName ?? process.env["AZURE_OPENAI_DEPLOYMENT_NAME"] ?? "gpt-4o";
+    const deployment =
+      options?.deploymentName ?? process.env["AZURE_OPENAI_DEPLOYMENT_NAME"] ?? "gpt-4o";
     this.deploymentName = deployment;
 
     this.apiVersion = options?.apiVersion ?? AZURE_API_VERSION;
@@ -339,11 +338,7 @@ export class AzureOpenAIProvider implements UnifiedLLMProvider {
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     const body = this.buildRequestBody(request);
-    const response = await this.fetchWithRetry(
-      this.buildEndpointUrl(),
-      body,
-      request.signal,
-    );
+    const response = await this.fetchWithRetry(this.buildEndpointUrl(), body, request.signal);
 
     const json = (await response.json()) as {
       readonly choices: readonly {
@@ -391,11 +386,7 @@ export class AzureOpenAIProvider implements UnifiedLLMProvider {
    */
   async *stream(request: ChatRequest): AsyncIterable<ChatChunk> {
     const body = { ...this.buildRequestBody(request), stream: true };
-    const response = await this.fetchWithRetry(
-      this.buildEndpointUrl(),
-      body,
-      request.signal,
-    );
+    const response = await this.fetchWithRetry(this.buildEndpointUrl(), body, request.signal);
 
     const reader = response.body?.getReader();
     if (!reader) {
@@ -513,15 +504,12 @@ export class AzureOpenAIProvider implements UnifiedLLMProvider {
   async healthCheck(): Promise<ProviderHealthStatus> {
     const start = Date.now();
     try {
-      const response = await fetch(
-        this.buildModelsUrl(),
-        {
-          method: "GET",
-          headers: {
-            "api-key": this.apiKey,
-          },
+      const response = await fetch(this.buildModelsUrl(), {
+        method: "GET",
+        headers: {
+          "api-key": this.apiKey,
         },
-      );
+      });
 
       if (!response.ok) {
         return {
@@ -623,9 +611,7 @@ export class AzureOpenAIProvider implements UnifiedLLMProvider {
       const retryInfo = getRetryInfo(response.status, attempt);
       if (!retryInfo) {
         const errorText = await response.text().catch(() => "");
-        throw new LLMError(
-          `Azure OpenAI API error (HTTP ${response.status}): ${errorText}`,
-        );
+        throw new LLMError(`Azure OpenAI API error (HTTP ${response.status}): ${errorText}`);
       }
 
       await sleep(retryInfo.delayMs, signal);

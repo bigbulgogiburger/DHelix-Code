@@ -106,18 +106,14 @@ export function createExecuteToolsStage(): RuntimeStage {
           thinking: config.thinking,
         } satisfies ToolContext;
 
-        const pipelineResult = await toolPipeline.execute(
-          group,
-          pipelineContext,
-          {
-            // Skip pipeline preflight — preflight-policy stage already handled permission + guardrails
-            preflightChecks: [],
-            enableGuardrails: false,
-            postprocess: {
-              maxOutputLength: ctx.maxToolResultChars,
-            },
+        const pipelineResult = await toolPipeline.execute(group, pipelineContext, {
+          // Skip pipeline preflight — preflight-policy stage already handled permission + guardrails
+          preflightChecks: [],
+          enableGuardrails: false,
+          postprocess: {
+            maxOutputLength: ctx.maxToolResultChars,
           },
-        );
+        });
 
         // Collect pipeline execution results and apply output guardrails
         for (const result of pipelineResult.results) {

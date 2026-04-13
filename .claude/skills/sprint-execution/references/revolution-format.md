@@ -57,10 +57,10 @@ docs/revolution/ 문서들의 구조와 파싱 방법.
 
 ## 버전 → 문서 매핑
 
-| Version | Primary Docs | Wave |
-|---------|-------------|------|
-| v0.3.0 | 01, 02 | Runtime Foundation |
-| v0.4.0 | 03, 06 | Orchestration & Security |
-| v0.5.0 | 04, 05 | UX & Features |
-| v0.6.0 | 03, 05, 06 | Platform Maturation |
-| v0.7.0 | 04, 05 | GUI & Advanced |
+| Version | Primary Docs | Wave                     |
+| ------- | ------------ | ------------------------ |
+| v0.3.0  | 01, 02       | Runtime Foundation       |
+| v0.4.0  | 03, 06       | Orchestration & Security |
+| v0.5.0  | 04, 05       | UX & Features            |
+| v0.6.0  | 03, 05, 06   | Platform Maturation      |
+| v0.7.0  | 04, 05       | GUI & Advanced           |

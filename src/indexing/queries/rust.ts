@@ -10,7 +10,15 @@ import type { Node } from "web-tree-sitter";
 
 interface ParsedSymbol {
   readonly name: string;
-  readonly kind: "function" | "class" | "interface" | "type" | "variable" | "method" | "enum" | "constant";
+  readonly kind:
+    | "function"
+    | "class"
+    | "interface"
+    | "type"
+    | "variable"
+    | "method"
+    | "enum"
+    | "constant";
   readonly filePath: string;
   readonly startLine: number;
   readonly endLine: number;
@@ -47,7 +55,12 @@ function hasPubVisibility(node: Node): boolean {
       return true;
     }
     // Stop checking after we pass visibility position (it's always first)
-    if (child.type !== "visibility_modifier" && child.type !== "attribute_item" && child.type !== "line_comment" && child.type !== "block_comment") {
+    if (
+      child.type !== "visibility_modifier" &&
+      child.type !== "attribute_item" &&
+      child.type !== "line_comment" &&
+      child.type !== "block_comment"
+    ) {
       break;
     }
   }
@@ -121,10 +134,7 @@ function extractImplTarget(implNode: Node): string | undefined {
 /**
  * Extract methods from an impl_item body.
  */
-function extractImplMethods(
-  implNode: Node,
-  filePath: string,
-): ParsedSymbol[] {
+function extractImplMethods(implNode: Node, filePath: string): ParsedSymbol[] {
   const methods: ParsedSymbol[] = [];
   const parentName = extractImplTarget(implNode);
   const body = implNode.childForFieldName("body");

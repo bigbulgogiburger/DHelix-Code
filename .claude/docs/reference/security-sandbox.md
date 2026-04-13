@@ -4,12 +4,12 @@
 
 ## Trust Tiers (`permissions/trust-tiers.ts`)
 
-| Tier | 대상 | 기본 정책 |
-|------|------|----------|
-| T0 (BuiltIn) | 29개 core tools | 전체 허용 |
-| T1 (LocallyAuthored) | `~/.dhelix/skills/` | Trust-on-first-use |
-| T2 (ProjectShared) | `{project}/.dhelix/` | Review required |
-| T3 (External) | npm, remote MCP | OS-level sandbox |
+| Tier                 | 대상                 | 기본 정책          |
+| -------------------- | -------------------- | ------------------ |
+| T0 (BuiltIn)         | 29개 core tools      | 전체 허용          |
+| T1 (LocallyAuthored) | `~/.dhelix/skills/`  | Trust-on-first-use |
+| T2 (ProjectShared)   | `{project}/.dhelix/` | Review required    |
+| T3 (External)        | npm, remote MCP      | OS-level sandbox   |
 
 ## Permission System
 
@@ -20,13 +20,13 @@
 
 ## Sandbox Layers
 
-| Layer | File | Platform | 방식 |
-|-------|------|----------|------|
-| Env Sanitizer | `sandbox/env-sanitizer.ts` | All | 환경변수 정제 (30+ secrets blacklist) |
-| Process Sandbox | `sandbox/process-sandbox.ts` | All | 파일시스템 정책 + PATH 제한 |
-| Seatbelt | `sandbox/seatbelt.ts` | macOS | S-expression 프로파일 |
-| Bubblewrap | `sandbox/bubblewrap.ts` | Linux | 네임스페이스 격리 (WSL2 지원) |
-| Container | `sandbox/container.ts` | Docker | `--read-only --network none` |
+| Layer           | File                         | Platform | 방식                                  |
+| --------------- | ---------------------------- | -------- | ------------------------------------- |
+| Env Sanitizer   | `sandbox/env-sanitizer.ts`   | All      | 환경변수 정제 (30+ secrets blacklist) |
+| Process Sandbox | `sandbox/process-sandbox.ts` | All      | 파일시스템 정책 + PATH 제한           |
+| Seatbelt        | `sandbox/seatbelt.ts`        | macOS    | S-expression 프로파일                 |
+| Bubblewrap      | `sandbox/bubblewrap.ts`      | Linux    | 네임스페이스 격리 (WSL2 지원)         |
+| Container       | `sandbox/container.ts`       | Docker   | `--read-only --network none`          |
 
 ## Guardrails (`guardrails/`)
 

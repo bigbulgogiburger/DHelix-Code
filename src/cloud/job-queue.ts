@@ -11,7 +11,7 @@
  * @module cloud/job-queue
  */
 
-import { randomUUID } from 'node:crypto';
+import { randomUUID } from "node:crypto";
 
 import type {
   CloudJob,
@@ -20,8 +20,8 @@ import type {
   JobFilter,
   JobStats,
   JobStatus,
-} from './types.js';
-import { PRIORITY_ORDER } from './types.js';
+} from "./types.js";
+import { PRIORITY_ORDER } from "./types.js";
 
 // ---------------------------------------------------------------------------
 // JobQueue
@@ -76,7 +76,7 @@ export class JobQueue {
     const job: CloudJob = {
       ...input,
       id,
-      status: 'queued',
+      status: "queued",
       createdAt: Date.now(),
     };
 
@@ -128,7 +128,7 @@ export class JobQueue {
 
     const running: CloudJob = {
       ...job,
-      status: 'running',
+      status: "running",
       startedAt: Date.now(),
     };
     this.jobs.set(jobId, running);
@@ -153,13 +153,13 @@ export class JobQueue {
       return false;
     }
 
-    if (job.status !== 'queued' && job.status !== 'running') {
+    if (job.status !== "queued" && job.status !== "running") {
       return false;
     }
 
     const cancelled: CloudJob = {
       ...job,
-      status: 'cancelled',
+      status: "cancelled",
       completedAt: Date.now(),
     };
     this.jobs.set(jobId, cancelled);
@@ -192,7 +192,7 @@ export class JobQueue {
       throw new Error(`Job not found: ${jobId}`);
     }
 
-    const isTerminal = status === 'completed' || status === 'failed' || status === 'cancelled';
+    const isTerminal = status === "completed" || status === "failed" || status === "cancelled";
     const updated: CloudJob = {
       ...job,
       status,
@@ -269,11 +269,21 @@ export class JobQueue {
 
     for (const job of this.jobs.values()) {
       switch (job.status) {
-        case 'queued': queued++; break;
-        case 'running': running++; break;
-        case 'completed': completed++; break;
-        case 'failed': failed++; break;
-        case 'cancelled': cancelled++; break;
+        case "queued":
+          queued++;
+          break;
+        case "running":
+          running++;
+          break;
+        case "completed":
+          completed++;
+          break;
+        case "failed":
+          failed++;
+          break;
+        case "cancelled":
+          cancelled++;
+          break;
       }
     }
 
@@ -315,7 +325,7 @@ export class JobQueue {
    */
   private assertNotDisposed(): void {
     if (this.disposed) {
-      throw new Error('JobQueue has been disposed');
+      throw new Error("JobQueue has been disposed");
     }
   }
 }

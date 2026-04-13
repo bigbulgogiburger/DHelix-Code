@@ -123,22 +123,21 @@ export const AWS_BEDROCK_MANIFEST: ProviderManifest = {
  *
  * @returns AWS 자격증명 객체 또는 undefined
  */
-export function resolveBedrockCredentials(): {
-  readonly accessKeyId: string;
-  readonly secretAccessKey: string;
-  readonly region: string;
-} | undefined {
-  const accessKeyId =
-    process.env["DHELIX_AWS_ACCESS_KEY_ID"] ?? process.env["AWS_ACCESS_KEY_ID"];
+export function resolveBedrockCredentials():
+  | {
+      readonly accessKeyId: string;
+      readonly secretAccessKey: string;
+      readonly region: string;
+    }
+  | undefined {
+  const accessKeyId = process.env["DHELIX_AWS_ACCESS_KEY_ID"] ?? process.env["AWS_ACCESS_KEY_ID"];
   const secretAccessKey =
     process.env["DHELIX_AWS_SECRET_ACCESS_KEY"] ?? process.env["AWS_SECRET_ACCESS_KEY"];
 
   if (!accessKeyId || !secretAccessKey) return undefined;
 
   const region =
-    process.env["DHELIX_AWS_REGION"] ??
-    process.env["AWS_DEFAULT_REGION"] ??
-    "us-east-1";
+    process.env["DHELIX_AWS_REGION"] ?? process.env["AWS_DEFAULT_REGION"] ?? "us-east-1";
 
   return { accessKeyId, secretAccessKey, region };
 }
@@ -396,10 +395,7 @@ interface BedrockConverseResponse {
 /**
  * 에러 유형에 따른 재시도 가능 여부와 지연 시간 결정
  */
-function getRetryInfo(
-  status: number,
-  attempt: number,
-): { readonly delayMs: number } | null {
+function getRetryInfo(status: number, attempt: number): { readonly delayMs: number } | null {
   if (status === 429) {
     if (attempt >= MAX_RETRIES_RATE_LIMIT) return null;
     const delay = Math.min(
@@ -766,9 +762,7 @@ export class AwsBedrockProvider implements UnifiedLLMProvider {
    * @returns 비용 예측 결과
    */
   estimateCost(tokens: TokenUsage, modelId?: string): CostEstimate {
-    const model = modelId
-      ? this.manifest.models.find((m) => modelId.startsWith(m.id))
-      : undefined;
+    const model = modelId ? this.manifest.models.find((m) => modelId.startsWith(m.id)) : undefined;
     const pricing = model?.pricing ?? this.manifest.models[0]!.pricing;
 
     const inputCost = (tokens.promptTokens / 1_000_000) * pricing.input;
@@ -787,11 +781,7 @@ export class AwsBedrockProvider implements UnifiedLLMProvider {
   /**
    * AWS SigV4 서명이 포함된 자동 재시도 fetch 래퍼
    */
-  private async fetchWithRetry(
-    url: string,
-    body: string,
-    signal?: AbortSignal,
-  ): Promise<Response> {
+  private async fetchWithRetry(url: string, body: string, signal?: AbortSignal): Promise<Response> {
     let attempt = 0;
 
     while (true) {
@@ -817,9 +807,7 @@ export class AwsBedrockProvider implements UnifiedLLMProvider {
       const retryInfo = getRetryInfo(response.status, attempt);
       if (!retryInfo) {
         const errorText = await response.text().catch(() => "");
-        throw new LLMError(
-          `Bedrock API error (HTTP ${response.status}): ${errorText}`,
-        );
+        throw new LLMError(`Bedrock API error (HTTP ${response.status}): ${errorText}`);
       }
 
       await sleep(retryInfo.delayMs, signal);

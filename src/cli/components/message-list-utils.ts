@@ -114,10 +114,7 @@ export function shouldSkipRerender(
 
   // 스트리밍 중인 메시지는 content 변경 시 리렌더
   if (next.isStreaming) {
-    return (
-      prev.message.role === next.message.role &&
-      prev.message.content === next.message.content
-    );
+    return prev.message.role === next.message.role && prev.message.content === next.message.content;
   }
 
   // 완료된 메시지는 role + content + timestamp 모두 같을 때만 스킵

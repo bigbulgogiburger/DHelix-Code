@@ -231,7 +231,11 @@ export class SemanticSearchEngine {
     this.defaultMinScore = config?.minScore ?? 0.3;
 
     log.debug(
-      { dimensions: this.dimensions, maxResults: this.defaultMaxResults, minScore: this.defaultMinScore },
+      {
+        dimensions: this.dimensions,
+        maxResults: this.defaultMaxResults,
+        minScore: this.defaultMinScore,
+      },
       "SemanticSearchEngine 초기화",
     );
   }
@@ -248,7 +252,11 @@ export class SemanticSearchEngine {
   addEmbedding(embedding: CodeEmbedding): void {
     if (embedding.vector.length !== this.dimensions) {
       log.warn(
-        { expected: this.dimensions, actual: embedding.vector.length, symbol: embedding.symbolName },
+        {
+          expected: this.dimensions,
+          actual: embedding.vector.length,
+          symbol: embedding.symbolName,
+        },
         "addEmbedding: 벡터 차원 불일치",
       );
     }

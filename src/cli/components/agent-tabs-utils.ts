@@ -87,8 +87,7 @@ export function getStatusIcon(status: AgentTabStatus): string {
  */
 export function formatTabLabel(tab: TabLabelInfo, index: number): string {
   const indexLabel = index < MAX_SHORTCUT_INDEX ? `${index + 1}` : "+";
-  const badge =
-    tab.unreadCount !== undefined && tab.unreadCount > 0 ? ` (${tab.unreadCount})` : "";
+  const badge = tab.unreadCount !== undefined && tab.unreadCount > 0 ? ` (${tab.unreadCount})` : "";
   return `[${indexLabel}] ${tab.name}${badge}`;
 }
 

@@ -19,7 +19,7 @@
  */
 export interface CodeBlock {
   /** 블록의 종류 */
-  readonly type: 'function' | 'class' | 'method' | 'interface' | 'type' | 'import' | 'variable';
+  readonly type: "function" | "class" | "method" | "interface" | "type" | "import" | "variable";
   /** 블록의 이름 (class 내부 method는 "ClassName.methodName" 형식) */
   readonly name: string;
   /** 블록 시작 줄 번호 (1-based) */
@@ -37,7 +37,12 @@ export interface CodeBlock {
  */
 export interface CodeEdit {
   /** 편집 액션 종류 */
-  readonly action: 'replace-block' | 'insert-before' | 'insert-after' | 'remove-block' | 'rename-symbol';
+  readonly action:
+    | "replace-block"
+    | "insert-before"
+    | "insert-after"
+    | "remove-block"
+    | "rename-symbol";
   /** 대상 블록 이름 (예: "MyClass.myMethod") */
   readonly targetBlock: string;
   /** replace/insert 시 사용할 새 내용 */
@@ -80,7 +85,8 @@ const IMPORT_RE = /^import\s+/;
 const VARIABLE_RE = /^(?:export\s+)?(?:const|let|var)\s+(\w+)\s*[:=]/;
 
 /** 클래스 메서드 패턴 (들여쓰기된 메서드) */
-const METHOD_RE = /^\s+(?:(?:public|private|protected|static|readonly|async|abstract|override|get|set)\s+)*(\w+)\s*\(/;
+const METHOD_RE =
+  /^\s+(?:(?:public|private|protected|static|readonly|async|abstract|override|get|set)\s+)*(\w+)\s*\(/;
 
 /**
  * 중괄호 기반으로 블록의 끝 줄을 찾습니다.
@@ -96,15 +102,15 @@ function findBlockEnd(lines: readonly string[], startIdx: number): number {
   // 시작 줄에 여는 중괄호가 없으면 세미콜론/빈 줄 기반으로 끝 찾기
   // (변수 선언, 타입 별칭 등 중괄호 없는 단일/다중 줄 선언)
   const startLine = lines[startIdx];
-  if (!startLine.includes('{')) {
+  if (!startLine.includes("{")) {
     // 시작 줄에 세미콜론이 있으면 바로 종료
-    if (startLine.trimEnd().endsWith(';')) {
+    if (startLine.trimEnd().endsWith(";")) {
       return startIdx;
     }
     // 세미콜론이 나올 때까지 다음 줄을 탐색
     for (let i = startIdx + 1; i < lines.length; i++) {
-      if (lines[i].trimEnd().endsWith(';') || lines[i].trim() === '') {
-        return lines[i].trim() === '' ? Math.max(startIdx, i - 1) : i;
+      if (lines[i].trimEnd().endsWith(";") || lines[i].trim() === "") {
+        return lines[i].trim() === "" ? Math.max(startIdx, i - 1) : i;
       }
     }
     return startIdx;
@@ -116,9 +122,9 @@ function findBlockEnd(lines: readonly string[], startIdx: number): number {
   for (let i = startIdx; i < lines.length; i++) {
     const line = lines[i];
     for (const ch of line) {
-      if (ch === '{') {
+      if (ch === "{") {
         depth++;
-      } else if (ch === '}') {
+      } else if (ch === "}") {
         depth--;
         if (depth === 0) {
           return i;
@@ -141,13 +147,13 @@ function findBlockEnd(lines: readonly string[], startIdx: number): number {
  */
 function findImportEnd(lines: readonly string[], startIdx: number): number {
   // 단일 줄 import (세미콜론으로 끝남)
-  if (lines[startIdx].includes(';')) {
+  if (lines[startIdx].includes(";")) {
     return startIdx;
   }
 
   // 여러 줄 import — 세미콜론이 나올 때까지
   for (let i = startIdx + 1; i < lines.length; i++) {
-    if (lines[i].includes(';')) {
+    if (lines[i].includes(";")) {
       return i;
     }
   }
@@ -166,7 +172,7 @@ function findImportEnd(lines: readonly string[], startIdx: number): number {
  * @returns 감지된 코드 블록 배열 (읽기 전용)
  */
 export function parseCodeBlocks(content: string, language: string): readonly CodeBlock[] {
-  const lines = content.split('\n');
+  const lines = content.split("\n");
   const blocks: CodeBlock[] = [];
   let currentClassName: string | null = null;
   let classEndLine = -1;
@@ -177,7 +183,12 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
     const trimmed = line.trimStart();
 
     // 빈 줄이나 주석은 건너뛰기
-    if (trimmed === '' || trimmed.startsWith('//') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
+    if (
+      trimmed === "" ||
+      trimmed.startsWith("//") ||
+      trimmed.startsWith("/*") ||
+      trimmed.startsWith("*")
+    ) {
       i++;
       continue;
     }
@@ -191,12 +202,12 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
     const importMatch = trimmed.match(IMPORT_RE);
     if (importMatch) {
       const endIdx = findImportEnd(lines, i);
-      const blockContent = lines.slice(i, endIdx + 1).join('\n');
+      const blockContent = lines.slice(i, endIdx + 1).join("\n");
       // import 이름: from 뒤의 모듈 경로 또는 전체 줄
       const fromMatch = blockContent.match(/from\s+['"]([^'"]+)['"]/);
       const importName = fromMatch ? fromMatch[1] : `import_line_${i + 1}`;
       blocks.push({
-        type: 'import',
+        type: "import",
         name: importName,
         startLine: i + 1,
         endLine: endIdx + 1,
@@ -212,9 +223,9 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
     if (classMatch) {
       const className = classMatch[1];
       const endIdx = findBlockEnd(lines, i);
-      const blockContent = lines.slice(i, endIdx + 1).join('\n');
+      const blockContent = lines.slice(i, endIdx + 1).join("\n");
       blocks.push({
-        type: 'class',
+        type: "class",
         name: className,
         startLine: i + 1,
         endLine: endIdx + 1,
@@ -231,9 +242,9 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
     const ifaceMatch = trimmed.match(INTERFACE_RE);
     if (ifaceMatch) {
       const endIdx = findBlockEnd(lines, i);
-      const blockContent = lines.slice(i, endIdx + 1).join('\n');
+      const blockContent = lines.slice(i, endIdx + 1).join("\n");
       blocks.push({
-        type: 'interface',
+        type: "interface",
         name: ifaceMatch[1],
         startLine: i + 1,
         endLine: endIdx + 1,
@@ -248,9 +259,9 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
     const typeMatch = trimmed.match(TYPE_RE);
     if (typeMatch) {
       const endIdx = findBlockEnd(lines, i);
-      const blockContent = lines.slice(i, endIdx + 1).join('\n');
+      const blockContent = lines.slice(i, endIdx + 1).join("\n");
       blocks.push({
-        type: 'type',
+        type: "type",
         name: typeMatch[1],
         startLine: i + 1,
         endLine: endIdx + 1,
@@ -267,13 +278,18 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
       if (methodMatch) {
         const methodName = methodMatch[1];
         // constructor, get, set 등 특수 메서드 이름은 그대로 사용
-        if (methodName !== 'if' && methodName !== 'for' && methodName !== 'while' && methodName !== 'switch') {
+        if (
+          methodName !== "if" &&
+          methodName !== "for" &&
+          methodName !== "while" &&
+          methodName !== "switch"
+        ) {
           const endIdx = findBlockEnd(lines, i);
           // 메서드 끝이 클래스 끝을 초과하지 않도록 제한
           const clampedEnd = Math.min(endIdx, classEndLine);
-          const blockContent = lines.slice(i, clampedEnd + 1).join('\n');
+          const blockContent = lines.slice(i, clampedEnd + 1).join("\n");
           blocks.push({
-            type: 'method',
+            type: "method",
             name: `${currentClassName}.${methodName}`,
             startLine: i + 1,
             endLine: clampedEnd + 1,
@@ -290,9 +306,9 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
     const funcMatch = trimmed.match(FUNCTION_RE);
     if (funcMatch) {
       const endIdx = findBlockEnd(lines, i);
-      const blockContent = lines.slice(i, endIdx + 1).join('\n');
+      const blockContent = lines.slice(i, endIdx + 1).join("\n");
       blocks.push({
-        type: 'function',
+        type: "function",
         name: funcMatch[1],
         startLine: i + 1,
         endLine: endIdx + 1,
@@ -307,9 +323,9 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
     const arrowMatch = trimmed.match(ARROW_FN_RE);
     if (arrowMatch) {
       const endIdx = findBlockEnd(lines, i);
-      const blockContent = lines.slice(i, endIdx + 1).join('\n');
+      const blockContent = lines.slice(i, endIdx + 1).join("\n");
       blocks.push({
-        type: 'function',
+        type: "function",
         name: arrowMatch[1],
         startLine: i + 1,
         endLine: endIdx + 1,
@@ -325,9 +341,9 @@ export function parseCodeBlocks(content: string, language: string): readonly Cod
       const varMatch = trimmed.match(VARIABLE_RE);
       if (varMatch) {
         const endIdx = findBlockEnd(lines, i);
-        const blockContent = lines.slice(i, endIdx + 1).join('\n');
+        const blockContent = lines.slice(i, endIdx + 1).join("\n");
         blocks.push({
-          type: 'variable',
+          type: "variable",
           name: varMatch[1],
           startLine: i + 1,
           endLine: endIdx + 1,
@@ -374,56 +390,56 @@ export function applyEdit(content: string, blocks: readonly CodeBlock[], edit: C
     throw new Error(`Block not found: "${edit.targetBlock}"`);
   }
 
-  const lines = content.split('\n');
+  const lines = content.split("\n");
 
   switch (edit.action) {
-    case 'replace-block': {
+    case "replace-block": {
       if (edit.content === undefined) {
         throw new Error(`"content" is required for replace-block action`);
       }
       const before = lines.slice(0, block.startLine - 1);
       const after = lines.slice(block.endLine);
-      return [...before, edit.content, ...after].join('\n');
+      return [...before, edit.content, ...after].join("\n");
     }
 
-    case 'insert-before': {
+    case "insert-before": {
       if (edit.content === undefined) {
         throw new Error(`"content" is required for insert-before action`);
       }
       const before = lines.slice(0, block.startLine - 1);
       const rest = lines.slice(block.startLine - 1);
-      return [...before, edit.content, ...rest].join('\n');
+      return [...before, edit.content, ...rest].join("\n");
     }
 
-    case 'insert-after': {
+    case "insert-after": {
       if (edit.content === undefined) {
         throw new Error(`"content" is required for insert-after action`);
       }
       const before = lines.slice(0, block.endLine);
       const after = lines.slice(block.endLine);
-      return [...before, edit.content, ...after].join('\n');
+      return [...before, edit.content, ...after].join("\n");
     }
 
-    case 'remove-block': {
+    case "remove-block": {
       const before = lines.slice(0, block.startLine - 1);
       const after = lines.slice(block.endLine);
-      return [...before, ...after].join('\n');
+      return [...before, ...after].join("\n");
     }
 
-    case 'rename-symbol': {
+    case "rename-symbol": {
       if (!edit.newName) {
         throw new Error(`"newName" is required for rename-symbol action`);
       }
       // 블록의 원래 짧은 이름 추출 (dot notation에서 마지막 부분)
-      const parts = block.name.split('.');
+      const parts = block.name.split(".");
       const oldShortName = parts[parts.length - 1];
       // 블록 범위 내에서만 이름 교체 (식별자 경계 사용)
       const blockLines = lines.slice(block.startLine - 1, block.endLine);
-      const regex = new RegExp(`\\b${escapeRegex(oldShortName)}\\b`, 'g');
+      const regex = new RegExp(`\\b${escapeRegex(oldShortName)}\\b`, "g");
       const renamedLines = blockLines.map((line) => line.replace(regex, edit.newName!));
       const before = lines.slice(0, block.startLine - 1);
       const after = lines.slice(block.endLine);
-      return [...before, ...renamedLines, ...after].join('\n');
+      return [...before, ...renamedLines, ...after].join("\n");
     }
   }
 }
@@ -469,7 +485,10 @@ export function applyEdits(content: string, language: string, edits: readonly Co
  * @param edits - 검증할 편집 배열
  * @returns 검증 결과 (유효 여부 + 에러 메시지 배열)
  */
-export function validateEdits(blocks: readonly CodeBlock[], edits: readonly CodeEdit[]): ValidationResult {
+export function validateEdits(
+  blocks: readonly CodeBlock[],
+  edits: readonly CodeEdit[],
+): ValidationResult {
   const errors: string[] = [];
 
   for (let i = 0; i < edits.length; i++) {
@@ -479,28 +498,30 @@ export function validateEdits(blocks: readonly CodeBlock[], edits: readonly Code
     // 대상 블록 존재 확인
     const block = findBlock(blocks, edit.targetBlock);
     if (!block) {
-      const availableNames = blocks.map((b) => b.name).join(', ');
-      errors.push(`Edit #${idx}: Block "${edit.targetBlock}" not found. Available blocks: [${availableNames}]`);
+      const availableNames = blocks.map((b) => b.name).join(", ");
+      errors.push(
+        `Edit #${idx}: Block "${edit.targetBlock}" not found. Available blocks: [${availableNames}]`,
+      );
       continue;
     }
 
     // 액션별 필수 필드 확인
     switch (edit.action) {
-      case 'replace-block':
-      case 'insert-before':
-      case 'insert-after':
-        if (edit.content === undefined || edit.content === '') {
+      case "replace-block":
+      case "insert-before":
+      case "insert-after":
+        if (edit.content === undefined || edit.content === "") {
           errors.push(`Edit #${idx}: "${edit.action}" requires non-empty "content" field`);
         }
         break;
 
-      case 'rename-symbol':
-        if (!edit.newName || edit.newName.trim() === '') {
+      case "rename-symbol":
+        if (!edit.newName || edit.newName.trim() === "") {
           errors.push(`Edit #${idx}: "rename-symbol" requires non-empty "newName" field`);
         }
         break;
 
-      case 'remove-block':
+      case "remove-block":
         // remove-block은 추가 필드 불필요
         break;
     }
@@ -519,5 +540,5 @@ export function validateEdits(blocks: readonly CodeBlock[], edits: readonly Code
  * @returns 이스케이프된 문자열
  */
 function escapeRegex(str: string): string {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }

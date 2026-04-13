@@ -21,11 +21,7 @@ import { z } from "zod";
 import { readFile } from "node:fs/promises";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath } from "../../utils/path.js";
-import {
-  buildRepoMap,
-  type RepoSymbol,
-  type RepoMap,
-} from "../../indexing/repo-map.js";
+import { buildRepoMap, type RepoSymbol, type RepoMap } from "../../indexing/repo-map.js";
 
 /**
  * 매개변수 스키마 — 심볼 검색 패턴과 필터 옵션을 정의
@@ -39,28 +35,13 @@ const paramSchema = z.object({
     .optional()
     .describe("심볼 종류 필터 (생략 시 전체)"),
   /** 검색 범위 디렉토리 (생략 시 프로젝트 전체) */
-  directory: z
-    .string()
-    .optional()
-    .describe("검색 범위 디렉토리 (생략 시 프로젝트 전체)"),
+  directory: z.string().optional().describe("검색 범위 디렉토리 (생략 시 프로젝트 전체)"),
   /** 내보낸(export) 심볼만 검색 */
-  exported_only: z
-    .boolean()
-    .optional()
-    .default(false)
-    .describe("내보낸(export) 심볼만 검색"),
+  exported_only: z.boolean().optional().default(false).describe("내보낸(export) 심볼만 검색"),
   /** 함수 시그니처 포함 */
-  include_signature: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("함수 시그니처 포함"),
+  include_signature: z.boolean().optional().default(true).describe("함수 시그니처 포함"),
   /** 최대 결과 수 */
-  max_results: z
-    .number()
-    .optional()
-    .default(30)
-    .describe("최대 결과 수"),
+  max_results: z.number().optional().default(30).describe("최대 결과 수"),
 });
 
 type Params = z.infer<typeof paramSchema>;
@@ -192,9 +173,10 @@ async function fallbackGrepSearch(
   } else {
     // 전체 종류 검색
     patterns.push(
-      ...Object.values(kindPatterns).filter((_, i) =>
-        // "variable"과 "constant"은 중복되므로 "constant"만 사용
-        i !== 4,
+      ...Object.values(kindPatterns).filter(
+        (_, i) =>
+          // "variable"과 "constant"은 중복되므로 "constant"만 사용
+          i !== 4,
       ),
     );
   }
@@ -210,10 +192,14 @@ async function fallbackGrepSearch(
     const args = [
       "--line-number",
       "--no-heading",
-      "--color", "never",
-      "--max-count", "100",
-      "--type", "ts",
-      "--type", "js",
+      "--color",
+      "never",
+      "--max-count",
+      "100",
+      "--type",
+      "ts",
+      "--type",
+      "js",
       combinedPattern,
       searchDir,
     ];
@@ -264,11 +250,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       repoMap = await buildRepoMap(searchDir);
     } catch (mapError) {
       // 인덱스 구축 실패 → grep 폴백
-      const fallbackOutput = await fallbackGrepSearch(
-        params.query,
-        params.kind,
-        searchDir,
-      );
+      const fallbackOutput = await fallbackGrepSearch(params.query, params.kind, searchDir);
       const elapsed = Date.now() - startTime;
       return {
         output: fallbackOutput,

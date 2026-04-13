@@ -13,17 +13,17 @@
 DHelix는 기본 멀티에이전트 오케스트레이션 인프라를 갖추고 있다.
 하지만 "있다"와 "성숙하다"의 차이가 크다.
 
-| Component | File | 상태 | 완성도 |
-|-----------|------|------|--------|
-| Agent Loop | `src/core/agent-loop.ts` | ReAct + Circuit Breaker + Preemptive Compaction | 80% |
-| Subagent Spawner | `src/subagents/spawner.ts` | spawn, resume, background, worktree isolation | 75% |
-| Team Manager | `src/subagents/team-manager.ts` | DAG scheduling, topological sort, failure propagation | 70% |
-| Agent Types | `src/subagents/definition-types.ts` | explore, general, plan + custom definitions | 60% |
-| Dual-Model Router | `src/llm/dual-model-router.ts` | Architect/Editor 패턴 정의만 존재 | 35% |
-| Model Capabilities | `src/llm/model-capabilities.ts` | 정적 레지스트리, 가격/티어/토크나이저 | 70% |
-| LLM Client Factory | `src/llm/client-factory.ts` | Anthropic + OpenAI-compat + Responses API | 55% |
-| Shared State | `src/subagents/shared-state.ts` | 병렬 에이전트 간 데이터 공유 | 65% |
-| Cost Tracker | `src/llm/cost-tracker.ts` | 세션 내 비용 추적 | 60% |
+| Component          | File                                | 상태                                                  | 완성도 |
+| ------------------ | ----------------------------------- | ----------------------------------------------------- | ------ |
+| Agent Loop         | `src/core/agent-loop.ts`            | ReAct + Circuit Breaker + Preemptive Compaction       | 80%    |
+| Subagent Spawner   | `src/subagents/spawner.ts`          | spawn, resume, background, worktree isolation         | 75%    |
+| Team Manager       | `src/subagents/team-manager.ts`     | DAG scheduling, topological sort, failure propagation | 70%    |
+| Agent Types        | `src/subagents/definition-types.ts` | explore, general, plan + custom definitions           | 60%    |
+| Dual-Model Router  | `src/llm/dual-model-router.ts`      | Architect/Editor 패턴 정의만 존재                     | 35%    |
+| Model Capabilities | `src/llm/model-capabilities.ts`     | 정적 레지스트리, 가격/티어/토크나이저                 | 70%    |
+| LLM Client Factory | `src/llm/client-factory.ts`         | Anthropic + OpenAI-compat + Responses API             | 55%    |
+| Shared State       | `src/subagents/shared-state.ts`     | 병렬 에이전트 간 데이터 공유                          | 65%    |
+| Cost Tracker       | `src/llm/cost-tracker.ts`           | 세션 내 비용 추적                                     | 60%    |
 
 **핵심 문제**: 개별 컴포넌트는 존재하지만 통합된 orchestration control plane이 없다.
 각 컴포넌트가 독립적으로 동작하며, 상위 수준의 정책 관리와 상태 영속화가 부재하다.
@@ -31,24 +31,28 @@ DHelix는 기본 멀티에이전트 오케스트레이션 인프라를 갖추고
 ### 1.2 주요 결함 영역
 
 **A. Provider 확장성 한계**
+
 - `client-factory.ts`는 3개 클라이언트만 하드코딩: `AnthropicProvider`, `OpenAICompatibleClient`, `ResponsesAPIClient`
 - Google Gemini, AWS Bedrock, Azure OpenAI 등 주요 프로바이더 미지원
 - Local model (Ollama, LMStudio) 통합 경로 없음
 - Provider-specific feature (Google의 grounding, Anthropic의 caching)를 활용할 추상화 부재
 
 **B. Dual-Model Router 미완성**
+
 - `DualModelRouter` 클래스가 정의되어 있으나 `auto` 라우팅 전략이 구현되지 않음
 - Task complexity 기반 모델 선택 로직 없음
 - 비용 vs 품질 가중치 설정 불가
 - A/B 테스트 인프라 전무
 
 **C. Agent Manifest 비구조적**
+
 - `AgentDefinition`이 존재하나 typed manifest 수준이 아님
 - Per-agent model override는 `sonnet/opus/haiku/inherit` 문자열 수준
 - Agent의 allowed tools, memory scope, isolation mode가 manifest에 선언적으로 관리되지 않음
 - Agent 간 통신이 parent-child 단방향만 존재, peer-to-peer 없음
 
 **D. Session 영속성 부족**
+
 - Team DAG 상태가 메모리 상주 — 프로세스 종료 시 소실
 - Session forking / branching 미지원
 - Cross-session artifact 공유 메커니즘 없음
@@ -60,28 +64,29 @@ DHelix는 기본 멀티에이전트 오케스트레이션 인프라를 갖추고
 
 ### 2.1 Feature-Level Comparison Matrix
 
-| Feature | OpenCode | Codex | Claude Code | DHelix Current | DHelix Target |
-|---------|----------|-------|-------------|----------------|---------------|
-| **Built-in Agents** | 5+ (build, plan, explore, general, compaction) | 3+ (root, sub, fork) | 2 (main, sub) | 3 (explore, general, plan) | 8+ |
-| **Per-Agent Model Override** | Yes (model, temp, topP per agent) | No (global) | No | Partial (sonnet/opus/haiku) | Full (any model + params) |
-| **Custom Agent Prompts** | Yes (full template) | No | No | Yes (definition-loader) | Yes + manifest schema |
-| **Agent Permission Rules** | Per-agent rulesets | Depth-based | Session-level | Session-level | Per-agent + inherited |
-| **Step Limits** | Per-agent configurable | Depth tracking | Token-based | Circuit breaker | Per-agent + global budget |
-| **LLM Providers** | 20+ via Vercel AI SDK | OpenAI only | Anthropic only | 3 (Anthropic, OpenAI-compat, Responses) | 10+ |
-| **Small Model Path** | Yes (summaries, titles) | No | No | No | Yes (compaction, titles, classification) |
-| **Plugin Hooks** | chat.params, headers, system prompt transform | No | No | No | Pre/post hooks per phase |
-| **Session Forking** | Yes (--fork from checkpoint) | Yes (spawn_forked_thread) | No | No | Yes (fork + branch + merge) |
-| **Agent Communication** | Parent-child only | Parent-child + registry | Parent-child | Parent-child + shared state | Parent-child + peer-to-peer |
-| **Streaming Reasoning** | Native ReasoningPart | No | Extended thinking | Extended thinking | Native reasoning + thinking |
-| **Effect/DI System** | Effect.js layers | Custom | N/A | None | Provider-based DI |
-| **Agent Depth Tracking** | No | Yes (prevents infinite recursion) | No | Yes (nested-depth limits) | Yes + budget-based |
-| **Durable Orchestration** | No | Thread registry | No | No | Event-sourced store |
-| **WebSocket Prewarm** | No | Yes | No | No | Connection pool + prewarm |
-| **A/B Testing** | No | No | No | No | Yes (model routing) |
+| Feature                      | OpenCode                                       | Codex                             | Claude Code       | DHelix Current                          | DHelix Target                            |
+| ---------------------------- | ---------------------------------------------- | --------------------------------- | ----------------- | --------------------------------------- | ---------------------------------------- |
+| **Built-in Agents**          | 5+ (build, plan, explore, general, compaction) | 3+ (root, sub, fork)              | 2 (main, sub)     | 3 (explore, general, plan)              | 8+                                       |
+| **Per-Agent Model Override** | Yes (model, temp, topP per agent)              | No (global)                       | No                | Partial (sonnet/opus/haiku)             | Full (any model + params)                |
+| **Custom Agent Prompts**     | Yes (full template)                            | No                                | No                | Yes (definition-loader)                 | Yes + manifest schema                    |
+| **Agent Permission Rules**   | Per-agent rulesets                             | Depth-based                       | Session-level     | Session-level                           | Per-agent + inherited                    |
+| **Step Limits**              | Per-agent configurable                         | Depth tracking                    | Token-based       | Circuit breaker                         | Per-agent + global budget                |
+| **LLM Providers**            | 20+ via Vercel AI SDK                          | OpenAI only                       | Anthropic only    | 3 (Anthropic, OpenAI-compat, Responses) | 10+                                      |
+| **Small Model Path**         | Yes (summaries, titles)                        | No                                | No                | No                                      | Yes (compaction, titles, classification) |
+| **Plugin Hooks**             | chat.params, headers, system prompt transform  | No                                | No                | No                                      | Pre/post hooks per phase                 |
+| **Session Forking**          | Yes (--fork from checkpoint)                   | Yes (spawn_forked_thread)         | No                | No                                      | Yes (fork + branch + merge)              |
+| **Agent Communication**      | Parent-child only                              | Parent-child + registry           | Parent-child      | Parent-child + shared state             | Parent-child + peer-to-peer              |
+| **Streaming Reasoning**      | Native ReasoningPart                           | No                                | Extended thinking | Extended thinking                       | Native reasoning + thinking              |
+| **Effect/DI System**         | Effect.js layers                               | Custom                            | N/A               | None                                    | Provider-based DI                        |
+| **Agent Depth Tracking**     | No                                             | Yes (prevents infinite recursion) | No                | Yes (nested-depth limits)               | Yes + budget-based                       |
+| **Durable Orchestration**    | No                                             | Thread registry                   | No                | No                                      | Event-sourced store                      |
+| **WebSocket Prewarm**        | No                                             | Yes                               | No                | No                                      | Connection pool + prewarm                |
+| **A/B Testing**              | No                                             | No                                | No                | No                                      | Yes (model routing)                      |
 
 ### 2.2 Competitive Insights
 
 **OpenCode의 강점 — 유연한 에이전트 커스터마이징**
+
 - 각 에이전트에 개별 모델, temperature, topP를 설정할 수 있음
 - Plugin hook 시스템으로 LLM 요청/응답 파이프라인을 확장 가능
 - Vercel AI SDK 덕분에 20+ 프로바이더를 zero-config로 지원
@@ -89,6 +94,7 @@ DHelix는 기본 멀티에이전트 오케스트레이션 인프라를 갖추고
 - **DHelix 시사점**: Provider 추상화와 per-agent 설정 유연성을 최우선 확보해야 함
 
 **Codex의 강점 — Thread 기반 격리 모델**
+
 - AgentControl로 root/sub/fork thread를 명시적으로 관리
 - Agent depth tracking으로 무한 재귀 방지
 - spawn_forked_thread로 작업 분기 → 독립 실행 → 결과 수집
@@ -96,6 +102,7 @@ DHelix는 기본 멀티에이전트 오케스트레이션 인프라를 갖추고
 - **DHelix 시사점**: Thread/session 수명주기 관리와 fork 모델이 필요함
 
 **2026 트렌드 — Coherence > Autonomy**
+
 - 에이전트 간 직접 통신 (parent 거치지 않는 peer-to-peer)
 - 3-Tier orchestration: Local Interactive / Cloud Parallel / Automation
 - Worktree isolation이 업계 표준화
@@ -134,16 +141,16 @@ DHelix는 기본 멀티에이전트 오케스트레이션 인프라를 갖추고
 ```typescript
 // src/llm/providers/registry.ts
 interface ProviderManifest {
-  readonly id: string;                    // "anthropic", "google-gemini", "ollama"
-  readonly displayName: string;           // "Google Gemini"
+  readonly id: string; // "anthropic", "google-gemini", "ollama"
+  readonly displayName: string; // "Google Gemini"
   readonly models: readonly ModelEntry[]; // supported models
   readonly authType: "api-key" | "oauth" | "iam" | "none";
-  readonly features: ProviderFeatures;    // caching, grounding, etc.
+  readonly features: ProviderFeatures; // caching, grounding, etc.
 }
 
 interface ProviderFeatures {
-  readonly supportsCaching: boolean;        // Anthropic prompt caching
-  readonly supportsGrounding: boolean;      // Google search grounding
+  readonly supportsCaching: boolean; // Anthropic prompt caching
+  readonly supportsGrounding: boolean; // Google search grounding
   readonly supportsImageInput: boolean;
   readonly supportsReasoningTrace: boolean; // o-series, Claude thinking
   readonly maxConcurrentRequests: number;
@@ -160,6 +167,7 @@ interface UnifiedLLMProvider extends LLMProvider {
 ### 3.2 Phase 1: Google Gemini + Azure OpenAI (Week 1-3)
 
 **Google Gemini Provider** (`src/llm/providers/google-gemini.ts`):
+
 - Gemini 2.5 Pro/Flash 지원
 - Google AI Studio API + Vertex AI 이중 엔드포인트
 - Search grounding 지원 (web_search tool을 Gemini에 위임 가능)
@@ -170,13 +178,29 @@ interface UnifiedLLMProvider extends LLMProvider {
 ```typescript
 // 구현 우선순위
 const GEMINI_MODELS: ModelEntry[] = [
-  { id: "gemini-2.5-pro",   tier: "high",   context: 2_000_000, pricing: { input: 1.25, output: 10.0 } },
-  { id: "gemini-2.5-flash", tier: "medium", context: 1_000_000, pricing: { input: 0.15, output: 0.60 } },
-  { id: "gemini-2.0-flash", tier: "medium", context: 1_000_000, pricing: { input: 0.10, output: 0.40 } },
+  {
+    id: "gemini-2.5-pro",
+    tier: "high",
+    context: 2_000_000,
+    pricing: { input: 1.25, output: 10.0 },
+  },
+  {
+    id: "gemini-2.5-flash",
+    tier: "medium",
+    context: 1_000_000,
+    pricing: { input: 0.15, output: 0.6 },
+  },
+  {
+    id: "gemini-2.0-flash",
+    tier: "medium",
+    context: 1_000_000,
+    pricing: { input: 0.1, output: 0.4 },
+  },
 ];
 ```
 
 **Azure OpenAI Provider** (`src/llm/providers/azure-openai.ts`):
+
 - Azure 전용 엔드포인트 포맷 지원 (`{resource}.openai.azure.com/openai/deployments/{deployment}`)
 - Azure AD / Managed Identity 인증
 - `api-version` 쿼리 파라미터 관리
@@ -184,6 +208,7 @@ const GEMINI_MODELS: ModelEntry[] = [
 - Region-based routing (latency 최적화)
 
 **공통 작업**:
+
 - `ProviderRegistry` 구현 — 런타임 프로바이더 등록/해제
 - `model-capabilities.ts`의 `MODEL_OVERRIDES`를 프로바이더별 분리
 - `/model` 슬래시 커맨드에서 프로바이더 목록 표시 + 자동완성
@@ -192,6 +217,7 @@ const GEMINI_MODELS: ModelEntry[] = [
 ### 3.3 Phase 2: AWS Bedrock + Mistral + Groq (Week 4-6)
 
 **AWS Bedrock Provider** (`src/llm/providers/aws-bedrock.ts`):
+
 - AWS SDK v3 (`@aws-sdk/client-bedrock-runtime`) 사용
 - IAM role / profile credentials 자동 감지
 - Claude via Bedrock, Llama, Titan 모델 접근
@@ -200,18 +226,21 @@ const GEMINI_MODELS: ModelEntry[] = [
 - Converse API 사용으로 일관된 인터페이스 제공
 
 **Mistral Provider** (`src/llm/providers/mistral.ts`):
+
 - Mistral Large 2, Codestral, Pixtral 지원
 - La Plateforme API 직접 연동
 - Function calling + JSON mode 지원
 - Code-specific 모델(Codestral)을 editor role에 활용 가능
 
 **Groq Provider** (`src/llm/providers/groq.ts`):
+
 - Groq Cloud API (OpenAI-compatible + 전용 확장)
 - Ultra-low latency 특화 — compaction, classification에 최적
 - Llama, Mixtral, Gemma 모델 접근
 - Rate limit이 매우 엄격하므로 token-bucket 전략 필수
 
 **공통 작업**:
+
 - Provider-specific error mapping (429, 503 등을 통일된 `ProviderError`로)
 - Retry 전략을 프로바이더별로 커스터마이즈 가능하게
 - Fallback chain 구현: primary provider 실패 시 secondary로 자동 전환
@@ -225,13 +254,13 @@ const GEMINI_MODELS: ModelEntry[] = [
 
 #### 3.4.1 지원 대상 로컬 서버
 
-| 서버 | 기본 포트 | API 형식 | Tool Calling | Chat Template |
-|------|----------|---------|-------------|---------------|
-| **Ollama** | 11434 | `/api/*` (네이티브) + `/v1/*` (OpenAI-compat) | 모델 종속 (llama3.1+, qwen2.5+) | 내장 (모델별 자동) |
-| **LMStudio** | 1234 | `/v1/*` (OpenAI-compat) | 모델 종속 | GGUF 메타데이터에서 자동 감지 |
-| **vLLM** | 8000 | `/v1/*` (OpenAI-compat) | `--enable-auto-tool-choice` 필요 | tokenizer_config.json Jinja2 |
-| **llama.cpp server** | 8080 | `/v1/*` (OpenAI-compat) | 제한적 (`--jinja` 플래그) | `--chat-template` 인자 |
-| **Custom** | 사용자 정의 | `/v1/*` (OpenAI-compat) | 서버 의존 | 서버 의존 |
+| 서버                 | 기본 포트   | API 형식                                      | Tool Calling                     | Chat Template                 |
+| -------------------- | ----------- | --------------------------------------------- | -------------------------------- | ----------------------------- |
+| **Ollama**           | 11434       | `/api/*` (네이티브) + `/v1/*` (OpenAI-compat) | 모델 종속 (llama3.1+, qwen2.5+)  | 내장 (모델별 자동)            |
+| **LMStudio**         | 1234        | `/v1/*` (OpenAI-compat)                       | 모델 종속                        | GGUF 메타데이터에서 자동 감지 |
+| **vLLM**             | 8000        | `/v1/*` (OpenAI-compat)                       | `--enable-auto-tool-choice` 필요 | tokenizer_config.json Jinja2  |
+| **llama.cpp server** | 8080        | `/v1/*` (OpenAI-compat)                       | 제한적 (`--jinja` 플래그)        | `--chat-template` 인자        |
+| **Custom**           | 사용자 정의 | `/v1/*` (OpenAI-compat)                       | 서버 의존                        | 서버 의존                     |
 
 ---
 
@@ -242,7 +271,7 @@ const GEMINI_MODELS: ModelEntry[] = [
 ```typescript
 /**
  * 로컬/커스텀 모델 서버 통합 프로바이더
- * 
+ *
  * 설계 원칙:
  * 1. OpenAI-compatible API를 표준 인터페이스로 사용
  * 2. Ollama 네이티브 API는 모델 관리(pull/list)에만 사용
@@ -253,30 +282,37 @@ const GEMINI_MODELS: ModelEntry[] = [
 interface LocalProviderConfig {
   readonly type: "ollama" | "lmstudio" | "vllm" | "llama-cpp" | "custom";
   readonly endpoint: string;
-  readonly apiKey?: string;                  // vLLM/custom 서버용
-  readonly autoDetect: boolean;              // 서버 시작 시 모델 목록 자동 조회
-  readonly gpuMemoryThreshold?: number;      // MB 단위, 이 이하면 경고
+  readonly apiKey?: string; // vLLM/custom 서버용
+  readonly autoDetect: boolean; // 서버 시작 시 모델 목록 자동 조회
+  readonly gpuMemoryThreshold?: number; // MB 단위, 이 이하면 경고
   readonly chatTemplate?: ChatTemplateOverride; // 자동 감지 오버라이드
   readonly toolCallParser?: ToolCallParserType; // vLLM tool call parser 지정
-  readonly connectionTimeout?: number;       // ms, 기본 5000
-  readonly streamIdleTimeout?: number;       // ms, 기본 300000
+  readonly connectionTimeout?: number; // ms, 기본 5000
+  readonly streamIdleTimeout?: number; // ms, 기본 300000
 }
 
-type ToolCallParserType = 
-  | "auto"           // 서버가 결정 (기본값)
-  | "hermes"         // NousResearch Hermes 형식
-  | "mistral"        // Mistral 네이티브 형식
-  | "llama3_json"    // Llama 3.1+ JSON 형식
-  | "pythonic"       // Qwen 등 Python 호출 형식
-  | "jinja"          // Jinja2 기반 커스텀
-  | "text-parsing";  // DHelix XML 폴백 (기존 src/llm/strategies/text-parsing.ts)
+type ToolCallParserType =
+  | "auto" // 서버가 결정 (기본값)
+  | "hermes" // NousResearch Hermes 형식
+  | "mistral" // Mistral 네이티브 형식
+  | "llama3_json" // Llama 3.1+ JSON 형식
+  | "pythonic" // Qwen 등 Python 호출 형식
+  | "jinja" // Jinja2 기반 커스텀
+  | "text-parsing"; // DHelix XML 폴백 (기존 src/llm/strategies/text-parsing.ts)
 
 interface ChatTemplateOverride {
-  readonly format?: "chatml" | "llama3" | "mistral-instruct" | "gemma" | "phi3" | "command-r" | "custom";
-  readonly jinja?: string;                   // 커스텀 Jinja2 템플릿 문자열
-  readonly stopTokens?: string[];            // 커스텀 stop 토큰
-  readonly bosToken?: string;                // Begin of sequence
-  readonly eosToken?: string;                // End of sequence
+  readonly format?:
+    | "chatml"
+    | "llama3"
+    | "mistral-instruct"
+    | "gemma"
+    | "phi3"
+    | "command-r"
+    | "custom";
+  readonly jinja?: string; // 커스텀 Jinja2 템플릿 문자열
+  readonly stopTokens?: string[]; // 커스텀 stop 토큰
+  readonly bosToken?: string; // Begin of sequence
+  readonly eosToken?: string; // End of sequence
 }
 ```
 
@@ -294,23 +330,22 @@ import { OpenAICompatibleClient } from "../client.js";
 
 interface VLLMProviderConfig extends LocalProviderConfig {
   readonly type: "vllm";
-  readonly endpoint: string;                   // 기본: http://localhost:8000/v1
-  
+  readonly endpoint: string; // 기본: http://localhost:8000/v1
+
   // vLLM 서버 설정 감지 (GET /v1/models 응답에서 추출)
   readonly serverInfo?: {
-    readonly modelId: string;                  // e.g., "meta-llama/Llama-3.1-8B-Instruct"
-    readonly maxModelLen: number;              // 서버 설정 context length
-    readonly enableAutoToolChoice: boolean;    // --enable-auto-tool-choice 활성화 여부
-    readonly toolCallParser: string;           // --tool-call-parser 값
-    readonly chatTemplate: string;             // 적용 중인 chat template
+    readonly modelId: string; // e.g., "meta-llama/Llama-3.1-8B-Instruct"
+    readonly maxModelLen: number; // 서버 설정 context length
+    readonly enableAutoToolChoice: boolean; // --enable-auto-tool-choice 활성화 여부
+    readonly toolCallParser: string; // --tool-call-parser 값
+    readonly chatTemplate: string; // 적용 중인 chat template
   };
 }
 
 export class VLLMProvider extends OpenAICompatibleClient {
-  
   /**
    * vLLM 서버 연결 및 설정 자동 감지
-   * 
+   *
    * 1. GET /v1/models → 모델 ID 및 서버 설정 확인
    * 2. GET /health → 서버 상태 확인
    * 3. Tool calling 지원 여부 판단:
@@ -322,13 +357,13 @@ export class VLLMProvider extends OpenAICompatibleClient {
     // GET /v1/models
     const modelsResponse = await fetch(`${this.endpoint}/v1/models`);
     const models = await modelsResponse.json();
-    
+
     // GET /health (vLLM 전용 엔드포인트)
     const healthResponse = await fetch(`${this.endpoint}/health`);
-    
+
     // Tool calling 프로브: 최소 요청으로 테스트
     const toolProbe = await this.probeToolCalling(models.data[0].id);
-    
+
     return {
       modelId: models.data[0].id,
       maxModelLen: models.data[0].max_model_len ?? 4096,
@@ -337,10 +372,10 @@ export class VLLMProvider extends OpenAICompatibleClient {
       chatTemplate: models.data[0].chat_template ?? "unknown",
     };
   }
-  
+
   /**
    * Tool calling 지원 여부 프로브
-   * 
+   *
    * vLLM은 --enable-auto-tool-choice 없이 시작하면 tool 파라미터를 무시함.
    * 간단한 테스트 호출로 지원 여부를 판단:
    * - 지원 O → native function calling 사용
@@ -357,14 +392,16 @@ export class VLLMProvider extends OpenAICompatibleClient {
         body: JSON.stringify({
           model: modelId,
           messages: [{ role: "user", content: "test" }],
-          tools: [{
-            type: "function",
-            function: { name: "test", parameters: { type: "object", properties: {} } }
-          }],
+          tools: [
+            {
+              type: "function",
+              function: { name: "test", parameters: { type: "object", properties: {} } },
+            },
+          ],
           max_tokens: 1,
         }),
       });
-      
+
       if (response.ok) {
         return { supported: true, parser: "auto" };
       }
@@ -428,20 +465,20 @@ vllm serve ./my-finetuned-model \
 // OpenCode가 이미 구현한 패턴을 벤치마킹
 
 const CONTEXT_OVERFLOW_PATTERNS = [
-  /maximum context length is \d+ tokens/i,           // vLLM
-  /context length is only \d+ tokens/i,               // vLLM  
-  /input length.*exceeds.*context length/i,            // vLLM
-  /exceeds the available context size/i,               // llama.cpp
-  /greater than the context length/i,                  // LMStudio
+  /maximum context length is \d+ tokens/i, // vLLM
+  /context length is only \d+ tokens/i, // vLLM
+  /input length.*exceeds.*context length/i, // vLLM
+  /exceeds the available context size/i, // llama.cpp
+  /greater than the context length/i, // LMStudio
   /prompt too long; exceeded (?:max )?context length/i, // Ollama
   /too large for model with \d+ maximum context length/i, // Mistral
 ];
 
 const CONNECTION_PATTERNS = [
-  /ECONNREFUSED/i,     // 서버 미실행
-  /ECONNRESET/i,       // 연결 끊김
-  /ETIMEDOUT/i,        // 타임아웃
-  /fetch failed/i,     // 네트워크 오류
+  /ECONNREFUSED/i, // 서버 미실행
+  /ECONNRESET/i, // 연결 끊김
+  /ETIMEDOUT/i, // 타임아웃
+  /fetch failed/i, // 네트워크 오류
 ];
 ```
 
@@ -458,7 +495,7 @@ const CONNECTION_PATTERNS = [
 ```typescript
 /**
  * Chat Template 자동 감지 엔진
- * 
+ *
  * 감지 순서 (우선순위):
  * 1. 사용자 명시 설정 (providers.json의 chatTemplate 필드)
  * 2. 서버 응답 메타데이터 (vLLM /v1/models의 chat_template 필드)
@@ -470,34 +507,33 @@ const CONNECTION_PATTERNS = [
 
 export interface ChatTemplateInfo {
   readonly format: ChatTemplateFormat;
-  readonly jinja?: string;              // Jinja2 template 원문
-  readonly stopTokens: string[];        // 모델별 stop 시퀀스
+  readonly jinja?: string; // Jinja2 template 원문
+  readonly stopTokens: string[]; // 모델별 stop 시퀀스
   readonly supportsSystemRole: boolean; // system 메시지 지원 여부
-  readonly supportsToolUse: boolean;    // tool_use 역할 지원 여부
+  readonly supportsToolUse: boolean; // tool_use 역할 지원 여부
   readonly source: "user" | "server" | "ollama" | "heuristic" | "huggingface" | "default";
 }
 
-type ChatTemplateFormat = 
-  | "chatml"              // <|im_start|>system\n...<|im_end|>
-  | "llama3"              // <|begin_of_text|><|start_header_id|>system<|end_header_id|>
-  | "mistral-instruct"    // [INST] ... [/INST]
-  | "gemma"               // <start_of_turn>user\n...<end_of_turn>
-  | "phi3"                // <|system|>\n...<|end|>
-  | "command-r"           // <|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>
-  | "deepseek"            // DeepSeek 전용 포맷
-  | "qwen"                // Qwen 시리즈 포맷
-  | "zephyr"              // <|system|>\n...<|endoftext|>
-  | "custom";             // 사용자 정의 Jinja2
+type ChatTemplateFormat =
+  | "chatml" // <|im_start|>system\n...<|im_end|>
+  | "llama3" // <|begin_of_text|><|start_header_id|>system<|end_header_id|>
+  | "mistral-instruct" // [INST] ... [/INST]
+  | "gemma" // <start_of_turn>user\n...<end_of_turn>
+  | "phi3" // <|system|>\n...<|end|>
+  | "command-r" // <|START_OF_TURN_TOKEN|><|SYSTEM_TOKEN|>
+  | "deepseek" // DeepSeek 전용 포맷
+  | "qwen" // Qwen 시리즈 포맷
+  | "zephyr" // <|system|>\n...<|endoftext|>
+  | "custom"; // 사용자 정의 Jinja2
 
 export class ChatTemplateDetector {
-  
   // 캐시: 모델 ID → 감지된 template (디스크 캐시 포함)
   private cache = new Map<string, ChatTemplateInfo>();
   private diskCachePath: string; // ~/.dhelix/cache/chat-templates.json
-  
+
   /**
    * 1단계: 모델 ID 기반 휴리스틱 감지
-   * 
+   *
    * 대부분의 경우 모델 이름으로 포맷을 결정할 수 있음.
    * 정규식 패턴을 model-capabilities.ts의 기존 패턴과 통합.
    */
@@ -505,43 +541,43 @@ export class ChatTemplateDetector {
     const PATTERNS: Array<[RegExp, ChatTemplateFormat]> = [
       // Llama 3.x
       [/llama[-_]?3(\.[1-9])?/i, "llama3"],
-      [/llama[-_]?4/i, "llama3"],           // Llama 4도 동일 포맷
-      
+      [/llama[-_]?4/i, "llama3"], // Llama 4도 동일 포맷
+
       // Mistral / Mixtral
       [/mistral|mixtral/i, "mistral-instruct"],
       [/codestral/i, "mistral-instruct"],
-      
+
       // Qwen
       [/qwen[_-]?[12345]/i, "qwen"],
-      
+
       // DeepSeek
       [/deepseek/i, "deepseek"],
-      
+
       // Google Gemma
       [/gemma/i, "gemma"],
-      
+
       // Microsoft Phi
       [/phi[-_]?[34]/i, "phi3"],
-      
+
       // Cohere Command-R
       [/command[-_]?r/i, "command-r"],
-      
+
       // ChatML 기본 (OpenHermes, Nous 등)
       [/hermes|nous|openhermes|dolphin|neural[-_]chat/i, "chatml"],
-      
+
       // Zephyr
       [/zephyr/i, "zephyr"],
     ];
-    
+
     for (const [pattern, format] of PATTERNS) {
       if (pattern.test(modelId)) return format;
     }
     return null; // 매칭 실패 → 다음 단계로
   }
-  
+
   /**
    * 2단계: vLLM 서버 메타데이터에서 감지
-   * 
+   *
    * vLLM의 GET /v1/models 응답에 chat_template 필드가 포함됨.
    * 이것은 tokenizer_config.json의 chat_template 값과 동일.
    */
@@ -553,10 +589,12 @@ export class ChatTemplateDetector {
       if (model?.chat_template) {
         return this.parseJinjaTemplate(model.chat_template);
       }
-    } catch { /* 연결 실패 → 다음 단계 */ }
+    } catch {
+      /* 연결 실패 → 다음 단계 */
+    }
     return null;
   }
-  
+
   /**
    * 3단계: Ollama /api/show에서 template 추출
    */
@@ -570,13 +608,15 @@ export class ChatTemplateDetector {
       if (data.template) {
         return this.parseOllamaTemplate(data.template);
       }
-    } catch { /* 연결 실패 → 다음 단계 */ }
+    } catch {
+      /* 연결 실패 → 다음 단계 */
+    }
     return null;
   }
-  
+
   /**
    * 4단계: HuggingFace Hub에서 tokenizer_config.json 조회
-   * 
+   *
    * HF Hub API로 chat_template 필드를 가져옴.
    * 결과는 디스크 캐시에 저장 (TTL 7일).
    * 오프라인 시 캐시 사용 또는 기본값 폴백.
@@ -585,25 +625,27 @@ export class ChatTemplateDetector {
     // 캐시 확인
     const cached = this.getDiskCache(modelId);
     if (cached) return cached;
-    
+
     try {
       const url = `https://huggingface.co/${modelId}/resolve/main/tokenizer_config.json`;
       const resp = await fetch(url, { signal: AbortSignal.timeout(10_000) });
       if (!resp.ok) return null;
-      
+
       const config = await resp.json();
       if (config.chat_template) {
         const info = this.parseJinjaTemplate(config.chat_template);
         this.setDiskCache(modelId, info); // 7일 TTL
         return info;
       }
-    } catch { /* 오프라인 → 기본값 */ }
+    } catch {
+      /* 오프라인 → 기본값 */
+    }
     return null;
   }
-  
+
   /**
    * Jinja2 template 분석 → ChatTemplateFormat 결정
-   * 
+   *
    * 템플릿 문자열에서 특징적인 토큰을 찾아 포맷을 판별:
    * - "<|im_start|>" → ChatML
    * - "<|start_header_id|>" → Llama3
@@ -615,7 +657,7 @@ export class ChatTemplateDetector {
     const format = this.identifyFormatFromJinja(jinja);
     const supportsSystem = jinja.includes("system") || jinja.includes("SYSTEM");
     const supportsTool = jinja.includes("tool") || jinja.includes("function");
-    
+
     return {
       format,
       jinja,
@@ -625,7 +667,7 @@ export class ChatTemplateDetector {
       source: "huggingface",
     };
   }
-  
+
   private identifyFormatFromJinja(jinja: string): ChatTemplateFormat {
     if (jinja.includes("<|im_start|>")) return "chatml";
     if (jinja.includes("<|start_header_id|>")) return "llama3";
@@ -639,16 +681,16 @@ export class ChatTemplateDetector {
 
 // 포맷별 stop 토큰 사전
 const STOP_TOKENS: Record<ChatTemplateFormat, string[]> = {
-  "chatml":            ["<|im_end|>"],
-  "llama3":            ["<|eot_id|>", "<|end_of_text|>"],
-  "mistral-instruct":  ["</s>"],
-  "gemma":             ["<end_of_turn>"],
-  "phi3":              ["<|end|>", "<|endoftext|>"],
-  "command-r":         ["<|END_OF_TURN_TOKEN|>"],
-  "deepseek":          ["<|end▁of▁sentence|>"],
-  "qwen":              ["<|im_end|>", "<|endoftext|>"],
-  "zephyr":            ["</s>", "<|endoftext|>"],
-  "custom":            [],
+  chatml: ["<|im_end|>"],
+  llama3: ["<|eot_id|>", "<|end_of_text|>"],
+  "mistral-instruct": ["</s>"],
+  gemma: ["<end_of_turn>"],
+  phi3: ["<|end|>", "<|endoftext|>"],
+  "command-r": ["<|END_OF_TURN_TOKEN|>"],
+  deepseek: ["<|end▁of▁sentence|>"],
+  qwen: ["<|im_end|>", "<|endoftext|>"],
+  zephyr: ["</s>", "<|endoftext|>"],
+  custom: [],
 };
 ```
 
@@ -657,21 +699,20 @@ const STOP_TOKENS: Record<ChatTemplateFormat, string[]> = {
 ```typescript
 /**
  * Chat template에 맞게 메시지를 변환
- * 
+ *
  * OpenAI-compatible API 사용 시 서버가 처리하므로 불필요.
  * 직접 연동(llama.cpp, custom) 또는 서버의 template가 잘못된 경우 사용.
- * 
+ *
  * OpenCode 벤치마킹:
  * - provider/transform.ts에서 Mistral, Claude 포맷별 메시지 정규화 구현
  * - tool call ID 스크러빙, 더미 assistant 메시지 삽입 등
  */
 export class MessageFormatter {
-  
   constructor(private template: ChatTemplateInfo) {}
-  
+
   /**
    * provider-specific 메시지 변환
-   * 
+   *
    * Mistral: tool call ID를 9자 영숫자로 정규화
    * Llama3: tool 응답을 ipython 역할로 변환
    * ChatML: 표준 OpenAI 형식 유지
@@ -686,7 +727,7 @@ export class MessageFormatter {
         return messages; // 대부분의 모델은 OpenAI 형식 그대로
     }
   }
-  
+
   /**
    * Mistral 포맷 변환 (OpenCode 벤치마킹)
    * - tool call ID → 9자 영숫자 (Mistral API 제약)
@@ -695,7 +736,7 @@ export class MessageFormatter {
   private formatMistral(messages: ChatMessage[]): ChatMessage[] {
     // ... Mistral 특화 변환
   }
-  
+
   /**
    * Llama3 포맷 변환
    * - tool 응답 역할: "tool" → "ipython"
@@ -719,7 +760,7 @@ export class MessageFormatter {
 
 /**
  * 모델의 tool calling 능력에 따라 최적 전략을 자동 선택
- * 
+ *
  * 판단 기준:
  * 1. model-capabilities.ts의 supportsTools 플래그
  * 2. vLLM probeToolCalling() 결과
@@ -731,7 +772,6 @@ export function resolveToolCallStrategy(
   capabilities: ModelCapabilities,
   serverInfo?: LocalServerInfo,
 ): ToolCallStrategyType {
-  
   // 1. 명시적으로 tool calling 지원하는 모델
   if (capabilities.supportsTools) {
     // vLLM 서버에서 parser 정보가 있으면 활용
@@ -740,12 +780,12 @@ export function resolveToolCallStrategy(
     }
     return "native-function-calling";
   }
-  
+
   // 2. Tool calling 미지원이지만 JSON 출력 가능한 모델
   if (capabilities.supportsJsonMode) {
     return "two-stage-tool-call"; // JSON schema 기반 2단계
   }
-  
+
   // 3. 최종 폴백: XML text-parsing (기존 DHelix 전략)
   return "text-parsing";
 }
@@ -805,22 +845,22 @@ src/benchmark/
 
 /**
  * Tool Calling Benchmark Suite
- * 
+ *
  * BFCL (Berkeley Function Calling Leaderboard) 방법론 기반:
  * - Serial call: 단일 도구 호출 정확도
  * - Parallel call: 동시 다중 도구 호출
  * - Multi-turn: 대화 이어가기 중 도구 호출
  * - Argument accuracy: 인자 타입/값 정확도
- * 
+ *
  * 20개 시나리오, 각각 expected output과 비교
  */
 interface ToolCallingBenchmark {
   readonly scenarios: ToolCallingScenario[];
   readonly metrics: {
-    readonly callAccuracy: number;       // 올바른 도구 선택 비율
-    readonly argAccuracy: number;        // 인자 정확도
-    readonly formatCompliance: number;   // JSON 포맷 준수율
-    readonly parallelSuccess: number;    // 병렬 호출 성공률
+    readonly callAccuracy: number; // 올바른 도구 선택 비율
+    readonly argAccuracy: number; // 인자 정확도
+    readonly formatCompliance: number; // JSON 포맷 준수율
+    readonly parallelSuccess: number; // 병렬 호출 성공률
     readonly multiTurnRetention: number; // 다회차 대화에서 컨텍스트 유지율
   };
 }
@@ -837,7 +877,8 @@ const TOOL_CALLING_SCENARIOS: ToolCallingScenario[] = [
   {
     name: "parallel_grep_glob",
     description: "검색 + 파일 찾기 동시 호출",
-    userMessage: "프로젝트에서 'TODO' 주석을 찾고, test 디렉토리의 모든 .test.ts 파일 목록을 알려줘",
+    userMessage:
+      "프로젝트에서 'TODO' 주석을 찾고, test 디렉토리의 모든 .test.ts 파일 목록을 알려줘",
     expectedTools: ["grep_search", "glob_search"],
     difficulty: "medium",
   },
@@ -863,12 +904,12 @@ const TOOL_CALLING_SCENARIOS: ToolCallingScenario[] = [
 
 /**
  * Code Editing Benchmark Suite
- * 
+ *
  * Aider Polyglot 방법론 기반:
  * - 6개 언어: TypeScript, Python, Go, Rust, Java, JavaScript
  * - 언어별 5문제 (총 30문제)
  * - 난이도: easy(함수 구현), medium(리팩토링), hard(버그 수정)
- * 
+ *
  * 평가 기준:
  * - pass@1: 첫 시도 성공률
  * - edit_accuracy: diff 형식 준수율
@@ -878,17 +919,20 @@ const TOOL_CALLING_SCENARIOS: ToolCallingScenario[] = [
 interface CodeEditingBenchmark {
   readonly problems: CodeEditingProblem[];
   readonly metrics: {
-    readonly passAt1: number;            // 첫 시도 성공률
-    readonly editAccuracy: number;       // 편집 정확도
-    readonly testPassRate: number;       // 테스트 통과율
+    readonly passAt1: number; // 첫 시도 성공률
+    readonly editAccuracy: number; // 편집 정확도
+    readonly testPassRate: number; // 테스트 통과율
     readonly avgTokensPerProblem: number; // 평균 토큰 사용량
-    readonly avgLatencyMs: number;       // 평균 지연 시간
-    readonly costPerProblem: number;     // 문제당 비용 ($0 for local)
+    readonly avgLatencyMs: number; // 평균 지연 시간
+    readonly costPerProblem: number; // 문제당 비용 ($0 for local)
   };
-  readonly perLanguage: Record<string, {
-    passAt1: number;
-    avgLatency: number;
-  }>;
+  readonly perLanguage: Record<
+    string,
+    {
+      passAt1: number;
+      avgLatency: number;
+    }
+  >;
 }
 ```
 
@@ -899,7 +943,7 @@ interface CodeEditingBenchmark {
 
 /**
  * Latency & Throughput Benchmark
- * 
+ *
  * 측정 항목:
  * - TTFT (Time To First Token): 첫 토큰까지 지연 시간
  * - TPS (Tokens Per Second): 초당 토큰 생성 속도
@@ -970,34 +1014,38 @@ dhelix benchmark --output json --file benchmark-results.json
 
 **Verdict 기준**:
 
-| 등급 | Tool Calling | Code Editing | 권장 사용법 |
-|------|-------------|-------------|-----------|
-| ✅ **EXCELLENT** | ≥90% | ≥80% | 풀 에이전트 모드, 프로덕션 사용 가능 |
-| 🟢 **GOOD** | ≥75% | ≥65% | 대부분의 작업 가능, 복잡한 작업은 주의 |
-| ⚠️ **MEDIUM** | ≥60% | ≥50% | 간단한 작업만, 복잡한 멀티턴은 부적합 |
-| 🔴 **LOW** | <60% | <50% | 코드 생성/완성에만 사용, 에이전트 부적합 |
+| 등급             | Tool Calling | Code Editing | 권장 사용법                              |
+| ---------------- | ------------ | ------------ | ---------------------------------------- |
+| ✅ **EXCELLENT** | ≥90%         | ≥80%         | 풀 에이전트 모드, 프로덕션 사용 가능     |
+| 🟢 **GOOD**      | ≥75%         | ≥65%         | 대부분의 작업 가능, 복잡한 작업은 주의   |
+| ⚠️ **MEDIUM**    | ≥60%         | ≥50%         | 간단한 작업만, 복잡한 멀티턴은 부적합    |
+| 🔴 **LOW**       | <60%         | <50%         | 코드 생성/완성에만 사용, 에이전트 부적합 |
 
 ---
 
 #### 3.4.7 Local-Specific 고려사항
 
 **Compaction 공격적 모드**:
+
 - 로컬 모델은 context window가 작음 (8K-32K 일반적, 128K 드묾)
 - 기존 83.5% 임계점 대신 **65% 임계점**으로 선제 압축
 - Cold storage rehydration도 제한 (최대 3개 파일만)
 
 **Tool Schema 최소화** (기존 Adaptive Schema 활용):
+
 - `model-capabilities.ts`의 `capabilityTier: "low"`인 모델에 대해
 - 도구 설명을 짧게, 파라미터 설명을 최소화
 - Hot tools만 노출 (6개), 나머지는 요청 시 lazy load
 
 **UI 인디케이터**:
+
 - "Local model — 응답 대기 중" 표시
 - TPS 실시간 표시 (초당 토큰 수)
 - 예상 완료 시간 표시 (남은 토큰 / TPS)
 - GPU 메모리 사용량 표시 (가능한 경우)
 
 **Ollama 모델 관리**:
+
 - `dhelix models list` — Ollama 로컬 모델 목록
 - `dhelix models pull <model>` — 모델 다운로드 (진행률 표시)
 - `dhelix models info <model>` — 모델 상세 정보 + chat template 감지 결과
@@ -1006,14 +1054,14 @@ dhelix benchmark --output json --file benchmark-results.json
 
 #### 3.4.8 Env Variable & Config 확장
 
-| Provider | Env Key | Fallback | 비고 |
-|----------|---------|----------|------|
-| Ollama | `DHELIX_OLLAMA_ENDPOINT` | `http://localhost:11434` | 네이티브 + OpenAI-compat |
-| LMStudio | `DHELIX_LMSTUDIO_ENDPOINT` | `http://localhost:1234/v1` | OpenAI-compat only |
-| vLLM | `DHELIX_VLLM_ENDPOINT` | `http://localhost:8000/v1` | OpenAI-compat only |
-| llama.cpp | `DHELIX_LLAMACPP_ENDPOINT` | `http://localhost:8080/v1` | OpenAI-compat only |
-| Custom | `DHELIX_LOCAL_ENDPOINT` | - | 임의 OpenAI-compat |
-| Custom | `DHELIX_LOCAL_API_KEY` | - | 인증 필요 시 |
+| Provider  | Env Key                    | Fallback                   | 비고                     |
+| --------- | -------------------------- | -------------------------- | ------------------------ |
+| Ollama    | `DHELIX_OLLAMA_ENDPOINT`   | `http://localhost:11434`   | 네이티브 + OpenAI-compat |
+| LMStudio  | `DHELIX_LMSTUDIO_ENDPOINT` | `http://localhost:1234/v1` | OpenAI-compat only       |
+| vLLM      | `DHELIX_VLLM_ENDPOINT`     | `http://localhost:8000/v1` | OpenAI-compat only       |
+| llama.cpp | `DHELIX_LLAMACPP_ENDPOINT` | `http://localhost:8080/v1` | OpenAI-compat only       |
+| Custom    | `DHELIX_LOCAL_ENDPOINT`    | -                          | 임의 OpenAI-compat       |
+| Custom    | `DHELIX_LOCAL_API_KEY`     | -                          | 인증 필요 시             |
 
 **Config 확장** (`.dhelix/providers.json`):
 
@@ -1062,15 +1110,15 @@ dhelix benchmark --output json --file benchmark-results.json
 
 #### 3.4.9 구현 로드맵 (Phase 3 내부)
 
-| Week | 작업 | 산출물 | LOC |
-|------|------|--------|-----|
-| 7 | Local provider 기초 + Ollama/LMStudio 연동 | `providers/local.ts`, `providers/ollama.ts`, `providers/lmstudio.ts` | +400 |
-| 8 | vLLM 직접 연동 + tool call probing | `providers/vllm.ts`, `providers/error-patterns.ts` | +350 |
-| 9 | Chat template 자동 감지 엔진 | `chat-template-detector.ts`, `message-formatter.ts` | +650 |
-| 10 | Tool call strategy resolver 통합 | `tool-call-strategy-resolver.ts` + 기존 strategy 수정 | +200 |
-| 11 | 벤치마크 프레임워크 (suites + runner) | `benchmark/` 디렉토리 전체 | +800 |
-| 12 | CLI 명령어 + 결과 리포터 + 테스트 | `commands/benchmark.ts`, `benchmark/reporter.ts` | +400 |
-| | **합계** | | **+2,800** |
+| Week | 작업                                       | 산출물                                                               | LOC        |
+| ---- | ------------------------------------------ | -------------------------------------------------------------------- | ---------- |
+| 7    | Local provider 기초 + Ollama/LMStudio 연동 | `providers/local.ts`, `providers/ollama.ts`, `providers/lmstudio.ts` | +400       |
+| 8    | vLLM 직접 연동 + tool call probing         | `providers/vllm.ts`, `providers/error-patterns.ts`                   | +350       |
+| 9    | Chat template 자동 감지 엔진               | `chat-template-detector.ts`, `message-formatter.ts`                  | +650       |
+| 10   | Tool call strategy resolver 통합           | `tool-call-strategy-resolver.ts` + 기존 strategy 수정                | +200       |
+| 11   | 벤치마크 프레임워크 (suites + runner)      | `benchmark/` 디렉토리 전체                                           | +800       |
+| 12   | CLI 명령어 + 결과 리포터 + 테스트          | `commands/benchmark.ts`, `benchmark/reporter.ts`                     | +400       |
+|      | **합계**                                   |                                                                      | **+2,800** |
 
 ### 3.5 Provider Abstraction Layer — 상세 설계
 
@@ -1091,16 +1139,16 @@ UnifiedLLMProvider 인스턴스 반환
 
 **Env Variable Convention**:
 
-| Provider | Env Key | Fallback |
-|----------|---------|----------|
-| Anthropic | `DHELIX_ANTHROPIC_API_KEY` | `ANTHROPIC_API_KEY` |
-| OpenAI | `DHELIX_OPENAI_API_KEY` | `OPENAI_API_KEY` |
-| Google | `DHELIX_GOOGLE_API_KEY` | `GOOGLE_API_KEY`, `GEMINI_API_KEY` |
-| Azure | `DHELIX_AZURE_API_KEY` + `DHELIX_AZURE_ENDPOINT` | `AZURE_OPENAI_API_KEY` |
-| AWS | `DHELIX_AWS_PROFILE` | AWS SDK default chain |
-| Mistral | `DHELIX_MISTRAL_API_KEY` | `MISTRAL_API_KEY` |
-| Groq | `DHELIX_GROQ_API_KEY` | `GROQ_API_KEY` |
-| Ollama | `DHELIX_OLLAMA_ENDPOINT` | `http://localhost:11434` |
+| Provider  | Env Key                                          | Fallback                           |
+| --------- | ------------------------------------------------ | ---------------------------------- |
+| Anthropic | `DHELIX_ANTHROPIC_API_KEY`                       | `ANTHROPIC_API_KEY`                |
+| OpenAI    | `DHELIX_OPENAI_API_KEY`                          | `OPENAI_API_KEY`                   |
+| Google    | `DHELIX_GOOGLE_API_KEY`                          | `GOOGLE_API_KEY`, `GEMINI_API_KEY` |
+| Azure     | `DHELIX_AZURE_API_KEY` + `DHELIX_AZURE_ENDPOINT` | `AZURE_OPENAI_API_KEY`             |
+| AWS       | `DHELIX_AWS_PROFILE`                             | AWS SDK default chain              |
+| Mistral   | `DHELIX_MISTRAL_API_KEY`                         | `MISTRAL_API_KEY`                  |
+| Groq      | `DHELIX_GROQ_API_KEY`                            | `GROQ_API_KEY`                     |
+| Ollama    | `DHELIX_OLLAMA_ENDPOINT`                         | `http://localhost:11434`           |
 
 **Config 파일 지원** (`.dhelix/providers.json`):
 
@@ -1132,18 +1180,20 @@ UnifiedLLMProvider 인스턴스 반환
 완전한 typed manifest 시스템을 구축한다.
 
 **현재 AgentDefinition**:
+
 ```typescript
 // 현재: 문자열 기반, 선언적이지 않음
 interface AgentDefinition {
   name: string;
-  type: string;        // "explore" | "general" | "plan"
-  model: AgentModel;   // "sonnet" | "opus" | "haiku" | "inherit"
+  type: string; // "explore" | "general" | "plan"
+  model: AgentModel; // "sonnet" | "opus" | "haiku" | "inherit"
   prompt: string;
   // ... 제한적인 필드
 }
 ```
 
 **목표 AgentManifest**:
+
 ```typescript
 // src/orchestration/agent-manifest.ts
 interface AgentManifest {
@@ -1194,7 +1244,7 @@ interface AgentManifest {
 }
 
 interface AgentPurpose {
-  readonly shortDescription: string;   // UI 표시용, 50자 이내
+  readonly shortDescription: string; // UI 표시용, 50자 이내
   readonly detailedDescription: string; // 시스템 프롬프트에 포함
   readonly category: "research" | "implementation" | "review" | "testing" | "planning" | "general";
 }
@@ -1202,16 +1252,16 @@ interface AgentPurpose {
 type AgentMemoryScope = "session" | "project" | "global" | "none";
 
 type AgentIsolationMode =
-  | "shared"           // 메인 워크트리 공유
-  | "worktree"         // git worktree로 격리
-  | "sandbox"          // 읽기 전용 + 임시 디렉토리
-  | "container";       // 향후 컨테이너 격리
+  | "shared" // 메인 워크트리 공유
+  | "worktree" // git worktree로 격리
+  | "sandbox" // 읽기 전용 + 임시 디렉토리
+  | "container"; // 향후 컨테이너 격리
 
 interface AgentModelConfig {
-  readonly preferredModel: string;       // "claude-sonnet-4-20250514"
-  readonly fallbackModel?: string;       // "gemini-2.5-flash"
-  readonly temperature?: number;         // 0.0 - 2.0
-  readonly topP?: number;               // 0.0 - 1.0
+  readonly preferredModel: string; // "claude-sonnet-4-20250514"
+  readonly fallbackModel?: string; // "gemini-2.5-flash"
+  readonly temperature?: number; // 0.0 - 2.0
+  readonly topP?: number; // 0.0 - 1.0
   readonly reasoningEffort?: "low" | "medium" | "high";
   readonly maxOutputTokens?: number;
 }
@@ -1220,36 +1270,36 @@ interface VerificationProfile {
   readonly runTests: boolean;
   readonly typeCheck: boolean;
   readonly lint: boolean;
-  readonly customChecks?: readonly string[];  // bash 명령어
+  readonly customChecks?: readonly string[]; // bash 명령어
 }
 
 interface AgentUIHints {
-  readonly badge?: string;       // "🔍" or "explorer"
-  readonly color?: string;       // hex color for UI
+  readonly badge?: string; // "🔍" or "explorer"
+  readonly color?: string; // hex color for UI
   readonly showInStatus: boolean;
   readonly showProgress: boolean;
 }
 
 interface AgentHooks {
-  readonly onSpawn?: string;      // hook script path
+  readonly onSpawn?: string; // hook script path
   readonly onComplete?: string;
   readonly onError?: string;
-  readonly onMessage?: string;    // peer-to-peer 메시지 수신 시
+  readonly onMessage?: string; // peer-to-peer 메시지 수신 시
 }
 ```
 
 **내장 에이전트 manifest 확장**:
 
-| Agent ID | Purpose | Isolation | Model Config | Max Steps |
-|----------|---------|-----------|--------------|-----------|
-| `dhelix:explore` | 코드 탐색, 구조 분석 | shared | inherit (read-heavy이므로 flash 가능) | 30 |
-| `dhelix:plan` | 구현 계획 수립 | shared | high-tier (opus/pro) | 20 |
-| `dhelix:implement` | 코드 구현 | worktree | mid-tier (sonnet/flash) | 50 |
-| `dhelix:review` | 코드 리뷰 | shared (read-only) | high-tier | 15 |
-| `dhelix:test` | 테스트 작성/실행 | worktree | mid-tier | 40 |
-| `dhelix:build` | 빌드 오류 해결 | shared | mid-tier | 25 |
-| `dhelix:security` | 보안 분석 | sandbox | high-tier | 20 |
-| `dhelix:compact` | 컨텍스트 압축 | none | low-tier (flash/haiku) | 5 |
+| Agent ID           | Purpose              | Isolation          | Model Config                          | Max Steps |
+| ------------------ | -------------------- | ------------------ | ------------------------------------- | --------- |
+| `dhelix:explore`   | 코드 탐색, 구조 분석 | shared             | inherit (read-heavy이므로 flash 가능) | 30        |
+| `dhelix:plan`      | 구현 계획 수립       | shared             | high-tier (opus/pro)                  | 20        |
+| `dhelix:implement` | 코드 구현            | worktree           | mid-tier (sonnet/flash)               | 50        |
+| `dhelix:review`    | 코드 리뷰            | shared (read-only) | high-tier                             | 15        |
+| `dhelix:test`      | 테스트 작성/실행     | worktree           | mid-tier                              | 40        |
+| `dhelix:build`     | 빌드 오류 해결       | shared             | mid-tier                              | 25        |
+| `dhelix:security`  | 보안 분석            | sandbox            | high-tier                             | 20        |
+| `dhelix:compact`   | 컨텍스트 압축        | none               | low-tier (flash/haiku)                | 5         |
 
 ### 4.2 Agent Communication Protocols
 
@@ -1267,6 +1317,7 @@ Parent Agent
 ```
 
 강화 사항:
+
 - 부모가 자식에게 중간 지시를 보낼 수 있는 `sendDirective(agentId, message)` 추가
 - 자식이 부모에게 진행 상황을 보고하는 `reportProgress(percentage, status)` 추가
 - 자식 실패 시 부모가 재시도/대체 전략을 선택할 수 있는 `onChildFailure` 핸들러
@@ -1284,6 +1335,7 @@ Agent A ←→ Agent B
 ```
 
 구현 방식:
+
 - `AgentMessageBus` — 에이전트 간 비동기 메시지 교환
 - Publish-Subscribe: 특정 토픽에 관심 있는 에이전트가 구독
 - Request-Response: 특정 에이전트에게 요청하고 응답 대기
@@ -1310,12 +1362,12 @@ interface AgentMessageBus {
 
 interface AgentMessage {
   readonly id: string;
-  readonly from: string;       // sender agent ID
-  readonly to: string | "*";   // target agent ID or broadcast
+  readonly from: string; // sender agent ID
+  readonly to: string | "*"; // target agent ID or broadcast
   readonly topic: string;
   readonly payload: unknown;
   readonly timestamp: number;
-  readonly replyTo?: string;   // request-response correlation
+  readonly replyTo?: string; // request-response correlation
 }
 ```
 
@@ -1327,7 +1379,7 @@ interface AgentMessage {
 // src/orchestration/artifact-registry.ts
 interface ArtifactRegistry {
   /** 아티팩트 등록 */
-  publish(artifact: AgentArtifact): Promise<string>;  // returns artifact ID
+  publish(artifact: AgentArtifact): Promise<string>; // returns artifact ID
 
   /** 아티팩트 조회 */
   get(artifactId: string): Promise<AgentArtifact | null>;
@@ -1340,8 +1392,8 @@ interface AgentArtifact {
   readonly id: string;
   readonly producerAgentId: string;
   readonly type: "file" | "analysis" | "plan" | "test-result" | "review";
-  readonly path?: string;         // 파일 경로 (type=file인 경우)
-  readonly content?: string;      // 인라인 콘텐츠
+  readonly path?: string; // 파일 경로 (type=file인 경우)
+  readonly content?: string; // 인라인 콘텐츠
   readonly metadata: Record<string, unknown>;
   readonly tags: readonly string[];
   readonly createdAt: number;
@@ -1378,16 +1430,16 @@ interface AgentArtifact {
 ```typescript
 interface SpawnPolicy {
   /** 동시에 활성 상태인 에이전트 최대 수 */
-  readonly maxConcurrentAgents: number;     // default: 5
+  readonly maxConcurrentAgents: number; // default: 5
 
   /** 에이전트 중첩 깊이 제한 */
-  readonly maxAgentDepth: number;           // default: 3
+  readonly maxAgentDepth: number; // default: 3
 
   /** 팀 내 최대 멤버 수 */
-  readonly maxTeamSize: number;             // default: 10
+  readonly maxTeamSize: number; // default: 10
 
   /** 동일 에이전트 유형의 동시 인스턴스 제한 */
-  readonly maxInstancesPerType: number;     // default: 3
+  readonly maxInstancesPerType: number; // default: 3
 
   /** 새 에이전트 생성 전 검증 */
   validate(request: SpawnRequest): SpawnValidationResult;
@@ -1401,7 +1453,7 @@ interface SpawnRequest {
   readonly parentAgentId?: string;
   readonly teamId?: string;
   readonly priority: "critical" | "high" | "normal" | "low";
-  readonly estimatedDuration?: number;   // ms
+  readonly estimatedDuration?: number; // ms
 }
 ```
 
@@ -1502,6 +1554,7 @@ interface AgentTreeNode {
 ```
 
 **재귀 방지 전략**:
+
 1. Hard depth limit: 기본 3, 최대 5 (설정 가능)
 2. Total agent count limit: 세션당 최대 20개 에이전트
 3. Same-purpose guard: 동일 purpose의 에이전트가 자식을 spawn하면 경고
@@ -1523,7 +1576,7 @@ interface AgentTreeNode {
 interface TaskClassifier {
   /**
    * 메시지와 컨텍스트를 분석하여 TaskPhase를 결정
-   * 
+   *
    * 분류 기준:
    * - 키워드 분석: "plan", "design", "architect" → plan phase
    * - 도구 호출 패턴: file_write, bash_exec → execute phase
@@ -1535,32 +1588,32 @@ interface TaskClassifier {
 
 interface ClassificationContext {
   readonly currentMessage: string;
-  readonly recentHistory: readonly ChatMessage[];   // 최근 5개
-  readonly pendingToolCalls: readonly string[];     // 대기 중인 도구 호출
+  readonly recentHistory: readonly ChatMessage[]; // 최근 5개
+  readonly pendingToolCalls: readonly string[]; // 대기 중인 도구 호출
   readonly sessionPhase: "initial" | "mid" | "late";
-  readonly fileChangesCount: number;                // 이 세션에서 수정한 파일 수
+  readonly fileChangesCount: number; // 이 세션에서 수정한 파일 수
 }
 
 interface TaskClassification {
-  readonly phase: TaskPhase;       // "plan" | "execute" | "review"
-  readonly confidence: number;     // 0.0 - 1.0
-  readonly reasoning: string;      // 분류 근거 (디버깅용)
+  readonly phase: TaskPhase; // "plan" | "execute" | "review"
+  readonly confidence: number; // 0.0 - 1.0
+  readonly reasoning: string; // 분류 근거 (디버깅용)
   readonly suggestedModel: string; // 추천 모델
 }
 ```
 
 **분류 규칙 (Rule-based + Heuristic)**:
 
-| Signal | Weight | Phase |
-|--------|--------|-------|
-| 첫 메시지 (no history) | 0.8 | plan |
-| "계획", "설계", "분석", "리뷰" 키워드 | 0.7 | plan |
-| "구현", "코드", "작성", "수정" 키워드 | 0.6 | execute |
-| 이전 턴에 plan 결과 있음 + 현재 "진행해줘" | 0.9 | execute |
-| file_write/file_edit 도구 호출 직후 | 0.7 | execute |
-| "확인", "검토", "테스트" 키워드 | 0.6 | review |
-| 10+ 파일 수정 후 | 0.5 | review |
-| Confidence < 0.5 | fallback | architect model (안전 선택) |
+| Signal                                     | Weight   | Phase                       |
+| ------------------------------------------ | -------- | --------------------------- |
+| 첫 메시지 (no history)                     | 0.8      | plan                        |
+| "계획", "설계", "분석", "리뷰" 키워드      | 0.7      | plan                        |
+| "구현", "코드", "작성", "수정" 키워드      | 0.6      | execute                     |
+| 이전 턴에 plan 결과 있음 + 현재 "진행해줘" | 0.9      | execute                     |
+| file_write/file_edit 도구 호출 직후        | 0.7      | execute                     |
+| "확인", "검토", "테스트" 키워드            | 0.6      | review                      |
+| 10+ 파일 수정 후                           | 0.5      | review                      |
+| Confidence < 0.5                           | fallback | architect model (안전 선택) |
 
 **Auto-routing 동작 흐름**:
 
@@ -1589,7 +1642,7 @@ LLM 호출
 interface ModelSelector {
   /**
    * 주어진 작업에 최적의 모델을 선택
-   * 
+   *
    * @param task - 작업 설명 및 요구사항
    * @param preferences - 사용자 선호도 (비용 vs 품질 가중치)
    * @returns 선택된 모델과 근거
@@ -1620,11 +1673,11 @@ interface SelectionPreferences {
 interface ModelSelection {
   readonly modelId: string;
   readonly provider: string;
-  readonly score: number;          // 종합 점수 (0-100)
-  readonly costEstimate: number;   // USD
+  readonly score: number; // 종합 점수 (0-100)
+  readonly costEstimate: number; // USD
   readonly qualityTier: CapabilityTier;
-  readonly reasoning: string;      // 선택 근거
-  readonly alternatives: readonly ModelAlternative[];  // 차선책 2-3개
+  readonly reasoning: string; // 선택 근거
+  readonly alternatives: readonly ModelAlternative[]; // 차선책 2-3개
 }
 ```
 
@@ -1641,13 +1694,13 @@ where:
 
 **프리셋 프로필**:
 
-| Profile | Cost | Quality | Speed | Use Case |
-|---------|------|---------|-------|----------|
-| `quality-first` | 0.1 | 0.8 | 0.1 | 중요한 아키텍처 결정 |
-| `balanced` | 0.3 | 0.5 | 0.2 | 일반 개발 작업 |
-| `cost-efficient` | 0.6 | 0.3 | 0.1 | 대량 반복 작업 |
-| `speed-first` | 0.1 | 0.2 | 0.7 | 인터랙티브 탐색 |
-| `local-only` | 0.0 | 0.3 | 0.7 | 오프라인, 프라이버시 우선 |
+| Profile          | Cost | Quality | Speed | Use Case                  |
+| ---------------- | ---- | ------- | ----- | ------------------------- |
+| `quality-first`  | 0.1  | 0.8     | 0.1   | 중요한 아키텍처 결정      |
+| `balanced`       | 0.3  | 0.5     | 0.2   | 일반 개발 작업            |
+| `cost-efficient` | 0.6  | 0.3     | 0.1   | 대량 반복 작업            |
+| `speed-first`    | 0.1  | 0.2     | 0.7   | 인터랙티브 탐색           |
+| `local-only`     | 0.0  | 0.3     | 0.7   | 오프라인, 프라이버시 우선 |
 
 ### 5.3 Adaptive Model Switching
 
@@ -1655,14 +1708,14 @@ where:
 
 **전환 트리거**:
 
-| Trigger | Action | 예시 |
-|---------|--------|------|
-| 단순 질문 감지 (짧은 응답 예상) | Downgrade | "이 함수 이름 뭐야?" → flash model |
-| 복잡한 리팩토링 감지 | Upgrade | 10+ 파일 수정 계획 → opus model |
-| 연속 도구 호출 실패 (3회+) | Upgrade | 모델이 문제 해결 못함 → 더 강한 모델로 |
-| 토큰 예산 80% 소진 | Downgrade | 예산 절약을 위해 저렴한 모델로 |
-| 사용자가 "더 자세히" 요청 | Upgrade | 현재 모델의 응답이 불충분 |
-| Compaction 발생 | Downgrade | 컨텍스트 압축은 flash 모델로 충분 |
+| Trigger                         | Action    | 예시                                   |
+| ------------------------------- | --------- | -------------------------------------- |
+| 단순 질문 감지 (짧은 응답 예상) | Downgrade | "이 함수 이름 뭐야?" → flash model     |
+| 복잡한 리팩토링 감지            | Upgrade   | 10+ 파일 수정 계획 → opus model        |
+| 연속 도구 호출 실패 (3회+)      | Upgrade   | 모델이 문제 해결 못함 → 더 강한 모델로 |
+| 토큰 예산 80% 소진              | Downgrade | 예산 절약을 위해 저렴한 모델로         |
+| 사용자가 "더 자세히" 요청       | Upgrade   | 현재 모델의 응답이 불충분              |
+| Compaction 발생                 | Downgrade | 컨텍스트 압축은 flash 모델로 충분      |
 
 **구현 인터페이스**:
 
@@ -1699,7 +1752,7 @@ interface SwitchDecision {
 // src/llm/ab-testing.ts
 interface ABTestManager {
   /** 실험 정의 */
-  defineExperiment(config: ExperimentConfig): string;  // experiment ID
+  defineExperiment(config: ExperimentConfig): string; // experiment ID
 
   /** 현재 세션에 실험 배정 */
   assign(sessionId: string, experimentId: string): ExperimentVariant;
@@ -1751,12 +1804,12 @@ interface ExperimentOutcome {
 
 **초기 실험 후보**:
 
-| Experiment | Control | Treatment | Primary Metric |
-|-----------|---------|-----------|----------------|
-| Auto-routing accuracy | Manual phase selection | TaskClassifier auto | Task completion rate |
-| Flash for compaction | Sonnet for compaction | Flash for compaction | Cost per compaction |
-| Adaptive switching | Fixed model | Adaptive switcher | Overall cost + quality |
-| Local fallback | Cloud-only | Cloud + local fallback | Availability + latency |
+| Experiment            | Control                | Treatment              | Primary Metric         |
+| --------------------- | ---------------------- | ---------------------- | ---------------------- |
+| Auto-routing accuracy | Manual phase selection | TaskClassifier auto    | Task completion rate   |
+| Flash for compaction  | Sonnet for compaction  | Flash for compaction   | Cost per compaction    |
+| Adaptive switching    | Fixed model            | Adaptive switcher      | Overall cost + quality |
+| Local fallback        | Cloud-only             | Cloud + local fallback | Availability + latency |
 
 ---
 
@@ -1833,9 +1886,9 @@ interface SessionFork {
 }
 
 type MergeStrategy =
-  | "adopt-all"        // 분기의 모든 변경사항을 메인에 적용
-  | "cherry-pick"      // 선택적으로 변경사항 적용
-  | "summary-only";    // 분기 결과 요약만 메인 컨텍스트에 추가
+  | "adopt-all" // 분기의 모든 변경사항을 메인에 적용
+  | "cherry-pick" // 선택적으로 변경사항 적용
+  | "summary-only"; // 분기 결과 요약만 메인 컨텍스트에 추가
 ```
 
 ### 6.2 Resumable Sessions with Checkpoint
@@ -1878,7 +1931,7 @@ interface SessionCheckpoint {
 
 interface CheckpointManager {
   /** 자동 체크포인트 생성 (매 N턴 또는 중요 이벤트 시) */
-  readonly autoCheckpointInterval: number;  // default: 5 turns
+  readonly autoCheckpointInterval: number; // default: 5 turns
 
   /** 수동 체크포인트 생성 */
   createCheckpoint(label?: string): Promise<string>;
@@ -1896,16 +1949,17 @@ interface CheckpointManager {
 
 **자동 체크포인트 트리거**:
 
-| Event | 체크포인트 생성 | 이유 |
-|-------|---------------|------|
-| 5턴마다 | Auto | 정기적 안전망 |
-| Team execution 시작 전 | Auto | 팀 실행은 비용이 크므로 롤백 가능하게 |
-| 10+ 파일 수정 후 | Auto | 대규모 변경 전 상태 보존 |
-| 사용자 `/checkpoint` 명령 | Manual | 명시적 저장점 |
-| Model switch 발생 | Auto | 전환 전 상태 기록 |
-| Compaction 직전 | Auto | 원본 컨텍스트 보존 |
+| Event                     | 체크포인트 생성 | 이유                                  |
+| ------------------------- | --------------- | ------------------------------------- |
+| 5턴마다                   | Auto            | 정기적 안전망                         |
+| Team execution 시작 전    | Auto            | 팀 실행은 비용이 크므로 롤백 가능하게 |
+| 10+ 파일 수정 후          | Auto            | 대규모 변경 전 상태 보존              |
+| 사용자 `/checkpoint` 명령 | Manual          | 명시적 저장점                         |
+| Model switch 발생         | Auto            | 전환 전 상태 기록                     |
+| Compaction 직전           | Auto            | 원본 컨텍스트 보존                    |
 
 **저장 전략**:
+
 - 최근 10개 체크포인트는 전체 보존
 - 이전 체크포인트는 delta 형태로 압축 (이전 대비 변경분만)
 - 24시간 이상 지난 체크포인트는 메시지 요약본만 보존
@@ -1938,13 +1992,14 @@ interface SessionArtifact {
   readonly title: string;
   readonly content: string;
   readonly tags: readonly string[];
-  readonly projectPath: string;    // 어떤 프로젝트에서 생성되었는지
+  readonly projectPath: string; // 어떤 프로젝트에서 생성되었는지
   readonly createdAt: number;
   readonly expiresAt?: number;
 }
 ```
 
 **사용 시나리오**:
+
 1. Session A에서 "보안 분석" 수행 → 분석 결과를 artifact로 발행
 2. Session B에서 "보안 수정" 작업 시 → Session A의 분석 결과를 import하여 컨텍스트로 활용
 3. 반복적인 프로젝트 분석 결과(아키텍처 다이어그램, 의존성 그래프)를 캐시하여 재사용
@@ -1955,15 +2010,15 @@ interface SessionArtifact {
 
 ### 7.1 Phase Overview
 
-| Phase | Period | Focus | Key Deliverables |
-|-------|--------|-------|------------------|
-| Phase 1 | Week 1-3 | Provider Foundation | ProviderRegistry, Gemini, Azure OpenAI |
-| Phase 2 | Week 4-6 | Provider Expansion | Bedrock, Mistral, Groq, fallback chain |
-| Phase 3 | Week 7-9 | Local + Router | Ollama/LMStudio, auto-routing, task classifier |
-| Phase 4 | Week 10-12 | Agent Manifests | Typed manifests, 8 built-in agents, message bus |
-| Phase 5 | Week 13-15 | Control Plane | SpawnPolicy, QuotaManager, HealthMonitor |
-| Phase 6 | Week 16-18 | Session Evolution | Forking, checkpoints, artifact sharing |
-| Phase 7 | Week 19-21 | A/B + Adaptive | A/B testing, adaptive switching, weighted selection |
+| Phase   | Period     | Focus               | Key Deliverables                                    |
+| ------- | ---------- | ------------------- | --------------------------------------------------- |
+| Phase 1 | Week 1-3   | Provider Foundation | ProviderRegistry, Gemini, Azure OpenAI              |
+| Phase 2 | Week 4-6   | Provider Expansion  | Bedrock, Mistral, Groq, fallback chain              |
+| Phase 3 | Week 7-9   | Local + Router      | Ollama/LMStudio, auto-routing, task classifier      |
+| Phase 4 | Week 10-12 | Agent Manifests     | Typed manifests, 8 built-in agents, message bus     |
+| Phase 5 | Week 13-15 | Control Plane       | SpawnPolicy, QuotaManager, HealthMonitor            |
+| Phase 6 | Week 16-18 | Session Evolution   | Forking, checkpoints, artifact sharing              |
+| Phase 7 | Week 19-21 | A/B + Adaptive      | A/B testing, adaptive switching, weighted selection |
 
 ### 7.2 Detailed Task Breakdown
 
@@ -2030,43 +2085,43 @@ Week 9:
 
 ### 7.3 File-Level Change Map
 
-| New File | Module | Purpose |
-|----------|--------|---------|
-| `src/llm/providers/registry.ts` | LLM | ProviderRegistry, ProviderManifest |
-| `src/llm/providers/google-gemini.ts` | LLM | Google Gemini provider |
-| `src/llm/providers/azure-openai.ts` | LLM | Azure OpenAI provider |
-| `src/llm/providers/aws-bedrock.ts` | LLM | AWS Bedrock provider |
-| `src/llm/providers/mistral.ts` | LLM | Mistral provider |
-| `src/llm/providers/groq.ts` | LLM | Groq provider |
-| `src/llm/providers/local.ts` | LLM | Ollama/LMStudio provider |
-| `src/llm/task-classifier.ts` | LLM | Task phase classification |
-| `src/llm/model-selector.ts` | LLM | Weighted model selection |
-| `src/llm/adaptive-switcher.ts` | LLM | Dynamic model switching |
-| `src/llm/ab-testing.ts` | LLM | A/B experiment framework |
-| `src/orchestration/agent-manifest.ts` | Orchestration | Typed agent manifests |
-| `src/orchestration/message-bus.ts` | Orchestration | Agent communication |
-| `src/orchestration/artifact-registry.ts` | Orchestration | Artifact sharing |
-| `src/orchestration/control-plane.ts` | Orchestration | Central control layer |
-| `src/orchestration/spawn-policy.ts` | Orchestration | Spawn validation |
-| `src/orchestration/quota-manager.ts` | Orchestration | Token/cost budgets |
-| `src/orchestration/health-monitor.ts` | Orchestration | Agent liveness |
-| `src/orchestration/depth-tracker.ts` | Orchestration | Recursion prevention |
-| `src/orchestration/session-manager.ts` | Orchestration | Fork/branch/merge |
-| `src/orchestration/checkpoint.ts` | Orchestration | Resumable sessions |
-| `src/orchestration/session-artifacts.ts` | Orchestration | Cross-session sharing |
-| `src/orchestration/event-store.ts` | Orchestration | Event sourcing |
+| New File                                 | Module        | Purpose                            |
+| ---------------------------------------- | ------------- | ---------------------------------- |
+| `src/llm/providers/registry.ts`          | LLM           | ProviderRegistry, ProviderManifest |
+| `src/llm/providers/google-gemini.ts`     | LLM           | Google Gemini provider             |
+| `src/llm/providers/azure-openai.ts`      | LLM           | Azure OpenAI provider              |
+| `src/llm/providers/aws-bedrock.ts`       | LLM           | AWS Bedrock provider               |
+| `src/llm/providers/mistral.ts`           | LLM           | Mistral provider                   |
+| `src/llm/providers/groq.ts`              | LLM           | Groq provider                      |
+| `src/llm/providers/local.ts`             | LLM           | Ollama/LMStudio provider           |
+| `src/llm/task-classifier.ts`             | LLM           | Task phase classification          |
+| `src/llm/model-selector.ts`              | LLM           | Weighted model selection           |
+| `src/llm/adaptive-switcher.ts`           | LLM           | Dynamic model switching            |
+| `src/llm/ab-testing.ts`                  | LLM           | A/B experiment framework           |
+| `src/orchestration/agent-manifest.ts`    | Orchestration | Typed agent manifests              |
+| `src/orchestration/message-bus.ts`       | Orchestration | Agent communication                |
+| `src/orchestration/artifact-registry.ts` | Orchestration | Artifact sharing                   |
+| `src/orchestration/control-plane.ts`     | Orchestration | Central control layer              |
+| `src/orchestration/spawn-policy.ts`      | Orchestration | Spawn validation                   |
+| `src/orchestration/quota-manager.ts`     | Orchestration | Token/cost budgets                 |
+| `src/orchestration/health-monitor.ts`    | Orchestration | Agent liveness                     |
+| `src/orchestration/depth-tracker.ts`     | Orchestration | Recursion prevention               |
+| `src/orchestration/session-manager.ts`   | Orchestration | Fork/branch/merge                  |
+| `src/orchestration/checkpoint.ts`        | Orchestration | Resumable sessions                 |
+| `src/orchestration/session-artifacts.ts` | Orchestration | Cross-session sharing              |
+| `src/orchestration/event-store.ts`       | Orchestration | Event sourcing                     |
 
-| Modified File | Changes |
-|---------------|---------|
-| `src/llm/client-factory.ts` | ProviderRegistry 기반으로 리팩토링 |
-| `src/llm/model-capabilities.ts` | 프로바이더별 capabilities 분리 |
-| `src/llm/dual-model-router.ts` | TaskClassifier 통합, auto 전략 완성 |
-| `src/llm/cost-tracker.ts` | QuotaManager 통합 |
-| `src/subagents/spawner.ts` | SpawnPolicy + DepthTracker 통합 |
-| `src/subagents/team-manager.ts` | EventStore 통합, durable state |
-| `src/subagents/definition-types.ts` | AgentManifest로 확장 |
-| `src/subagents/shared-state.ts` | MessageBus 통합 |
-| `src/core/agent-loop.ts` | AdaptiveSwitcher 통합, checkpoint hook |
+| Modified File                       | Changes                                |
+| ----------------------------------- | -------------------------------------- |
+| `src/llm/client-factory.ts`         | ProviderRegistry 기반으로 리팩토링     |
+| `src/llm/model-capabilities.ts`     | 프로바이더별 capabilities 분리         |
+| `src/llm/dual-model-router.ts`      | TaskClassifier 통합, auto 전략 완성    |
+| `src/llm/cost-tracker.ts`           | QuotaManager 통합                      |
+| `src/subagents/spawner.ts`          | SpawnPolicy + DepthTracker 통합        |
+| `src/subagents/team-manager.ts`     | EventStore 통합, durable state         |
+| `src/subagents/definition-types.ts` | AgentManifest로 확장                   |
+| `src/subagents/shared-state.ts`     | MessageBus 통합                        |
+| `src/core/agent-loop.ts`            | AdaptiveSwitcher 통합, checkpoint hook |
 
 ---
 
@@ -2074,56 +2129,56 @@ Week 9:
 
 ### 8.1 Provider Expansion Metrics
 
-| Metric | Current | Target | Measurement |
-|--------|---------|--------|-------------|
-| Supported providers | 3 | 10+ | Provider registry count |
-| Provider switch time | N/A (manual) | < 2s | Hot-switch latency |
-| Fallback recovery rate | 0% | > 95% | Auto-recovery on provider failure |
-| Local model detection | 0% | > 90% | Auto-detect accuracy |
-| Config-to-working | N/A | < 30s | API key 설정 후 첫 응답까지 |
+| Metric                 | Current      | Target | Measurement                       |
+| ---------------------- | ------------ | ------ | --------------------------------- |
+| Supported providers    | 3            | 10+    | Provider registry count           |
+| Provider switch time   | N/A (manual) | < 2s   | Hot-switch latency                |
+| Fallback recovery rate | 0%           | > 95%  | Auto-recovery on provider failure |
+| Local model detection  | 0%           | > 90%  | Auto-detect accuracy              |
+| Config-to-working      | N/A          | < 30s  | API key 설정 후 첫 응답까지       |
 
 ### 8.2 Multi-Agent Metrics
 
-| Metric | Current | Target | Measurement |
-|--------|---------|--------|-------------|
-| Parallel task completion rate | ~70% | > 90% | Team execution success |
-| Resume integrity | 0% (no resume) | > 95% | Checkpoint restore accuracy |
-| Artifact reuse rate | 0% | > 30% | Cross-agent artifact references |
-| Agent spawn overhead | ~3s | < 1s | Time from spawn request to first message |
-| Max concurrent agents | ~3 (practical) | 8+ | Stress test max |
-| Recursion prevention | Basic depth | 100% | Zero infinite recursion incidents |
+| Metric                        | Current        | Target | Measurement                              |
+| ----------------------------- | -------------- | ------ | ---------------------------------------- |
+| Parallel task completion rate | ~70%           | > 90%  | Team execution success                   |
+| Resume integrity              | 0% (no resume) | > 95%  | Checkpoint restore accuracy              |
+| Artifact reuse rate           | 0%             | > 30%  | Cross-agent artifact references          |
+| Agent spawn overhead          | ~3s            | < 1s   | Time from spawn request to first message |
+| Max concurrent agents         | ~3 (practical) | 8+     | Stress test max                          |
+| Recursion prevention          | Basic depth    | 100%   | Zero infinite recursion incidents        |
 
 ### 8.3 Model Router Metrics
 
-| Metric | Current | Target | Measurement |
-|--------|---------|--------|-------------|
-| Auto-routing accuracy | 0% (no auto) | > 80% | Correct phase classification |
-| Cost reduction (vs fixed high-tier) | 0% | 30-50% | USD per session |
-| Quality regression (vs fixed high-tier) | N/A | < 5% | Task completion quality score |
-| Model switch latency | N/A | < 500ms | Time to switch mid-conversation |
-| A/B experiment throughput | 0 | 3+ concurrent | Active experiments |
+| Metric                                  | Current      | Target        | Measurement                     |
+| --------------------------------------- | ------------ | ------------- | ------------------------------- |
+| Auto-routing accuracy                   | 0% (no auto) | > 80%         | Correct phase classification    |
+| Cost reduction (vs fixed high-tier)     | 0%           | 30-50%        | USD per session                 |
+| Quality regression (vs fixed high-tier) | N/A          | < 5%          | Task completion quality score   |
+| Model switch latency                    | N/A          | < 500ms       | Time to switch mid-conversation |
+| A/B experiment throughput               | 0            | 3+ concurrent | Active experiments              |
 
 ### 8.4 Session Management Metrics
 
-| Metric | Current | Target | Measurement |
-|--------|---------|--------|-------------|
-| Session recovery rate | 0% | > 95% | Successful checkpoint restore |
-| Fork creation time | N/A | < 1s | Fork latency |
-| Merge success rate | N/A | > 85% | Fork merge without conflicts |
-| Checkpoint storage overhead | N/A | < 10MB/session | Disk usage |
-| Cross-session artifact hit rate | 0% | > 20% | Reuse of previous session artifacts |
+| Metric                          | Current | Target         | Measurement                         |
+| ------------------------------- | ------- | -------------- | ----------------------------------- |
+| Session recovery rate           | 0%      | > 95%          | Successful checkpoint restore       |
+| Fork creation time              | N/A     | < 1s           | Fork latency                        |
+| Merge success rate              | N/A     | > 85%          | Fork merge without conflicts        |
+| Checkpoint storage overhead     | N/A     | < 10MB/session | Disk usage                          |
+| Cross-session artifact hit rate | 0%      | > 20%          | Reuse of previous session artifacts |
 
 ### 8.5 Competitive Parity Checkpoints
 
-| Milestone | OpenCode Parity | Codex Parity | Timeline |
-|-----------|----------------|--------------|----------|
-| 10+ providers | Yes | N/A | Phase 3 (Week 9) |
-| Per-agent model config | Yes | N/A | Phase 4 (Week 12) |
-| Session forking | Yes | Yes | Phase 6 (Week 18) |
-| Peer-to-peer messaging | Exceeds | Exceeds | Phase 4 (Week 12) |
-| Orchestration control plane | Exceeds | Exceeds | Phase 5 (Week 15) |
-| A/B testing | Exceeds | Exceeds | Phase 7 (Week 21) |
-| Durable orchestration store | Exceeds | Partial | Phase 5 (Week 15) |
+| Milestone                   | OpenCode Parity | Codex Parity | Timeline          |
+| --------------------------- | --------------- | ------------ | ----------------- |
+| 10+ providers               | Yes             | N/A          | Phase 3 (Week 9)  |
+| Per-agent model config      | Yes             | N/A          | Phase 4 (Week 12) |
+| Session forking             | Yes             | Yes          | Phase 6 (Week 18) |
+| Peer-to-peer messaging      | Exceeds         | Exceeds      | Phase 4 (Week 12) |
+| Orchestration control plane | Exceeds         | Exceeds      | Phase 5 (Week 15) |
+| A/B testing                 | Exceeds         | Exceeds      | Phase 7 (Week 21) |
+| Durable orchestration store | Exceeds         | Partial      | Phase 5 (Week 15) |
 
 ---
 
@@ -2131,22 +2186,22 @@ Week 9:
 
 ### 9.1 Technical Risks
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| Provider API 불안정 (breaking changes) | High | Medium | 버전 고정 + integration test suite |
-| Local model 품질 편차 | Medium | High | Capability tier 기반 자동 프롬프트 조정 |
-| Checkpoint 크기 폭발 | Medium | Medium | Delta 압축 + retention policy |
-| Agent 간 메시지 순서 보장 | High | Low | Lamport timestamp + vector clock |
-| A/B 실험 간 간섭 | Medium | Medium | Isolation 보장 + 한 세션 당 하나의 실험 |
+| Risk                                   | Impact | Probability | Mitigation                              |
+| -------------------------------------- | ------ | ----------- | --------------------------------------- |
+| Provider API 불안정 (breaking changes) | High   | Medium      | 버전 고정 + integration test suite      |
+| Local model 품질 편차                  | Medium | High        | Capability tier 기반 자동 프롬프트 조정 |
+| Checkpoint 크기 폭발                   | Medium | Medium      | Delta 압축 + retention policy           |
+| Agent 간 메시지 순서 보장              | High   | Low         | Lamport timestamp + vector clock        |
+| A/B 실험 간 간섭                       | Medium | Medium      | Isolation 보장 + 한 세션 당 하나의 실험 |
 
 ### 9.2 Operational Risks
 
-| Risk | Impact | Probability | Mitigation |
-|------|--------|-------------|------------|
-| 비용 폭주 (expensive model 과다 사용) | High | Medium | QuotaManager + hard ceiling |
-| Agent 무한 생성 | Critical | Low | SpawnPolicy + depth tracker + total limit |
-| Provider 인증 정보 노출 | Critical | Low | 기존 guardrails secret scanning 활용 |
-| 체크포인트 손상 | High | Low | Checksum 검증 + 이중 저장 |
+| Risk                                  | Impact   | Probability | Mitigation                                |
+| ------------------------------------- | -------- | ----------- | ----------------------------------------- |
+| 비용 폭주 (expensive model 과다 사용) | High     | Medium      | QuotaManager + hard ceiling               |
+| Agent 무한 생성                       | Critical | Low         | SpawnPolicy + depth tracker + total limit |
+| Provider 인증 정보 노출               | Critical | Low         | 기존 guardrails secret scanning 활용      |
+| 체크포인트 손상                       | High     | Low         | Checksum 검증 + 이중 저장                 |
 
 ---
 
@@ -2164,6 +2219,7 @@ DHelix의 오케스트레이션 전략은 "기능 복제"가 아니라 **"관찰
 6. **Agent Communication**: Parent-child + peer-to-peer — coherence 극대화
 
 **경쟁 포지셔닝**:
+
 - OpenCode 대비: 동등한 프로바이더 지원 + 더 강한 오케스트레이션 제어
 - Codex 대비: 더 개방적인 모델 선택 + 더 유연한 에이전트 구성
 - Claude Code 대비: 멀티 프로바이더 + 에이전트 팀 + 세션 관리

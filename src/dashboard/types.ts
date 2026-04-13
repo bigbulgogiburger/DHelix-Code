@@ -23,7 +23,7 @@ export interface DashboardSessionInfo {
   readonly title: string;
   readonly model: string;
   readonly messageCount: number;
-  readonly status: 'active' | 'completed' | 'archived';
+  readonly status: "active" | "completed" | "archived";
   readonly createdAt: string;
   readonly updatedAt: string;
 }
@@ -36,7 +36,7 @@ export interface DashboardSessionInfo {
 export interface DashboardMcpServerInfo {
   readonly id: string;
   readonly name: string;
-  readonly status: 'healthy' | 'degraded' | 'unreachable' | 'stopped';
+  readonly status: "healthy" | "degraded" | "unreachable" | "stopped";
   readonly toolCount: number;
   readonly lastPingMs: number | null;
 }
@@ -49,7 +49,7 @@ export interface DashboardMcpServerInfo {
 export interface DashboardJobInfo {
   readonly id: string;
   readonly agentId: string;
-  readonly status: 'pending' | 'running' | 'completed' | 'failed';
+  readonly status: "pending" | "running" | "completed" | "failed";
   readonly progress?: number;
   readonly startedAt: number;
   readonly completedAt?: number;
@@ -78,11 +78,14 @@ export interface DashboardMetrics {
  * 각 이벤트는 "event: {type}\ndata: {json}\n\n" 형식입니다.
  */
 export type DashboardEvent =
-  | { readonly type: 'session:updated'; readonly data: DashboardSessionInfo }
-  | { readonly type: 'mcp:health-changed'; readonly data: DashboardMcpServerInfo }
-  | { readonly type: 'job:progress'; readonly data: DashboardJobInfo }
-  | { readonly type: 'metrics:updated'; readonly data: DashboardMetrics }
-  | { readonly type: 'agent:message'; readonly data: { readonly agentId: string; readonly content: string } };
+  | { readonly type: "session:updated"; readonly data: DashboardSessionInfo }
+  | { readonly type: "mcp:health-changed"; readonly data: DashboardMcpServerInfo }
+  | { readonly type: "job:progress"; readonly data: DashboardJobInfo }
+  | { readonly type: "metrics:updated"; readonly data: DashboardMetrics }
+  | {
+      readonly type: "agent:message";
+      readonly data: { readonly agentId: string; readonly content: string };
+    };
 
 // ---------------------------------------------------------------------------
 // 데이터 소스 인터페이스 (의존성 주입용)
@@ -145,21 +148,21 @@ export interface DashboardServerConfig {
 // ---------------------------------------------------------------------------
 
 /** DashboardSessionInfo의 status 값 목록 */
-const SESSION_STATUSES: readonly string[] = ['active', 'completed', 'archived'];
+const SESSION_STATUSES: readonly string[] = ["active", "completed", "archived"];
 
 /** DashboardMcpServerInfo의 status 값 목록 */
-const MCP_STATUSES: readonly string[] = ['healthy', 'degraded', 'unreachable', 'stopped'];
+const MCP_STATUSES: readonly string[] = ["healthy", "degraded", "unreachable", "stopped"];
 
 /** DashboardJobInfo의 status 값 목록 */
-const JOB_STATUSES: readonly string[] = ['pending', 'running', 'completed', 'failed'];
+const JOB_STATUSES: readonly string[] = ["pending", "running", "completed", "failed"];
 
 /** DashboardEvent의 type 값 목록 */
 const EVENT_TYPES: readonly string[] = [
-  'session:updated',
-  'mcp:health-changed',
-  'job:progress',
-  'metrics:updated',
-  'agent:message',
+  "session:updated",
+  "mcp:health-changed",
+  "job:progress",
+  "metrics:updated",
+  "agent:message",
 ];
 
 /**
@@ -169,17 +172,17 @@ const EVENT_TYPES: readonly string[] = [
  * @returns DashboardSessionInfo이면 true
  */
 export function isDashboardSessionInfo(value: unknown): value is DashboardSessionInfo {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
-    typeof obj['id'] === 'string' &&
-    typeof obj['title'] === 'string' &&
-    typeof obj['model'] === 'string' &&
-    typeof obj['messageCount'] === 'number' &&
-    typeof obj['status'] === 'string' &&
-    SESSION_STATUSES.includes(obj['status'] as string) &&
-    typeof obj['createdAt'] === 'string' &&
-    typeof obj['updatedAt'] === 'string'
+    typeof obj["id"] === "string" &&
+    typeof obj["title"] === "string" &&
+    typeof obj["model"] === "string" &&
+    typeof obj["messageCount"] === "number" &&
+    typeof obj["status"] === "string" &&
+    SESSION_STATUSES.includes(obj["status"] as string) &&
+    typeof obj["createdAt"] === "string" &&
+    typeof obj["updatedAt"] === "string"
   );
 }
 
@@ -190,15 +193,15 @@ export function isDashboardSessionInfo(value: unknown): value is DashboardSessio
  * @returns DashboardMcpServerInfo이면 true
  */
 export function isDashboardMcpServerInfo(value: unknown): value is DashboardMcpServerInfo {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
-    typeof obj['id'] === 'string' &&
-    typeof obj['name'] === 'string' &&
-    typeof obj['status'] === 'string' &&
-    MCP_STATUSES.includes(obj['status'] as string) &&
-    typeof obj['toolCount'] === 'number' &&
-    (obj['lastPingMs'] === null || typeof obj['lastPingMs'] === 'number')
+    typeof obj["id"] === "string" &&
+    typeof obj["name"] === "string" &&
+    typeof obj["status"] === "string" &&
+    MCP_STATUSES.includes(obj["status"] as string) &&
+    typeof obj["toolCount"] === "number" &&
+    (obj["lastPingMs"] === null || typeof obj["lastPingMs"] === "number")
   );
 }
 
@@ -209,16 +212,16 @@ export function isDashboardMcpServerInfo(value: unknown): value is DashboardMcpS
  * @returns DashboardJobInfo이면 true
  */
 export function isDashboardJobInfo(value: unknown): value is DashboardJobInfo {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
-    typeof obj['id'] === 'string' &&
-    typeof obj['agentId'] === 'string' &&
-    typeof obj['status'] === 'string' &&
-    JOB_STATUSES.includes(obj['status'] as string) &&
-    typeof obj['startedAt'] === 'number' &&
-    (obj['completedAt'] === undefined || typeof obj['completedAt'] === 'number') &&
-    (obj['progress'] === undefined || typeof obj['progress'] === 'number')
+    typeof obj["id"] === "string" &&
+    typeof obj["agentId"] === "string" &&
+    typeof obj["status"] === "string" &&
+    JOB_STATUSES.includes(obj["status"] as string) &&
+    typeof obj["startedAt"] === "number" &&
+    (obj["completedAt"] === undefined || typeof obj["completedAt"] === "number") &&
+    (obj["progress"] === undefined || typeof obj["progress"] === "number")
   );
 }
 
@@ -229,13 +232,13 @@ export function isDashboardJobInfo(value: unknown): value is DashboardJobInfo {
  * @returns DashboardMetrics이면 true
  */
 export function isDashboardMetrics(value: unknown): value is DashboardMetrics {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
   return (
-    typeof obj['totalIterations'] === 'number' &&
-    typeof obj['totalTokens'] === 'number' &&
-    typeof obj['activeAgents'] === 'number' &&
-    typeof obj['uptime'] === 'number'
+    typeof obj["totalIterations"] === "number" &&
+    typeof obj["totalTokens"] === "number" &&
+    typeof obj["activeAgents"] === "number" &&
+    typeof obj["uptime"] === "number"
   );
 }
 
@@ -246,10 +249,10 @@ export function isDashboardMetrics(value: unknown): value is DashboardMetrics {
  * @returns DashboardEvent이면 true
  */
 export function isDashboardEvent(value: unknown): value is DashboardEvent {
-  if (typeof value !== 'object' || value === null) return false;
+  if (typeof value !== "object" || value === null) return false;
   const obj = value as Record<string, unknown>;
-  if (typeof obj['type'] !== 'string' || !EVENT_TYPES.includes(obj['type'] as string)) {
+  if (typeof obj["type"] !== "string" || !EVENT_TYPES.includes(obj["type"] as string)) {
     return false;
   }
-  return typeof obj['data'] === 'object' && obj['data'] !== null;
+  return typeof obj["data"] === "object" && obj["data"] !== null;
 }

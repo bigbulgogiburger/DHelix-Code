@@ -23,9 +23,7 @@ import { getSocketPath } from "./ipc/server.js";
 export async function copySocketPath(): Promise<void> {
   const workspacePath = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
   if (!workspacePath) {
-    vscode.window.showWarningMessage(
-      "No workspace folder open — cannot determine socket path.",
-    );
+    vscode.window.showWarningMessage("No workspace folder open — cannot determine socket path.");
     return;
   }
 
@@ -77,16 +75,13 @@ export async function showDiagnosticsSummary(): Promise<void> {
   const total = errors + warnings + infos + hints;
 
   if (total === 0) {
-    vscode.window.showInformationMessage(
-      "Workspace diagnostics: No issues found.",
-    );
+    vscode.window.showInformationMessage("Workspace diagnostics: No issues found.");
     return;
   }
 
   const parts: string[] = [];
   if (errors > 0) parts.push(`${errors} error${errors !== 1 ? "s" : ""}`);
-  if (warnings > 0)
-    parts.push(`${warnings} warning${warnings !== 1 ? "s" : ""}`);
+  if (warnings > 0) parts.push(`${warnings} warning${warnings !== 1 ? "s" : ""}`);
   if (infos > 0) parts.push(`${infos} info`);
   if (hints > 0) parts.push(`${hints} hint${hints !== 1 ? "s" : ""}`);
 

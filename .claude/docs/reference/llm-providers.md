@@ -4,17 +4,17 @@
 
 ## 프로바이더 목록 (8개)
 
-| Provider | File | Auth Env | Model Patterns |
-|----------|------|----------|---------------|
-| Anthropic | `providers/anthropic.ts` | `ANTHROPIC_API_KEY` | `claude-*` |
-| OpenAI Compatible | `client.ts` | `OPENAI_API_KEY` | `gpt-*`, `o1-*`, `o3-*` |
-| Responses API | `responses-client.ts` | `OPENAI_API_KEY` | `gpt-5-codex` |
-| Google Gemini | `providers/google-gemini.ts` | `DHELIX_GOOGLE_API_KEY` | `gemini-*` |
-| Azure OpenAI | `providers/azure-openai.ts` | `DHELIX_AZURE_API_KEY` | `azure-*` |
-| AWS Bedrock | `providers/aws-bedrock.ts` | `AWS_ACCESS_KEY_ID` | `bedrock-*`, `nova-*` |
-| Mistral | `providers/mistral.ts` | `MISTRAL_API_KEY` | `mistral-*`, `codestral*` |
-| Groq | `providers/groq.ts` | `GROQ_API_KEY` | `llama-*`, `mixtral-*` |
-| Local (Ollama/LMStudio) | `providers/local.ts` | none | `ollama:*`, `local:*` |
+| Provider                | File                         | Auth Env                | Model Patterns            |
+| ----------------------- | ---------------------------- | ----------------------- | ------------------------- |
+| Anthropic               | `providers/anthropic.ts`     | `ANTHROPIC_API_KEY`     | `claude-*`                |
+| OpenAI Compatible       | `client.ts`                  | `OPENAI_API_KEY`        | `gpt-*`, `o1-*`, `o3-*`   |
+| Responses API           | `responses-client.ts`        | `OPENAI_API_KEY`        | `gpt-5-codex`             |
+| Google Gemini           | `providers/google-gemini.ts` | `DHELIX_GOOGLE_API_KEY` | `gemini-*`                |
+| Azure OpenAI            | `providers/azure-openai.ts`  | `DHELIX_AZURE_API_KEY`  | `azure-*`                 |
+| AWS Bedrock             | `providers/aws-bedrock.ts`   | `AWS_ACCESS_KEY_ID`     | `bedrock-*`, `nova-*`     |
+| Mistral                 | `providers/mistral.ts`       | `MISTRAL_API_KEY`       | `mistral-*`, `codestral*` |
+| Groq                    | `providers/groq.ts`          | `GROQ_API_KEY`          | `llama-*`, `mixtral-*`    |
+| Local (Ollama/LMStudio) | `providers/local.ts`         | none                    | `ollama:*`, `local:*`     |
 
 ## ProviderRegistry (`providers/registry.ts`)
 

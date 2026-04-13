@@ -37,11 +37,7 @@ export {
   tryConnectIDEBridge,
   disposeIDEBridge,
 } from "./ide-bridge.js";
-export type {
-  IDEBridgeState,
-  IDEBridgeConfig,
-  IDEBridgeEvents,
-} from "./ide-bridge.js";
+export type { IDEBridgeState, IDEBridgeConfig, IDEBridgeEvents } from "./ide-bridge.js";
 
 // Smart Session (unified acquisition)
 export {

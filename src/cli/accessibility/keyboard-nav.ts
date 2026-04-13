@@ -67,9 +67,7 @@ export class FocusManager {
     if (this.currentIndex !== -1) {
       const currentId = this.elements[this.currentIndex]?.id;
       if (currentId !== undefined) {
-        this.currentIndex = this.elements.findIndex(
-          (el) => el.id === currentId
-        );
+        this.currentIndex = this.elements.findIndex((el) => el.id === currentId);
       }
     }
   }

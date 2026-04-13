@@ -82,7 +82,11 @@ function safeRegexTest(pattern: RegExp, input: string): boolean {
   if (input.length > SAFE_REGEX_INPUT_LIMIT) {
     const logger = getLogger();
     logger.warn(
-      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      {
+        inputLength: input.length,
+        limit: SAFE_REGEX_INPUT_LIMIT,
+        pattern: pattern.source.slice(0, 60),
+      },
       "ReDoS protection: input truncated for regex test",
     );
     const truncated = input.slice(0, SAFE_REGEX_INPUT_LIMIT);
@@ -111,7 +115,11 @@ function safeRegexExec(pattern: RegExp, input: string): RegExpExecArray | null {
   if (input.length > SAFE_REGEX_INPUT_LIMIT) {
     const logger = getLogger();
     logger.warn(
-      { inputLength: input.length, limit: SAFE_REGEX_INPUT_LIMIT, pattern: pattern.source.slice(0, 60) },
+      {
+        inputLength: input.length,
+        limit: SAFE_REGEX_INPUT_LIMIT,
+        pattern: pattern.source.slice(0, 60),
+      },
       "ReDoS protection: input truncated for regex exec",
     );
     const truncated = input.slice(0, SAFE_REGEX_INPUT_LIMIT);

@@ -9,7 +9,15 @@ import type { Node } from "web-tree-sitter";
 
 interface ParsedSymbol {
   readonly name: string;
-  readonly kind: "function" | "class" | "interface" | "type" | "variable" | "method" | "enum" | "constant";
+  readonly kind:
+    | "function"
+    | "class"
+    | "interface"
+    | "type"
+    | "variable"
+    | "method"
+    | "enum"
+    | "constant";
   readonly filePath: string;
   readonly startLine: number;
   readonly endLine: number;
@@ -57,14 +65,16 @@ function extractGoDoc(node: Node, _source: string): string | undefined {
 
   if (comments.length === 0) return undefined;
 
-  return comments
-    .map((c) => {
-      if (c.startsWith("//")) return c.slice(2).trim();
-      if (c.startsWith("/*") && c.endsWith("*/")) return c.slice(2, -2).trim();
-      return c.trim();
-    })
-    .join("\n")
-    .trim() || undefined;
+  return (
+    comments
+      .map((c) => {
+        if (c.startsWith("//")) return c.slice(2).trim();
+        if (c.startsWith("/*") && c.endsWith("*/")) return c.slice(2, -2).trim();
+        return c.trim();
+      })
+      .join("\n")
+      .trim() || undefined
+  );
 }
 
 /**

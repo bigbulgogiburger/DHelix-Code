@@ -18,11 +18,7 @@ import {
 } from "./types.js";
 import { type ToolRegistry } from "./registry.js";
 import { type RetryConfig, RetryEngine } from "./retry-engine.js";
-import {
-  type PreflightContext,
-  type PreflightCheck,
-  runPreflight,
-} from "./pipeline/preflight.js";
+import { type PreflightContext, type PreflightCheck, runPreflight } from "./pipeline/preflight.js";
 import { scheduleCalls } from "./pipeline/scheduler.js";
 import {
   type PostprocessConfig,
@@ -113,11 +109,7 @@ export class ToolPipeline {
       enableGuardrails: config.enableGuardrails !== false,
     };
 
-    const preflight = await runPreflight(
-      calls,
-      preflightContext,
-      config.preflightChecks,
-    );
+    const preflight = await runPreflight(calls, preflightContext, config.preflightChecks);
 
     // 거부된 호출의 결과를 추가
     allResults.push(...preflight.rejected);
@@ -202,9 +194,7 @@ export class ToolPipeline {
           allResults.push(settled.value);
         } else {
           const errorMessage =
-            settled.reason instanceof Error
-              ? settled.reason.message
-              : String(settled.reason);
+            settled.reason instanceof Error ? settled.reason.message : String(settled.reason);
           allResults.push({
             id: call.id,
             name: call.name,

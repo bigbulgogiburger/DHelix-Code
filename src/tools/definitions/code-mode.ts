@@ -23,12 +23,7 @@ import { z } from "zod";
 import { readFile, writeFile } from "node:fs/promises";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "../types.js";
 import { resolvePath, normalizePath, extName } from "../../utils/path.js";
-import {
-  parseCodeBlocks,
-  validateEdits,
-  applyEdits,
-  type CodeEdit,
-} from "./code-mode-utils.js";
+import { parseCodeBlocks, validateEdits, applyEdits, type CodeEdit } from "./code-mode-utils.js";
 
 /**
  * 파일 확장자 → 언어 식별자 매핑
@@ -36,22 +31,22 @@ import {
  * parseCodeBlocks에 전달하는 language 값을 결정합니다.
  */
 const EXT_TO_LANGUAGE: Readonly<Record<string, string>> = {
-  '.ts': 'typescript',
-  '.tsx': 'typescript',
-  '.mts': 'typescript',
-  '.cts': 'typescript',
-  '.js': 'javascript',
-  '.jsx': 'javascript',
-  '.mjs': 'javascript',
-  '.cjs': 'javascript',
-  '.py': 'python',
-  '.go': 'go',
-  '.rs': 'rust',
-  '.java': 'java',
-  '.c': 'c',
-  '.cpp': 'cpp',
-  '.h': 'c',
-  '.hpp': 'cpp',
+  ".ts": "typescript",
+  ".tsx": "typescript",
+  ".mts": "typescript",
+  ".cts": "typescript",
+  ".js": "javascript",
+  ".jsx": "javascript",
+  ".mjs": "javascript",
+  ".cjs": "javascript",
+  ".py": "python",
+  ".go": "go",
+  ".rs": "rust",
+  ".java": "java",
+  ".c": "c",
+  ".cpp": "cpp",
+  ".h": "c",
+  ".hpp": "cpp",
 };
 
 /**
@@ -61,19 +56,34 @@ const codeModeSchema = z.object({
   /** 편집할 파일 경로 */
   filePath: z.string().describe("Path to the file to edit structurally"),
   /** 적용할 편집 목록 (최소 1개, 최대 20개) */
-  edits: z.array(z.object({
-    /** 편집 액션 종류 */
-    action: z.enum(['replace-block', 'insert-before', 'insert-after', 'remove-block', 'rename-symbol'])
-      .describe("Edit action to perform on the target block"),
-    /** 대상 블록 이름 (예: "myFunction", "MyClass.myMethod") */
-    targetBlock: z.string().describe("Name of the target code block (supports dot notation like 'Class.method')"),
-    /** replace/insert 시 사용할 새 내용 */
-    content: z.string().optional().describe("New content for replace-block, insert-before, or insert-after"),
-    /** rename 시 사용할 새 이름 */
-    newName: z.string().optional().describe("New name for rename-symbol action"),
-  })).min(1).max(20).describe("List of structural edits to apply (1-20)"),
+  edits: z
+    .array(
+      z.object({
+        /** 편집 액션 종류 */
+        action: z
+          .enum(["replace-block", "insert-before", "insert-after", "remove-block", "rename-symbol"])
+          .describe("Edit action to perform on the target block"),
+        /** 대상 블록 이름 (예: "myFunction", "MyClass.myMethod") */
+        targetBlock: z
+          .string()
+          .describe("Name of the target code block (supports dot notation like 'Class.method')"),
+        /** replace/insert 시 사용할 새 내용 */
+        content: z
+          .string()
+          .optional()
+          .describe("New content for replace-block, insert-before, or insert-after"),
+        /** rename 시 사용할 새 이름 */
+        newName: z.string().optional().describe("New name for rename-symbol action"),
+      }),
+    )
+    .min(1)
+    .max(20)
+    .describe("List of structural edits to apply (1-20)"),
   /** 미리보기 모드 — true이면 파일 변경 없이 diff만 반환 */
-  dryRun: z.boolean().default(false).describe("If true, preview changes without modifying the file"),
+  dryRun: z
+    .boolean()
+    .default(false)
+    .describe("If true, preview changes without modifying the file"),
 });
 
 type Params = z.infer<typeof codeModeSchema>;
@@ -86,7 +96,7 @@ type Params = z.infer<typeof codeModeSchema>;
  */
 function detectLanguage(filePath: string): string {
   const ext = extName(filePath).toLowerCase();
-  return EXT_TO_LANGUAGE[ext] ?? 'unknown';
+  return EXT_TO_LANGUAGE[ext] ?? "unknown";
 }
 
 /**
@@ -98,13 +108,10 @@ function detectLanguage(filePath: string): string {
  * @returns diff 형식의 문자열
  */
 function generateSimpleDiff(original: string, modified: string, filePath: string): string {
-  const origLines = original.split('\n');
-  const modLines = modified.split('\n');
+  const origLines = original.split("\n");
+  const modLines = modified.split("\n");
 
-  const diffParts: string[] = [
-    `--- a/${filePath}`,
-    `+++ b/${filePath}`,
-  ];
+  const diffParts: string[] = [`--- a/${filePath}`, `+++ b/${filePath}`];
 
   // 줄 단위 비교 — 변경된 영역만 표시 (간이 diff)
   let i = 0;
@@ -127,10 +134,18 @@ function generateSimpleDiff(original: string, modified: string, filePath: string
 
     // 다시 동기화될 때까지 진행
     while (origEnd < origLines.length || modEnd < modLines.length) {
-      if (origEnd < origLines.length && modEnd < modLines.length && origLines[origEnd] === modLines[modEnd]) {
+      if (
+        origEnd < origLines.length &&
+        modEnd < modLines.length &&
+        origLines[origEnd] === modLines[modEnd]
+      ) {
         // 3줄 연속 같으면 동기화 완료로 판단
         let syncCount = 0;
-        for (let k = 0; k < 3 && origEnd + k < origLines.length && modEnd + k < modLines.length; k++) {
+        for (
+          let k = 0;
+          k < 3 && origEnd + k < origLines.length && modEnd + k < modLines.length;
+          k++
+        ) {
           if (origLines[origEnd + k] === modLines[modEnd + k]) {
             syncCount++;
           }
@@ -144,7 +159,9 @@ function generateSimpleDiff(original: string, modified: string, filePath: string
     const contextEnd = Math.min(origLines.length, origEnd + 2);
     const modContextEnd = Math.min(modLines.length, modEnd + 2);
 
-    diffParts.push(`@@ -${contextStart + 1},${contextEnd - contextStart} +${Math.max(0, j - 2) + 1},${modContextEnd - Math.max(0, j - 2)} @@`);
+    diffParts.push(
+      `@@ -${contextStart + 1},${contextEnd - contextStart} +${Math.max(0, j - 2) + 1},${modContextEnd - Math.max(0, j - 2)} @@`,
+    );
 
     // 컨텍스트 앞줄
     for (let k = contextStart; k < i; k++) {
@@ -168,10 +185,10 @@ function generateSimpleDiff(original: string, modified: string, filePath: string
   }
 
   if (!changesFound) {
-    return 'No changes detected.';
+    return "No changes detected.";
   }
 
-  return diffParts.join('\n');
+  return diffParts.join("\n");
 }
 
 /**
@@ -200,7 +217,8 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     const blocks = parseCodeBlocks(content, language);
     if (blocks.length === 0) {
       return {
-        output: `No code blocks detected in ${normalizePath(params.filePath)}. ` +
+        output:
+          `No code blocks detected in ${normalizePath(params.filePath)}. ` +
           `The file may be empty or contain only comments.`,
         isError: true,
       };
@@ -210,15 +228,17 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     const edits: readonly CodeEdit[] = params.edits;
     const validation = validateEdits(blocks, edits);
     if (!validation.valid) {
-      const blockList = blocks.map((b) => `  - ${b.type}: "${b.name}" (lines ${b.startLine}-${b.endLine})`).join('\n');
+      const blockList = blocks
+        .map((b) => `  - ${b.type}: "${b.name}" (lines ${b.startLine}-${b.endLine})`)
+        .join("\n");
       return {
         output: [
           `Validation failed for ${normalizePath(params.filePath)}:`,
           ...validation.errors,
-          '',
-          'Available blocks:',
+          "",
+          "Available blocks:",
           blockList,
-        ].join('\n'),
+        ].join("\n"),
         isError: true,
       };
     }
@@ -229,7 +249,9 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     // 5. 결과 처리
     if (params.dryRun) {
       const diff = generateSimpleDiff(content, modified, normalizePath(params.filePath));
-      const blockList = blocks.map((b) => `  ${b.type}: "${b.name}" (lines ${b.startLine}-${b.endLine})`).join('\n');
+      const blockList = blocks
+        .map((b) => `  ${b.type}: "${b.name}" (lines ${b.startLine}-${b.endLine})`)
+        .join("\n");
 
       return {
         output: [
@@ -237,13 +259,13 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
           `Language: ${language}`,
           `Blocks detected: ${blocks.length}`,
           `Edits to apply: ${edits.length}`,
-          '',
-          'Detected blocks:',
+          "",
+          "Detected blocks:",
           blockList,
-          '',
-          'Diff preview:',
+          "",
+          "Diff preview:",
           diff,
-        ].join('\n'),
+        ].join("\n"),
         isError: false,
         metadata: {
           filePath: normalizePath(filePath),
@@ -258,17 +280,20 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
     // 실제 파일 쓰기
     await writeFile(filePath, modified, "utf-8");
 
-    const editSummary = edits.map((e, idx) =>
-      `  ${idx + 1}. ${e.action} → "${e.targetBlock}"${e.newName ? ` (rename to "${e.newName}")` : ''}`
-    ).join('\n');
+    const editSummary = edits
+      .map(
+        (e, idx) =>
+          `  ${idx + 1}. ${e.action} → "${e.targetBlock}"${e.newName ? ` (rename to "${e.newName}")` : ""}`,
+      )
+      .join("\n");
 
     return {
       output: [
         `Successfully applied ${edits.length} structural edit(s) to ${normalizePath(params.filePath)}.`,
-        '',
-        'Applied edits:',
+        "",
+        "Applied edits:",
         editSummary,
-      ].join('\n'),
+      ].join("\n"),
       isError: false,
       metadata: {
         filePath: normalizePath(filePath),

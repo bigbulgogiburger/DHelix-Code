@@ -33,18 +33,10 @@ export interface IPCServerOptions {
    * Handler invoked for every JSON-RPC request received from a client.
    * The returned value (or thrown error) is forwarded back to the caller.
    */
-  readonly onRequest: (
-    method: string,
-    params: unknown,
-    connectionId: string,
-  ) => Promise<unknown>;
+  readonly onRequest: (method: string, params: unknown, connectionId: string) => Promise<unknown>;
 
   /** Optional handler for one-way JSON-RPC notifications from clients. */
-  readonly onNotification?: (
-    method: string,
-    params: unknown,
-    connectionId: string,
-  ) => void;
+  readonly onNotification?: (method: string, params: unknown, connectionId: string) => void;
 }
 
 export interface IPCServerEvents {
@@ -64,11 +56,7 @@ export interface IPCServerEvents {
  * - Windows:       `\\.\pipe\dhelix-bridge-<hash>`
  */
 export function getSocketPath(workspacePath: string): string {
-  const hash = crypto
-    .createHash("md5")
-    .update(workspacePath)
-    .digest("hex")
-    .slice(0, 8);
+  const hash = crypto.createHash("md5").update(workspacePath).digest("hex").slice(0, 8);
 
   if (process.platform === "win32") {
     return `\\\\.\\pipe\\dhelix-bridge-${hash}`;
@@ -217,11 +205,7 @@ export class IPCServer extends EventEmitter {
   }
 
   /** Send a JSON-RPC notification to a single client by id. */
-  sendNotificationTo(
-    connectionId: string,
-    method: string,
-    params: unknown,
-  ): void {
+  sendNotificationTo(connectionId: string, method: string, params: unknown): void {
     const handler = this.handlers.get(connectionId);
     if (handler) {
       handler.connection.sendNotification(method, params as object);
@@ -248,11 +232,7 @@ export class IPCServer extends EventEmitter {
     // Register a star request handler that forwards all methods to the
     // consumer-provided callback.
     connection.onRequest(
-      (
-        method: string,
-        params: unknown[] | object | undefined,
-        _token: CancellationToken,
-      ) => {
+      (method: string, params: unknown[] | object | undefined, _token: CancellationToken) => {
         // The `initialize` method is handled internally to capture client
         // metadata, then forwarded to the consumer.
         if (method === "initialize" && isInitializeParams(params)) {
@@ -268,11 +248,9 @@ export class IPCServer extends EventEmitter {
 
     // Forward notifications via the star notification handler.
     if (this.options.onNotification) {
-      connection.onNotification(
-        (method: string, params: unknown[] | object | undefined) => {
-          this.options.onNotification!(method, params, connectionId);
-        },
-      );
+      connection.onNotification((method: string, params: unknown[] | object | undefined) => {
+        this.options.onNotification!(method, params, connectionId);
+      });
     }
 
     // Track disconnection.

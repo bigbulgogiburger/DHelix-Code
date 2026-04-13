@@ -86,10 +86,7 @@ function truncateOutput(
  * @param spilloverDir - 저장 디렉토리
  * @returns spillover 파일 경로
  */
-async function writeSpilloverFile(
-  output: string,
-  spilloverDir: string,
-): Promise<string> {
+async function writeSpilloverFile(output: string, spilloverDir: string): Promise<string> {
   await mkdir(spilloverDir, { recursive: true });
   const fileName = `spillover-${randomUUID().slice(0, 8)}.txt`;
   const filePath = join(spilloverDir, fileName);
@@ -126,10 +123,7 @@ export async function postprocess(
     // 2. Spillover — 전체 출력을 파일로 저장
     if (config.spilloverEnabled) {
       try {
-        spilloverPath = await writeSpilloverFile(
-          processedOutput,
-          config.spilloverDir,
-        );
+        spilloverPath = await writeSpilloverFile(processedOutput, config.spilloverDir);
       } catch {
         // spillover 실패는 무시 — truncation만 적용
       }

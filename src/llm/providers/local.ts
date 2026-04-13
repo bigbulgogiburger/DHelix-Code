@@ -134,9 +134,7 @@ export interface DiscoveredModel {
  */
 export function resolveOllamaEndpoint(): string {
   return (
-    process.env["DHELIX_OLLAMA_ENDPOINT"] ??
-    process.env["OLLAMA_ENDPOINT"] ??
-    DEFAULT_OLLAMA_BASE
+    process.env["DHELIX_OLLAMA_ENDPOINT"] ?? process.env["OLLAMA_ENDPOINT"] ?? DEFAULT_OLLAMA_BASE
   );
 }
 
@@ -268,16 +266,11 @@ export class LocalModelProvider implements UnifiedLLMProvider {
   private readonly baseUrl: string;
   private readonly serverType: LocalServerType;
 
-  constructor(options?: {
-    readonly serverType?: LocalServerType;
-    readonly baseUrl?: string;
-  }) {
+  constructor(options?: { readonly serverType?: LocalServerType; readonly baseUrl?: string }) {
     this.serverType = options?.serverType ?? "ollama";
     const resolvedBase = options?.baseUrl ?? resolveLocalEndpoint(this.serverType);
     // 베이스 URL 뒤에 /v1 경로 추가 (아직 없으면)
-    this.baseUrl = resolvedBase.endsWith("/v1")
-      ? resolvedBase
-      : `${resolvedBase}/v1`;
+    this.baseUrl = resolvedBase.endsWith("/v1") ? resolvedBase : `${resolvedBase}/v1`;
   }
 
   /**
@@ -285,21 +278,16 @@ export class LocalModelProvider implements UnifiedLLMProvider {
    */
   async chat(request: ChatRequest): Promise<ChatResponse> {
     const body = this.buildRequestBody(request);
-    const response = await this.fetchWithTimeout(
-      `${this.baseUrl}/chat/completions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: request.signal,
-      },
-    );
+    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: request.signal,
+    });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      throw new LLMError(
-        `Local model API error (HTTP ${response.status}): ${errorText}`,
-      );
+      throw new LLMError(`Local model API error (HTTP ${response.status}): ${errorText}`);
     }
 
     const json = (await response.json()) as {
@@ -348,21 +336,16 @@ export class LocalModelProvider implements UnifiedLLMProvider {
    */
   async *stream(request: ChatRequest): AsyncIterable<ChatChunk> {
     const body = { ...this.buildRequestBody(request), stream: true };
-    const response = await this.fetchWithTimeout(
-      `${this.baseUrl}/chat/completions`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-        signal: request.signal,
-      },
-    );
+    const response = await this.fetchWithTimeout(`${this.baseUrl}/chat/completions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      signal: request.signal,
+    });
 
     if (!response.ok) {
       const errorText = await response.text().catch(() => "");
-      throw new LLMError(
-        `Local model stream error (HTTP ${response.status}): ${errorText}`,
-      );
+      throw new LLMError(`Local model stream error (HTTP ${response.status}): ${errorText}`);
     }
 
     const reader = response.body?.getReader();
@@ -624,10 +607,7 @@ export class LocalModelProvider implements UnifiedLLMProvider {
   /**
    * fetch with AbortSignal timeout 지원
    */
-  private async fetchWithTimeout(
-    url: string,
-    options: RequestInit,
-  ): Promise<Response> {
+  private async fetchWithTimeout(url: string, options: RequestInit): Promise<Response> {
     return fetch(url, options);
   }
 }

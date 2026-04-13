@@ -42,11 +42,10 @@ const MAX_RESTART_ATTEMPTS = 3;
  */
 export class LSPNotAvailableError extends BaseError {
   constructor(language: string, reason: string) {
-    super(
-      `LSP 서버를 사용할 수 없습니다: ${language} — ${reason}`,
-      "LSP_NOT_AVAILABLE",
-      { language, reason },
-    );
+    super(`LSP 서버를 사용할 수 없습니다: ${language} — ${reason}`, "LSP_NOT_AVAILABLE", {
+      language,
+      reason,
+    });
   }
 }
 
@@ -99,9 +98,7 @@ export class LSPManager {
    * @param projectDir - 프로젝트 루트 디렉토리 경로
    * @returns 사용 가능한 언어 ID 목록
    */
-  async detectAvailableServers(
-    projectDir: string,
-  ): Promise<readonly LSPLanguageId[]> {
+  async detectAvailableServers(projectDir: string): Promise<readonly LSPLanguageId[]> {
     this.ensureNotDisposed();
     return detectServers(projectDir);
   }
@@ -114,10 +111,7 @@ export class LSPManager {
    * @returns LSP 세션 래퍼 (DHelix 타입으로 변환된 결과 제공)
    * @throws {LSPNotAvailableError} 서버 커맨드가 설치되지 않았거나 시작 실패 시
    */
-  async acquire(
-    language: LSPLanguageId,
-    projectDir: string,
-  ): Promise<LSPSession> {
+  async acquire(language: LSPLanguageId, projectDir: string): Promise<LSPSession> {
     this.ensureNotDisposed();
 
     const key = this.serverKey(language, projectDir);
@@ -213,9 +207,7 @@ export class LSPManager {
     }
 
     // 모든 서버 종료
-    const shutdownPromises = [...this.servers.keys()].map((key) =>
-      this.shutdownServer(key),
-    );
+    const shutdownPromises = [...this.servers.keys()].map((key) => this.shutdownServer(key));
     await Promise.allSettled(shutdownPromises);
 
     this.servers.clear();
@@ -262,10 +254,7 @@ export class LSPManager {
       );
     }
 
-    log.info(
-      { language, projectDir, command: serverConfig.command },
-      "LSP 서버 시작",
-    );
+    log.info({ language, projectDir, command: serverConfig.command }, "LSP 서버 시작");
 
     const connection = new LSPServerConnection(
       serverConfig.command,
@@ -298,8 +287,7 @@ export class LSPManager {
       log.info({ language, projectDir }, "LSP 서버 시작 완료");
     } catch (error) {
       managed.state = "error";
-      const message =
-        error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error ? error.message : String(error);
       log.error({ language, projectDir, error: message }, "LSP 서버 시작 실패");
       throw new LSPNotAvailableError(language, `시작 실패: ${message}`);
     }
@@ -322,15 +310,16 @@ export class LSPManager {
 
     managed.idleTimer = setTimeout(() => {
       const log = getLogger();
-      log.info(
-        { key, language: managed.language },
-        "idle 타임아웃 — LSP 서버 종료",
-      );
+      log.info({ key, language: managed.language }, "idle 타임아웃 — LSP 서버 종료");
       void this.shutdownServer(key);
     }, this.config.idleTimeoutMs);
 
     // Node.js 프로세스 종료를 막지 않도록 타이머 해제
-    if (managed.idleTimer && typeof managed.idleTimer === "object" && "unref" in managed.idleTimer) {
+    if (
+      managed.idleTimer &&
+      typeof managed.idleTimer === "object" &&
+      "unref" in managed.idleTimer
+    ) {
       managed.idleTimer.unref();
     }
   }
@@ -368,8 +357,7 @@ export class LSPManager {
         this.createTimeout(5000, "LSP 서버 종료 타임아웃"),
       ]);
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : String(error);
+      const message = error instanceof Error ? error.message : String(error);
       log.warn({ key, error: message }, "LSP 서버 종료 중 오류 (무시)");
     }
 
@@ -430,14 +418,10 @@ export class LSPManager {
         manager.touchServer(key);
         await manager.ensureDocumentOpen(managed, filePath);
 
-        const locations = await manager.withTimeout(
-          connection.gotoDefinition(filePath, line, col),
-        );
+        const locations = await manager.withTimeout(connection.gotoDefinition(filePath, line, col));
 
         return manager.convertToDefinitionResults(
-          manager.normalizeLocations(
-            locations as ReadonlyArray<Record<string, unknown>>,
-          ),
+          manager.normalizeLocations(locations as ReadonlyArray<Record<string, unknown>>),
         );
       },
 
@@ -455,9 +439,7 @@ export class LSPManager {
         );
 
         return manager.convertToReferenceResults(
-          manager.normalizeLocations(
-            locations as ReadonlyArray<Record<string, unknown>>,
-          ),
+          manager.normalizeLocations(locations as ReadonlyArray<Record<string, unknown>>),
         );
       },
 
@@ -469,16 +451,19 @@ export class LSPManager {
         manager.touchServer(key);
         await manager.ensureDocumentOpen(managed, filePath);
 
-        const hover = await manager.withTimeout(
-          connection.getHover(filePath, line, col),
-        );
+        const hover = await manager.withTimeout(connection.getHover(filePath, line, col));
 
         if (!hover) {
           return undefined;
         }
 
         return manager.convertHoverToTypeInfo(
-          hover as { contents: string | { kind?: string; value: string } | ReadonlyArray<string | { kind?: string; value: string }> },
+          hover as {
+            contents:
+              | string
+              | { kind?: string; value: string }
+              | ReadonlyArray<string | { kind?: string; value: string }>;
+          },
         );
       },
 
@@ -491,9 +476,7 @@ export class LSPManager {
         manager.touchServer(key);
         await manager.ensureDocumentOpen(managed, filePath);
 
-        const edit = await manager.withTimeout(
-          connection.rename(filePath, line, col, newName),
-        );
+        const edit = await manager.withTimeout(connection.rename(filePath, line, col, newName));
 
         if (!edit) {
           return [];
@@ -526,10 +509,7 @@ export class LSPManager {
    * @param managed - 관리 서버
    * @param filePath - 파일 경로
    */
-  private async ensureDocumentOpen(
-    managed: ManagedServer,
-    filePath: string,
-  ): Promise<void> {
+  private async ensureDocumentOpen(managed: ManagedServer, filePath: string): Promise<void> {
     const uri = pathToFileURL(resolve(filePath)).toString();
     if (!managed.openDocuments.has(uri)) {
       await managed.connection.openDocument(filePath);
@@ -638,7 +618,7 @@ export class LSPManager {
 
     for (const loc of locations) {
       const filePath = this.uriToPath(loc.uri);
-      const line = loc.range.start.line + 1;       // LSP 0-based → DHelix 1-based
+      const line = loc.range.start.line + 1; // LSP 0-based → DHelix 1-based
       const column = loc.range.start.character + 1; // LSP 0-based → DHelix 1-based
       const preview = await this.readPreviewLine(filePath, loc.range.start.line);
 
@@ -666,7 +646,7 @@ export class LSPManager {
 
     for (const loc of locations) {
       const filePath = this.uriToPath(loc.uri);
-      const line = loc.range.start.line + 1;       // LSP 0-based → DHelix 1-based
+      const line = loc.range.start.line + 1; // LSP 0-based → DHelix 1-based
       const column = loc.range.start.character + 1; // LSP 0-based → DHelix 1-based
       const context = await this.readPreviewLine(filePath, loc.range.start.line);
 
@@ -700,9 +680,7 @@ export class LSPManager {
     if (typeof contents === "string") {
       typeString = contents;
     } else if (Array.isArray(contents)) {
-      typeString = contents
-        .map((c) => (typeof c === "string" ? c : c.value))
-        .join("\n");
+      typeString = contents.map((c) => (typeof c === "string" ? c : c.value)).join("\n");
     } else if (typeof contents === "object" && "value" in contents) {
       typeString = contents.value;
     }
@@ -717,10 +695,7 @@ export class LSPManager {
    * @returns DHelix RenameEdit 배열 (파일별·위치별 평탄화)
    */
   private convertWorkspaceEditToRenameEdits(edit: {
-    changes?: Record<
-      string,
-      ReadonlyArray<{ range: LSPRange; newText: string }>
-    >;
+    changes?: Record<string, ReadonlyArray<{ range: LSPRange; newText: string }>>;
   }): RenameEdit[] {
     const results: RenameEdit[] = [];
 
@@ -733,7 +708,7 @@ export class LSPManager {
       results.push({
         filePath,
         edits: textEdits.map((textEdit) => ({
-          startLine: textEdit.range.start.line + 1,       // LSP 0-based → 1-based
+          startLine: textEdit.range.start.line + 1, // LSP 0-based → 1-based
           startColumn: textEdit.range.start.character + 1,
           endLine: textEdit.range.end.line + 1,
           endColumn: textEdit.range.end.character + 1,
@@ -767,10 +742,7 @@ export class LSPManager {
    * @param line - 0-based 행 번호
    * @returns 해당 행의 텍스트 (트리밍), 실패 시 빈 문자열
    */
-  private async readPreviewLine(
-    filePath: string,
-    line: number,
-  ): Promise<string> {
+  private async readPreviewLine(filePath: string, line: number): Promise<string> {
     try {
       const content = await readFile(filePath, "utf-8");
       const lines = content.split("\n");

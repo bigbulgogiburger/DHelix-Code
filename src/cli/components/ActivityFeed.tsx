@@ -364,7 +364,14 @@ export const ActivityFeed = React.memo(function ActivityFeed({
       {liveEntries.length > 0 && (
         <Box flexDirection="column" marginBottom={1}>
           {liveEntries.map((entry, i) =>
-            renderEntry(entry, true, currentTurn?.entries ?? [], `live-${i}`, isExpanded, streamingOutputs),
+            renderEntry(
+              entry,
+              true,
+              currentTurn?.entries ?? [],
+              `live-${i}`,
+              isExpanded,
+              streamingOutputs,
+            ),
           )}
         </Box>
       )}

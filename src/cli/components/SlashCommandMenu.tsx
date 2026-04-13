@@ -57,7 +57,14 @@ const COMMAND_CATEGORIES: Record<string, string> = {
 };
 
 /** カテゴリの表示順序 */
-const CATEGORY_ORDER: readonly string[] = ["Workflow", "Session", "Config", "Info", "System", "Other"];
+const CATEGORY_ORDER: readonly string[] = [
+  "Workflow",
+  "Session",
+  "Config",
+  "Info",
+  "System",
+  "Other",
+];
 
 /** 명령어를 카테고리별로 정렬 — 같은 카테고리 내에서는 이름순 */
 function sortByCategory(commands: readonly SlashCommand[]): readonly SlashCommand[] {
@@ -161,13 +168,20 @@ export function SlashCommandMenu({
         const isSelected = actualIndex === selectedIndex;
         const category = COMMAND_CATEGORIES[cmd.name] ?? "Other";
         // 같은 카테고리의 첫 번째 항목인지 확인 — 카테고리 헤더 표시용
-        const prevCmd = idx > 0 ? visibleItems[idx - 1] : (scrollOffset > 0 ? filtered[scrollOffset - 1] : undefined);
+        const prevCmd =
+          idx > 0
+            ? visibleItems[idx - 1]
+            : scrollOffset > 0
+              ? filtered[scrollOffset - 1]
+              : undefined;
         const prevCategory = prevCmd ? (COMMAND_CATEGORIES[prevCmd.name] ?? "Other") : undefined;
         const showCategoryHeader = category !== prevCategory;
         return (
           <Box key={cmd.name} flexDirection="column">
             {showCategoryHeader && (
-              <Text color="#0097A7" dimColor bold>{"  [" + category + "]"}</Text>
+              <Text color="#0097A7" dimColor bold>
+                {"  [" + category + "]"}
+              </Text>
             )}
             <Box>
               <Text color={isSelected ? "cyan" : "gray"} bold={isSelected} dimColor={!isSelected}>

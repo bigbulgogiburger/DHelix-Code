@@ -227,9 +227,7 @@ export class TreeSitterEngine {
     if (cached) return cached;
 
     try {
-      const wasmPath = require.resolve(
-        `tree-sitter-wasms/out/tree-sitter-${langName}.wasm`,
-      );
+      const wasmPath = require.resolve(`tree-sitter-wasms/out/tree-sitter-${langName}.wasm`);
       const lang = await this.LanguageClass.load(wasmPath);
       this.languageCache.set(langName, lang);
       log.debug({ langName }, "tree-sitter 언어 문법 로드 완료");
@@ -413,11 +411,8 @@ export class TreeSitterEngine {
   ): Promise<readonly ParsedSymbol[]> {
     const dir = options?.directory ?? process.cwd();
     const maxResults = options?.maxResults ?? 50;
-    const extensions =
-      options?.fileExtensions ?? Object.keys(TreeSitterEngine.LANGUAGE_MAP);
-    const patterns = extensions.map((ext) =>
-      ext.startsWith(".") ? `**/*${ext}` : `**/*.${ext}`,
-    );
+    const extensions = options?.fileExtensions ?? Object.keys(TreeSitterEngine.LANGUAGE_MAP);
+    const patterns = extensions.map((ext) => (ext.startsWith(".") ? `**/*${ext}` : `**/*.${ext}`));
 
     let files: readonly string[];
     try {

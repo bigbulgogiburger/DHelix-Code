@@ -50,14 +50,60 @@ export function extractLinesFromContent(
 export function findUsedVariables(code: string): string[] {
   // JS/TS 키워드 및 공통 예약어
   const JS_KEYWORDS = new Set([
-    "break", "case", "catch", "class", "const", "continue", "debugger",
-    "default", "delete", "do", "else", "export", "extends", "false",
-    "finally", "for", "function", "if", "import", "in", "instanceof",
-    "let", "new", "null", "of", "return", "static", "super", "switch",
-    "this", "throw", "true", "try", "typeof", "undefined", "var", "void",
-    "while", "with", "yield", "async", "await", "from", "as", "interface",
-    "type", "enum", "implements", "namespace", "declare", "abstract",
-    "readonly", "override", "satisfies",
+    "break",
+    "case",
+    "catch",
+    "class",
+    "const",
+    "continue",
+    "debugger",
+    "default",
+    "delete",
+    "do",
+    "else",
+    "export",
+    "extends",
+    "false",
+    "finally",
+    "for",
+    "function",
+    "if",
+    "import",
+    "in",
+    "instanceof",
+    "let",
+    "new",
+    "null",
+    "of",
+    "return",
+    "static",
+    "super",
+    "switch",
+    "this",
+    "throw",
+    "true",
+    "try",
+    "typeof",
+    "undefined",
+    "var",
+    "void",
+    "while",
+    "with",
+    "yield",
+    "async",
+    "await",
+    "from",
+    "as",
+    "interface",
+    "type",
+    "enum",
+    "implements",
+    "namespace",
+    "declare",
+    "abstract",
+    "readonly",
+    "override",
+    "satisfies",
   ]);
 
   // 식별자 패턴: 알파벳/밑줄로 시작, 숫자/알파벳/밑줄로 계속
@@ -127,11 +173,7 @@ export function replaceLines(
 
   // 교체: [0..start) + replacement lines + [end..end]
   const replacementLines = replacement.split("\n");
-  const result = [
-    ...lines.slice(0, start),
-    ...replacementLines,
-    ...lines.slice(end),
-  ];
+  const result = [...lines.slice(0, start), ...replacementLines, ...lines.slice(end)];
 
   return result.join("\n");
 }

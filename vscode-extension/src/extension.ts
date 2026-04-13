@@ -30,17 +30,12 @@ let outputChannel: vscode.OutputChannel | undefined;
 // Activation
 // ---------------------------------------------------------------------------
 
-export async function activate(
-  context: vscode.ExtensionContext,
-): Promise<void> {
+export async function activate(context: vscode.ExtensionContext): Promise<void> {
   outputChannel = vscode.window.createOutputChannel("Dhelix Code");
   context.subscriptions.push(outputChannel);
 
   // Status bar — right-aligned, clickable
-  statusBarItem = vscode.window.createStatusBarItem(
-    vscode.StatusBarAlignment.Right,
-    100,
-  );
+  statusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   statusBarItem.command = "dhelix.showStatus";
   context.subscriptions.push(statusBarItem);
   updateStatusBar("disconnected");
@@ -50,14 +45,10 @@ export async function activate(
 
   // Register all commands
   context.subscriptions.push(
-    vscode.commands.registerCommand("dhelix.startBridge", () =>
-      startBridge(context),
-    ),
+    vscode.commands.registerCommand("dhelix.startBridge", () => startBridge(context)),
     vscode.commands.registerCommand("dhelix.stopBridge", () => stopBridge()),
     vscode.commands.registerCommand("dhelix.showStatus", () => showStatus()),
-    vscode.commands.registerCommand("dhelix.copySocketPath", () =>
-      copySocketPath(),
-    ),
+    vscode.commands.registerCommand("dhelix.copySocketPath", () => copySocketPath()),
     vscode.commands.registerCommand("dhelix.showDiagnosticsSummary", () =>
       showDiagnosticsSummary(),
     ),
@@ -85,9 +76,7 @@ export async function activate(
 // Bridge lifecycle
 // ---------------------------------------------------------------------------
 
-async function startBridge(
-  context: vscode.ExtensionContext,
-): Promise<void> {
+async function startBridge(context: vscode.ExtensionContext): Promise<void> {
   if (server?.isRunning) {
     vscode.window.showInformationMessage("Dhelix bridge is already running");
     return;
@@ -102,8 +91,7 @@ async function startBridge(
   }
 
   const config = vscode.workspace.getConfiguration("dhelix.bridge");
-  const socketPath =
-    config.get<string>("socketPath") || getSocketPath(workspacePath);
+  const socketPath = config.get<string>("socketPath") || getSocketPath(workspacePath);
 
   try {
     server = new IPCServer({
@@ -136,18 +124,13 @@ async function startBridge(
     if (config.get<boolean>("enableDiagnostics", true)) {
       diagnosticsForwarder = new DiagnosticsForwarder({
         debounceMs: config.get<number>("diagnosticsDebounceMs", 300),
-        onDiagnosticsChanged: (
-          filePath: string,
-          diagnostics: readonly ForwardedDiagnostic[],
-        ) => {
+        onDiagnosticsChanged: (filePath: string, diagnostics: readonly ForwardedDiagnostic[]) => {
           server?.sendNotification("diagnostics/changed", {
             filePath,
             diagnostics,
           });
         },
-        workspaceFolders: vscode.workspace.workspaceFolders?.map(
-          (f) => f.uri.fsPath,
-        ),
+        workspaceFolders: vscode.workspace.workspaceFolders?.map((f) => f.uri.fsPath),
       });
       context.subscriptions.push(diagnosticsForwarder);
     }
@@ -157,9 +140,7 @@ async function startBridge(
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : String(error);
     log(`Failed to start bridge: ${message}`);
-    vscode.window.showErrorMessage(
-      `Dhelix bridge failed to start: ${message}`,
-    );
+    vscode.window.showErrorMessage(`Dhelix bridge failed to start: ${message}`);
     updateStatusBar("error");
   }
 }
@@ -209,9 +190,7 @@ function showStatus(): void {
   );
 }
 
-function updateStatusBar(
-  status: "connected" | "disconnected" | "error",
-): void {
+function updateStatusBar(status: "connected" | "disconnected" | "error"): void {
   if (!statusBarItem) return;
 
   switch (status) {
@@ -222,16 +201,13 @@ function updateStatusBar(
       break;
     case "disconnected":
       statusBarItem.text = "$(debug-disconnect) Dhelix";
-      statusBarItem.tooltip =
-        "Dhelix Bridge: Disconnected — click to view status";
+      statusBarItem.tooltip = "Dhelix Bridge: Disconnected — click to view status";
       statusBarItem.backgroundColor = undefined;
       break;
     case "error":
       statusBarItem.text = "$(error) Dhelix";
       statusBarItem.tooltip = "Dhelix Bridge: Error — click for details";
-      statusBarItem.backgroundColor = new vscode.ThemeColor(
-        "statusBarItem.errorBackground",
-      );
+      statusBarItem.backgroundColor = new vscode.ThemeColor("statusBarItem.errorBackground");
       break;
   }
   statusBarItem.show();
@@ -241,9 +217,7 @@ function updateStatusBar(
 // Configuration change handler
 // ---------------------------------------------------------------------------
 
-function handleConfigurationChange(
-  context: vscode.ExtensionContext,
-): void {
+function handleConfigurationChange(context: vscode.ExtensionContext): void {
   const config = vscode.workspace.getConfiguration("dhelix.bridge");
 
   // Update diagnostics debounce if forwarder is active
@@ -396,11 +370,7 @@ async function handleRequest(
 }
 
 /** Handle one-way notifications from CLI clients. */
-function handleNotification(
-  method: string,
-  params: unknown,
-  _connectionId: string,
-): void {
+function handleNotification(method: string, params: unknown, _connectionId: string): void {
   const p = params as Record<string, unknown>;
 
   switch (method) {

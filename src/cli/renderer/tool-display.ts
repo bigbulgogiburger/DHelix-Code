@@ -729,10 +729,8 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
           : typeof args?.file_path === "string"
             ? shortenPath(args.file_path)
             : undefined;
-      const symbolName =
-        typeof args?.symbol_name === "string" ? args.symbol_name : undefined;
-      const count =
-        typeof metadata?.resultCount === "number" ? metadata.resultCount : undefined;
+      const symbolName = typeof args?.symbol_name === "string" ? args.symbol_name : undefined;
+      const count = typeof metadata?.resultCount === "number" ? metadata.resultCount : undefined;
       const parts: string[] = [];
       if (symbolName) parts.push(`"${symbolName}"`);
       if (filePath) parts.push(filePath);
@@ -755,16 +753,12 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
     extractDetail: (args, _output, metadata) => {
       const filePath =
         typeof args?.file_path === "string" ? shortenPath(args.file_path) : undefined;
-      const count =
-        typeof metadata?.resultCount === "number" ? metadata.resultCount : undefined;
-      const fileCount =
-        typeof metadata?.fileCount === "number" ? metadata.fileCount : undefined;
+      const count = typeof metadata?.resultCount === "number" ? metadata.resultCount : undefined;
+      const fileCount = typeof metadata?.fileCount === "number" ? metadata.fileCount : undefined;
       const parts: string[] = [];
       if (filePath) parts.push(filePath);
-      if (count !== undefined)
-        parts.push(`${count} ref${count === 1 ? "" : "s"}`);
-      if (fileCount !== undefined)
-        parts.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`);
+      if (count !== undefined) parts.push(`${count} ref${count === 1 ? "" : "s"}`);
+      if (fileCount !== undefined) parts.push(`${fileCount} file${fileCount === 1 ? "" : "s"}`);
       return parts.length > 0 ? parts.join(" — ") : undefined;
     },
     extractHeaderArg: (args) =>
@@ -802,19 +796,16 @@ const toolDisplayMap: Record<string, ToolDisplayConfig> = {
       const dryRun = typeof args?.dry_run === "boolean" ? args.dry_run : true;
       const filesModified =
         typeof metadata?.filesModified === "number" ? metadata.filesModified : undefined;
-      const totalEdits =
-        typeof metadata?.totalEdits === "number" ? metadata.totalEdits : undefined;
+      const totalEdits = typeof metadata?.totalEdits === "number" ? metadata.totalEdits : undefined;
       const parts: string[] = [];
       if (newName) parts.push(`→ "${newName}"`);
       if (dryRun) parts.push("[dry run]");
       if (filesModified !== undefined)
         parts.push(`${filesModified} file${filesModified === 1 ? "" : "s"}`);
-      if (totalEdits !== undefined)
-        parts.push(`${totalEdits} edit${totalEdits === 1 ? "" : "s"}`);
+      if (totalEdits !== undefined) parts.push(`${totalEdits} edit${totalEdits === 1 ? "" : "s"}`);
       return parts.length > 0 ? parts.join(" — ") : undefined;
     },
-    extractHeaderArg: (args) =>
-      typeof args?.new_name === "string" ? args.new_name : undefined,
+    extractHeaderArg: (args) => (typeof args?.new_name === "string" ? args.new_name : undefined),
   },
 };
 

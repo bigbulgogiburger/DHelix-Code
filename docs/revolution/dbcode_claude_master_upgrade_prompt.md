@@ -376,50 +376,60 @@ Create meaningful scenarios that reflect how serious developers actually use too
 At minimum, include scenarios like:
 
 1. **Repository exploration and planning**
+
    - ask the agent to inspect a repo
    - summarize architecture
    - propose a plan before editing
 
 2. **Safe code modification**
+
    - ask the agent to make a targeted code change
    - verify it edits the correct place
    - verify it does not make reckless changes
 
 3. **Multi-step tool use**
+
    - agent must gather information through several steps
    - choose tools correctly
    - recover if a tool fails or returns malformed output
 
 4. **Command and skill workflows**
+
    - use commands and skills individually and together
    - verify discovery, invocation, argument handling, output, and runtime consistency
 
 5. **Subagent delegation**
+
    - spawn or delegate work to subagents
    - verify orchestration, visibility, result integration, and failure handling
 
 6. **Interrupted session recovery**
+
    - simulate interrupted work
    - verify checkpointing and safe continuation or restart
 
 7. **Permission-sensitive workflows**
+
    - validate approval prompts
    - validate safe behavior under restricted permissions
    - verify dangerous operations are clearly handled
 
 8. **Large repository / noisy context**
+
    - test behavior in a medium or large repo
    - ensure the agent does not become brittle, confused, or low-quality too easily
 
 9. **Ambiguous user requests**
+
    - verify the system handles ambiguity gracefully without collapsing into poor decisions
 
 10. **Failure and recovery behavior**
-   - invalid tool output
-   - model failure
-   - partial execution state
-   - retry behavior
-   - error explanation to the user
+
+- invalid tool output
+- model failure
+- partial execution state
+- retry behavior
+- error explanation to the user
 
 These scenarios should not be superficial.
 They should resemble actual terminal coding-agent usage.
@@ -499,4 +509,3 @@ Then produce a prioritized roadmap.
 Then begin implementing the most important improvements with validation.
 
 Treat this repository as a serious product that should compete with the best terminal AI coding agents available.
-

@@ -353,7 +353,12 @@ export class McpHealthMonitor {
       } catch {
         // 마지막 시도가 아니면 backoff 후 재시도
         if (attempt < maxRetries - 1) {
-          const delayMs = this.calculateBackoff(attempt, baseDelayMs, maxDelayMs, backoffMultiplier);
+          const delayMs = this.calculateBackoff(
+            attempt,
+            baseDelayMs,
+            maxDelayMs,
+            backoffMultiplier,
+          );
           await this.sleep(delayMs);
         }
       }

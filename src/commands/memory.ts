@@ -497,10 +497,7 @@ async function handleSearch(
 
   if (projectResults.length > 0) {
     const totalMatches = projectResults.reduce((sum, r) => sum + r.matches.length, 0);
-    lines.push(
-      `Project memory: ${totalMatches} match(es) in ${projectResults.length} file(s)`,
-      "",
-    );
+    lines.push(`Project memory: ${totalMatches} match(es) in ${projectResults.length} file(s)`, "");
     for (const result of projectResults) {
       lines.push(`--- ${result.file} (${result.matches.length} match(es)) ---`);
       for (const match of result.matches) {
@@ -512,10 +509,7 @@ async function handleSearch(
 
   if (globalResults.length > 0) {
     const totalMatches = globalResults.reduce((sum, r) => sum + r.matches.length, 0);
-    lines.push(
-      `Global memory: ${totalMatches} match(es) in ${globalResults.length} file(s)`,
-      "",
-    );
+    lines.push(`Global memory: ${totalMatches} match(es) in ${globalResults.length} file(s)`, "");
     for (const result of globalResults) {
       lines.push(`--- ${result.file} (${result.matches.length} match(es)) ---`);
       for (const match of result.matches) {
@@ -529,10 +523,7 @@ async function handleSearch(
     projectResults.reduce((sum, r) => sum + r.matches.length, 0) +
     globalResults.reduce((sum, r) => sum + r.matches.length, 0);
 
-  lines.unshift(
-    `Search results for "${query}" (${allMatches} total match(es)):`,
-    "",
-  );
+  lines.unshift(`Search results for "${query}" (${allMatches} total match(es)):`, "");
 
   return { output: lines.join("\n"), success: true };
 }

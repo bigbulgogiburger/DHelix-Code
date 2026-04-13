@@ -9,7 +9,15 @@ import type { Node } from "web-tree-sitter";
 
 interface ParsedSymbol {
   readonly name: string;
-  readonly kind: "function" | "class" | "interface" | "type" | "variable" | "method" | "enum" | "constant";
+  readonly kind:
+    | "function"
+    | "class"
+    | "interface"
+    | "type"
+    | "variable"
+    | "method"
+    | "enum"
+    | "constant";
   readonly filePath: string;
   readonly startLine: number;
   readonly endLine: number;
@@ -92,14 +100,16 @@ function extractJavadoc(node: Node): string | undefined {
     const text = prev.text;
     if (text.startsWith("/**")) {
       // Strip Javadoc markers
-      return text
-        .replace(/^\/\*\*\s*/, "")
-        .replace(/\s*\*\/$/, "")
-        .split("\n")
-        .map((line) => line.replace(/^\s*\*\s?/, "").trim())
-        .filter((line) => !line.startsWith("@")) // Remove @param, @return etc.
-        .join("\n")
-        .trim() || undefined;
+      return (
+        text
+          .replace(/^\/\*\*\s*/, "")
+          .replace(/\s*\*\/$/, "")
+          .split("\n")
+          .map((line) => line.replace(/^\s*\*\s?/, "").trim())
+          .filter((line) => !line.startsWith("@")) // Remove @param, @return etc.
+          .join("\n")
+          .trim() || undefined
+      );
     }
   }
 
@@ -108,17 +118,23 @@ function extractJavadoc(node: Node): string | undefined {
   while (prevSib && prevSib.type === "modifiers") {
     prevSib = prevSib.previousSibling;
   }
-  if (prevSib && prevSib !== prev && (prevSib.type === "block_comment" || prevSib.type === "comment")) {
+  if (
+    prevSib &&
+    prevSib !== prev &&
+    (prevSib.type === "block_comment" || prevSib.type === "comment")
+  ) {
     const text = prevSib.text;
     if (text.startsWith("/**")) {
-      return text
-        .replace(/^\/\*\*\s*/, "")
-        .replace(/\s*\*\/$/, "")
-        .split("\n")
-        .map((line) => line.replace(/^\s*\*\s?/, "").trim())
-        .filter((line) => !line.startsWith("@"))
-        .join("\n")
-        .trim() || undefined;
+      return (
+        text
+          .replace(/^\/\*\*\s*/, "")
+          .replace(/\s*\*\/$/, "")
+          .split("\n")
+          .map((line) => line.replace(/^\s*\*\s?/, "").trim())
+          .filter((line) => !line.startsWith("@"))
+          .join("\n")
+          .trim() || undefined
+      );
     }
   }
 
@@ -128,10 +144,7 @@ function extractJavadoc(node: Node): string | undefined {
 /**
  * Build a method/constructor signature string.
  */
-function buildMethodSignature(
-  node: Node,
-  modifiers: string[],
-): string {
+function buildMethodSignature(node: Node, modifiers: string[]): string {
   const name = getFieldText(node, "name") ?? "?";
   const params = node.childForFieldName("parameters");
   const paramsText = params?.text ?? "()";
@@ -145,11 +158,7 @@ function buildMethodSignature(
 /**
  * Extract methods and constructors from a class/interface/enum body.
  */
-function extractClassMembers(
-  bodyNode: Node,
-  parentName: string,
-  filePath: string,
-): ParsedSymbol[] {
+function extractClassMembers(bodyNode: Node, parentName: string, filePath: string): ParsedSymbol[] {
   const members: ParsedSymbol[] = [];
 
   for (let i = 0; i < bodyNode.namedChildCount; i++) {

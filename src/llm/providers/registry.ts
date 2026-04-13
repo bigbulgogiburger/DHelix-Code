@@ -24,13 +24,7 @@ import type {
   CostEstimate,
   ProviderHealthStatus,
 } from "./types.js";
-import type {
-  LLMProvider,
-  ChatRequest,
-  ChatResponse,
-  ChatChunk,
-  TokenUsage,
-} from "../provider.js";
+import type { LLMProvider, ChatRequest, ChatResponse, ChatChunk, TokenUsage } from "../provider.js";
 import { LLMError } from "../../utils/error.js";
 import { GOOGLE_GEMINI_MANIFEST } from "./google-gemini.js";
 import { AZURE_OPENAI_MANIFEST } from "./azure-openai.js";
@@ -365,9 +359,7 @@ export class ProviderRegistry {
    * @param overrides - 프로바이더별 설정 오버라이드
    * @returns 기본 프로바이더가 등록된 ProviderRegistry
    */
-  static create(
-    overrides: DefaultRegistryOverrides = {},
-  ): ProviderRegistry {
+  static create(overrides: DefaultRegistryOverrides = {}): ProviderRegistry {
     const registry = new ProviderRegistry();
 
     // Anthropic 프로바이더 등록
@@ -379,7 +371,9 @@ export class ProviderRegistry {
       try {
         // lazy import로 순환 의존성 방지 — 실제 resolve 시점에만 로드
         // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const { AnthropicProvider } = require("./anthropic.js") as { AnthropicProvider: new () => UnifiedLLMProvider };
+        const { AnthropicProvider } = require("./anthropic.js") as {
+          AnthropicProvider: new () => UnifiedLLMProvider;
+        };
         return new AnthropicProvider();
       } catch {
         throw new LLMError(

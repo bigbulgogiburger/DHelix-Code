@@ -15,44 +15,44 @@
 DHelix CLI는 Ink 5.x (React for CLI) 기반 22개 컴포넌트로 구성.
 전체 UX quality 78% -- 기능적으로 동작하나 미적 완성도와 operator-grade 인터랙션 부족.
 
-| Component | File | Rating | Strengths | Gaps |
-|-----------|------|--------|-----------|------|
-| `App.tsx` | `src/cli/App.tsx` | B | ErrorBoundary, hook 통합 | Shell layout 추상화 없음, 모든 상태가 flat |
-| `MessageList` | `components/MessageList.tsx` | B- | 대화 렌더링 기본 완성 | Virtualization 없음, 대형 세션 성능 저하 |
-| `StreamingMessage` | `components/StreamingMessage.tsx` | B | 실시간 토큰 스트리밍 | Diff 모드 없음, plain text only |
-| `PromptInput/UserInput` | `components/UserInput.tsx` | B+ | Slash command, voice | Overlay suggestion 미분리, multi-line 제한 |
-| `StatusBar` | `components/StatusBar.tsx` | C+ | 기본 상태 표시 | 클릭/네비게이션 불가, passive label only |
-| `ToolCallBlock` | `components/ToolCallBlock.tsx` | B | Tool 실행 피드백 | Grouped summary 없음, 개별 나열 |
-| `ActivityFeed` | `components/ActivityFeed.tsx` | B | 실시간 활동 | Timeline 부재, event grouping 없음 |
-| `PermissionPrompt` | `components/PermissionPrompt.tsx` | B+ | 5 modes, 명확한 UX | Inline diff preview 없음 |
-| `ThinkingBlock` | `components/ThinkingBlock.tsx` | B | Thinking 상태 표시 | Token budget 시각화 없음 |
-| `TaskListView` | `components/TaskListView.tsx` | B- | 태스크 목록 | Tab switching 없음, flat list |
-| `TaskViewPanel` | `components/TaskViewPanel.tsx` | B- | 태스크 상세 | Thread viewer 미흡 |
-| `TeammateStatus` | `components/TeammateStatus.tsx` | B | 팀원 상태 표시 | Agent switching UI 없음 |
-| `SlashCommandMenu` | `components/SlashCommandMenu.tsx` | B+ | 자동완성, 검색 | Fuzzy match 없음 |
-| `Logo` | `components/Logo.tsx` | A- | Double Helix 브랜드 | 애니메이션 없음 |
-| `Spinner` | `components/Spinner.tsx` | B | 로딩 표시 | 단일 스타일, progress 미표시 |
-| `RetryCountdown` | `components/RetryCountdown.tsx` | B+ | 재시도 UX | 시각적 카운트다운 바 없음 |
-| `ErrorBanner` | `components/ErrorBanner.tsx` | B | 에러 표시 | Dismissible 아님, action 없음 |
-| `ErrorBoundary` | `components/ErrorBoundary.tsx` | A- | React boundary 패턴 | 복구 옵션 제한적 |
-| `SelectList` | `components/SelectList.tsx` | B | 선택 리스트 | 스크롤 인디케이터 없음 |
-| `VoiceIndicator` | `components/VoiceIndicator.tsx` | B+ | 음성 입력 피드백 | 파형 시각화 없음 |
-| `ReadGroupBlock` | `components/ReadGroupBlock.tsx` | B | 파일 읽기 그룹화 | 축소/확장 없음 |
-| `TurnBlock` | `components/TurnBlock.tsx` | B | Turn 단위 렌더링 | Collapse/expand 없음 |
-| `AgentStatus` | `components/AgentStatus.tsx` | B | 에이전트 상태 | Multi-agent thread 미지원 |
+| Component               | File                              | Rating | Strengths                | Gaps                                       |
+| ----------------------- | --------------------------------- | ------ | ------------------------ | ------------------------------------------ |
+| `App.tsx`               | `src/cli/App.tsx`                 | B      | ErrorBoundary, hook 통합 | Shell layout 추상화 없음, 모든 상태가 flat |
+| `MessageList`           | `components/MessageList.tsx`      | B-     | 대화 렌더링 기본 완성    | Virtualization 없음, 대형 세션 성능 저하   |
+| `StreamingMessage`      | `components/StreamingMessage.tsx` | B      | 실시간 토큰 스트리밍     | Diff 모드 없음, plain text only            |
+| `PromptInput/UserInput` | `components/UserInput.tsx`        | B+     | Slash command, voice     | Overlay suggestion 미분리, multi-line 제한 |
+| `StatusBar`             | `components/StatusBar.tsx`        | C+     | 기본 상태 표시           | 클릭/네비게이션 불가, passive label only   |
+| `ToolCallBlock`         | `components/ToolCallBlock.tsx`    | B      | Tool 실행 피드백         | Grouped summary 없음, 개별 나열            |
+| `ActivityFeed`          | `components/ActivityFeed.tsx`     | B      | 실시간 활동              | Timeline 부재, event grouping 없음         |
+| `PermissionPrompt`      | `components/PermissionPrompt.tsx` | B+     | 5 modes, 명확한 UX       | Inline diff preview 없음                   |
+| `ThinkingBlock`         | `components/ThinkingBlock.tsx`    | B      | Thinking 상태 표시       | Token budget 시각화 없음                   |
+| `TaskListView`          | `components/TaskListView.tsx`     | B-     | 태스크 목록              | Tab switching 없음, flat list              |
+| `TaskViewPanel`         | `components/TaskViewPanel.tsx`    | B-     | 태스크 상세              | Thread viewer 미흡                         |
+| `TeammateStatus`        | `components/TeammateStatus.tsx`   | B      | 팀원 상태 표시           | Agent switching UI 없음                    |
+| `SlashCommandMenu`      | `components/SlashCommandMenu.tsx` | B+     | 자동완성, 검색           | Fuzzy match 없음                           |
+| `Logo`                  | `components/Logo.tsx`             | A-     | Double Helix 브랜드      | 애니메이션 없음                            |
+| `Spinner`               | `components/Spinner.tsx`          | B      | 로딩 표시                | 단일 스타일, progress 미표시               |
+| `RetryCountdown`        | `components/RetryCountdown.tsx`   | B+     | 재시도 UX                | 시각적 카운트다운 바 없음                  |
+| `ErrorBanner`           | `components/ErrorBanner.tsx`      | B      | 에러 표시                | Dismissible 아님, action 없음              |
+| `ErrorBoundary`         | `components/ErrorBoundary.tsx`    | A-     | React boundary 패턴      | 복구 옵션 제한적                           |
+| `SelectList`            | `components/SelectList.tsx`       | B      | 선택 리스트              | 스크롤 인디케이터 없음                     |
+| `VoiceIndicator`        | `components/VoiceIndicator.tsx`   | B+     | 음성 입력 피드백         | 파형 시각화 없음                           |
+| `ReadGroupBlock`        | `components/ReadGroupBlock.tsx`   | B      | 파일 읽기 그룹화         | 축소/확장 없음                             |
+| `TurnBlock`             | `components/TurnBlock.tsx`        | B      | Turn 단위 렌더링         | Collapse/expand 없음                       |
+| `AgentStatus`           | `components/AgentStatus.tsx`      | B      | 에이전트 상태            | Multi-agent thread 미지원                  |
 
 ### 1.2 UX Infrastructure Rating
 
-| Area | Rating | Note |
-|------|--------|------|
-| Theme system | B+ | Dark/Light/Auto/Colorblind 4모드, SSOT `theme.ts` |
-| Keybindings | B+ | Customizable, chord support, `~/.dhelix/keybindings.json` |
-| Syntax highlighting | B | Shiki 기반, 언어 지원 양호 |
-| Layout system | C | Shell layout 추상화 없음, transcript-centric |
-| Overlay/Modal | C- | 별도 레이어 없음, 프롬프트에 혼합 |
-| Performance | C+ | 매 키스트로크 re-render, virtualization 없음 |
-| Accessibility | D | Screen reader 미지원, ARIA 없음 |
-| Responsive layout | D | 작은 터미널 대응 없음 |
+| Area                | Rating | Note                                                      |
+| ------------------- | ------ | --------------------------------------------------------- |
+| Theme system        | B+     | Dark/Light/Auto/Colorblind 4모드, SSOT `theme.ts`         |
+| Keybindings         | B+     | Customizable, chord support, `~/.dhelix/keybindings.json` |
+| Syntax highlighting | B      | Shiki 기반, 언어 지원 양호                                |
+| Layout system       | C      | Shell layout 추상화 없음, transcript-centric              |
+| Overlay/Modal       | C-     | 별도 레이어 없음, 프롬프트에 혼합                         |
+| Performance         | C+     | 매 키스트로크 re-render, virtualization 없음              |
+| Accessibility       | D      | Screen reader 미지원, ARIA 없음                           |
+| Responsive layout   | D      | 작은 터미널 대응 없음                                     |
 
 ---
 
@@ -60,29 +60,30 @@ DHelix CLI는 Ink 5.x (React for CLI) 기반 22개 컴포넌트로 구성.
 
 ### 2.1 Feature Matrix
 
-| Feature | DHelix (현재) | OpenCode | Codex | Claude Code |
-|---------|--------------|----------|-------|-------------|
-| **Framework** | Ink 5.x (React) | SolidJS + OpenTUI | Ratatui (Rust) | Ink (React) |
-| **Shell layout** | Flat transcript | Multi-pane | Chat + bottom pane | Scrollable + sticky |
-| **Diff viewer** | None (plain text) | Syntax-aware | Syntax highlight | Inline diff |
-| **Agent tabs** | None | Tab switching | Thread viewer | Background panel |
-| **File browser** | None | Tree widget | None | None |
-| **Theme** | 4 modes | Dark/Light + custom | 256 + truecolor | Dark/Light |
-| **ANSI colors** | Basic (Ink default) | 12 custom styles | Full truecolor | Standard |
-| **Performance** | Every-key rerender | SolidJS fine-grained | Rust-native | Optimized |
-| **Job/approval panel** | Basic permission | Full panel system | Approval dialog | Approval flow |
-| **Image support** | None | None | Terminal protocol | None |
-| **Audio notification** | None | None | Completion sound | None |
-| **Session forking** | None | Fork UI | None | None |
-| **Web dashboard** | None | Desktop + Web + App | None | None |
-| **IDE integration** | VSCode ext (basic) | VSCode-like UI | None | VSCode ext |
-| **Virtualization** | None | Virtua (large history) | Efficient (Rust) | Unknown |
-| **Accessibility** | None | Unknown | Unknown | Minimal |
-| **Plugin keybindings** | Chord support | Plugin-driven | Custom | Limited |
+| Feature                | DHelix (현재)       | OpenCode               | Codex              | Claude Code         |
+| ---------------------- | ------------------- | ---------------------- | ------------------ | ------------------- |
+| **Framework**          | Ink 5.x (React)     | SolidJS + OpenTUI      | Ratatui (Rust)     | Ink (React)         |
+| **Shell layout**       | Flat transcript     | Multi-pane             | Chat + bottom pane | Scrollable + sticky |
+| **Diff viewer**        | None (plain text)   | Syntax-aware           | Syntax highlight   | Inline diff         |
+| **Agent tabs**         | None                | Tab switching          | Thread viewer      | Background panel    |
+| **File browser**       | None                | Tree widget            | None               | None                |
+| **Theme**              | 4 modes             | Dark/Light + custom    | 256 + truecolor    | Dark/Light          |
+| **ANSI colors**        | Basic (Ink default) | 12 custom styles       | Full truecolor     | Standard            |
+| **Performance**        | Every-key rerender  | SolidJS fine-grained   | Rust-native        | Optimized           |
+| **Job/approval panel** | Basic permission    | Full panel system      | Approval dialog    | Approval flow       |
+| **Image support**      | None                | None                   | Terminal protocol  | None                |
+| **Audio notification** | None                | None                   | Completion sound   | None                |
+| **Session forking**    | None                | Fork UI                | None               | None                |
+| **Web dashboard**      | None                | Desktop + Web + App    | None               | None                |
+| **IDE integration**    | VSCode ext (basic)  | VSCode-like UI         | None               | VSCode ext          |
+| **Virtualization**     | None                | Virtua (large history) | Efficient (Rust)   | Unknown             |
+| **Accessibility**      | None                | Unknown                | Unknown            | Minimal             |
+| **Plugin keybindings** | Chord support       | Plugin-driven          | Custom             | Limited             |
 
 ### 2.2 Competitive Position Analysis
 
 **DHelix 강점:**
+
 - React ecosystem 활용 (Ink 5.x) -- 개발 속도, 커뮤니티
 - 22개 컴포넌트 이미 구현 -- foundation 양호
 - Keybinding customization + chord support -- 경쟁 우위
@@ -90,6 +91,7 @@ DHelix CLI는 Ink 5.x (React for CLI) 기반 22개 컴포넌트로 구성.
 - Voice input support -- 차별화 기능
 
 **Critical gaps (경쟁 열위):**
+
 1. **Shell layout** -- 모든 경쟁자가 multi-pane layout 보유, DHelix는 flat
 2. **Diff viewer** -- 2026 표준 기능, DHelix 미구현
 3. **Performance** -- Ink re-render 문제가 대형 세션에서 체감
@@ -157,11 +159,12 @@ interface ShellLayoutState {
   readonly isAtBottom: boolean;
   readonly overlayStack: readonly OverlayEntry[];
   readonly modalStack: readonly ModalEntry[];
-  readonly focusZone: 'transcript' | 'prompt' | 'overlay' | 'modal';
+  readonly focusZone: "transcript" | "prompt" | "overlay" | "modal";
 }
 ```
 
 **핵심 원칙:**
+
 - Layout 관심사를 프롬프트 컴포넌트에서 완전 분리
 - 각 slot은 독립적으로 re-render 가능 (React.memo boundary)
 - Overlay/Modal은 별도 portal context로 관리
@@ -169,18 +172,18 @@ interface ShellLayoutState {
 
 #### 3.A.3 Deliverables
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| `ShellLayout` container component | 3d | P0 |
-| `TranscriptFrame` with scroll management | 2d | P0 |
-| `PromptFrame` sticky positioning | 1d | P0 |
-| `FooterBar` with navigation state | 2d | P0 |
-| `OverlayPortal` context + renderer | 2d | P1 |
-| `ModalPortal` context + renderer | 1d | P1 |
-| `HeaderBar` optional status surface | 1d | P2 |
-| `BottomFloat` task/agent status slot | 1d | P1 |
-| Layout responsive breakpoints | 2d | P2 |
-| Migrate `App.tsx` to `ShellLayout` | 3d | P0 |
+| Task                                     | Effort | Priority |
+| ---------------------------------------- | ------ | -------- |
+| `ShellLayout` container component        | 3d     | P0       |
+| `TranscriptFrame` with scroll management | 2d     | P0       |
+| `PromptFrame` sticky positioning         | 1d     | P0       |
+| `FooterBar` with navigation state        | 2d     | P0       |
+| `OverlayPortal` context + renderer       | 2d     | P1       |
+| `ModalPortal` context + renderer         | 1d     | P1       |
+| `HeaderBar` optional status surface      | 1d     | P2       |
+| `BottomFloat` task/agent status slot     | 1d     | P1       |
+| Layout responsive breakpoints            | 2d     | P2       |
+| Migrate `App.tsx` to `ShellLayout`       | 3d     | P0       |
 
 ### 3.B Diff Viewer with Syntax-Aware Rendering
 
@@ -231,7 +234,7 @@ interface DiffViewerProps {
   readonly filePath: string;
   readonly before: string;
   readonly after: string;
-  readonly mode: 'inline' | 'side-by-side' | 'unified' | 'hunk-summary';
+  readonly mode: "inline" | "side-by-side" | "unified" | "hunk-summary";
   readonly language?: string;
   readonly onApply?: () => void;
   readonly onReject?: () => void;
@@ -247,17 +250,17 @@ interface DiffViewerProps {
 4. **Agent output** -- code block 내 diff 자동 감지 및 렌더링
 5. **`safe_rename` LSP tool** -- 영향 받는 파일들의 변경 요약
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| Diff engine integration | 2d | P0 |
-| Inline diff renderer | 3d | P0 |
-| Shiki syntax highlighting for diff | 2d | P0 |
-| Side-by-side mode | 2d | P1 |
-| Hunk summary mode | 1d | P1 |
-| Keyboard navigation (j/k/n/p) | 1d | P0 |
-| Apply/reject actions | 1d | P0 |
-| Permission prompt diff preview | 2d | P1 |
-| Diff mode toggle keybinding | 0.5d | P1 |
+| Task                               | Effort | Priority |
+| ---------------------------------- | ------ | -------- |
+| Diff engine integration            | 2d     | P0       |
+| Inline diff renderer               | 3d     | P0       |
+| Shiki syntax highlighting for diff | 2d     | P0       |
+| Side-by-side mode                  | 2d     | P1       |
+| Hunk summary mode                  | 1d     | P1       |
+| Keyboard navigation (j/k/n/p)      | 1d     | P0       |
+| Apply/reject actions               | 1d     | P0       |
+| Permission prompt diff preview     | 2d     | P1       |
+| Diff mode toggle keybinding        | 0.5d   | P1       |
 
 ### 3.C Job/Task/Approval Panels
 
@@ -314,17 +317,17 @@ interface DiffViewerProps {
 - **`Esc`** -- Close active panel, return to prompt
 - **`Tab`** -- Cycle between visible panels
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| Panel container abstraction | 2d | P0 |
-| Job panel component | 3d | P0 |
-| Approval queue panel | 2d | P0 |
-| Agent/teammate panel | 2d | P0 |
-| Runtime health panel | 1d | P1 |
-| Panel navigation system | 2d | P0 |
-| Keybinding registration | 1d | P0 |
-| Panel state management | 2d | P0 |
-| Attach/detach semantics | 2d | P1 |
+| Task                        | Effort | Priority |
+| --------------------------- | ------ | -------- |
+| Panel container abstraction | 2d     | P0       |
+| Job panel component         | 3d     | P0       |
+| Approval queue panel        | 2d     | P0       |
+| Agent/teammate panel        | 2d     | P0       |
+| Runtime health panel        | 1d     | P1       |
+| Panel navigation system     | 2d     | P0       |
+| Keybinding registration     | 1d     | P0       |
+| Panel state management      | 2d     | P0       |
+| Attach/detach semantics     | 2d     | P1       |
 
 ### 3.D Agent Switching UI (Tab-Based)
 
@@ -357,6 +360,7 @@ interface DiffViewerProps {
 #### 3.D.3 Agent Context Isolation
 
 각 tab은 독립적 context를 유지:
+
 - 자체 transcript history
 - 자체 working directory
 - 자체 tool permission state
@@ -371,7 +375,7 @@ interface AgentTab {
   readonly id: string;
   readonly label: string;
   readonly model: string;
-  readonly status: 'active' | 'running' | 'idle' | 'error' | 'queued';
+  readonly status: "active" | "running" | "idle" | "error" | "queued";
   readonly contextUsage: { used: number; total: number };
   readonly transcriptRef: TranscriptHandle;
 }
@@ -383,15 +387,15 @@ interface AgentTabState {
 }
 ```
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| `AgentTabManager` state | 2d | P1 |
-| Tab bar component | 2d | P1 |
-| Tab switching keybindings | 1d | P1 |
-| Per-tab transcript isolation | 3d | P1 |
-| Agent spawn from tab | 2d | P2 |
-| Tab merge semantics | 2d | P2 |
-| Tab status indicators | 1d | P1 |
+| Task                         | Effort | Priority |
+| ---------------------------- | ------ | -------- |
+| `AgentTabManager` state      | 2d     | P1       |
+| Tab bar component            | 2d     | P1       |
+| Tab switching keybindings    | 1d     | P1       |
+| Per-tab transcript isolation | 3d     | P1       |
+| Agent spawn from tab         | 2d     | P2       |
+| Tab merge semantics          | 2d     | P2       |
+| Tab status indicators        | 1d     | P1       |
 
 ### 3.E Performance Optimization
 
@@ -416,15 +420,15 @@ const MessageItem = React.memo(({ message }: Props) => {
 });
 
 // 2. useMemo for expensive computations
-const highlightedCode = useMemo(
-  () => highlightWithShiki(code, language),
-  [code, language]
-);
+const highlightedCode = useMemo(() => highlightWithShiki(code, language), [code, language]);
 
 // 3. useCallback for stable references
-const handleSubmit = useCallback((input: string) => {
-  agent.send(input);
-}, [agent]);
+const handleSubmit = useCallback(
+  (input: string) => {
+    agent.send(input);
+  },
+  [agent],
+);
 ```
 
 **Layer 2: Virtualization (중기)**
@@ -453,25 +457,25 @@ interface VirtualizedTranscriptProps {
 
 #### 3.E.3 Performance Targets
 
-| Metric | Current | Target | Method |
-|--------|---------|--------|--------|
-| Keystroke latency | ~50ms | <16ms | Input isolation, memo |
-| 1000-msg scroll | Laggy (~200ms) | Smooth (<33ms) | Virtualization |
-| Large code block render | ~100ms blocking | <16ms async | Worker Shiki |
-| Memory (10K messages) | ~500MB | <150MB | Virtualization + GC |
-| Initial render | ~300ms | <100ms | Lazy component loading |
+| Metric                  | Current         | Target         | Method                 |
+| ----------------------- | --------------- | -------------- | ---------------------- |
+| Keystroke latency       | ~50ms           | <16ms          | Input isolation, memo  |
+| 1000-msg scroll         | Laggy (~200ms)  | Smooth (<33ms) | Virtualization         |
+| Large code block render | ~100ms blocking | <16ms async    | Worker Shiki           |
+| Memory (10K messages)   | ~500MB          | <150MB         | Virtualization + GC    |
+| Initial render          | ~300ms          | <100ms         | Lazy component loading |
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| React.memo on all leaf components | 2d | P0 |
-| Input state isolation | 1d | P0 |
-| useMemo for Shiki highlighting | 1d | P0 |
-| StatusBar polling optimization | 0.5d | P0 |
-| VirtualizedTranscript component | 4d | P1 |
-| Async Shiki worker | 3d | P1 |
-| Tool call batch grouping | 2d | P2 |
-| Performance monitoring hooks | 1d | P1 |
-| Benchmark test suite | 2d | P1 |
+| Task                              | Effort | Priority |
+| --------------------------------- | ------ | -------- |
+| React.memo on all leaf components | 2d     | P0       |
+| Input state isolation             | 1d     | P0       |
+| useMemo for Shiki highlighting    | 1d     | P0       |
+| StatusBar polling optimization    | 0.5d   | P0       |
+| VirtualizedTranscript component   | 4d     | P1       |
+| Async Shiki worker                | 3d     | P1       |
+| Tool call batch grouping          | 2d     | P2       |
+| Performance monitoring hooks      | 1d     | P1       |
+| Benchmark test suite              | 2d     | P1       |
 
 ### 3.F File Tree Browser Component
 
@@ -519,15 +523,15 @@ interface VirtualizedTranscriptProps {
 [g]            -- Go to file by path
 ```
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| File tree data model | 2d | P2 |
-| Tree renderer component | 3d | P2 |
-| Git status integration | 2d | P2 |
-| Keyboard navigation | 1d | P2 |
-| Fuzzy search (`Ctrl+P`) | 2d | P2 |
-| File preview pane | 2d | P3 |
-| Context actions menu | 1d | P3 |
+| Task                    | Effort | Priority |
+| ----------------------- | ------ | -------- |
+| File tree data model    | 2d     | P2       |
+| Tree renderer component | 3d     | P2       |
+| Git status integration  | 2d     | P2       |
+| Keyboard navigation     | 1d     | P2       |
+| Fuzzy search (`Ctrl+P`) | 2d     | P2       |
+| File preview pane       | 2d     | P3       |
+| Context actions menu    | 1d     | P3       |
 
 ---
 
@@ -543,33 +547,33 @@ interface VirtualizedTranscriptProps {
 // theme.ts 확장안
 interface ExtendedThemeColors extends ThemeColors {
   // Semantic colors (기존)
-  readonly primary: string;     // #00BCD4 -- agent animation, emphasis
-  readonly success: string;     // #00E5FF -- completion, assistant
-  readonly border: string;      // #0097A7 -- borders, muted accents
+  readonly primary: string; // #00BCD4 -- agent animation, emphasis
+  readonly success: string; // #00E5FF -- completion, assistant
+  readonly border: string; // #0097A7 -- borders, muted accents
 
   // NEW: Surface colors
-  readonly surfacePrimary: string;    // Panel backgrounds
-  readonly surfaceSecondary: string;  // Nested panel backgrounds
-  readonly surfaceElevated: string;   // Overlay/modal backgrounds
+  readonly surfacePrimary: string; // Panel backgrounds
+  readonly surfaceSecondary: string; // Nested panel backgrounds
+  readonly surfaceElevated: string; // Overlay/modal backgrounds
 
   // NEW: Interactive colors
-  readonly focusRing: string;         // Keyboard focus indicator
-  readonly hoverBg: string;           // Selection hover
-  readonly selectedBg: string;        // Active selection
-  readonly pressedBg: string;         // Button press
+  readonly focusRing: string; // Keyboard focus indicator
+  readonly hoverBg: string; // Selection hover
+  readonly selectedBg: string; // Active selection
+  readonly pressedBg: string; // Button press
 
   // NEW: Diff colors
-  readonly diffAdded: string;         // Green tinted
-  readonly diffRemoved: string;       // Red tinted
-  readonly diffChanged: string;       // Yellow tinted
-  readonly diffContext: string;        // Muted
+  readonly diffAdded: string; // Green tinted
+  readonly diffRemoved: string; // Red tinted
+  readonly diffChanged: string; // Yellow tinted
+  readonly diffContext: string; // Muted
 
   // NEW: Status colors
-  readonly statusRunning: string;     // Animated cyan
-  readonly statusQueued: string;      // Dim gray
-  readonly statusDone: string;        // Bright green
-  readonly statusFailed: string;      // Bright red
-  readonly statusIdle: string;        // Dim cyan
+  readonly statusRunning: string; // Animated cyan
+  readonly statusQueued: string; // Dim gray
+  readonly statusDone: string; // Bright green
+  readonly statusFailed: string; // Bright red
+  readonly statusIdle: string; // Dim cyan
 
   // NEW: Typography emphasis
   readonly textPrimary: string;
@@ -583,44 +587,44 @@ interface ExtendedThemeColors extends ThemeColors {
 
 ```typescript
 const darkThemeExtended: ExtendedTheme = {
-  name: 'dark',
+  name: "dark",
   colors: {
     // Core Double Helix
-    primary: '#00BCD4',
-    success: '#00E5FF',
-    border: '#0097A7',
-    warning: '#FFB300',
-    error: '#FF5252',
+    primary: "#00BCD4",
+    success: "#00E5FF",
+    border: "#0097A7",
+    warning: "#FFB300",
+    error: "#FF5252",
 
     // Surfaces
-    surfacePrimary: '#1A1A2E',    // Deep navy
-    surfaceSecondary: '#16213E',   // Slightly lighter
-    surfaceElevated: '#0F3460',    // Panel overlay
+    surfacePrimary: "#1A1A2E", // Deep navy
+    surfaceSecondary: "#16213E", // Slightly lighter
+    surfaceElevated: "#0F3460", // Panel overlay
 
     // Interactive
-    focusRing: '#00E5FF',
-    hoverBg: '#1A3A4A',
-    selectedBg: '#0D4F5A',
-    pressedBg: '#0097A7',
+    focusRing: "#00E5FF",
+    hoverBg: "#1A3A4A",
+    selectedBg: "#0D4F5A",
+    pressedBg: "#0097A7",
 
     // Diff
-    diffAdded: '#1B5E20',
-    diffRemoved: '#B71C1C',
-    diffChanged: '#F57F17',
-    diffContext: '#37474F',
+    diffAdded: "#1B5E20",
+    diffRemoved: "#B71C1C",
+    diffChanged: "#F57F17",
+    diffContext: "#37474F",
 
     // Status
-    statusRunning: '#00E5FF',
-    statusQueued: '#546E7A',
-    statusDone: '#69F0AE',
-    statusFailed: '#FF5252',
-    statusIdle: '#0097A7',
+    statusRunning: "#00E5FF",
+    statusQueued: "#546E7A",
+    statusDone: "#69F0AE",
+    statusFailed: "#FF5252",
+    statusIdle: "#0097A7",
 
     // Typography
-    textPrimary: '#ECEFF1',
-    textSecondary: '#90A4AE',
-    textTertiary: '#546E7A',
-    textInverse: '#1A1A2E',
+    textPrimary: "#ECEFF1",
+    textSecondary: "#90A4AE",
+    textTertiary: "#546E7A",
+    textInverse: "#1A1A2E",
   },
 };
 ```
@@ -629,38 +633,38 @@ const darkThemeExtended: ExtendedTheme = {
 
 ```typescript
 const lightThemeExtended: ExtendedTheme = {
-  name: 'light',
+  name: "light",
   colors: {
-    primary: '#0097A7',
-    success: '#00796B',
-    border: '#B2EBF2',
-    warning: '#F57F17',
-    error: '#D32F2F',
+    primary: "#0097A7",
+    success: "#00796B",
+    border: "#B2EBF2",
+    warning: "#F57F17",
+    error: "#D32F2F",
 
-    surfacePrimary: '#FAFAFA',
-    surfaceSecondary: '#F5F5F5',
-    surfaceElevated: '#FFFFFF',
+    surfacePrimary: "#FAFAFA",
+    surfaceSecondary: "#F5F5F5",
+    surfaceElevated: "#FFFFFF",
 
-    focusRing: '#0097A7',
-    hoverBg: '#E0F7FA',
-    selectedBg: '#B2EBF2',
-    pressedBg: '#80DEEA',
+    focusRing: "#0097A7",
+    hoverBg: "#E0F7FA",
+    selectedBg: "#B2EBF2",
+    pressedBg: "#80DEEA",
 
-    diffAdded: '#E8F5E9',
-    diffRemoved: '#FFEBEE',
-    diffChanged: '#FFF8E1',
-    diffContext: '#ECEFF1',
+    diffAdded: "#E8F5E9",
+    diffRemoved: "#FFEBEE",
+    diffChanged: "#FFF8E1",
+    diffContext: "#ECEFF1",
 
-    statusRunning: '#0097A7',
-    statusQueued: '#BDBDBD',
-    statusDone: '#2E7D32',
-    statusFailed: '#D32F2F',
-    statusIdle: '#B2EBF2',
+    statusRunning: "#0097A7",
+    statusQueued: "#BDBDBD",
+    statusDone: "#2E7D32",
+    statusFailed: "#D32F2F",
+    statusIdle: "#B2EBF2",
 
-    textPrimary: '#212121',
-    textSecondary: '#616161',
-    textTertiary: '#9E9E9E',
-    textInverse: '#FAFAFA',
+    textPrimary: "#212121",
+    textSecondary: "#616161",
+    textTertiary: "#9E9E9E",
+    textInverse: "#FAFAFA",
   },
 };
 ```
@@ -707,13 +711,12 @@ Arrow:    → ← ↑ ↓      -- navigation hints
 ```typescript
 // src/cli/components/Spinner.tsx 확장
 type SpinnerVariant =
-  | 'dots'       // ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏  (default)
-  | 'helix'      // 🧬 DNA helix animation (brand)
-  | 'bar'        // ▏▎▍▌▋▊▉█▊▋▌▍▎▏  (progress feel)
-  | 'pulse'      // ◉ ◎ ○ ◎ ◉  (subtle)
-  | 'arrows'     // ← ↖ ↑ ↗ → ↘ ↓ ↙  (directional)
-  | 'wave'       // ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁  (audio-like)
-  ;
+  | "dots" // ⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏  (default)
+  | "helix" // 🧬 DNA helix animation (brand)
+  | "bar" // ▏▎▍▌▋▊▉█▊▋▌▍▎▏  (progress feel)
+  | "pulse" // ◉ ◎ ○ ◎ ◉  (subtle)
+  | "arrows" // ← ↖ ↑ ↗ → ↘ ↓ ↙  (directional)
+  | "wave"; // ▁▂▃▄▅▆▇█▇▆▅▄▃▂▁  (audio-like)
 ```
 
 #### 4.3.2 Progress Bar Styles
@@ -766,6 +769,7 @@ MCP: ● github (3 tools) │ ● postgres (5 tools) │ ✗ slack (disconnected
 ### 5.1 Web Dashboard Architecture
 
 **결정:** Electron/Desktop이 아닌 Web-first approach.
+
 - 이유: Cross-platform 즉시 지원, 빌드 복잡도 최소화, remote session 자연 지원
 - 기술: Next.js 15 + React 19 + TailwindCSS v4 + WebSocket
 
@@ -920,14 +924,14 @@ dhelix --dashboard --port 8080
 
 ### 5.6 Implementation Phases
 
-| Phase | Scope | Effort | Target |
-|-------|-------|--------|--------|
-| Phase 1 | Dashboard server (WebSocket + REST) | 2w | v0.7.0 |
-| Phase 2 | Session explorer + Job monitor | 2w | v0.7.0 |
-| Phase 3 | Artifact browser + Diff viewer | 2w | v0.7.0 |
-| Phase 4 | MCP server manager | 1w | v0.7.0 |
-| Phase 5 | Approval workflow + notifications | 1w | v0.7.0 |
-| Phase 6 | Polish + responsive + dark mode | 1w | v0.7.0 |
+| Phase   | Scope                               | Effort | Target |
+| ------- | ----------------------------------- | ------ | ------ |
+| Phase 1 | Dashboard server (WebSocket + REST) | 2w     | v0.7.0 |
+| Phase 2 | Session explorer + Job monitor      | 2w     | v0.7.0 |
+| Phase 3 | Artifact browser + Diff viewer      | 2w     | v0.7.0 |
+| Phase 4 | MCP server manager                  | 1w     | v0.7.0 |
+| Phase 5 | Approval workflow + notifications   | 1w     | v0.7.0 |
+| Phase 6 | Polish + responsive + dark mode     | 1w     | v0.7.0 |
 
 ---
 
@@ -946,16 +950,16 @@ IDE bridge: `src/lsp/ide-bridge.ts`, `src/lsp/ide-bridge-manager.ts`, `src/lsp/i
 
 #### 6.1.2 Target Capabilities (To-Be)
 
-| Feature | Priority | Description |
-|---------|----------|-------------|
-| Selection sharing | P0 | 에디터 선택 영역을 agent context로 전달 |
-| Inline diff application | P0 | Agent가 제안한 변경을 에디터에서 직접 apply/reject |
-| Diagnostics forwarding | P1 | 에디터 에러/경고를 agent가 자동 인식 |
-| Active file context | P0 | 현재 열린 파일을 agent context에 자동 포함 |
-| Task/Agent sidebar | P1 | VSCode sidebar에서 agent 상태 + job 목록 |
-| Inline chat | P2 | 에디터 내 inline agent 대화 |
-| Code lens | P1 | "Ask DHelix" code lens on functions/classes |
-| Terminal integration | P0 | VSCode terminal에서 `dhelix` 실행 시 extension 자동 연결 |
+| Feature                 | Priority | Description                                              |
+| ----------------------- | -------- | -------------------------------------------------------- |
+| Selection sharing       | P0       | 에디터 선택 영역을 agent context로 전달                  |
+| Inline diff application | P0       | Agent가 제안한 변경을 에디터에서 직접 apply/reject       |
+| Diagnostics forwarding  | P1       | 에디터 에러/경고를 agent가 자동 인식                     |
+| Active file context     | P0       | 현재 열린 파일을 agent context에 자동 포함               |
+| Task/Agent sidebar      | P1       | VSCode sidebar에서 agent 상태 + job 목록                 |
+| Inline chat             | P2       | 에디터 내 inline agent 대화                              |
+| Code lens               | P1       | "Ask DHelix" code lens on functions/classes              |
+| Terminal integration    | P0       | VSCode terminal에서 `dhelix` 실행 시 extension 자동 연결 |
 
 ### 6.2 Selection Sharing Protocol
 
@@ -999,7 +1003,7 @@ interface ProposedChange {
 2. CLI sends ProposedChange to IDE via bridge
 3. VSCode shows inline diff decoration:
    - Green: added lines
-   - Red: removed lines  
+   - Red: removed lines
    - Yellow: modified lines
 4. User clicks [Accept] / [Reject] per hunk
 5. IDE sends ApplyResult back to CLI
@@ -1046,19 +1050,19 @@ async function handleAuth(req: Request): Promise<Response> {
 
 ### 6.5 IDE Integration Deliverables
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| Selection sharing (IDE -> CLI) | 3d | P0 |
-| Active file context auto-include | 2d | P0 |
-| Terminal auto-connect | 2d | P0 |
-| Inline diff decoration | 4d | P0 |
-| Hunk-level accept/reject UI | 3d | P0 |
-| Diagnostics forwarding | 2d | P1 |
-| DHelix sidebar panel | 3d | P1 |
-| Code lens provider | 2d | P1 |
-| Inline chat prototype | 5d | P2 |
-| JetBrains plugin (initial) | 2w | P3 |
-| Neovim plugin (initial) | 1w | P3 |
+| Task                             | Effort | Priority |
+| -------------------------------- | ------ | -------- |
+| Selection sharing (IDE -> CLI)   | 3d     | P0       |
+| Active file context auto-include | 2d     | P0       |
+| Terminal auto-connect            | 2d     | P0       |
+| Inline diff decoration           | 4d     | P0       |
+| Hunk-level accept/reject UI      | 3d     | P0       |
+| Diagnostics forwarding           | 2d     | P1       |
+| DHelix sidebar panel             | 3d     | P1       |
+| Code lens provider               | 2d     | P1       |
+| Inline chat prototype            | 5d     | P2       |
+| JetBrains plugin (initial)       | 2w     | P3       |
+| Neovim plugin (initial)          | 1w     | P3       |
 
 ---
 
@@ -1067,6 +1071,7 @@ async function handleAuth(req: Request): Promise<Response> {
 ### 7.1 Current State
 
 DHelix의 접근성 지원은 거의 없음 (Rating: D).
+
 - Screen reader 지원 없음
 - 색상 대비 미검증
 - Keyboard-only 사용 시 focus 추적 불완전
@@ -1078,30 +1083,30 @@ DHelix의 접근성 지원은 거의 없음 (Rating: D).
 
 #### 7.2.1 Color and Contrast
 
-| Requirement | Implementation |
-|------------|----------------|
-| 4.5:1 minimum contrast ratio | 모든 text-background 조합 검증 |
-| Color-only 정보 전달 금지 | Status에 항상 text label 또는 icon 병행 |
-| 색맹 테마 개선 | Red-green 대신 blue-orange 대비 사용 |
-| High contrast mode | 추가 테마: `high-contrast` (WCAG AAA 7:1) |
+| Requirement                  | Implementation                            |
+| ---------------------------- | ----------------------------------------- |
+| 4.5:1 minimum contrast ratio | 모든 text-background 조합 검증            |
+| Color-only 정보 전달 금지    | Status에 항상 text label 또는 icon 병행   |
+| 색맹 테마 개선               | Red-green 대신 blue-orange 대비 사용      |
+| High contrast mode           | 추가 테마: `high-contrast` (WCAG AAA 7:1) |
 
 #### 7.2.2 Keyboard Navigation
 
-| Requirement | Implementation |
-|------------|----------------|
+| Requirement                  | Implementation                        |
+| ---------------------------- | ------------------------------------- |
 | 모든 기능 keyboard 접근 가능 | Tab order 정의, focus trap for modals |
-| Focus indicator 항상 visible | `focusRing` 토큰으로 일관된 표시 |
-| Skip navigation | 패널 간 빠른 이동 (`Ctrl+1..9`) |
-| Keyboard shortcut 문서화 | `/shortcuts` command, `?` overlay |
+| Focus indicator 항상 visible | `focusRing` 토큰으로 일관된 표시      |
+| Skip navigation              | 패널 간 빠른 이동 (`Ctrl+1..9`)       |
+| Keyboard shortcut 문서화     | `/shortcuts` command, `?` overlay     |
 
 #### 7.2.3 Screen Reader Support
 
-| Requirement | Implementation |
-|------------|----------------|
-| Semantic structure | ARIA-like role annotations via terminal escape sequences |
-| Live region announcements | 새 메시지, 상태 변경 시 음성 알림 텍스트 |
-| Alternative text | ASCII art/box drawing에 대한 text description |
-| Reduced motion | 애니메이션 비활성화 옵션 (`--reduce-motion`) |
+| Requirement               | Implementation                                           |
+| ------------------------- | -------------------------------------------------------- |
+| Semantic structure        | ARIA-like role annotations via terminal escape sequences |
+| Live region announcements | 새 메시지, 상태 변경 시 음성 알림 텍스트                 |
+| Alternative text          | ASCII art/box drawing에 대한 text description            |
+| Reduced motion            | 애니메이션 비활성화 옵션 (`--reduce-motion`)             |
 
 #### 7.2.4 Audio Feedback
 
@@ -1118,18 +1123,18 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 ### 7.3 Accessibility Deliverables
 
-| Task | Effort | Priority |
-|------|--------|----------|
-| Contrast ratio audit + fix | 2d | P1 |
-| Color-only information audit | 1d | P1 |
-| High contrast theme | 1d | P1 |
-| Keyboard focus tracking | 2d | P1 |
-| Focus trap for modals/overlays | 1d | P1 |
-| Screen reader live regions | 3d | P2 |
-| `--reduce-motion` flag | 1d | P2 |
-| Audio notification system | 2d | P2 |
-| Accessibility test suite | 2d | P2 |
-| `/shortcuts` help overlay | 1d | P1 |
+| Task                           | Effort | Priority |
+| ------------------------------ | ------ | -------- |
+| Contrast ratio audit + fix     | 2d     | P1       |
+| Color-only information audit   | 1d     | P1       |
+| High contrast theme            | 1d     | P1       |
+| Keyboard focus tracking        | 2d     | P1       |
+| Focus trap for modals/overlays | 1d     | P1       |
+| Screen reader live regions     | 3d     | P2       |
+| `--reduce-motion` flag         | 1d     | P2       |
+| Audio notification system      | 2d     | P2       |
+| Accessibility test suite       | 2d     | P2       |
+| `/shortcuts` help overlay      | 1d     | P1       |
 
 ---
 
@@ -1137,40 +1142,40 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 ### 8.1 Quantitative Metrics
 
-| Metric | Current | Phase 1 Target | Phase 2 Target | Measurement |
-|--------|---------|----------------|----------------|-------------|
-| **UX Quality Score** | 78% | 88% | 95% | Internal heuristic evaluation |
-| **Keystroke latency** | ~50ms | <16ms | <10ms | Performance benchmark |
-| **1000-msg scroll** | ~200ms | <33ms | <16ms | FPS measurement |
-| **Initial render** | ~300ms | <150ms | <100ms | Time-to-interactive |
-| **Component count** | 22 | 35 | 45 | Feature coverage |
-| **Diff viewer usage** | 0% | 60% | 90% | Telemetry (opt-in) |
-| **IDE integration active** | ~5% | 30% | 60% | Extension install rate |
-| **Dashboard adoption** | 0% | 15% | 40% | Dashboard launch rate |
-| **Accessibility score** | D | B | A- | WCAG audit |
+| Metric                     | Current | Phase 1 Target | Phase 2 Target | Measurement                   |
+| -------------------------- | ------- | -------------- | -------------- | ----------------------------- |
+| **UX Quality Score**       | 78%     | 88%            | 95%            | Internal heuristic evaluation |
+| **Keystroke latency**      | ~50ms   | <16ms          | <10ms          | Performance benchmark         |
+| **1000-msg scroll**        | ~200ms  | <33ms          | <16ms          | FPS measurement               |
+| **Initial render**         | ~300ms  | <150ms         | <100ms         | Time-to-interactive           |
+| **Component count**        | 22      | 35             | 45             | Feature coverage              |
+| **Diff viewer usage**      | 0%      | 60%            | 90%            | Telemetry (opt-in)            |
+| **IDE integration active** | ~5%     | 30%            | 60%            | Extension install rate        |
+| **Dashboard adoption**     | 0%      | 15%            | 40%            | Dashboard launch rate         |
+| **Accessibility score**    | D       | B              | A-             | WCAG audit                    |
 
 ### 8.2 Qualitative Metrics
 
-| Metric | Evaluation Method |
-|--------|------------------|
-| **First impression** | 5-second test: new user의 첫 인상 survey |
-| **Trust level** | "I understand what the agent is doing" confidence score |
-| **Operator efficiency** | Task completion time comparison (before/after) |
-| **Aesthetic rating** | Side-by-side comparison with competitors (blind test) |
-| **Learning curve** | Time to discover and use 5 core features |
-| **Error recovery** | Time to understand and recover from agent errors |
+| Metric                  | Evaluation Method                                       |
+| ----------------------- | ------------------------------------------------------- |
+| **First impression**    | 5-second test: new user의 첫 인상 survey                |
+| **Trust level**         | "I understand what the agent is doing" confidence score |
+| **Operator efficiency** | Task completion time comparison (before/after)          |
+| **Aesthetic rating**    | Side-by-side comparison with competitors (blind test)   |
+| **Learning curve**      | Time to discover and use 5 core features                |
+| **Error recovery**      | Time to understand and recover from agent errors        |
 
 ### 8.3 Competitive Benchmarks
 
-| Dimension | OpenCode | Codex | DHelix Target |
-|-----------|----------|-------|---------------|
-| Visual polish | 9/10 | 8/10 | 9/10 |
-| Performance | 8/10 | 10/10 | 9/10 |
-| Feature breadth | 9/10 | 7/10 | 9/10 |
-| IDE integration | 7/10 | 3/10 | 9/10 |
-| GUI companion | 8/10 | 2/10 | 8/10 |
-| Accessibility | 5/10 | 4/10 | 8/10 |
-| Operator trust | 8/10 | 7/10 | 9/10 |
+| Dimension       | OpenCode | Codex | DHelix Target |
+| --------------- | -------- | ----- | ------------- |
+| Visual polish   | 9/10     | 8/10  | 9/10          |
+| Performance     | 8/10     | 10/10 | 9/10          |
+| Feature breadth | 9/10     | 7/10  | 9/10          |
+| IDE integration | 7/10     | 3/10  | 9/10          |
+| GUI companion   | 8/10     | 2/10  | 8/10          |
+| Accessibility   | 5/10     | 4/10  | 8/10          |
+| Operator trust  | 8/10     | 7/10  | 9/10          |
 
 ---
 
@@ -1180,14 +1185,15 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 **Focus:** Shell layout + Performance + Diff viewer 기초
 
-| Week | Deliverables |
-|------|-------------|
-| W1 | `ShellLayout` container, `TranscriptFrame`, `PromptFrame` |
-| W2 | React.memo optimization pass, input state isolation, StatusBar fix |
-| W3 | Inline diff renderer + Shiki integration, keyboard navigation |
-| W4 | `FooterBar` navigation, panel container abstraction, integration testing |
+| Week | Deliverables                                                             |
+| ---- | ------------------------------------------------------------------------ |
+| W1   | `ShellLayout` container, `TranscriptFrame`, `PromptFrame`                |
+| W2   | React.memo optimization pass, input state isolation, StatusBar fix       |
+| W3   | Inline diff renderer + Shiki integration, keyboard navigation            |
+| W4   | `FooterBar` navigation, panel container abstraction, integration testing |
 
 **Exit criteria:**
+
 - Shell layout 마이그레이션 완료
 - Keystroke latency <20ms
 - Inline diff viewer 동작
@@ -1197,14 +1203,15 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 **Focus:** Panels + Agent tabs + Extended theme
 
-| Week | Deliverables |
-|------|-------------|
-| W1 | Job panel, Approval queue panel |
-| W2 | Agent/Teammate panel, panel navigation system |
-| W3 | Agent tab bar, tab switching, per-tab isolation |
-| W4 | Extended color token system, contrast audit, high-contrast theme |
+| Week | Deliverables                                                     |
+| ---- | ---------------------------------------------------------------- |
+| W1   | Job panel, Approval queue panel                                  |
+| W2   | Agent/Teammate panel, panel navigation system                    |
+| W3   | Agent tab bar, tab switching, per-tab isolation                  |
+| W4   | Extended color token system, contrast audit, high-contrast theme |
 
 **Exit criteria:**
+
 - 3개 operator panel 동작
 - Agent tab switching 동작
 - WCAG AA color contrast 달성
@@ -1214,14 +1221,15 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 **Focus:** IDE integration 강화 + Dashboard MVP
 
-| Week | Deliverables |
-|------|-------------|
+| Week | Deliverables                                                  |
+| ---- | ------------------------------------------------------------- |
 | W1-2 | Selection sharing, active file context, terminal auto-connect |
-| W3-4 | Inline diff decoration + hunk accept/reject in VSCode |
-| W5 | Dashboard server (WebSocket), session explorer MVP |
-| W6 | Job monitor, artifact browser MVP |
+| W3-4 | Inline diff decoration + hunk accept/reject in VSCode         |
+| W5   | Dashboard server (WebSocket), session explorer MVP            |
+| W6   | Job monitor, artifact browser MVP                             |
 
 **Exit criteria:**
+
 - VSCode extension에서 selection -> agent 동작
 - Inline diff accept/reject 동작
 - Dashboard에서 세션 목록 + job 상태 확인 가능
@@ -1230,14 +1238,15 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 **Focus:** Virtualization + File tree + MCP manager + Audio
 
-| Week | Deliverables |
-|------|-------------|
-| W1 | VirtualizedTranscript, async Shiki worker |
-| W2 | File tree browser, fuzzy search |
-| W3 | MCP server manager (dashboard), approval workflow (web) |
-| W4 | Audio notifications, screen reader support, reduce-motion |
+| Week | Deliverables                                              |
+| ---- | --------------------------------------------------------- |
+| W1   | VirtualizedTranscript, async Shiki worker                 |
+| W2   | File tree browser, fuzzy search                           |
+| W3   | MCP server manager (dashboard), approval workflow (web)   |
+| W4   | Audio notifications, screen reader support, reduce-motion |
 
 **Exit criteria:**
+
 - 10K messages smooth scroll
 - File tree with git status
 - MCP management via dashboard
@@ -1270,14 +1279,14 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 ## 11. Risk Assessment
 
-| Risk | Impact | Likelihood | Mitigation |
-|------|--------|-----------|------------|
-| Ink 5.x performance ceiling | High | Medium | VirtualizedTranscript + memo로 완화, 극단적 경우 blessed-react 고려 |
-| Dashboard maintenance burden | Medium | High | Dashboard를 optional feature로, core에 의존성 최소화 |
-| VSCode API breaking changes | Medium | Low | Extension API version pinning, quarterly update cycle |
-| Theme token explosion | Low | Medium | ThemeColors 인터페이스 freeze, 확장은 별도 namespace |
-| Accessibility 과소 투자 | Medium | High | Phase 2에서 반드시 포함, skip 불가로 roadmap에 고정 |
-| Multi-agent tab state leak | High | Medium | Per-tab AbortController + strict isolation boundary |
+| Risk                         | Impact | Likelihood | Mitigation                                                          |
+| ---------------------------- | ------ | ---------- | ------------------------------------------------------------------- |
+| Ink 5.x performance ceiling  | High   | Medium     | VirtualizedTranscript + memo로 완화, 극단적 경우 blessed-react 고려 |
+| Dashboard maintenance burden | Medium | High       | Dashboard를 optional feature로, core에 의존성 최소화                |
+| VSCode API breaking changes  | Medium | Low        | Extension API version pinning, quarterly update cycle               |
+| Theme token explosion        | Low    | Medium     | ThemeColors 인터페이스 freeze, 확장은 별도 namespace                |
+| Accessibility 과소 투자      | Medium | High       | Phase 2에서 반드시 포함, skip 불가로 roadmap에 고정                 |
+| Multi-agent tab state leak   | High   | Medium     | Per-tab AbortController + strict isolation boundary                 |
 
 ---
 
@@ -1285,57 +1294,57 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 ### 12.1 New Files
 
-| File | Purpose |
-|------|---------|
-| `src/cli/layout/ShellLayout.tsx` | Shell layout container |
-| `src/cli/layout/TranscriptFrame.tsx` | Scrollable transcript region |
-| `src/cli/layout/PromptFrame.tsx` | Sticky prompt region |
-| `src/cli/layout/FooterBar.tsx` | Interactive footer navigation |
-| `src/cli/layout/OverlayPortal.tsx` | Overlay rendering context |
-| `src/cli/layout/ModalPortal.tsx` | Modal rendering context |
-| `src/cli/layout/BottomFloat.tsx` | Bottom float status slot |
-| `src/cli/layout/HeaderBar.tsx` | Optional header status bar |
-| `src/cli/components/DiffViewer.tsx` | Syntax-aware diff renderer |
-| `src/cli/components/DiffViewer.test.ts` | Diff viewer tests |
-| `src/cli/components/JobPanel.tsx` | Job monitoring panel |
-| `src/cli/components/ApprovalPanel.tsx` | Approval queue panel |
-| `src/cli/components/AgentPanel.tsx` | Agent/teammate panel |
-| `src/cli/components/AgentTabBar.tsx` | Tab-based agent switching |
-| `src/cli/components/FileTree.tsx` | File tree browser |
-| `src/cli/components/VirtualizedTranscript.tsx` | Virtualized message list |
-| `src/cli/components/ProgressBar.tsx` | Progress bar variants |
-| `src/cli/components/ContextMeter.tsx` | Context window usage meter |
-| `src/cli/state/AgentTabManager.ts` | Agent tab state management |
-| `src/cli/state/PanelManager.ts` | Panel visibility/navigation state |
-| `src/cli/state/LayoutState.ts` | Shell layout state |
-| `src/dashboard/server.ts` | Dashboard WebSocket server |
-| `src/dashboard/routes/session.ts` | Session API endpoints |
-| `src/dashboard/routes/job.ts` | Job API endpoints |
-| `src/dashboard/routes/mcp.ts` | MCP management endpoints |
-| `dashboard-web/` | Next.js web dashboard application |
-| `vscode-extension/src/selection.ts` | Selection sharing provider |
-| `vscode-extension/src/inlineDiff.ts` | Inline diff decoration |
-| `vscode-extension/src/sidebar.ts` | DHelix sidebar panel |
-| `vscode-extension/src/codeLens.ts` | Code lens provider |
+| File                                           | Purpose                           |
+| ---------------------------------------------- | --------------------------------- |
+| `src/cli/layout/ShellLayout.tsx`               | Shell layout container            |
+| `src/cli/layout/TranscriptFrame.tsx`           | Scrollable transcript region      |
+| `src/cli/layout/PromptFrame.tsx`               | Sticky prompt region              |
+| `src/cli/layout/FooterBar.tsx`                 | Interactive footer navigation     |
+| `src/cli/layout/OverlayPortal.tsx`             | Overlay rendering context         |
+| `src/cli/layout/ModalPortal.tsx`               | Modal rendering context           |
+| `src/cli/layout/BottomFloat.tsx`               | Bottom float status slot          |
+| `src/cli/layout/HeaderBar.tsx`                 | Optional header status bar        |
+| `src/cli/components/DiffViewer.tsx`            | Syntax-aware diff renderer        |
+| `src/cli/components/DiffViewer.test.ts`        | Diff viewer tests                 |
+| `src/cli/components/JobPanel.tsx`              | Job monitoring panel              |
+| `src/cli/components/ApprovalPanel.tsx`         | Approval queue panel              |
+| `src/cli/components/AgentPanel.tsx`            | Agent/teammate panel              |
+| `src/cli/components/AgentTabBar.tsx`           | Tab-based agent switching         |
+| `src/cli/components/FileTree.tsx`              | File tree browser                 |
+| `src/cli/components/VirtualizedTranscript.tsx` | Virtualized message list          |
+| `src/cli/components/ProgressBar.tsx`           | Progress bar variants             |
+| `src/cli/components/ContextMeter.tsx`          | Context window usage meter        |
+| `src/cli/state/AgentTabManager.ts`             | Agent tab state management        |
+| `src/cli/state/PanelManager.ts`                | Panel visibility/navigation state |
+| `src/cli/state/LayoutState.ts`                 | Shell layout state                |
+| `src/dashboard/server.ts`                      | Dashboard WebSocket server        |
+| `src/dashboard/routes/session.ts`              | Session API endpoints             |
+| `src/dashboard/routes/job.ts`                  | Job API endpoints                 |
+| `src/dashboard/routes/mcp.ts`                  | MCP management endpoints          |
+| `dashboard-web/`                               | Next.js web dashboard application |
+| `vscode-extension/src/selection.ts`            | Selection sharing provider        |
+| `vscode-extension/src/inlineDiff.ts`           | Inline diff decoration            |
+| `vscode-extension/src/sidebar.ts`              | DHelix sidebar panel              |
+| `vscode-extension/src/codeLens.ts`             | Code lens provider                |
 
 ### 12.2 Modified Files
 
-| File | Changes |
-|------|---------|
-| `src/cli/App.tsx` | Migrate to ShellLayout, remove flat layout logic |
-| `src/cli/renderer/theme.ts` | Extend ThemeColors with surface/interactive/diff/status tokens |
-| `src/cli/components/MessageList.tsx` | Integrate with VirtualizedTranscript |
-| `src/cli/components/StatusBar.tsx` | Convert to interactive FooterBar items |
-| `src/cli/components/ToolCallBlock.tsx` | Add collapse/expand, batch grouping |
-| `src/cli/components/PermissionPrompt.tsx` | Add diff preview integration |
-| `src/cli/components/SlashCommandMenu.tsx` | Move to OverlayPortal |
-| `src/cli/components/StreamingMessage.tsx` | Add diff detection and rendering |
-| `src/cli/components/Spinner.tsx` | Add variant system (dots, helix, bar, pulse) |
-| `src/cli/hooks/useAgentLoop.ts` | Add agent tab context awareness |
-| `src/lsp/ide-bridge-protocol.ts` | Add selection sharing + inline diff protocols |
-| `src/lsp/ide-bridge-manager.ts` | Add IDE context forwarding |
-| `vscode-extension/package.json` | Add sidebar, code lens, commands |
-| `vscode-extension/src/extension.ts` | Register new providers |
+| File                                      | Changes                                                        |
+| ----------------------------------------- | -------------------------------------------------------------- |
+| `src/cli/App.tsx`                         | Migrate to ShellLayout, remove flat layout logic               |
+| `src/cli/renderer/theme.ts`               | Extend ThemeColors with surface/interactive/diff/status tokens |
+| `src/cli/components/MessageList.tsx`      | Integrate with VirtualizedTranscript                           |
+| `src/cli/components/StatusBar.tsx`        | Convert to interactive FooterBar items                         |
+| `src/cli/components/ToolCallBlock.tsx`    | Add collapse/expand, batch grouping                            |
+| `src/cli/components/PermissionPrompt.tsx` | Add diff preview integration                                   |
+| `src/cli/components/SlashCommandMenu.tsx` | Move to OverlayPortal                                          |
+| `src/cli/components/StreamingMessage.tsx` | Add diff detection and rendering                               |
+| `src/cli/components/Spinner.tsx`          | Add variant system (dots, helix, bar, pulse)                   |
+| `src/cli/hooks/useAgentLoop.ts`           | Add agent tab context awareness                                |
+| `src/lsp/ide-bridge-protocol.ts`          | Add selection sharing + inline diff protocols                  |
+| `src/lsp/ide-bridge-manager.ts`           | Add IDE context forwarding                                     |
+| `vscode-extension/package.json`           | Add sidebar, code lens, commands                               |
+| `vscode-extension/src/extension.ts`       | Register new providers                                         |
 
 ---
 
@@ -1343,57 +1352,57 @@ Enable: dhelix --audio  or  DHELIX_AUDIO=1
 
 ### Global Keybindings
 
-| Key | Action | Context |
-|-----|--------|---------|
-| `Esc` | Cancel agent / Close panel | Global |
-| `Ctrl+D` | Exit | Global |
-| `Shift+Tab` | Cycle permissions | Prompt |
-| `Alt+T` | Toggle thinking | Prompt |
-| `Ctrl+O` | Toggle verbose | Global |
+| Key         | Action                     | Context |
+| ----------- | -------------------------- | ------- |
+| `Esc`       | Cancel agent / Close panel | Global  |
+| `Ctrl+D`    | Exit                       | Global  |
+| `Shift+Tab` | Cycle permissions          | Prompt  |
+| `Alt+T`     | Toggle thinking            | Prompt  |
+| `Ctrl+O`    | Toggle verbose             | Global  |
 
 ### Panel Keybindings
 
-| Key | Action | Context |
-|-----|--------|---------|
-| `Ctrl+J` | Toggle Job panel | Global |
-| `Ctrl+A` | Toggle Approval panel | Global |
-| `Ctrl+T` | Toggle Agent panel | Global |
-| `Ctrl+H` | Toggle Health panel | Global |
-| `Ctrl+E` | Toggle File tree | Global |
-| `Tab` | Cycle between panels | Panel active |
+| Key      | Action                | Context      |
+| -------- | --------------------- | ------------ |
+| `Ctrl+J` | Toggle Job panel      | Global       |
+| `Ctrl+A` | Toggle Approval panel | Global       |
+| `Ctrl+T` | Toggle Agent panel    | Global       |
+| `Ctrl+H` | Toggle Health panel   | Global       |
+| `Ctrl+E` | Toggle File tree      | Global       |
+| `Tab`    | Cycle between panels  | Panel active |
 
 ### Agent Tab Keybindings
 
-| Key | Action | Context |
-|-----|--------|---------|
-| `Alt+1..9` | Switch to agent tab | Global |
-| `Alt+Left/Right` | Cycle agent tabs | Global |
-| `Alt+N` | New agent tab | Global |
-| `Alt+W` | Close agent tab | Global |
-| `Alt+M` | Merge agent result | Agent tab |
+| Key              | Action              | Context   |
+| ---------------- | ------------------- | --------- |
+| `Alt+1..9`       | Switch to agent tab | Global    |
+| `Alt+Left/Right` | Cycle agent tabs    | Global    |
+| `Alt+N`          | New agent tab       | Global    |
+| `Alt+W`          | Close agent tab     | Global    |
+| `Alt+M`          | Merge agent result  | Agent tab |
 
 ### Diff Viewer Keybindings
 
-| Key | Action | Context |
-|-----|--------|---------|
-| `j/k` | Navigate hunks | Diff view |
-| `n/p` | Navigate files | Diff view |
-| `a` | Apply hunk/file | Diff view |
-| `r` | Reject hunk/file | Diff view |
-| `e` | Edit in place | Diff view |
-| `s` | Skip | Diff view |
-| `d` | Toggle diff mode | Diff view |
+| Key   | Action           | Context   |
+| ----- | ---------------- | --------- |
+| `j/k` | Navigate hunks   | Diff view |
+| `n/p` | Navigate files   | Diff view |
+| `a`   | Apply hunk/file  | Diff view |
+| `r`   | Reject hunk/file | Diff view |
+| `e`   | Edit in place    | Diff view |
+| `s`   | Skip             | Diff view |
+| `d`   | Toggle diff mode | Diff view |
 
 ### File Tree Keybindings
 
-| Key | Action | Context |
-|-----|--------|---------|
-| `j/k` | Navigate up/down | File tree |
-| `Enter` | Expand/preview | File tree |
-| `Space` | Multi-select | File tree |
-| `/` | Search within tree | File tree |
-| `Ctrl+P` | Fuzzy file search | Global |
-| `g` | Go to path | File tree |
+| Key      | Action             | Context   |
+| -------- | ------------------ | --------- |
+| `j/k`    | Navigate up/down   | File tree |
+| `Enter`  | Expand/preview     | File tree |
+| `Space`  | Multi-select       | File tree |
+| `/`      | Search within tree | File tree |
+| `Ctrl+P` | Fuzzy file search  | Global    |
+| `g`      | Go to path         | File tree |
 
 ---
 

@@ -106,7 +106,7 @@ function DiffLineRow({
 
   return (
     <Text dimColor>
-      {gutter}   {line.content}
+      {gutter} {line.content}
     </Text>
   );
 }
@@ -185,9 +185,7 @@ export function DiffViewer({
       <Text bold color="green">
         +++ b/{filePath}
       </Text>
-      {resolvedLanguage !== "text" ? (
-        <Text dimColor>Language: {resolvedLanguage}</Text>
-      ) : null}
+      {resolvedLanguage !== "text" ? <Text dimColor>Language: {resolvedLanguage}</Text> : null}
 
       {/* 빈 줄 구분 */}
       <Text> </Text>

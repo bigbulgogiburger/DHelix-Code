@@ -105,23 +105,18 @@ export class CallHierarchyService {
    * @param direction Whether the chain represents incoming or outgoing calls.
    * @returns Multi-line tree string.
    */
-  formatAsTree(
-    entries: readonly CallChainEntry[],
-    direction: "incoming" | "outgoing",
-  ): string {
+  formatAsTree(entries: readonly CallChainEntry[], direction: "incoming" | "outgoing"): string {
     if (entries.length === 0) return "(no calls found)";
 
     const lines: string[] = [];
 
     // Root node: the callee (for incoming) or the caller (for outgoing)
-    const rootNode =
-      direction === "incoming" ? entries[0].callee : entries[0].caller;
+    const rootNode = direction === "incoming" ? entries[0].callee : entries[0].caller;
     lines.push(this.formatNode(rootNode));
 
     for (let i = 0; i < entries.length; i++) {
       const entry = entries[i];
-      const node =
-        direction === "incoming" ? entry.caller : entry.callee;
+      const node = direction === "incoming" ? entry.caller : entry.callee;
       const isLast = i === entries.length - 1;
       const prefix = isLast ? "\u2514\u2500\u2500 " : "\u251c\u2500\u2500 ";
       lines.push(`${prefix}${this.formatNode(node)}`);
@@ -175,9 +170,10 @@ export class CallHierarchyService {
     let calls: vscode.CallHierarchyIncomingCall[];
     try {
       calls =
-        (await vscode.commands.executeCommand<
-          vscode.CallHierarchyIncomingCall[]
-        >("vscode.provideIncomingCalls", item)) ?? [];
+        (await vscode.commands.executeCommand<vscode.CallHierarchyIncomingCall[]>(
+          "vscode.provideIncomingCalls",
+          item,
+        )) ?? [];
     } catch {
       return [];
     }
@@ -195,11 +191,7 @@ export class CallHierarchyService {
       });
 
       // Recurse into callers
-      const deeper = await this.traceIncoming(
-        call.from,
-        visited,
-        remainingDepth - 1,
-      );
+      const deeper = await this.traceIncoming(call.from, visited, remainingDepth - 1);
       results.push(...deeper);
     }
 
@@ -221,9 +213,10 @@ export class CallHierarchyService {
     let calls: vscode.CallHierarchyOutgoingCall[];
     try {
       calls =
-        (await vscode.commands.executeCommand<
-          vscode.CallHierarchyOutgoingCall[]
-        >("vscode.provideOutgoingCalls", item)) ?? [];
+        (await vscode.commands.executeCommand<vscode.CallHierarchyOutgoingCall[]>(
+          "vscode.provideOutgoingCalls",
+          item,
+        )) ?? [];
     } catch {
       return [];
     }
@@ -241,11 +234,7 @@ export class CallHierarchyService {
       });
 
       // Recurse into callees
-      const deeper = await this.traceOutgoing(
-        call.to,
-        visited,
-        remainingDepth - 1,
-      );
+      const deeper = await this.traceOutgoing(call.to, visited, remainingDepth - 1);
       results.push(...deeper);
     }
 

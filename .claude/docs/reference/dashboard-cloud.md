@@ -6,15 +6,15 @@
 
 ### REST API 라우트
 
-| Method | Path | 설명 |
-|--------|------|------|
-| GET | `/api/sessions` | 세션 목록 |
-| GET | `/api/sessions/:id` | 세션 상세 |
-| GET | `/api/mcp/servers` | MCP 서버 상태 |
-| GET | `/api/jobs` | 작업 목록 |
-| GET | `/api/metrics` | 런타임 메트릭 |
-| GET | `/api/events` | SSE 실시간 스트림 |
-| GET | `/health` | 헬스체크 |
+| Method | Path                | 설명              |
+| ------ | ------------------- | ----------------- |
+| GET    | `/api/sessions`     | 세션 목록         |
+| GET    | `/api/sessions/:id` | 세션 상세         |
+| GET    | `/api/mcp/servers`  | MCP 서버 상태     |
+| GET    | `/api/jobs`         | 작업 목록         |
+| GET    | `/api/metrics`      | 런타임 메트릭     |
+| GET    | `/api/events`       | SSE 실시간 스트림 |
+| GET    | `/health`           | 헬스체크          |
 
 ### SSE 이벤트 (`DashboardEventBridge`)
 

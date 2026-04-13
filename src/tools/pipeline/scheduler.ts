@@ -51,12 +51,7 @@ const ALWAYS_PARALLEL_TOOLS = new Set([
 const FILE_WRITE_TOOLS = new Set(["file_write", "file_edit"]);
 
 /** LSP 도구 — 서버별 순차 실행 */
-const LSP_TOOLS = new Set([
-  "goto_definition",
-  "find_references",
-  "get_type_info",
-  "safe_rename",
-]);
+const LSP_TOOLS = new Set(["goto_definition", "find_references", "get_type_info", "safe_rename"]);
 
 /**
  * 도구 호출의 인수에서 파일 경로를 추출합니다.
@@ -84,9 +79,7 @@ function extractFilePath(call: ExtractedToolCall): string | undefined {
  * @param calls - 스케줄링할 도구 호출 목록
  * @returns 스케줄링 결과
  */
-export function scheduleCalls(
-  calls: readonly ExtractedToolCall[],
-): ScheduleResult {
+export function scheduleCalls(calls: readonly ExtractedToolCall[]): ScheduleResult {
   if (calls.length === 0) {
     return { groups: [], order: "parallel" };
   }

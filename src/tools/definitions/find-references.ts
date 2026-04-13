@@ -42,11 +42,7 @@ const paramSchema = z.object({
   /** 심볼의 열 번호 */
   column: z.number().describe("심볼의 열 번호"),
   /** 정의 위치 포함 여부 */
-  include_declaration: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("정의 위치 포함 여부"),
+  include_declaration: z.boolean().optional().default(true).describe("정의 위치 포함 여부"),
 });
 
 type Params = z.infer<typeof paramSchema>;
@@ -138,8 +134,10 @@ async function fallbackGrep(symbolName: string, cwd: string): Promise<string> {
       [
         "--line-number",
         "--no-heading",
-        "--color", "never",
-        "--max-count", "50",
+        "--color",
+        "never",
+        "--max-count",
+        "50",
         `\\b${symbolName}\\b`,
         cwd,
       ],
@@ -207,7 +205,7 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       }
 
       // 파일별로 그룹핑
-      const byFile = new Map<string, typeof results[number][]>();
+      const byFile = new Map<string, (typeof results)[number][]>();
       for (const ref of results) {
         const rel = toRelative(ref.filePath, context.workingDirectory);
         const existing = byFile.get(rel) ?? [];

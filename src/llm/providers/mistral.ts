@@ -173,9 +173,7 @@ function toOpenAIMessages(messages: readonly ChatMessage[]): readonly OpenAIMess
  * @param tools - 내부 도구 정의 배열
  * @returns OpenAI 호환 도구 정의 배열
  */
-function toOpenAITools(
-  tools: readonly ToolDefinitionForLLM[],
-): readonly Record<string, unknown>[] {
+function toOpenAITools(tools: readonly ToolDefinitionForLLM[]): readonly Record<string, unknown>[] {
   return tools.map((t) => ({
     type: "function",
     function: {
@@ -191,10 +189,7 @@ function toOpenAITools(
 /**
  * 에러 유형에 따른 재시도 가능 여부와 지연 시간 결정
  */
-function getRetryInfo(
-  status: number,
-  attempt: number,
-): { readonly delayMs: number } | null {
+function getRetryInfo(status: number, attempt: number): { readonly delayMs: number } | null {
   if (status === 429) {
     if (attempt >= MAX_RETRIES_RATE_LIMIT) return null;
     const delay = Math.min(
@@ -256,10 +251,7 @@ export class MistralProvider implements UnifiedLLMProvider {
   private readonly apiKey: string;
   private readonly baseUrl: string;
 
-  constructor(options?: {
-    readonly apiKey?: string;
-    readonly baseUrl?: string;
-  }) {
+  constructor(options?: { readonly apiKey?: string; readonly baseUrl?: string }) {
     const key = options?.apiKey ?? resolveMistralApiKey();
     if (!key) {
       throw new LLMError(
@@ -486,9 +478,7 @@ export class MistralProvider implements UnifiedLLMProvider {
    * @returns 비용 예측 결과
    */
   estimateCost(tokens: TokenUsage, modelId?: string): CostEstimate {
-    const model = modelId
-      ? this.manifest.models.find((m) => modelId.startsWith(m.id))
-      : undefined;
+    const model = modelId ? this.manifest.models.find((m) => modelId.startsWith(m.id)) : undefined;
     const pricing = model?.pricing ?? this.manifest.models[0]!.pricing;
 
     const inputCost = (tokens.promptTokens / 1_000_000) * pricing.input;
@@ -552,9 +542,7 @@ export class MistralProvider implements UnifiedLLMProvider {
       const retryInfo = getRetryInfo(response.status, attempt);
       if (!retryInfo) {
         const errorText = await response.text().catch(() => "");
-        throw new LLMError(
-          `Mistral API error (HTTP ${response.status}): ${errorText}`,
-        );
+        throw new LLMError(`Mistral API error (HTTP ${response.status}): ${errorText}`);
       }
 
       await sleep(retryInfo.delayMs, signal);

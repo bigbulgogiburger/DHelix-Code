@@ -50,11 +50,7 @@ const paramSchema = z.object({
     .default(1)
     .describe("추적 깊이 (1=직접, 2=간접 포함, 3=3단계)"),
   /** 가져온 심볼 이름 표시 */
-  show_specifiers: z
-    .boolean()
-    .optional()
-    .default(true)
-    .describe("가져온 심볼 이름 표시"),
+  show_specifiers: z.boolean().optional().default(true).describe("가져온 심볼 이름 표시"),
 });
 
 type Params = z.infer<typeof paramSchema>;
@@ -289,10 +285,7 @@ function parseImports(content: string): readonly ParsedImport[] {
  * @param fromFile - import가 위치한 파일의 절대 경로
  * @returns 해석된 절대 경로, 또는 null (해석 불가)
  */
-async function resolveImportPath(
-  source: string,
-  fromFile: string,
-): Promise<string | null> {
+async function resolveImportPath(source: string, fromFile: string): Promise<string | null> {
   if (isBuiltinModule(source) || isExternalModule(source)) {
     return null;
   }
@@ -485,7 +478,10 @@ async function traceImportedBy(
  * @param cwd - 작업 디렉토리
  * @returns 매칭된 파일의 상대 경로 목록
  */
-async function findFilesImporting(fileNamePattern: string, cwd: string): Promise<readonly string[]> {
+async function findFilesImporting(
+  fileNamePattern: string,
+  cwd: string,
+): Promise<readonly string[]> {
   // import/require/export 문에서 파일명을 포함하는 패턴
   const pattern = `(from\\s+['"].*${fileNamePattern}|require\\s*\\(\\s*['"].*${fileNamePattern}|export\\s+.*from\\s+['"].*${fileNamePattern})`;
 

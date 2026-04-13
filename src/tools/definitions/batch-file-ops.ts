@@ -41,7 +41,12 @@ const readOpSchema = z.object({
   /** 읽을 파일 경로 (절대 경로 또는 작업 디렉토리 기준 상대 경로) */
   file_path: z.string().describe("File path to read"),
   /** 시작 줄 번호 (0-based, 선택사항) */
-  offset: z.number().int().min(0).optional().describe("Line number to start reading from (0-based)"),
+  offset: z
+    .number()
+    .int()
+    .min(0)
+    .optional()
+    .describe("Line number to start reading from (0-based)"),
   /** 읽을 최대 줄 수 (선택사항) */
   limit: z.number().int().min(1).optional().describe("Maximum number of lines to read"),
 });
@@ -125,7 +130,9 @@ const MAX_LINE_LENGTH = 2000;
 
 /** 긴 줄을 최대 길이로 잘라냄 */
 function truncateLine(line: string): string {
-  return line.length > MAX_LINE_LENGTH ? line.substring(0, MAX_LINE_LENGTH) + "... (truncated)" : line;
+  return line.length > MAX_LINE_LENGTH
+    ? line.substring(0, MAX_LINE_LENGTH) + "... (truncated)"
+    : line;
 }
 
 /**
@@ -459,7 +466,10 @@ async function executeParallel(ops: Operation[], workingDirectory: string): Prom
  * @param workingDirectory - 작업 디렉토리
  * @returns 각 작업의 ToolResult (ops와 같은 순서)
  */
-async function executeSequential(ops: Operation[], workingDirectory: string): Promise<ToolResult[]> {
+async function executeSequential(
+  ops: Operation[],
+  workingDirectory: string,
+): Promise<ToolResult[]> {
   const results: ToolResult[] = [];
   for (const op of ops) {
     try {

@@ -21,14 +21,14 @@
  * - failed: 실패함
  * - cancelled: 사용자 또는 시스템에 의해 취소됨
  */
-export type JobStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+export type JobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
 
 /**
  * 클라우드 작업의 우선순위
  *
  * critical > high > normal > low 순으로 높은 우선순위를 가집니다.
  */
-export type JobPriority = 'low' | 'normal' | 'high' | 'critical';
+export type JobPriority = "low" | "normal" | "high" | "critical";
 
 /**
  * 우선순위를 숫자로 변환하는 맵 (높을수록 우선)
@@ -55,7 +55,7 @@ export const PRIORITY_ORDER: Readonly<Record<JobPriority, number>> = {
  */
 export interface CloudArtifact {
   /** 산출물 유형 */
-  readonly type: 'file-change' | 'test-result' | 'analysis';
+  readonly type: "file-change" | "test-result" | "analysis";
   /** 파일 변경 시 대상 경로 (file-change 타입에서 필수) */
   readonly path?: string;
   /** 산출물 내용 */
@@ -129,7 +129,7 @@ export interface CloudJob {
  *
  * id, status, createdAt은 시스템이 자동으로 부여하므로 제외합니다.
  */
-export type CloudJobInput = Omit<CloudJob, 'id' | 'status' | 'createdAt'>;
+export type CloudJobInput = Omit<CloudJob, "id" | "status" | "createdAt">;
 
 // ---------------------------------------------------------------------------
 // Cloud Config

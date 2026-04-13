@@ -16,11 +16,7 @@
  * @module tools/retry-engine
  */
 
-import {
-  type ToolExecutionError,
-  classifyError,
-  RETRY_STRATEGY_MATRIX,
-} from "./errors.js";
+import { type ToolExecutionError, classifyError, RETRY_STRATEGY_MATRIX } from "./errors.js";
 import { type ToolDefinition, type ToolContext, type ToolResult } from "./types.js";
 import { correctToolCall } from "./tool-call-corrector.js";
 import { retryWithCorrection, type CorrectedToolCall } from "./tool-retry.js";
@@ -139,7 +135,11 @@ export class RetryEngine {
 
         // 재시도 가능하고 횟수가 남아있으면 백오프 후 재시도
         if (strategy.retryable && attempt < maxRetries) {
-          const delay = this.computeDelay(attempt, strategy.backoff, config.baseDelayMs ?? strategy.baseDelayMs);
+          const delay = this.computeDelay(
+            attempt,
+            strategy.backoff,
+            config.baseDelayMs ?? strategy.baseDelayMs,
+          );
           if (delay > 0) {
             await new Promise((resolve) => setTimeout(resolve, delay));
           }

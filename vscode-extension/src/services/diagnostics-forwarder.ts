@@ -52,10 +52,7 @@ export class DiagnosticsForwarder implements vscode.Disposable {
     this.workspaceFolders = options.workspaceFolders;
 
     this.disposables.push(
-      vscode.languages.onDidChangeDiagnostics(
-        this.handleDiagnosticChange,
-        this,
-      ),
+      vscode.languages.onDidChangeDiagnostics(this.handleDiagnosticChange, this),
     );
   }
 
@@ -163,9 +160,7 @@ export class DiagnosticsForwarder implements vscode.Disposable {
   }
 
   /** Normalize VS Code's diagnostic code (number | string | { value, target }). */
-  private extractCode(
-    code: vscode.Diagnostic["code"],
-  ): string | number | undefined {
+  private extractCode(code: vscode.Diagnostic["code"]): string | number | undefined {
     if (code === undefined || code === null) return undefined;
     if (typeof code === "object") return String(code.value);
     return code;

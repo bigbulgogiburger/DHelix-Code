@@ -9,7 +9,15 @@ import type { Node } from "web-tree-sitter";
 
 interface ParsedSymbol {
   readonly name: string;
-  readonly kind: "function" | "class" | "interface" | "type" | "variable" | "method" | "enum" | "constant";
+  readonly kind:
+    | "function"
+    | "class"
+    | "interface"
+    | "type"
+    | "variable"
+    | "method"
+    | "enum"
+    | "constant";
   readonly filePath: string;
   readonly startLine: number;
   readonly endLine: number;
@@ -101,9 +109,10 @@ function buildFunctionSignature(node: Node): string | undefined {
   const typeNode = node.childForFieldName("type");
   const returnType = typeNode?.text ?? "";
 
-  const funcDecl = declarator.type === "function_declarator"
-    ? declarator
-    : declarator.childForFieldName("declarator");
+  const funcDecl =
+    declarator.type === "function_declarator"
+      ? declarator
+      : declarator.childForFieldName("declarator");
   if (!funcDecl) return returnType ? `${returnType} (...)` : undefined;
 
   const params = funcDecl.childForFieldName("parameters");
@@ -156,9 +165,10 @@ function extractClassMembers(
       if (!declarator) continue;
 
       // Only process function declarators
-      const funcDecl = declarator.type === "function_declarator"
-        ? declarator
-        : declarator.childForFieldName("declarator");
+      const funcDecl =
+        declarator.type === "function_declarator"
+          ? declarator
+          : declarator.childForFieldName("declarator");
       if (!funcDecl || funcDecl.type !== "function_declarator") continue;
 
       const name = extractDeclaratorName(declarator);
@@ -255,7 +265,9 @@ export function extractCppSymbols(
 
         // Detect base classes
         const baseClause = node.childForFieldName("base_class_clause");
-        const sig = baseClause ? `class ${name} : ${baseClause.text.replace(/^:\s*/, "")}` : `class ${name}`;
+        const sig = baseClause
+          ? `class ${name} : ${baseClause.text.replace(/^:\s*/, "")}`
+          : `class ${name}`;
 
         symbols.push({
           name,
@@ -315,9 +327,10 @@ export function extractCppSymbols(
       case "namespace_definition": {
         const nameNode = node.childForFieldName("name");
         const namespaceName = nameNode?.text;
-        const fullNs = parentNamespace && namespaceName
-          ? `${parentNamespace}::${namespaceName}`
-          : (namespaceName ?? parentNamespace);
+        const fullNs =
+          parentNamespace && namespaceName
+            ? `${parentNamespace}::${namespaceName}`
+            : (namespaceName ?? parentNamespace);
 
         if (namespaceName) {
           const doc = extractCppDoc(node, source);

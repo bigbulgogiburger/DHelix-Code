@@ -85,9 +85,7 @@ export function TaskPanel({ tasks, title = "Tasks" }: TaskPanelProps) {
           {title}
         </Text>
         <Text color="gray"> </Text>
-        {total > 0 ? (
-          <Text color="gray">{formatTaskProgressBar(doneCount, total)}</Text>
-        ) : null}
+        {total > 0 ? <Text color="gray">{formatTaskProgressBar(doneCount, total)}</Text> : null}
       </Box>
 
       {tasks.length === 0 ? (
@@ -105,15 +103,10 @@ export function TaskPanel({ tasks, title = "Tasks" }: TaskPanelProps) {
           return (
             <Box key={task.id} marginBottom={0}>
               <Text color={color}>{icon} </Text>
-              <Text
-                bold={task.status === "in-progress"}
-                strikethrough={task.status === "done"}
-              >
+              <Text bold={task.status === "in-progress"} strikethrough={task.status === "done"}>
                 {task.subject}
               </Text>
-              {blocked ? (
-                <Text color="red"> [blocked]</Text>
-              ) : null}
+              {blocked ? <Text color="red"> [blocked]</Text> : null}
             </Box>
           );
         })

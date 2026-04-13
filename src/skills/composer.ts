@@ -117,10 +117,7 @@ export interface CompositionValidation {
  * @param prev - 이전 step 실행 결과 (없으면 undefined)
  * @returns 조건 평가 결과 (truthy/falsy)
  */
-export function evaluateCondition(
-  condition: string,
-  prev: StepResult | undefined,
-): boolean {
+export function evaluateCondition(condition: string, prev: StepResult | undefined): boolean {
   if (!prev) return false;
 
   const trimmed = condition.trim();
@@ -203,9 +200,7 @@ export class SkillComposer {
   /**
    * @param skillResolver - 스킬 이름으로 매니페스트를 조회하는 함수
    */
-  constructor(
-    private readonly skillResolver: (name: string) => SkillManifest | undefined,
-  ) {}
+  constructor(private readonly skillResolver: (name: string) => SkillManifest | undefined) {}
 
   /**
    * 컴포지션의 유효성을 검증
@@ -279,9 +274,7 @@ export class SkillComposer {
       if (group.parallel) {
         // 병렬 실행 그룹
         const parallelResults = await Promise.allSettled(
-          group.steps.map((step) =>
-            this.executeStep(step, executor, prevResult),
-          ),
+          group.steps.map((step) => this.executeStep(step, executor, prevResult)),
         );
 
         for (const settled of parallelResults) {
@@ -290,9 +283,7 @@ export class SkillComposer {
               ? settled.value
               : createErrorResult(
                   group.steps[0].skillName,
-                  settled.reason instanceof Error
-                    ? settled.reason.message
-                    : String(settled.reason),
+                  settled.reason instanceof Error ? settled.reason.message : String(settled.reason),
                 );
           results.push(stepResult);
           prevResult = stepResult;

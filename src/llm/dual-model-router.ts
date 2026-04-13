@@ -14,7 +14,11 @@
  * - Editor: Claude Sonnet (코드 작성, 실행)
  */
 import type { LLMProvider } from "./provider.js";
-import { TaskClassifier, type ClassificationContext, type TaskClassification } from "./task-classifier.js";
+import {
+  TaskClassifier,
+  type ClassificationContext,
+  type TaskClassification,
+} from "./task-classifier.js";
 
 // Re-export TaskClassifier types for convenience
 export type { ClassificationContext, TaskClassification };

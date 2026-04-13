@@ -143,7 +143,7 @@ export class AsyncCompactionEngine {
     readonly protectTokens?: number;
   }) {
     this.contextManager = config.contextManager;
-    this.proactiveThreshold = config.proactiveThreshold ?? 0.70;
+    this.proactiveThreshold = config.proactiveThreshold ?? 0.7;
     this.reactiveThreshold = config.reactiveThreshold ?? 0.85;
     this.preserveMinTokens = config.preserveMinTokens ?? 20_000;
     this.protectTokens = config.protectTokens ?? 40_000;

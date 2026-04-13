@@ -12,12 +12,7 @@
 import { createHash } from "node:crypto";
 import { platform } from "node:os";
 
-import type {
-  DefinitionResult,
-  ReferenceResult,
-  TypeInfoResult,
-  RenameEdit,
-} from "./types.js";
+import type { DefinitionResult, ReferenceResult, TypeInfoResult, RenameEdit } from "./types.js";
 
 // ── Protocol Version ──
 
@@ -71,8 +66,8 @@ export type IDEBridgeMethod =
 /** Position in a document (1-based to match DHelix convention) */
 export interface DocumentPosition {
   readonly filePath: string;
-  readonly line: number;     // 1-based
-  readonly column: number;   // 1-based
+  readonly line: number; // 1-based
+  readonly column: number; // 1-based
 }
 
 /** Range in a document (1-based) */
@@ -88,7 +83,7 @@ export interface DocumentRange {
 
 // initialize
 export interface InitializeParams {
-  readonly clientName: string;       // "dhelix-cli"
+  readonly clientName: string; // "dhelix-cli"
   readonly clientVersion: string;
   readonly workspacePath: string;
 }
@@ -162,9 +157,9 @@ export interface CodeActionsParams extends DocumentRange {
 
 export interface CodeActionEntry {
   readonly title: string;
-  readonly kind?: string;          // "quickfix", "refactor", etc.
+  readonly kind?: string; // "quickfix", "refactor", etc.
   readonly isPreferred?: boolean;
-  readonly actionId: string;       // Opaque ID for execution
+  readonly actionId: string; // Opaque ID for execution
 }
 
 export interface CodeActionsResponse {
@@ -189,7 +184,7 @@ export interface WorkspaceSymbolsParams {
 
 export interface WorkspaceSymbolEntry {
   readonly name: string;
-  readonly kind: string;           // "function", "class", etc.
+  readonly kind: string; // "function", "class", etc.
   readonly filePath: string;
   readonly line: number;
   readonly column: number;
@@ -226,7 +221,7 @@ export interface CallHierarchyItem {
   readonly filePath: string;
   readonly line: number;
   readonly column: number;
-  readonly itemId: string;         // Opaque ID
+  readonly itemId: string; // Opaque ID
 }
 
 export interface CallHierarchyPrepareResponse {
@@ -293,20 +288,38 @@ export interface ConnectionStatusNotification {
 // ── Request Map (for type-safe dispatch) ──
 
 export interface IDEBridgeRequestMap {
-  "initialize": { readonly params: InitializeParams; readonly result: InitializeResult };
+  initialize: { readonly params: InitializeParams; readonly result: InitializeResult };
   "lsp/definition": { readonly params: DefinitionParams; readonly result: DefinitionResponse };
   "lsp/references": { readonly params: ReferencesParams; readonly result: ReferencesResponse };
   "lsp/hover": { readonly params: HoverParams; readonly result: HoverResponse };
   "lsp/rename": { readonly params: RenameParams; readonly result: RenameResponse };
   "lsp/diagnostics": { readonly params: DiagnosticsParams; readonly result: DiagnosticsResponse };
   "lsp/codeActions": { readonly params: CodeActionsParams; readonly result: CodeActionsResponse };
-  "lsp/executeCodeAction": { readonly params: ExecuteCodeActionParams; readonly result: ExecuteCodeActionResponse };
-  "lsp/workspaceSymbols": { readonly params: WorkspaceSymbolsParams; readonly result: WorkspaceSymbolsResponse };
-  "lsp/documentSymbols": { readonly params: DocumentSymbolsParams; readonly result: DocumentSymbolsResponse };
-  "lsp/callHierarchy/prepare": { readonly params: CallHierarchyPrepareParams; readonly result: CallHierarchyPrepareResponse };
-  "lsp/callHierarchy/incoming": { readonly params: CallHierarchyIncomingParams; readonly result: CallHierarchyIncomingResponse };
-  "lsp/callHierarchy/outgoing": { readonly params: CallHierarchyOutgoingParams; readonly result: CallHierarchyOutgoingResponse };
-  "shutdown": { readonly params: ShutdownParams; readonly result: ShutdownResponse };
+  "lsp/executeCodeAction": {
+    readonly params: ExecuteCodeActionParams;
+    readonly result: ExecuteCodeActionResponse;
+  };
+  "lsp/workspaceSymbols": {
+    readonly params: WorkspaceSymbolsParams;
+    readonly result: WorkspaceSymbolsResponse;
+  };
+  "lsp/documentSymbols": {
+    readonly params: DocumentSymbolsParams;
+    readonly result: DocumentSymbolsResponse;
+  };
+  "lsp/callHierarchy/prepare": {
+    readonly params: CallHierarchyPrepareParams;
+    readonly result: CallHierarchyPrepareResponse;
+  };
+  "lsp/callHierarchy/incoming": {
+    readonly params: CallHierarchyIncomingParams;
+    readonly result: CallHierarchyIncomingResponse;
+  };
+  "lsp/callHierarchy/outgoing": {
+    readonly params: CallHierarchyOutgoingParams;
+    readonly result: CallHierarchyOutgoingResponse;
+  };
+  shutdown: { readonly params: ShutdownParams; readonly result: ShutdownResponse };
 }
 
 // ── Notification Map (for type-safe event handling) ──

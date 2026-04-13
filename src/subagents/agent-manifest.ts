@@ -30,13 +30,7 @@ export interface AgentPurpose {
   /** 에이전트의 역할과 사용 시점을 상세히 설명하는 텍스트 */
   readonly detailedDescription: string;
   /** 에이전트 기능 분류 */
-  readonly category:
-    | "research"
-    | "implementation"
-    | "review"
-    | "testing"
-    | "planning"
-    | "general";
+  readonly category: "research" | "implementation" | "review" | "testing" | "planning" | "general";
 }
 
 /**
@@ -207,7 +201,10 @@ export function validateManifest(manifest: AgentManifest): ValidationResult {
   }
 
   // modelConfig 검증
-  if (!manifest.modelConfig.preferredModel || manifest.modelConfig.preferredModel.trim().length === 0) {
+  if (
+    !manifest.modelConfig.preferredModel ||
+    manifest.modelConfig.preferredModel.trim().length === 0
+  ) {
     errors.push("modelConfig.preferredModel must not be empty");
   }
 

@@ -148,7 +148,10 @@ export async function executeTool(
     }
 
     // 분류된 에러 종류에 따라 적절한 에러 메시지 반환
-    return { output: `Tool "${tool.name}" failed [${classified.kind}]: ${classified.message}`, isError: true };
+    return {
+      output: `Tool "${tool.name}" failed [${classified.kind}]: ${classified.message}`,
+      isError: true,
+    };
   } finally {
     // 타이머 정리 — 메모리 누수 방지
     clearTimeout(timeout);

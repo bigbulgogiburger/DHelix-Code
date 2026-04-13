@@ -207,7 +207,9 @@ async function execute(params: Params, context: ToolContext): Promise<ToolResult
       }
 
       const lines: string[] = [];
-      lines.push(`Type information at ${toRelative(filePath, context.workingDirectory)}:${params.line}:${params.column}\n`);
+      lines.push(
+        `Type information at ${toRelative(filePath, context.workingDirectory)}:${params.line}:${params.column}\n`,
+      );
 
       if (info.signature) {
         lines.push(`Signature: ${info.signature}`);

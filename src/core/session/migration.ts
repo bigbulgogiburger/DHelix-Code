@@ -215,9 +215,7 @@ async function discoverSessions(jsonlDir: string): Promise<readonly string[]> {
   try {
     const entries = await readdir(jsonlDir, { withFileTypes: true });
     const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-    return entries
-      .filter((e) => e.isDirectory() && uuidPattern.test(e.name))
-      .map((e) => e.name);
+    return entries.filter((e) => e.isDirectory() && uuidPattern.test(e.name)).map((e) => e.name);
   } catch {
     return [];
   }

@@ -368,12 +368,7 @@ export class LSPBridge {
     _diagnosticMessages?: readonly string[],
   ): Promise<BridgeCodeAction[]> {
     const uri = vscode.Uri.file(filePath);
-    const range = new vscode.Range(
-      startLine - 1,
-      startColumn - 1,
-      endLine - 1,
-      endColumn - 1,
-    );
+    const range = new vscode.Range(startLine - 1, startColumn - 1, endLine - 1, endColumn - 1);
 
     let actions: vscode.CodeAction[] | undefined;
     try {
@@ -439,10 +434,7 @@ export class LSPBridge {
   // Workspace Symbols
   // -----------------------------------------------------------------------
 
-  async searchWorkspaceSymbols(
-    query: string,
-    limit?: number,
-  ): Promise<BridgeWorkspaceSymbol[]> {
+  async searchWorkspaceSymbols(query: string, limit?: number): Promise<BridgeWorkspaceSymbol[]> {
     let symbols: vscode.SymbolInformation[] | undefined;
     try {
       symbols = await vscode.commands.executeCommand<vscode.SymbolInformation[]>(
@@ -534,9 +526,7 @@ export class LSPBridge {
     });
   }
 
-  async getIncomingCalls(
-    itemId: string,
-  ): Promise<
+  async getIncomingCalls(itemId: string): Promise<
     readonly {
       readonly from: BridgeCallHierarchyItem;
       readonly fromRanges: readonly BridgeCallHierarchyRange[];
@@ -580,9 +570,7 @@ export class LSPBridge {
     });
   }
 
-  async getOutgoingCalls(
-    itemId: string,
-  ): Promise<
+  async getOutgoingCalls(itemId: string): Promise<
     readonly {
       readonly to: BridgeCallHierarchyItem;
       readonly fromRanges: readonly BridgeCallHierarchyRange[];
@@ -697,9 +685,7 @@ export class LSPBridge {
         for (const def of defLocations) {
           const defUri = "targetUri" in def ? def.targetUri : def.uri;
           const defRange = "targetRange" in def ? def.targetRange : def.range;
-          defSet.add(
-            `${defUri.fsPath}:${defRange.start.line}:${defRange.start.character}`,
-          );
+          defSet.add(`${defUri.fsPath}:${defRange.start.line}:${defRange.start.character}`);
         }
       }
     } catch {
@@ -731,10 +717,7 @@ export class LSPBridge {
       kind: vscode.SymbolKind[s.kind],
       startLine: s.range.start.line + 1,
       endLine: s.range.end.line + 1,
-      children:
-        s.children.length > 0
-          ? this.convertDocumentSymbols(s.children)
-          : undefined,
+      children: s.children.length > 0 ? this.convertDocumentSymbols(s.children) : undefined,
     }));
   }
 

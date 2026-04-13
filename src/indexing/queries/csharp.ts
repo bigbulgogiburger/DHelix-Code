@@ -9,7 +9,15 @@ import type { Node } from "web-tree-sitter";
 
 interface ParsedSymbol {
   readonly name: string;
-  readonly kind: "function" | "class" | "interface" | "type" | "variable" | "method" | "enum" | "constant";
+  readonly kind:
+    | "function"
+    | "class"
+    | "interface"
+    | "type"
+    | "variable"
+    | "method"
+    | "enum"
+    | "constant";
   readonly filePath: string;
   readonly startLine: number;
   readonly endLine: number;
@@ -220,9 +228,10 @@ export function extractCsharpSymbols(
       case "namespace_declaration": {
         const nameNode = node.childForFieldName("name");
         const namespaceName = nameNode?.text;
-        const fullNs = parentNamespace && namespaceName
-          ? `${parentNamespace}.${namespaceName}`
-          : (namespaceName ?? parentNamespace);
+        const fullNs =
+          parentNamespace && namespaceName
+            ? `${parentNamespace}.${namespaceName}`
+            : (namespaceName ?? parentNamespace);
 
         if (namespaceName) {
           symbols.push({

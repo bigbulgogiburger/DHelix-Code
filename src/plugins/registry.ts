@@ -224,10 +224,7 @@ export class PluginRegistry {
           return;
         }
         const existing = entry.hooks.get(hookName) ?? [];
-        entry.hooks.set(hookName, [
-          ...existing,
-          handler as (...args: readonly never[]) => unknown,
-        ]);
+        entry.hooks.set(hookName, [...existing, handler as (...args: readonly never[]) => unknown]);
       },
       registerTool: (definition: Readonly<Record<string, unknown>>) => {
         entry.tools.push(definition);

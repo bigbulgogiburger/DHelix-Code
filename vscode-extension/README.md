@@ -10,20 +10,20 @@ VS Code extension that bridges VS Code's language intelligence (diagnostics, go-
 
 ## Commands
 
-| Command | Description |
-|---------|-------------|
-| `Dhelix: Start LSP Bridge` | Manually start the IPC bridge server |
-| `Dhelix: Stop LSP Bridge` | Stop the bridge and clean up the socket |
-| `Dhelix: Show Bridge Status` | Display connection status and stats |
+| Command                      | Description                             |
+| ---------------------------- | --------------------------------------- |
+| `Dhelix: Start LSP Bridge`   | Manually start the IPC bridge server    |
+| `Dhelix: Stop LSP Bridge`    | Stop the bridge and clean up the socket |
+| `Dhelix: Show Bridge Status` | Display connection status and stats     |
 
 ## Configuration
 
-| Setting | Default | Description |
-|---------|---------|-------------|
-| `dhelix.bridge.autoStart` | `true` | Auto-start bridge on workspace open |
-| `dhelix.bridge.socketPath` | `""` | Custom socket path (auto-generated if empty) |
-| `dhelix.bridge.diagnosticsDebounceMs` | `300` | Debounce interval for diagnostics (ms) |
-| `dhelix.bridge.enableDiagnostics` | `true` | Forward diagnostics to CLI |
+| Setting                               | Default | Description                                  |
+| ------------------------------------- | ------- | -------------------------------------------- |
+| `dhelix.bridge.autoStart`             | `true`  | Auto-start bridge on workspace open          |
+| `dhelix.bridge.socketPath`            | `""`    | Custom socket path (auto-generated if empty) |
+| `dhelix.bridge.diagnosticsDebounceMs` | `300`   | Debounce interval for diagnostics (ms)       |
+| `dhelix.bridge.enableDiagnostics`     | `true`  | Forward diagnostics to CLI                   |
 
 ## Development
 

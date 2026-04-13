@@ -174,7 +174,9 @@ export const TurnBlock = React.memo(function TurnBlock({
 }: TurnBlockProps) {
   return (
     <Box flexDirection="column" marginBottom={1}>
-      {turn.entries.map((entry, i) => renderEntry(entry, i, isLive, turn.entries, isExpanded, streamingOutputs))}
+      {turn.entries.map((entry, i) =>
+        renderEntry(entry, i, isLive, turn.entries, isExpanded, streamingOutputs),
+      )}
     </Box>
   );
 });

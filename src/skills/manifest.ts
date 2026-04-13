@@ -185,9 +185,7 @@ export function validateManifest(data: unknown): ManifestValidationResult {
   if (result.success) {
     return { valid: true, manifest: result.data as SkillManifest };
   }
-  const errors = result.error.issues.map(
-    (issue) => `${issue.path.join(".")}: ${issue.message}`,
-  );
+  const errors = result.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`);
   return { valid: false, errors };
 }
 
@@ -202,9 +200,7 @@ export function validateManifest(data: unknown): ManifestValidationResult {
  * @returns 검증된 SkillManifest
  * @throws ZodError - 데이터가 스키마에 맞지 않을 때
  */
-export function parseManifestFromFrontmatter(
-  raw: Record<string, unknown>,
-): SkillManifest {
+export function parseManifestFromFrontmatter(raw: Record<string, unknown>): SkillManifest {
   return skillManifestSchema.parse(raw) as SkillManifest;
 }
 

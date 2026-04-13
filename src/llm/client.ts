@@ -586,7 +586,9 @@ export class OpenAICompatibleClient implements LLMProvider {
       choice.message.tool_calls
         ?.filter((tc) => tc.type === "function" && "function" in tc)
         .map((tc) => {
-          const funcTc = tc as OpenAI.Chat.Completions.ChatCompletionMessageToolCall & { function: { name: string; arguments: string } };
+          const funcTc = tc as OpenAI.Chat.Completions.ChatCompletionMessageToolCall & {
+            function: { name: string; arguments: string };
+          };
           return {
             id: funcTc.id,
             name: funcTc.function.name,
@@ -781,10 +783,7 @@ export class OpenAICompatibleClient implements LLMProvider {
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const result = await Promise.race([
-          iterator.next(),
-          chunkTimeoutPromise(),
-        ]);
+        const result = await Promise.race([iterator.next(), chunkTimeoutPromise()]);
 
         clearChunkTimer();
 
@@ -921,10 +920,7 @@ export class OpenAICompatibleClient implements LLMProvider {
 
       // eslint-disable-next-line no-constant-condition
       while (true) {
-        const result = await Promise.race([
-          iterator.next(),
-          chunkTimeoutPromise(),
-        ]);
+        const result = await Promise.race([iterator.next(), chunkTimeoutPromise()]);
 
         clearChunkTimer();
 
