@@ -127,7 +127,9 @@ describe("classifyError", () => {
 
   describe("Permission denied classification", () => {
     it("should classify EACCES errors", () => {
-      const err = new Error("EACCES: permission denied, open '/etc/shadow'") as Error & { code: string };
+      const err = new Error("EACCES: permission denied, open '/etc/shadow'") as Error & {
+        code: string;
+      };
       err.code = "EACCES";
       const classified = classifyError(err, "file_write");
 
@@ -144,7 +146,9 @@ describe("classifyError", () => {
 
   describe("Not found classification", () => {
     it("should classify ENOENT errors", () => {
-      const err = new Error("ENOENT: no such file or directory, open 'index.ts'") as Error & { code: string };
+      const err = new Error("ENOENT: no such file or directory, open 'index.ts'") as Error & {
+        code: string;
+      };
       err.code = "ENOENT";
       const classified = classifyError(err, "file_read");
 
@@ -206,7 +210,10 @@ describe("classifyError", () => {
     });
 
     it("should classify Zod validation errors", () => {
-      const classified = classifyError(new Error("Zod validation failed: expected string"), "file_read");
+      const classified = classifyError(
+        new Error("Zod validation failed: expected string"),
+        "file_read",
+      );
       expect(classified.kind).toBe("validation");
     });
   });

@@ -266,7 +266,12 @@ describe("RuntimePipeline", () => {
 
   it("should reset per-iteration state at the start of each iteration", async () => {
     const ctx = createMockContext({
-      response: { content: "old", toolCalls: [], usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 }, finishReason: "stop" },
+      response: {
+        content: "old",
+        toolCalls: [],
+        usage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+        finishReason: "stop",
+      },
       extractedCalls: [{ id: "old", name: "old_tool", arguments: {} }],
       toolResults: [{ id: "old", name: "old_tool", output: "old", isError: false }],
       shouldContinueLoop: true,
@@ -465,11 +470,7 @@ describe("RuntimePipeline", () => {
 
       expect(outcome.action).toBe("abort");
       // Should execute up to resolve-tools, then abort before sample-llm
-      expect(executionOrder).toEqual([
-        "prepare-context",
-        "compact-context",
-        "resolve-tools",
-      ]);
+      expect(executionOrder).toEqual(["prepare-context", "compact-context", "resolve-tools"]);
     });
   });
 });

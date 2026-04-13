@@ -236,9 +236,7 @@ describe("GoogleGeminiProvider", () => {
     });
 
     it("sends correct headers and body", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await provider.chat(
         createTestRequest({
@@ -345,9 +343,7 @@ describe("GoogleGeminiProvider", () => {
         chunks.push(chunk);
       }
 
-      const toolChunks = (chunks as { type: string }[]).filter(
-        (c) => c.type === "tool-call-delta",
-      );
+      const toolChunks = (chunks as { type: string }[]).filter((c) => c.type === "tool-call-delta");
       expect(toolChunks.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -432,7 +428,7 @@ describe("GoogleGeminiProvider", () => {
 
       // gemini-2.5-flash: input=$0.15/1M, output=$0.60/1M
       expect(cost.inputCost).toBeCloseTo(0.15);
-      expect(cost.outputCost).toBeCloseTo(0.30);
+      expect(cost.outputCost).toBeCloseTo(0.3);
       expect(cost.totalCost).toBeCloseTo(0.45);
     });
 
@@ -440,9 +436,9 @@ describe("GoogleGeminiProvider", () => {
       const cost = provider.estimateCost(usage, "gemini-2.0-flash");
 
       // gemini-2.0-flash: input=$0.10/1M, output=$0.40/1M
-      expect(cost.inputCost).toBeCloseTo(0.10);
-      expect(cost.outputCost).toBeCloseTo(0.20);
-      expect(cost.totalCost).toBeCloseTo(0.30);
+      expect(cost.inputCost).toBeCloseTo(0.1);
+      expect(cost.outputCost).toBeCloseTo(0.2);
+      expect(cost.totalCost).toBeCloseTo(0.3);
     });
 
     it("falls back to default pricing for unknown model", () => {
@@ -485,9 +481,7 @@ describe("GoogleGeminiProvider", () => {
         baseUrl: "https://custom.api.example.com",
       });
 
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await customProvider.chat(createTestRequest());
 

@@ -73,7 +73,11 @@ describe("language-detector", () => {
 
     it("should detect multiple languages when multiple indicators exist", async () => {
       mockAccess.mockImplementation((path: string) => {
-        if (path.endsWith("tsconfig.json") || path.endsWith("go.mod") || path.endsWith("Cargo.toml")) {
+        if (
+          path.endsWith("tsconfig.json") ||
+          path.endsWith("go.mod") ||
+          path.endsWith("Cargo.toml")
+        ) {
           return Promise.resolve();
         }
         return Promise.reject(new Error("ENOENT"));
@@ -132,7 +136,10 @@ describe("language-detector", () => {
     it("should return true when command exists on PATH", async () => {
       // isServerInstalled takes LSPLanguageId, not command string
       // It internally looks up the config and runs `which <command>`
-      mockExecFileAsync.mockResolvedValue({ stdout: "/usr/bin/typescript-language-server", stderr: "" });
+      mockExecFileAsync.mockResolvedValue({
+        stdout: "/usr/bin/typescript-language-server",
+        stderr: "",
+      });
 
       const result = await isServerInstalled("typescript");
       expect(result).toBe(true);

@@ -183,7 +183,10 @@ describe("ChatTemplate constants", () => {
 describe("applyTemplate()", () => {
   const userMessage: ChatMessage = { role: "user", content: "What is TypeScript?" };
   const systemMessage: ChatMessage = { role: "system", content: "You are a coding assistant." };
-  const assistantMessage: ChatMessage = { role: "assistant", content: "TypeScript is a typed superset of JavaScript." };
+  const assistantMessage: ChatMessage = {
+    role: "assistant",
+    content: "TypeScript is a typed superset of JavaScript.",
+  };
 
   describe("ChatML template", () => {
     it("wraps user message with im_start/im_end", () => {
@@ -208,10 +211,7 @@ describe("applyTemplate()", () => {
     });
 
     it("does not add primer when last message is assistant", () => {
-      const result = applyTemplate(
-        [userMessage, assistantMessage],
-        CHAT_TEMPLATE_CHATML,
-      );
+      const result = applyTemplate([userMessage, assistantMessage], CHAT_TEMPLATE_CHATML);
       // 마지막 어시스턴트 메시지 이후에는 추가 assistant 프라이밍 없음
       const assistantCount = (result.match(/im_start\|>assistant/g) ?? []).length;
       expect(assistantCount).toBe(1);

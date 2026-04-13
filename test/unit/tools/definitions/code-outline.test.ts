@@ -7,9 +7,7 @@ const { mockStat, mockReadFile } = vi.hoisted(() => ({
 }));
 
 vi.mock("node:fs/promises", async () => {
-  const actual = await vi.importActual<typeof import("node:fs/promises")>(
-    "node:fs/promises",
-  );
+  const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
   return {
     ...actual,
     stat: mockStat,
@@ -55,10 +53,7 @@ export function createApp() {
 `.trim();
       mockReadFile.mockResolvedValue(tsContent);
 
-      const result = await codeOutlineTool.execute(
-        { file_path: "src/app.ts" },
-        mockContext,
-      );
+      const result = await codeOutlineTool.execute({ file_path: "src/app.ts" }, mockContext);
 
       expect(result.isError).toBe(false);
       // Tree-style formatting
@@ -114,17 +109,13 @@ export function add(a: number, b: number): number {
       expect(resultWith.isError).toBe(false);
       expect(resultWithout.isError).toBe(false);
       // The output without signatures should be shorter or lack type info
-      expect(resultWithout.output.length).toBeLessThanOrEqual(
-        resultWith.output.length,
-      );
+      expect(resultWithout.output.length).toBeLessThanOrEqual(resultWith.output.length);
     });
   });
 
   describe("file not found", () => {
     it("should return a helpful error for non-existent file", async () => {
-      mockStat.mockRejectedValue(
-        new Error("ENOENT: no such file or directory"),
-      );
+      mockStat.mockRejectedValue(new Error("ENOENT: no such file or directory"));
 
       const result = await codeOutlineTool.execute(
         { file_path: "src/nonexistent.ts" },
@@ -140,10 +131,7 @@ export function add(a: number, b: number): number {
     it("should return fallback outline for unsupported file extension", async () => {
       mockReadFile.mockResolvedValue("some content xyz\n");
 
-      const result = await codeOutlineTool.execute(
-        { file_path: "data/config.xyz" },
-        mockContext,
-      );
+      const result = await codeOutlineTool.execute({ file_path: "data/config.xyz" }, mockContext);
 
       // The tool doesn't error on unsupported files; it returns an outline with Unknown language
       expect(result.isError).toBe(false);
@@ -156,10 +144,7 @@ export function add(a: number, b: number): number {
       mockStat.mockResolvedValue({ isFile: () => true, size: 0 });
       mockReadFile.mockResolvedValue("");
 
-      const result = await codeOutlineTool.execute(
-        { file_path: "src/empty.ts" },
-        mockContext,
-      );
+      const result = await codeOutlineTool.execute({ file_path: "src/empty.ts" }, mockContext);
 
       expect(result.isError).toBe(false);
       // Empty file returns a special message

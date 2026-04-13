@@ -114,9 +114,33 @@ describe("ApprovalDatabase", () => {
 
   describe("query", () => {
     beforeEach(() => {
-      db.save(makeRecord({ id: "r1", tool: "bash_exec", command: "npm install", action: "allow", scope: "session" }));
-      db.save(makeRecord({ id: "r2", tool: "bash_exec", command: "git push", action: "deny", scope: "project" }));
-      db.save(makeRecord({ id: "r3", tool: "file_write", command: "src/index.ts", action: "allow", scope: "global" }));
+      db.save(
+        makeRecord({
+          id: "r1",
+          tool: "bash_exec",
+          command: "npm install",
+          action: "allow",
+          scope: "session",
+        }),
+      );
+      db.save(
+        makeRecord({
+          id: "r2",
+          tool: "bash_exec",
+          command: "git push",
+          action: "deny",
+          scope: "project",
+        }),
+      );
+      db.save(
+        makeRecord({
+          id: "r3",
+          tool: "file_write",
+          command: "src/index.ts",
+          action: "allow",
+          scope: "global",
+        }),
+      );
     });
 
     it("should return all records with no filter", () => {
@@ -149,24 +173,28 @@ describe("ApprovalDatabase", () => {
     });
 
     it("should exclude expired records by default", () => {
-      db.save(makeRecord({
-        id: "expired",
-        tool: "bash_exec",
-        command: "old_cmd",
-        expiresAt: Date.now() - 1000,
-      }));
+      db.save(
+        makeRecord({
+          id: "expired",
+          tool: "bash_exec",
+          command: "old_cmd",
+          expiresAt: Date.now() - 1000,
+        }),
+      );
 
       const records = db.query({ tool: "bash_exec" });
       expect(records.every((r) => r.id !== "expired")).toBe(true);
     });
 
     it("should include expired records when includeExpired is true", () => {
-      db.save(makeRecord({
-        id: "expired",
-        tool: "bash_exec",
-        command: "old_cmd",
-        expiresAt: Date.now() - 1000,
-      }));
+      db.save(
+        makeRecord({
+          id: "expired",
+          tool: "bash_exec",
+          command: "old_cmd",
+          expiresAt: Date.now() - 1000,
+        }),
+      );
 
       const records = db.query({ tool: "bash_exec", includeExpired: true });
       expect(records.some((r) => r.id === "expired")).toBe(true);

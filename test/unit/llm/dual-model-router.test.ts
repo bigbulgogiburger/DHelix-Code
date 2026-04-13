@@ -1,5 +1,9 @@
 import { describe, it, expect, vi } from "vitest";
-import { DualModelRouter, detectPhase, type DualModelConfig } from "../../../src/llm/dual-model-router.js";
+import {
+  DualModelRouter,
+  detectPhase,
+  type DualModelConfig,
+} from "../../../src/llm/dual-model-router.js";
 import type { ClassificationContext } from "../../../src/llm/task-classifier.js";
 import type { LLMProvider } from "../../../src/llm/provider.js";
 
@@ -41,7 +45,11 @@ function makeContext(overrides: Partial<ClassificationContext> = {}): Classifica
 describe("DualModelRouter", () => {
   describe("existing behavior (setPhase / getClientForPhase)", () => {
     it("should default to execute phase", () => {
-      const router = new DualModelRouter(makeConfig(), mockProvider("architect"), mockProvider("editor"));
+      const router = new DualModelRouter(
+        makeConfig(),
+        mockProvider("architect"),
+        mockProvider("editor"),
+      );
       expect(router.getPhase()).toBe("execute");
     });
 
@@ -121,11 +129,20 @@ describe("DualModelRouter", () => {
     });
 
     it("should store last classification for debugging", () => {
-      const router = new DualModelRouter(makeConfig(), mockProvider("architect"), mockProvider("editor"));
+      const router = new DualModelRouter(
+        makeConfig(),
+        mockProvider("architect"),
+        mockProvider("editor"),
+      );
 
       expect(router.getLastClassification()).toBeUndefined();
 
-      router.selectModel(makeContext({ currentMessage: "설계해줘", recentHistory: [{ role: "user", content: "이전" }] }));
+      router.selectModel(
+        makeContext({
+          currentMessage: "설계해줘",
+          recentHistory: [{ role: "user", content: "이전" }],
+        }),
+      );
 
       const last = router.getLastClassification();
       expect(last).toBeDefined();
@@ -133,7 +150,11 @@ describe("DualModelRouter", () => {
     });
 
     it("should update currentPhase after selectModel", () => {
-      const router = new DualModelRouter(makeConfig(), mockProvider("architect"), mockProvider("editor"));
+      const router = new DualModelRouter(
+        makeConfig(),
+        mockProvider("architect"),
+        mockProvider("editor"),
+      );
 
       router.selectModel(
         makeContext({

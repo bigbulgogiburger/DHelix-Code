@@ -45,7 +45,12 @@ function makeContext(overrides: Partial<SkillContext> = {}): SkillContext {
  */
 function mockExecFileSuccess(stdout: string): void {
   mockExecFile.mockImplementation(
-    (_bin: string, _args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
+    (
+      _bin: string,
+      _args: string[],
+      _opts: unknown,
+      cb: (err: null, stdout: string, stderr: string) => void,
+    ) => {
       cb(null, stdout, "");
     },
   );
@@ -56,7 +61,12 @@ function mockExecFileSuccess(stdout: string): void {
  */
 function mockExecFileFailure(message: string): void {
   mockExecFile.mockImplementation(
-    (_bin: string, _args: string[], _opts: unknown, cb: (err: Error, stdout: string, stderr: string) => void) => {
+    (
+      _bin: string,
+      _args: string[],
+      _opts: unknown,
+      cb: (err: Error, stdout: string, stderr: string) => void,
+    ) => {
       cb(new Error(message), "", message);
     },
   );
@@ -184,7 +194,12 @@ describe("resolveDynamicContext", () => {
   it("should resolve multiple dynamic context commands in one body", async () => {
     let callCount = 0;
     mockExecFile.mockImplementation(
-      (_bin: string, args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
+      (
+        _bin: string,
+        args: string[],
+        _opts: unknown,
+        cb: (err: null, stdout: string, stderr: string) => void,
+      ) => {
         callCount++;
         const cmd = args[1];
         if (cmd.includes("date")) {
@@ -287,7 +302,12 @@ describe("shell injection prevention", () => {
     const executionLog: string[] = [];
 
     mockExecFile.mockImplementation(
-      (_bin: string, args: string[], _opts: unknown, cb: (err: null, stdout: string, stderr: string) => void) => {
+      (
+        _bin: string,
+        args: string[],
+        _opts: unknown,
+        cb: (err: null, stdout: string, stderr: string) => void,
+      ) => {
         executionLog.push(`exec:${args[1]}`);
         cb(null, "resolved", "");
       },

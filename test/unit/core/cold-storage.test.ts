@@ -114,7 +114,12 @@ describe("Cold storage — gzip write / gunzip read", () => {
     const messages: ChatMessage[] = [];
     for (let i = 0; i < 7; i++) {
       messages.push(userMsg(`req ${i}`));
-      messages.push({ role: "tool", content: `  1\t${"x".repeat(900)}`, toolCallId: `t${i}`, name: "file_read" });
+      messages.push({
+        role: "tool",
+        content: `  1\t${"x".repeat(900)}`,
+        toolCallId: `t${i}`,
+        name: "file_read",
+      });
       messages.push(assistantMsg(`res ${i}`));
     }
 
@@ -122,9 +127,7 @@ describe("Cold storage — gzip write / gunzip read", () => {
 
     // Find a cold-referenced message
     const coldMsg = result.find(
-      (m) =>
-        m.role === "tool" &&
-        m.content.startsWith("[Tool output stored at:"),
+      (m) => m.role === "tool" && m.content.startsWith("[Tool output stored at:"),
     );
     expect(coldMsg).toBeDefined();
 

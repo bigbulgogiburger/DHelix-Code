@@ -344,7 +344,9 @@ describe("IDEIntegration", () => {
       const ide = new IDEIntegration();
       const goodCalls: IDEEvent[] = [];
 
-      ide.onEvent(() => { throw new Error("bad subscriber"); });
+      ide.onEvent(() => {
+        throw new Error("bad subscriber");
+      });
       ide.onEvent((e) => goodCalls.push(e));
 
       expect(() => {
@@ -362,8 +364,18 @@ describe("IDEIntegration", () => {
 
     it("stats.eventsReceived가 receiveEvent 호출마다 증가한다", () => {
       const ide = new IDEIntegration();
-      ide.receiveEvent({ type: "file-changed", filePath: "/a.ts", timestamp: Date.now(), data: null });
-      ide.receiveEvent({ type: "cursor-moved", filePath: "/b.ts", timestamp: Date.now(), data: null });
+      ide.receiveEvent({
+        type: "file-changed",
+        filePath: "/a.ts",
+        timestamp: Date.now(),
+        data: null,
+      });
+      ide.receiveEvent({
+        type: "cursor-moved",
+        filePath: "/b.ts",
+        timestamp: Date.now(),
+        data: null,
+      });
       expect(ide.getStats().eventsReceived).toBe(2);
       ide.dispose();
     });
@@ -374,7 +386,12 @@ describe("IDEIntegration", () => {
       ide.onEvent((e) => received.push(e));
       ide.dispose();
 
-      ide.receiveEvent({ type: "file-changed", filePath: "/x.ts", timestamp: Date.now(), data: null });
+      ide.receiveEvent({
+        type: "file-changed",
+        filePath: "/x.ts",
+        timestamp: Date.now(),
+        data: null,
+      });
       expect(received).toHaveLength(0);
     });
   });
@@ -458,8 +475,18 @@ describe("IDEIntegration", () => {
       const ide = new IDEIntegration();
       ide.forwardDiagnostics([makeDiag(), makeDiag()]);
       ide.requestInlineDiff(makeDiff());
-      ide.receiveEvent({ type: "file-changed", filePath: "/a.ts", timestamp: Date.now(), data: null });
-      ide.receiveEvent({ type: "cursor-moved", filePath: "/b.ts", timestamp: Date.now(), data: null });
+      ide.receiveEvent({
+        type: "file-changed",
+        filePath: "/a.ts",
+        timestamp: Date.now(),
+        data: null,
+      });
+      ide.receiveEvent({
+        type: "cursor-moved",
+        filePath: "/b.ts",
+        timestamp: Date.now(),
+        data: null,
+      });
 
       const stats = ide.getStats();
       expect(stats.diagnosticsForwarded).toBe(2);
@@ -524,7 +551,12 @@ describe("IDEIntegration", () => {
       ide.dispose();
 
       // receiveEvent는 dispose 후 무시되므로 구독자에게 전달 안 됨
-      ide.receiveEvent({ type: "file-changed", filePath: "/x.ts", timestamp: Date.now(), data: null });
+      ide.receiveEvent({
+        type: "file-changed",
+        filePath: "/x.ts",
+        timestamp: Date.now(),
+        data: null,
+      });
       expect(calls).toHaveLength(0);
     });
   });

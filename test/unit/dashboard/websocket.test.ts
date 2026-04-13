@@ -44,7 +44,13 @@ function createMockResponse(): {
     },
   }) as unknown as ServerResponse;
 
-  return { response, ...state, get ended() { return state.ended; } };
+  return {
+    response,
+    ...state,
+    get ended() {
+      return state.ended;
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -102,11 +108,14 @@ describe("DashboardEventBridge", () => {
     it("SSE 헤더를 설정한다", () => {
       const mock = createMockResponse();
       bridge.addClient(mock.response);
-      expect(mock.response.writeHead).toHaveBeenCalledWith(200, expect.objectContaining({
-        "Content-Type": "text/event-stream",
-        "Cache-Control": "no-cache",
-        "Connection": "keep-alive",
-      }));
+      expect(mock.response.writeHead).toHaveBeenCalledWith(
+        200,
+        expect.objectContaining({
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+        }),
+      );
     });
 
     it("연결 확인 코멘트를 전송한다", () => {
@@ -212,9 +221,15 @@ describe("DashboardEventBridge", () => {
       bridge.addClient(mock.response);
 
       const events: DashboardEvent[] = [
-        { type: "metrics:updated", data: { totalIterations: 1, totalTokens: 100, activeAgents: 1, uptime: 5000 } },
+        {
+          type: "metrics:updated",
+          data: { totalIterations: 1, totalTokens: 100, activeAgents: 1, uptime: 5000 },
+        },
         { type: "agent:message", data: { agentId: "a1", content: "hello" } },
-        { type: "job:progress", data: { id: "j1", agentId: "a1", status: "running", startedAt: Date.now() } },
+        {
+          type: "job:progress",
+          data: { id: "j1", agentId: "a1", status: "running", startedAt: Date.now() },
+        },
       ];
 
       for (const event of events) {

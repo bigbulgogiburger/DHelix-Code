@@ -241,13 +241,9 @@ describe("dry_run mode", () => {
     const original = "untouched\n";
     await writeTmp("dry.txt", original);
 
-    const patch = [
-      "--- a/dry.txt",
-      "+++ b/dry.txt",
-      "@@ -1 +1 @@",
-      "-untouched",
-      "+modified",
-    ].join("\n");
+    const patch = ["--- a/dry.txt", "+++ b/dry.txt", "@@ -1 +1 @@", "-untouched", "+modified"].join(
+      "\n",
+    );
 
     const result = await applyPatchTool.execute(
       { patch, dry_run: true, fuzz_factor: 0 },
@@ -265,13 +261,7 @@ describe("dry_run mode", () => {
   it("should include dryRun flag in metadata", async () => {
     await writeTmp("dry2.txt", "abc\n");
 
-    const patch = [
-      "--- a/dry2.txt",
-      "+++ b/dry2.txt",
-      "@@ -1 +1 @@",
-      "-abc",
-      "+ABC",
-    ].join("\n");
+    const patch = ["--- a/dry2.txt", "+++ b/dry2.txt", "@@ -1 +1 @@", "-abc", "+ABC"].join("\n");
 
     const result = await applyPatchTool.execute(
       { patch, dry_run: true, fuzz_factor: 0 },
@@ -380,10 +370,10 @@ describe("fuzz_factor", () => {
       "--- a/fuzz.txt",
       "+++ b/fuzz.txt",
       "@@ -1,3 +1,3 @@",
-      " context X",   // 실제: "context A" — 1 mismatch
+      " context X", // 실제: "context A" — 1 mismatch
       "-target line",
       "+TARGET LINE",
-      " context Y",   // 실제: "context B" — 1 mismatch
+      " context Y", // 실제: "context B" — 1 mismatch
     ].join("\n");
 
     // fuzz_factor=0 이면 실패
@@ -413,7 +403,7 @@ describe("fuzz_factor", () => {
       "--- a/fuzz-del.txt",
       "+++ b/fuzz-del.txt",
       "@@ -1 +1 @@",
-      "-wrong content",   // 실제 삭제 대상과 다름
+      "-wrong content", // 실제 삭제 대상과 다름
       "+new content",
     ].join("\n");
 

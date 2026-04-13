@@ -266,9 +266,7 @@ describe("AwsBedrockProvider", () => {
     });
 
     it("sends request to correct Bedrock endpoint with SigV4 headers", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createBedrockResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createBedrockResponse("ok")));
 
       await provider.chat(createTestRequest());
 
@@ -284,9 +282,7 @@ describe("AwsBedrockProvider", () => {
     });
 
     it("includes system message in request body", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createBedrockResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createBedrockResponse("ok")));
 
       await provider.chat({
         ...createTestRequest(),
@@ -302,9 +298,7 @@ describe("AwsBedrockProvider", () => {
     });
 
     it("includes tools in toolConfig", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createBedrockResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createBedrockResponse("ok")));
 
       await provider.chat(
         createTestRequest({
@@ -501,9 +495,7 @@ describe("AwsBedrockProvider", () => {
         region: "ap-northeast-2",
       });
 
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createBedrockResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createBedrockResponse("ok")));
 
       await apProvider.chat(createTestRequest());
 

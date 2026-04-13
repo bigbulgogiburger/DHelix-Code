@@ -124,7 +124,9 @@ async function getIndexModule() {
 // ── Tests ──
 
 describe("computeTranscriptMinHeight", () => {
-  let computeTranscriptMinHeight: Awaited<ReturnType<typeof getShellLayoutModule>>["computeTranscriptMinHeight"];
+  let computeTranscriptMinHeight: Awaited<
+    ReturnType<typeof getShellLayoutModule>
+  >["computeTranscriptMinHeight"];
 
   beforeEach(async () => {
     resetState();

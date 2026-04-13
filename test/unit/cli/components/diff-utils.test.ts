@@ -6,7 +6,11 @@
  */
 import { describe, it, expect } from "vitest";
 
-import { computeDiff, detectLanguage, formatLineNumber } from "../../../../src/cli/components/diff-utils.js";
+import {
+  computeDiff,
+  detectLanguage,
+  formatLineNumber,
+} from "../../../../src/cli/components/diff-utils.js";
 import type { DiffHunk, DiffLine } from "../../../../src/cli/components/diff-utils.js";
 
 describe("computeDiff", () => {

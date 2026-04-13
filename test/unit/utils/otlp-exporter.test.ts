@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { OtlpExporter, type OtlpExporterConfig, type MetricPoint } from "../../../src/utils/otlp-exporter.js";
+import {
+  OtlpExporter,
+  type OtlpExporterConfig,
+  type MetricPoint,
+} from "../../../src/utils/otlp-exporter.js";
 
 // Mock global fetch
 const mockFetch = vi.fn();
@@ -41,8 +45,7 @@ describe("OtlpExporter", () => {
       expect(mockFetch).toHaveBeenCalledOnce();
 
       const body = JSON.parse(mockFetch.mock.calls[0][1].body as string);
-      const metrics =
-        body.resourceMetrics[0].scopeMetrics[0].metrics;
+      const metrics = body.resourceMetrics[0].scopeMetrics[0].metrics;
       expect(metrics[0].name).toBe("llm.tokens.total");
     });
 

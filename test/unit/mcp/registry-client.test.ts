@@ -11,7 +11,9 @@ import {
 // ---------------------------------------------------------------------------
 
 /** Create a minimal valid RegistryServer fixture */
-function makeServer(partial: Partial<RegistryServer> & { id: string; name: string }): RegistryServer {
+function makeServer(
+  partial: Partial<RegistryServer> & { id: string; name: string },
+): RegistryServer {
   return {
     description: "A test server",
     version: "1.0.0",
@@ -116,7 +118,14 @@ describe("McpRegistryClient — search()", () => {
     fetchMock.mockResolvedValueOnce(
       makeResponse({
         servers: [
-          { id: "ok", name: "Good Server", transport: "stdio", tools: [], tags: [], updatedAt: "2026-01-01T00:00:00Z" },
+          {
+            id: "ok",
+            name: "Good Server",
+            transport: "stdio",
+            tools: [],
+            tags: [],
+            updatedAt: "2026-01-01T00:00:00Z",
+          },
           { name: "Missing ID" }, // no id
           { id: "missing-name" }, // no name
         ],
@@ -204,7 +213,17 @@ describe("McpRegistryClient — search()", () => {
   it("should default transport to stdio when absent in response", async () => {
     fetchMock.mockResolvedValueOnce(
       makeResponse({
-        servers: [{ id: "x", name: "X", description: "d", version: "1.0.0", tools: [], tags: [], updatedAt: "2026-01-01T00:00:00Z" }],
+        servers: [
+          {
+            id: "x",
+            name: "X",
+            description: "d",
+            version: "1.0.0",
+            tools: [],
+            tags: [],
+            updatedAt: "2026-01-01T00:00:00Z",
+          },
+        ],
       }),
     );
 

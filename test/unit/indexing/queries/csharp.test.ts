@@ -171,7 +171,10 @@ describe("extractCsharpSymbols", () => {
   });
 
   it("extracts using directives as imports", () => {
-    const qualifiedName = createNode({ type: "qualified_name", text: "System.Collections.Generic" });
+    const qualifiedName = createNode({
+      type: "qualified_name",
+      text: "System.Collections.Generic",
+    });
     const usingDir = createNode({
       type: "using_directive",
       startRow: 0,

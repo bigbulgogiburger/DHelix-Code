@@ -1,13 +1,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { CircuitBreaker } from "../../src/core/circuit-breaker.js";
-import {
-  findRecoveryStrategy,
-  getRecoveryExplanation,
-} from "../../src/core/recovery-strategy.js";
-import {
-  executeRecovery,
-  resetRetryState,
-} from "../../src/core/recovery-executor.js";
+import { findRecoveryStrategy, getRecoveryExplanation } from "../../src/core/recovery-strategy.js";
+import { executeRecovery, resetRetryState } from "../../src/core/recovery-executor.js";
 
 describe("Recovery Scenarios", () => {
   describe("Circuit Breaker", () => {
@@ -130,17 +124,13 @@ describe("Recovery Scenarios", () => {
 
   describe("Recovery Strategy Matching", () => {
     it("should match context overflow errors", () => {
-      const strategy = findRecoveryStrategy(
-        new Error("request too large for model"),
-      );
+      const strategy = findRecoveryStrategy(new Error("request too large for model"));
       expect(strategy).toBeDefined();
       expect(strategy!.action).toBe("compact");
     });
 
     it("should match rate limit errors", () => {
-      const strategy = findRecoveryStrategy(
-        new Error("429 Too Many Requests"),
-      );
+      const strategy = findRecoveryStrategy(new Error("429 Too Many Requests"));
       expect(strategy).toBeDefined();
       expect(strategy!.action).toBe("retry");
     });
@@ -152,17 +142,13 @@ describe("Recovery Scenarios", () => {
     });
 
     it("should match JSON parse errors", () => {
-      const strategy = findRecoveryStrategy(
-        new Error("Unexpected token in JSON"),
-      );
+      const strategy = findRecoveryStrategy(new Error("Unexpected token in JSON"));
       expect(strategy).toBeDefined();
       expect(strategy!.action).toBe("fallback-strategy");
     });
 
     it("should return undefined for unknown errors", () => {
-      const strategy = findRecoveryStrategy(
-        new Error("Something completely unknown xyz123"),
-      );
+      const strategy = findRecoveryStrategy(new Error("Something completely unknown xyz123"));
       expect(strategy).toBeUndefined();
     });
 
@@ -175,17 +161,13 @@ describe("Recovery Scenarios", () => {
     });
 
     it("should match server overload errors", () => {
-      const strategy = findRecoveryStrategy(
-        new Error("503 Service Unavailable"),
-      );
+      const strategy = findRecoveryStrategy(new Error("503 Service Unavailable"));
       expect(strategy).toBeDefined();
       expect(strategy!.action).toBe("retry");
     });
 
     it("should match MCP tool timeout errors", () => {
-      const strategy = findRecoveryStrategy(
-        new Error("MCP tool error: request timed out"),
-      );
+      const strategy = findRecoveryStrategy(new Error("MCP tool error: request timed out"));
       expect(strategy).toBeDefined();
       expect(strategy!.action).toBe("retry");
     });
@@ -197,9 +179,7 @@ describe("Recovery Scenarios", () => {
     });
 
     it("should compact messages on context overflow", async () => {
-      const strategy = findRecoveryStrategy(
-        new Error("request too large"),
-      );
+      const strategy = findRecoveryStrategy(new Error("request too large"));
       expect(strategy).toBeDefined();
 
       const messages = [
@@ -212,11 +192,7 @@ describe("Recovery Scenarios", () => {
         { role: "assistant" as const, content: "resp 3" },
       ];
 
-      const result = await executeRecovery(
-        strategy!,
-        new Error("request too large"),
-        messages,
-      );
+      const result = await executeRecovery(strategy!, new Error("request too large"), messages);
       expect(result.action).toBe("retry");
       expect(result.messages).toBeDefined();
       // Compacted messages should be shorter than the original
@@ -225,9 +201,7 @@ describe("Recovery Scenarios", () => {
 
     it("should abort after max retries", async () => {
       // Use a compact strategy (no backoff delay) to avoid timeout issues
-      const strategy = findRecoveryStrategy(
-        new Error("request too large"),
-      );
+      const strategy = findRecoveryStrategy(new Error("request too large"));
       expect(strategy).toBeDefined();
       expect(strategy!.action).toBe("compact");
 
@@ -239,11 +213,7 @@ describe("Recovery Scenarios", () => {
 
       // Exhaust all retries (compact maxRetries = 1)
       for (let i = 0; i < strategy!.maxRetries; i++) {
-        const result = await executeRecovery(
-          strategy!,
-          new Error("request too large"),
-          messages,
-        );
+        const result = await executeRecovery(strategy!, new Error("request too large"), messages);
         expect(result.action).toBe("retry");
       }
 
@@ -257,16 +227,12 @@ describe("Recovery Scenarios", () => {
     });
 
     it("should switch to fallback strategy on parse errors", async () => {
-      const strategy = findRecoveryStrategy(
-        new Error("Unexpected token in JSON"),
-      );
+      const strategy = findRecoveryStrategy(new Error("Unexpected token in JSON"));
       expect(strategy).toBeDefined();
 
-      const result = await executeRecovery(
-        strategy!,
-        new Error("Unexpected token in JSON"),
-        [{ role: "user" as const, content: "test" }],
-      );
+      const result = await executeRecovery(strategy!, new Error("Unexpected token in JSON"), [
+        { role: "user" as const, content: "test" },
+      ]);
 
       expect(result.action).toBe("retry");
       expect(result.overrides).toBeDefined();
@@ -275,9 +241,7 @@ describe("Recovery Scenarios", () => {
 
     it("should reset retry state between independent recovery attempts", async () => {
       // Use compact strategy (no backoff delay) to keep test fast
-      const strategy = findRecoveryStrategy(
-        new Error("request too large"),
-      );
+      const strategy = findRecoveryStrategy(new Error("request too large"));
       expect(strategy).toBeDefined();
 
       const messages = [
@@ -287,26 +251,14 @@ describe("Recovery Scenarios", () => {
 
       // Use up retries
       for (let i = 0; i < strategy!.maxRetries; i++) {
-        await executeRecovery(
-          strategy!,
-          new Error("request too large"),
-          messages,
-        );
+        await executeRecovery(strategy!, new Error("request too large"), messages);
       }
-      const aborted = await executeRecovery(
-        strategy!,
-        new Error("request too large"),
-        messages,
-      );
+      const aborted = await executeRecovery(strategy!, new Error("request too large"), messages);
       expect(aborted.action).toBe("abort");
 
       // After resetting, retries should be available again
       resetRetryState();
-      const fresh = await executeRecovery(
-        strategy!,
-        new Error("request too large"),
-        messages,
-      );
+      const fresh = await executeRecovery(strategy!, new Error("request too large"), messages);
       expect(fresh.action).toBe("retry");
     });
   });

@@ -120,7 +120,9 @@ describe("computeVisibleWindow", () => {
       const smallConfig: WindowConfig = { visibleCount: 5, overscan: 1 };
       const result = computeVisibleWindow(20, 0, smallConfig);
       const windowSize = result.end - result.start + 1;
-      expect(windowSize).toBeLessThanOrEqual(smallConfig.visibleCount + smallConfig.overscan * 2 + 1);
+      expect(windowSize).toBeLessThanOrEqual(
+        smallConfig.visibleCount + smallConfig.overscan * 2 + 1,
+      );
     });
   });
 });

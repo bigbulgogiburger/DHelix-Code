@@ -284,7 +284,11 @@ describe("container sandbox", () => {
             if (callback) callback(null, "info", "");
           } else {
             // docker run fails with exit code
-            const err = Object.assign(new Error("exit 1"), { code: 1, stdout: "", stderr: "error" });
+            const err = Object.assign(new Error("exit 1"), {
+              code: 1,
+              stdout: "",
+              stderr: "error",
+            });
             if (callback) callback(err as unknown as Error, "", "error");
           }
         },

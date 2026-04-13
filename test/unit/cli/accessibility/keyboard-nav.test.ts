@@ -5,7 +5,7 @@ import type { FocusableElement } from "../../../../src/cli/accessibility/keyboar
 const makeElement = (
   id: string,
   order: number,
-  overrides?: Partial<FocusableElement>
+  overrides?: Partial<FocusableElement>,
 ): FocusableElement => ({
   id,
   label: `Element ${id}`,

@@ -13,7 +13,11 @@ function makeSpawnEvent(agentId: string, timestamp = Date.now()): OrchestratedEv
   return { type: "agent-spawned", agentId, timestamp };
 }
 
-function makeCompletedEvent(agentId: string, duration = 100, timestamp = Date.now()): OrchestratedEvent {
+function makeCompletedEvent(
+  agentId: string,
+  duration = 100,
+  timestamp = Date.now(),
+): OrchestratedEvent {
   return { type: "agent-completed", agentId, duration, timestamp };
 }
 
@@ -73,9 +77,7 @@ describe("OrchestrationEventStore", () => {
       const id1 = store.append(makeSpawnEvent("a1"));
       const id2 = store.append(makeSpawnEvent("a2"));
       expect(id1).not.toBe(id2);
-      expect(id1).toMatch(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/,
-      );
+      expect(id1).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/);
     });
 
     it("should increment getEventCount after each append", () => {

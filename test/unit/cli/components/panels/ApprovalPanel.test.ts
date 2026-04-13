@@ -49,9 +49,7 @@ describe("ApprovalPanel — formatWaitTime", () => {
 });
 
 describe("ApprovalPanel — sortApprovalsByNewest", () => {
-  let sortApprovalsByNewest: Awaited<
-    ReturnType<typeof getModule>
-  >["sortApprovalsByNewest"];
+  let sortApprovalsByNewest: Awaited<ReturnType<typeof getModule>>["sortApprovalsByNewest"];
 
   beforeEach(async () => {
     const mod = await getModule();

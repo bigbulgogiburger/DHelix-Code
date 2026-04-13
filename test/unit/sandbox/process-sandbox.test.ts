@@ -176,12 +176,8 @@ describe("process-sandbox", () => {
         workingDir: projectDir,
         timeout: 120_000,
         filesystemPolicy: {
-          allowedPaths: [
-            { pattern: "/custom/allowed", recursive: true, reason: "Custom allowed" },
-          ],
-          deniedPaths: [
-            { pattern: "/custom/denied", recursive: true, reason: "Custom denied" },
-          ],
+          allowedPaths: [{ pattern: "/custom/allowed", recursive: true, reason: "Custom allowed" }],
+          deniedPaths: [{ pattern: "/custom/denied", recursive: true, reason: "Custom denied" }],
         },
       };
 
@@ -198,9 +194,7 @@ describe("process-sandbox", () => {
         workingDir: projectDir,
         timeout: 120_000,
         filesystemPolicy: {
-          allowedPaths: [
-            { pattern: "/shared", recursive: true, reason: "Shared directory" },
-          ],
+          allowedPaths: [{ pattern: "/shared", recursive: true, reason: "Shared directory" }],
           deniedPaths: [
             { pattern: "/shared/secret", recursive: true, reason: "Secret subdirectory" },
           ],
@@ -219,9 +213,7 @@ describe("process-sandbox", () => {
         timeout: 120_000,
         filesystemPolicy: {
           allowedPaths: [],
-          deniedPaths: [
-            { pattern: "/blocked", recursive: true, reason: "Blocked" },
-          ],
+          deniedPaths: [{ pattern: "/blocked", recursive: true, reason: "Blocked" }],
         },
       };
 
@@ -236,9 +228,7 @@ describe("process-sandbox", () => {
     it("기본 정책에 프로젝트 디렉토리가 허용 목록에 포함되어야 한다", () => {
       const policy = createDefaultFilesystemPolicy(projectDir);
 
-      const projectRule = policy.allowedPaths.find((r) =>
-        r.pattern === resolve(projectDir),
-      );
+      const projectRule = policy.allowedPaths.find((r) => r.pattern === resolve(projectDir));
       expect(projectRule).toBeDefined();
       expect(projectRule?.recursive).toBe(true);
     });
@@ -246,9 +236,7 @@ describe("process-sandbox", () => {
     it("기본 정책에 ~/.ssh가 차단 목록에 포함되어야 한다", () => {
       const policy = createDefaultFilesystemPolicy(projectDir);
 
-      const sshRule = policy.deniedPaths.find((r) =>
-        r.pattern === resolve(home, ".ssh"),
-      );
+      const sshRule = policy.deniedPaths.find((r) => r.pattern === resolve(home, ".ssh"));
       expect(sshRule).toBeDefined();
       expect(sshRule?.recursive).toBe(true);
     });
@@ -256,9 +244,7 @@ describe("process-sandbox", () => {
     it("기본 정책에 ~/.dhelix가 허용 목록에 포함되어야 한다", () => {
       const policy = createDefaultFilesystemPolicy(projectDir);
 
-      const dhelixRule = policy.allowedPaths.find((r) =>
-        r.pattern === resolve(home, ".dhelix"),
-      );
+      const dhelixRule = policy.allowedPaths.find((r) => r.pattern === resolve(home, ".dhelix"));
       expect(dhelixRule).toBeDefined();
     });
   });

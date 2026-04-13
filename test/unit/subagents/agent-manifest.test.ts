@@ -101,7 +101,9 @@ describe("validateManifest", () => {
       ] as const;
       for (const category of categories) {
         const result = validateManifest(
-          makeMinimalManifest({ purpose: { shortDescription: "ok", detailedDescription: "d", category } }),
+          makeMinimalManifest({
+            purpose: { shortDescription: "ok", detailedDescription: "d", category },
+          }),
         );
         expect(result.valid, `category '${category}' should be valid`).toBe(true);
       }
@@ -242,9 +244,7 @@ describe("validateManifest", () => {
 
   describe("modelConfig validation", () => {
     it("should reject empty preferredModel", () => {
-      const result = validateManifest(
-        makeMinimalManifest({ modelConfig: { preferredModel: "" } }),
-      );
+      const result = validateManifest(makeMinimalManifest({ modelConfig: { preferredModel: "" } }));
       expect(result.valid).toBe(false);
       if (!result.valid) {
         expect(result.errors.some((e) => e.includes("preferredModel"))).toBe(true);

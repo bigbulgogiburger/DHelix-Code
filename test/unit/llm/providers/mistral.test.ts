@@ -228,9 +228,7 @@ describe("MistralProvider", () => {
     });
 
     it("sends to correct Mistral endpoint with Bearer auth", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await provider.chat(
         createTestRequest({
@@ -460,9 +458,7 @@ describe("MistralProvider", () => {
         baseUrl: "https://custom.mistral.example.com",
       });
 
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await customProvider.chat(createTestRequest());
 

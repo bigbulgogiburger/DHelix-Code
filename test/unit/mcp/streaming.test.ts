@@ -509,9 +509,7 @@ describe("McpStreamHandler integration", () => {
     const onProgress = vi.fn();
     const handler = new McpStreamHandler({ enabled: true, onProgress });
 
-    await collectChunks(
-      handler.handleStreamResponse(fromArray(["a", "b", "c"]), "srv", "tool"),
-    );
+    await collectChunks(handler.handleStreamResponse(fromArray(["a", "b", "c"]), "srv", "tool"));
 
     expect(onProgress).toHaveBeenCalledTimes(3);
     expect(onProgress).toHaveBeenNthCalledWith(

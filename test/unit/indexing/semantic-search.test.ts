@@ -230,9 +230,27 @@ describe("SemanticSearchEngine", () => {
       const fileA = "/project/src/a.ts";
       const fileB = "/project/src/b.ts";
 
-      engine.addEmbedding(makeEmbedding({ filePath: fileA, vector: simpleTextToVector("function aFoo", 128), symbolName: "aFoo" }));
-      engine.addEmbedding(makeEmbedding({ filePath: fileA, vector: simpleTextToVector("function aBar", 128), symbolName: "aBar" }));
-      engine.addEmbedding(makeEmbedding({ filePath: fileB, vector: simpleTextToVector("function bFoo", 128), symbolName: "bFoo" }));
+      engine.addEmbedding(
+        makeEmbedding({
+          filePath: fileA,
+          vector: simpleTextToVector("function aFoo", 128),
+          symbolName: "aFoo",
+        }),
+      );
+      engine.addEmbedding(
+        makeEmbedding({
+          filePath: fileA,
+          vector: simpleTextToVector("function aBar", 128),
+          symbolName: "aBar",
+        }),
+      );
+      engine.addEmbedding(
+        makeEmbedding({
+          filePath: fileB,
+          vector: simpleTextToVector("function bFoo", 128),
+          symbolName: "bFoo",
+        }),
+      );
 
       const removed = engine.removeByFile(fileA);
       expect(removed).toBe(2);
@@ -320,9 +338,7 @@ describe("SemanticSearchEngine", () => {
 
       // 4차원 엔진으로 재생성
       const eng4 = new SemanticSearchEngine({ dimensions: 4, minScore: 0.5 });
-      eng4.addEmbedding(
-        makeEmbedding({ vector: orthogonal, symbolName: "orthSym" }),
-      );
+      eng4.addEmbedding(makeEmbedding({ vector: orthogonal, symbolName: "orthSym" }));
 
       const results = eng4.search(v, { minScore: 0.5 });
       expect(results).toHaveLength(0);
@@ -333,9 +349,15 @@ describe("SemanticSearchEngine", () => {
       const eng4 = new SemanticSearchEngine({ dimensions: 4, minScore: 0 });
       const query = normalizeVector([1, 1, 0, 0]);
 
-      eng4.addEmbedding(makeEmbedding({ symbolName: "low", vector: normalizeVector([0, 0, 1, 1]) }));
-      eng4.addEmbedding(makeEmbedding({ symbolName: "high", vector: normalizeVector([1, 1, 0, 0]) }));
-      eng4.addEmbedding(makeEmbedding({ symbolName: "mid", vector: normalizeVector([1, 0, 0, 0]) }));
+      eng4.addEmbedding(
+        makeEmbedding({ symbolName: "low", vector: normalizeVector([0, 0, 1, 1]) }),
+      );
+      eng4.addEmbedding(
+        makeEmbedding({ symbolName: "high", vector: normalizeVector([1, 1, 0, 0]) }),
+      );
+      eng4.addEmbedding(
+        makeEmbedding({ symbolName: "mid", vector: normalizeVector([1, 0, 0, 0]) }),
+      );
 
       const results = eng4.search(query, { minScore: 0 });
       expect(results[0]!.symbolName).toBe("high");
@@ -354,7 +376,10 @@ describe("SemanticSearchEngine", () => {
           }),
         );
       }
-      const results = eng.search(simpleTextToVector("function body", 128), { maxResults: 3, minScore: 0 });
+      const results = eng.search(simpleTextToVector("function body", 128), {
+        maxResults: 3,
+        minScore: 0,
+      });
       expect(results.length).toBeLessThanOrEqual(3);
     });
 

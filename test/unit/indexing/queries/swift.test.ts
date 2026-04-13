@@ -120,7 +120,10 @@ describe("extractSwiftSymbols", () => {
 
   it("extracts class with type inheritance clause", () => {
     const nameNode = identifier("Dog");
-    const inheritance = createNode({ type: "type_inheritance_clause", text: ": Animal, Identifiable" });
+    const inheritance = createNode({
+      type: "type_inheritance_clause",
+      text: ": Animal, Identifiable",
+    });
     const classDecl = createNode({
       type: "class_declaration",
       startRow: 0,

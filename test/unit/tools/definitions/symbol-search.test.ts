@@ -11,9 +11,7 @@ vi.mock("../../../../src/indexing/repo-map.js", () => ({
 
 // Mock readFile for signature extraction
 vi.mock("node:fs/promises", async () => {
-  const actual = await vi.importActual<typeof import("node:fs/promises")>(
-    "node:fs/promises",
-  );
+  const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
   return {
     ...actual,
     readFile: vi.fn().mockResolvedValue("export function handleSubmit() {\n}\n"),
@@ -83,10 +81,7 @@ describe("symbol_search tool", () => {
         ],
       });
 
-      const result = await symbolSearchTool.execute(
-        { query: "handleSubmit" },
-        mockContext,
-      );
+      const result = await symbolSearchTool.execute({ query: "handleSubmit" }, mockContext);
 
       expect(result.isError).toBe(false);
       expect(result.output).toContain("handleSubmit");
@@ -133,10 +128,7 @@ describe("symbol_search tool", () => {
         ],
       });
 
-      const result = await symbolSearchTool.execute(
-        { query: "User", kind: "class" },
-        mockContext,
-      );
+      const result = await symbolSearchTool.execute({ query: "User", kind: "class" }, mockContext);
 
       expect(result.isError).toBe(false);
       expect(result.output).toContain("User");
@@ -254,14 +246,9 @@ describe("symbol_search tool", () => {
 
   describe("fallback on engine failure", () => {
     it("should handle engine errors gracefully with fallback or helpful message", async () => {
-      mockBuildRepoMap.mockRejectedValue(
-        new Error("WASM initialization failed"),
-      );
+      mockBuildRepoMap.mockRejectedValue(new Error("WASM initialization failed"));
 
-      const result = await symbolSearchTool.execute(
-        { query: "handleSubmit" },
-        mockContext,
-      );
+      const result = await symbolSearchTool.execute({ query: "handleSubmit" }, mockContext);
 
       // Should not crash — either falls back to grep or returns a message
       expect(result.isError).toBeDefined();

@@ -181,11 +181,7 @@ describe("refactor tool: extract-function", () => {
   });
 
   it("should detect parameters from used variables", async () => {
-    const code = [
-      "function main() {",
-      "  const result = myValue * factor;",
-      "}",
-    ].join("\n");
+    const code = ["function main() {", "  const result = myValue * factor;", "}"].join("\n");
     await writeFile(testFile, code, "utf-8");
 
     const result = await refactorTool.execute(
@@ -228,11 +224,7 @@ describe("refactor tool: extract-function", () => {
 
 describe("refactor tool: extract-variable", () => {
   it("should extract an expression into a named variable", async () => {
-    const code = [
-      "function render() {",
-      "  return width * height * 2;",
-      "}",
-    ].join("\n");
+    const code = ["function render() {", "  return width * height * 2;", "}"].join("\n");
     await writeFile(testFile, code, "utf-8");
 
     const result = await refactorTool.execute(
@@ -319,11 +311,7 @@ describe("refactor tool: inline-variable", () => {
   });
 
   it("should error when the declaration line is not a valid variable", async () => {
-    const code = [
-      "function compute() {",
-      "  doSomething();",
-      "}",
-    ].join("\n");
+    const code = ["function compute() {", "  doSomething();", "}"].join("\n");
     await writeFile(testFile, code, "utf-8");
 
     const result = await refactorTool.execute(
@@ -341,11 +329,7 @@ describe("refactor tool: inline-variable", () => {
   });
 
   it("should error when the variable has multiple usages", async () => {
-    const code = [
-      "const base = 10;",
-      "const aa = base + 1;",
-      "const bb = base + 2;",
-    ].join("\n");
+    const code = ["const base = 10;", "const aa = base + 1;", "const bb = base + 2;"].join("\n");
     await writeFile(testFile, code, "utf-8");
 
     const result = await refactorTool.execute(
@@ -363,10 +347,7 @@ describe("refactor tool: inline-variable", () => {
   });
 
   it("should error when the variable has no usages", async () => {
-    const code = [
-      "const unused = 999;",
-      "const other = 1;",
-    ].join("\n");
+    const code = ["const unused = 999;", "const other = 1;"].join("\n");
     await writeFile(testFile, code, "utf-8");
 
     const result = await refactorTool.execute(

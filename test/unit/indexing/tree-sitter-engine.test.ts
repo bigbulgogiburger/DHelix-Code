@@ -13,10 +13,7 @@ import { join } from "node:path";
 import { mkdtemp } from "node:fs/promises";
 import { tmpdir } from "node:os";
 
-import type {
-  ParsedSymbol,
-  SymbolExtractor,
-} from "../../../src/indexing/tree-sitter-engine.js";
+import type { ParsedSymbol, SymbolExtractor } from "../../../src/indexing/tree-sitter-engine.js";
 
 // ── Mock setup ───────────────────────────────────────────────────────────
 
@@ -74,9 +71,7 @@ vi.mock("../../../src/utils/logger.js", () => ({
 
 // ── Import after mocks ──────────────────────────────────────────────────
 
-const { TreeSitterEngine } = await import(
-  "../../../src/indexing/tree-sitter-engine.js"
-);
+const { TreeSitterEngine } = await import("../../../src/indexing/tree-sitter-engine.js");
 
 // ── Test fixtures ────────────────────────────────────────────────────────
 
@@ -200,88 +195,79 @@ describe("TreeSitterEngine", () => {
   describe("TypeScript parsing", () => {
     let engine: InstanceType<typeof TreeSitterEngine>;
 
-    const mockExtractor: SymbolExtractor = vi.fn(
-      (_rootNode, filePath, _source) => ({
-        symbols: [
-          {
-            name: "greet",
-            kind: "function" as const,
-            filePath,
-            startLine: 2,
-            endLine: 4,
-            exported: true,
-            signature: "(name: string): string",
-          },
-          {
-            name: "UserService",
-            kind: "class" as const,
-            filePath,
-            startLine: 6,
-            endLine: 18,
-            exported: true,
-          },
-          {
-            name: "findById",
-            kind: "method" as const,
-            filePath,
-            startLine: 13,
-            endLine: 15,
-            exported: true,
-            parentName: "UserService",
-            signature: "async (id: string): Promise<User | null>",
-          },
-          {
-            name: "User",
-            kind: "interface" as const,
-            filePath,
-            startLine: 20,
-            endLine: 23,
-            exported: true,
-          },
-          {
-            name: "UserId",
-            kind: "type" as const,
-            filePath,
-            startLine: 25,
-            endLine: 25,
-            exported: true,
-          },
-          {
-            name: "MAX_USERS",
-            kind: "constant" as const,
-            filePath,
-            startLine: 27,
-            endLine: 27,
-            exported: true,
-          },
-          {
-            name: "Role",
-            kind: "enum" as const,
-            filePath,
-            startLine: 29,
-            endLine: 32,
-            exported: true,
-          },
-        ],
-        imports: [
-          {
-            source: "./database.js",
-            specifiers: ["Database"],
-            isDefault: false,
-            isNamespace: false,
-            line: 1,
-          },
-        ],
-        exports: [
-          "greet",
-          "UserService",
-          "User",
-          "UserId",
-          "MAX_USERS",
-          "Role",
-        ],
-      }),
-    );
+    const mockExtractor: SymbolExtractor = vi.fn((_rootNode, filePath, _source) => ({
+      symbols: [
+        {
+          name: "greet",
+          kind: "function" as const,
+          filePath,
+          startLine: 2,
+          endLine: 4,
+          exported: true,
+          signature: "(name: string): string",
+        },
+        {
+          name: "UserService",
+          kind: "class" as const,
+          filePath,
+          startLine: 6,
+          endLine: 18,
+          exported: true,
+        },
+        {
+          name: "findById",
+          kind: "method" as const,
+          filePath,
+          startLine: 13,
+          endLine: 15,
+          exported: true,
+          parentName: "UserService",
+          signature: "async (id: string): Promise<User | null>",
+        },
+        {
+          name: "User",
+          kind: "interface" as const,
+          filePath,
+          startLine: 20,
+          endLine: 23,
+          exported: true,
+        },
+        {
+          name: "UserId",
+          kind: "type" as const,
+          filePath,
+          startLine: 25,
+          endLine: 25,
+          exported: true,
+        },
+        {
+          name: "MAX_USERS",
+          kind: "constant" as const,
+          filePath,
+          startLine: 27,
+          endLine: 27,
+          exported: true,
+        },
+        {
+          name: "Role",
+          kind: "enum" as const,
+          filePath,
+          startLine: 29,
+          endLine: 32,
+          exported: true,
+        },
+      ],
+      imports: [
+        {
+          source: "./database.js",
+          specifiers: ["Database"],
+          isDefault: false,
+          isNamespace: false,
+          line: 1,
+        },
+      ],
+      exports: ["greet", "UserService", "User", "UserId", "MAX_USERS", "Role"],
+    }));
 
     beforeEach(async () => {
       engine = new TreeSitterEngine();
@@ -308,9 +294,7 @@ describe("TreeSitterEngine", () => {
 
     it("should detect exported function with signature", async () => {
       const outline = await engine.getOutline(join(testDir, "sample.ts"));
-      const greet = outline!.symbols.find(
-        (s: ParsedSymbol) => s.name === "greet",
-      );
+      const greet = outline!.symbols.find((s: ParsedSymbol) => s.name === "greet");
       expect(greet).toBeDefined();
       expect(greet!.kind).toBe("function");
       expect(greet!.exported).toBe(true);
@@ -341,11 +325,7 @@ describe("TreeSitterEngine", () => {
     it("should call the registered extractor with correct arguments", async () => {
       const filePath = join(testDir, "sample.ts");
       await engine.getOutline(filePath);
-      expect(mockExtractor).toHaveBeenCalledWith(
-        mockTree.rootNode,
-        filePath,
-        expect.any(String),
-      );
+      expect(mockExtractor).toHaveBeenCalledWith(mockTree.rootNode, filePath, expect.any(String));
     });
   });
 
@@ -590,9 +570,7 @@ describe("TreeSitterEngine", () => {
     });
 
     it("should return undefined for non-existent file (no throw)", async () => {
-      const outline = await engine.getOutline(
-        join(testDir, "does-not-exist.ts"),
-      );
+      const outline = await engine.getOutline(join(testDir, "does-not-exist.ts"));
       expect(outline).toBeUndefined();
     });
 
@@ -606,9 +584,7 @@ describe("TreeSitterEngine", () => {
     it("should return undefined when not initialized", async () => {
       const uninitEngine = new TreeSitterEngine();
       // Do NOT call init()
-      const outline = await uninitEngine.getOutline(
-        join(testDir, "sample.ts"),
-      );
+      const outline = await uninitEngine.getOutline(join(testDir, "sample.ts"));
       expect(outline).toBeUndefined();
     });
 
@@ -664,9 +640,7 @@ describe("TreeSitterEngine", () => {
     });
 
     it("should return empty result for non-existent file", async () => {
-      const deps = await engine.findDependencies(
-        join(testDir, "nonexistent.ts"),
-      );
+      const deps = await engine.findDependencies(join(testDir, "nonexistent.ts"));
       expect(deps.imports).toEqual([]);
       expect(deps.exports).toEqual([]);
     });
@@ -739,9 +713,7 @@ describe("TreeSitterEngine", () => {
     });
 
     it("should return undefined when Language.load throws", async () => {
-      mockLanguageLoad.mockRejectedValueOnce(
-        new Error("WASM load failed"),
-      );
+      mockLanguageLoad.mockRejectedValueOnce(new Error("WASM load failed"));
       const engine = new TreeSitterEngine();
       await engine.init();
       const lang = await engine.loadLanguage("nonexistent_lang");

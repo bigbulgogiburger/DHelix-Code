@@ -13,10 +13,7 @@ import {
   OPENAI_COMPATIBLE_MANIFEST,
   RESPONSES_API_MANIFEST,
 } from "../../../../src/llm/providers/registry.js";
-import type {
-  ProviderManifest,
-  UnifiedLLMProvider,
-} from "../../../../src/llm/providers/types.js";
+import type { ProviderManifest, UnifiedLLMProvider } from "../../../../src/llm/providers/types.js";
 import type {
   LLMProvider,
   ChatRequest,
@@ -352,7 +349,11 @@ describe("기본 매니페스트", () => {
   });
 
   it("매니페스트에 필수 필드가 모두 있다", () => {
-    for (const manifest of [ANTHROPIC_MANIFEST, OPENAI_COMPATIBLE_MANIFEST, RESPONSES_API_MANIFEST]) {
+    for (const manifest of [
+      ANTHROPIC_MANIFEST,
+      OPENAI_COMPATIBLE_MANIFEST,
+      RESPONSES_API_MANIFEST,
+    ]) {
       expect(manifest.id).toBeTruthy();
       expect(manifest.displayName).toBeTruthy();
       expect(manifest.authType).toBeTruthy();

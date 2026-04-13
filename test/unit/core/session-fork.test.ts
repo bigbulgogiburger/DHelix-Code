@@ -3,10 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { SessionManager } from "../../../src/core/session-manager.js";
-import {
-  SessionForkManager,
-  CheckpointManager,
-} from "../../../src/core/session-fork.js";
+import { SessionForkManager, CheckpointManager } from "../../../src/core/session-fork.js";
 
 describe("SessionForkManager", () => {
   let tempDir: string;
@@ -488,9 +485,9 @@ describe("CheckpointManager", () => {
     });
 
     it("should throw when restoring non-existent checkpoint", async () => {
-      await expect(
-        checkpointManager.restoreCheckpoint("non-existent-cp"),
-      ).rejects.toThrow("Checkpoint not found");
+      await expect(checkpointManager.restoreCheckpoint("non-existent-cp")).rejects.toThrow(
+        "Checkpoint not found",
+      );
     });
   });
 });

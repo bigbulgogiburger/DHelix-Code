@@ -87,10 +87,7 @@ describe("ToolPipeline", () => {
     const pipeline = new ToolPipeline(registry);
     const context = makeContext();
 
-    const result = await pipeline.execute(
-      [makeCall("nonexistent_tool", "c1")],
-      context,
-    );
+    const result = await pipeline.execute([makeCall("nonexistent_tool", "c1")], context);
 
     expect(result.executedCount).toBe(0);
     expect(result.rejectedCount).toBe(1);
@@ -105,10 +102,7 @@ describe("ToolPipeline", () => {
     const context = makeContext();
 
     const result = await pipeline.execute(
-      [
-        makeCall("file_read", "c1", { path: "/tmp/test.ts" }),
-        makeCall("unknown_tool", "c2"),
-      ],
+      [makeCall("file_read", "c1", { path: "/tmp/test.ts" }), makeCall("unknown_tool", "c2")],
       context,
     );
 
@@ -122,10 +116,7 @@ describe("ToolPipeline", () => {
     const pipeline = new ToolPipeline(registry);
     const context = makeContext();
 
-    const result = await pipeline.execute(
-      [makeCall("failing_tool", "c1")],
-      context,
-    );
+    const result = await pipeline.execute([makeCall("failing_tool", "c1")], context);
 
     expect(result.executedCount).toBe(1);
     expect(result.results).toHaveLength(1);
@@ -216,16 +207,12 @@ describe("ToolPipeline", () => {
     const pipeline = new ToolPipeline(registry);
     const context = makeContext();
 
-    const result = await pipeline.execute(
-      [makeCall("large_output_tool", "c1")],
-      context,
-      {
-        postprocess: {
-          maxOutputLength: 500,
-          spilloverEnabled: false,
-        },
+    const result = await pipeline.execute([makeCall("large_output_tool", "c1")], context, {
+      postprocess: {
+        maxOutputLength: 500,
+        spilloverEnabled: false,
       },
-    );
+    });
 
     expect(result.results[0].output.length).toBeLessThan(10000);
     expect(result.results[0].metadata?.["truncated"]).toBe(true);

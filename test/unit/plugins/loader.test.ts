@@ -2,8 +2,17 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest";
 import { writeFile, mkdir, rm } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { validateManifest, loadPlugin, unloadPlugin, PluginLoadError } from "../../../src/plugins/loader.js";
-import { type PluginAPI, type PluginInstance, type PluginModule } from "../../../src/plugins/types.js";
+import {
+  validateManifest,
+  loadPlugin,
+  unloadPlugin,
+  PluginLoadError,
+} from "../../../src/plugins/loader.js";
+import {
+  type PluginAPI,
+  type PluginInstance,
+  type PluginModule,
+} from "../../../src/plugins/types.js";
 
 const testDir = join(tmpdir(), "dhelix-plugin-test-" + Date.now());
 
@@ -207,9 +216,9 @@ describe("loadPlugin", () => {
 
   it("should throw PluginLoadError for non-existent manifest", async () => {
     const api = createTestAPI();
-    await expect(
-      loadPlugin(join(testDir, "nonexistent", "manifest.json"), api),
-    ).rejects.toThrow(PluginLoadError);
+    await expect(loadPlugin(join(testDir, "nonexistent", "manifest.json"), api)).rejects.toThrow(
+      PluginLoadError,
+    );
   });
 
   it("should throw PluginLoadError for invalid JSON manifest", async () => {
@@ -219,9 +228,9 @@ describe("loadPlugin", () => {
     await writeFile(join(pluginDir, "manifest.json"), "not valid json {{{");
 
     const api = createTestAPI();
-    await expect(
-      loadPlugin(join(pluginDir, "manifest.json"), api),
-    ).rejects.toThrow(PluginLoadError);
+    await expect(loadPlugin(join(pluginDir, "manifest.json"), api)).rejects.toThrow(
+      PluginLoadError,
+    );
   });
 
   it("should throw PluginLoadError when module has no activate function", async () => {
@@ -244,9 +253,9 @@ describe("loadPlugin", () => {
     );
 
     const api = createTestAPI();
-    await expect(
-      loadPlugin(join(pluginDir, "manifest.json"), api),
-    ).rejects.toThrow("does not export an activate function");
+    await expect(loadPlugin(join(pluginDir, "manifest.json"), api)).rejects.toThrow(
+      "does not export an activate function",
+    );
   });
 });
 

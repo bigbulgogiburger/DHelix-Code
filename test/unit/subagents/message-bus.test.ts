@@ -183,9 +183,24 @@ describe("AgentMessageBus", () => {
         handler: (msg) => received.push(msg),
       });
 
-      bus.send({ fromAgentId: "agent-1", toAgentId: "agent-2", topic: "type-export", payload: null });
-      bus.send({ fromAgentId: "agent-1", toAgentId: "agent-2", topic: "type-import", payload: null });
-      bus.send({ fromAgentId: "agent-1", toAgentId: "agent-2", topic: "schema-decision", payload: null });
+      bus.send({
+        fromAgentId: "agent-1",
+        toAgentId: "agent-2",
+        topic: "type-export",
+        payload: null,
+      });
+      bus.send({
+        fromAgentId: "agent-1",
+        toAgentId: "agent-2",
+        topic: "type-import",
+        payload: null,
+      });
+      bus.send({
+        fromAgentId: "agent-1",
+        toAgentId: "agent-2",
+        topic: "schema-decision",
+        payload: null,
+      });
 
       await flushMicrotasks();
 
@@ -346,9 +361,24 @@ describe("AgentMessageBus", () => {
 
   describe("getStats", () => {
     it("전체 통계를 올바르게 집계한다", () => {
-      bus.send({ fromAgentId: "agent-1", toAgentId: "agent-2", topic: "type-export", payload: null });
-      bus.send({ fromAgentId: "agent-1", toAgentId: "agent-2", topic: "type-import", payload: null });
-      bus.send({ fromAgentId: "agent-2", toAgentId: "agent-1", topic: "type-export", payload: null });
+      bus.send({
+        fromAgentId: "agent-1",
+        toAgentId: "agent-2",
+        topic: "type-export",
+        payload: null,
+      });
+      bus.send({
+        fromAgentId: "agent-1",
+        toAgentId: "agent-2",
+        topic: "type-import",
+        payload: null,
+      });
+      bus.send({
+        fromAgentId: "agent-2",
+        toAgentId: "agent-1",
+        topic: "type-export",
+        payload: null,
+      });
       bus.broadcast("agent-3", "announcement", null);
 
       const stats = bus.getStats();
@@ -444,9 +474,9 @@ describe("AgentMessageBus", () => {
     it("dispose 후 subscribe 호출 시 에러가 발생한다", () => {
       bus.dispose();
 
-      expect(() =>
-        bus.subscribe({ agentId: "a", handler: () => {} }),
-      ).toThrow("AgentMessageBus has been disposed");
+      expect(() => bus.subscribe({ agentId: "a", handler: () => {} })).toThrow(
+        "AgentMessageBus has been disposed",
+      );
     });
   });
 });

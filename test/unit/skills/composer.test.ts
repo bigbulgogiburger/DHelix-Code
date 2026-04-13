@@ -109,11 +109,7 @@ describe("SkillComposer.validate", () => {
     const composition: SkillComposition = {
       name: "ci-pipeline",
       description: "Run CI",
-      steps: [
-        { skillName: "lint" },
-        { skillName: "test" },
-        { skillName: "build" },
-      ],
+      steps: [{ skillName: "lint" }, { skillName: "test" }, { skillName: "build" }],
     };
 
     const result = composer.validate(composition);
@@ -137,10 +133,7 @@ describe("SkillComposer.validate", () => {
     const composition: SkillComposition = {
       name: "broken",
       description: "References missing skill",
-      steps: [
-        { skillName: "lint" },
-        { skillName: "non-existent-skill" },
-      ],
+      steps: [{ skillName: "lint" }, { skillName: "non-existent-skill" }],
     };
 
     const result = composer.validate(composition);
@@ -178,11 +171,7 @@ describe("SkillComposer.execute — sequential", () => {
     const composition: SkillComposition = {
       name: "seq-pipeline",
       description: "Sequential",
-      steps: [
-        { skillName: "step-a" },
-        { skillName: "step-b" },
-        { skillName: "step-c" },
-      ],
+      steps: [{ skillName: "step-a" }, { skillName: "step-b" }, { skillName: "step-c" }],
     };
 
     const result = await composer.execute(composition, successExecutor());
@@ -197,18 +186,11 @@ describe("SkillComposer.execute — sequential", () => {
     const composition: SkillComposition = {
       name: "fail-fast",
       description: "Fails early",
-      steps: [
-        { skillName: "step-a" },
-        { skillName: "step-b" },
-        { skillName: "step-c" },
-      ],
+      steps: [{ skillName: "step-a" }, { skillName: "step-b" }, { skillName: "step-c" }],
       failFast: true,
     };
 
-    const result = await composer.execute(
-      composition,
-      failingExecutor("step-b"),
-    );
+    const result = await composer.execute(composition, failingExecutor("step-b"));
 
     expect(result.success).toBe(false);
     expect(result.stepsCompleted).toBe(2); // step-a succeeded, step-b failed
@@ -221,19 +203,12 @@ describe("SkillComposer.execute — sequential", () => {
     const composition: SkillComposition = {
       name: "no-fail-fast",
       description: "Continues on failure",
-      steps: [
-        { skillName: "step-a" },
-        { skillName: "step-b" },
-        { skillName: "step-c" },
-      ],
+      steps: [{ skillName: "step-a" }, { skillName: "step-b" }, { skillName: "step-c" }],
       failFast: false,
       aggregation: "all-must-pass",
     };
 
-    const result = await composer.execute(
-      composition,
-      failingExecutor("step-b"),
-    );
+    const result = await composer.execute(composition, failingExecutor("step-b"));
 
     expect(result.success).toBe(false);
     expect(result.stepsCompleted).toBe(3);
@@ -312,10 +287,7 @@ describe("SkillComposer.execute — condition", () => {
     const composition: SkillComposition = {
       name: "conditional",
       description: "Deploy only if check passes",
-      steps: [
-        { skillName: "check" },
-        { skillName: "deploy", condition: "prev.success" },
-      ],
+      steps: [{ skillName: "check" }, { skillName: "deploy", condition: "prev.success" }],
       failFast: false,
     };
 
@@ -330,10 +302,7 @@ describe("SkillComposer.execute — condition", () => {
     const composition: SkillComposition = {
       name: "conditional-pass",
       description: "Deploy when check passes",
-      steps: [
-        { skillName: "check" },
-        { skillName: "deploy", condition: "prev.success" },
-      ],
+      steps: [{ skillName: "check" }, { skillName: "deploy", condition: "prev.success" }],
     };
 
     const result = await composer.execute(composition, successExecutor());
@@ -349,9 +318,7 @@ describe("SkillComposer.execute — condition", () => {
 // ---------------------------------------------------------------------------
 
 describe("SkillComposer.execute — timeout", () => {
-  const knownSkills = new Map<string, SkillManifest>([
-    ["slow", makeManifest("slow")],
-  ]);
+  const knownSkills = new Map<string, SkillManifest>([["slow", makeManifest("slow")]]);
 
   const composer = new SkillComposer((name) => knownSkills.get(name));
 
@@ -474,10 +441,7 @@ describe("SkillComposer.execute — aggregation", () => {
       aggregation: "all-must-pass",
     };
 
-    const result = await composer.execute(
-      composition,
-      failingExecutor("b"),
-    );
+    const result = await composer.execute(composition, failingExecutor("b"));
     expect(result.success).toBe(false);
     expect(result.stepsCompleted).toBe(3);
   });
@@ -491,10 +455,7 @@ describe("SkillComposer.execute — aggregation", () => {
       aggregation: "all-must-pass",
     };
 
-    const result = await composer.execute(
-      composition,
-      failingExecutor("b"),
-    );
+    const result = await composer.execute(composition, failingExecutor("b"));
     expect(result.success).toBe(false);
     expect(result.stepsCompleted).toBe(2); // stopped after b
     expect(result.stepsTotal).toBe(3);
@@ -506,9 +467,7 @@ describe("SkillComposer.execute — aggregation", () => {
 // ---------------------------------------------------------------------------
 
 describe("SkillComposer.execute — durationMs", () => {
-  const knownSkills = new Map<string, SkillManifest>([
-    ["fast", makeManifest("fast")],
-  ]);
+  const knownSkills = new Map<string, SkillManifest>([["fast", makeManifest("fast")]]);
 
   const composer = new SkillComposer((name) => knownSkills.get(name));
 

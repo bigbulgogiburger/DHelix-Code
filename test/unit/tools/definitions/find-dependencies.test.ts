@@ -8,9 +8,7 @@ const { mockStat, mockReadFile, mockExecFile } = vi.hoisted(() => ({
 }));
 
 vi.mock("node:fs/promises", async () => {
-  const actual = await vi.importActual<typeof import("node:fs/promises")>(
-    "node:fs/promises",
-  );
+  const actual = await vi.importActual<typeof import("node:fs/promises")>("node:fs/promises");
   return {
     ...actual,
     stat: mockStat,
@@ -19,9 +17,7 @@ vi.mock("node:fs/promises", async () => {
 });
 
 vi.mock("node:child_process", async () => {
-  const actual = await vi.importActual<typeof import("node:child_process")>(
-    "node:child_process",
-  );
+  const actual = await vi.importActual<typeof import("node:child_process")>("node:child_process");
   return {
     ...actual,
     execFile: mockExecFile,
@@ -107,7 +103,7 @@ describe("find_dependencies tool", () => {
 
       // readFile for each candidate file
       mockReadFile
-        .mockResolvedValueOnce('import { formatDate } from "./utils.js";\n')  // app.ts content
+        .mockResolvedValueOnce('import { formatDate } from "./utils.js";\n') // app.ts content
         .mockResolvedValueOnce('import { parseQuery } from "../utils.js";\n'); // header.tsx content
 
       // stat calls for resolving import paths
@@ -135,19 +131,16 @@ describe("find_dependencies tool", () => {
       const utilsContent = 'import { log } from "./logger.js";\n';
 
       // config.ts has no internal imports
-      const configContent = 'export const APP_CONFIG = {};\n';
+      const configContent = "export const APP_CONFIG = {};\n";
 
       mockReadFile
-        .mockResolvedValueOnce(appContent)    // traceImports reads app.ts
-        .mockResolvedValueOnce(utilsContent)   // traceImports reads utils.ts (depth 2)
-        .mockResolvedValueOnce(configContent);  // traceImports reads config.ts (depth 2)
+        .mockResolvedValueOnce(appContent) // traceImports reads app.ts
+        .mockResolvedValueOnce(utilsContent) // traceImports reads utils.ts (depth 2)
+        .mockResolvedValueOnce(configContent); // traceImports reads config.ts (depth 2)
 
       // stat calls for resolving import paths
       mockStat.mockImplementation((path: string) => {
-        if (typeof path === "string" && (
-          path.endsWith(".ts") ||
-          path.endsWith("/app.ts")
-        )) {
+        if (typeof path === "string" && (path.endsWith(".ts") || path.endsWith("/app.ts"))) {
           return Promise.resolve({ isFile: () => true });
         }
         return Promise.reject(new Error("ENOENT"));
@@ -172,9 +165,7 @@ describe("find_dependencies tool", () => {
       // B imports A
       const bContent = 'import { A } from "./a.js";\n';
 
-      mockReadFile
-        .mockResolvedValueOnce(aContent)
-        .mockResolvedValueOnce(bContent);
+      mockReadFile.mockResolvedValueOnce(aContent).mockResolvedValueOnce(bContent);
 
       mockStat.mockImplementation((path: string) => {
         if (typeof path === "string" && path.endsWith(".ts")) {
@@ -230,9 +221,7 @@ describe("find_dependencies tool", () => {
 
   describe("file not found", () => {
     it("should return a helpful error for non-existent file", async () => {
-      mockStat.mockRejectedValue(
-        new Error("ENOENT: no such file or directory"),
-      );
+      mockStat.mockRejectedValue(new Error("ENOENT: no such file or directory"));
 
       const result = await findDependenciesTool.execute(
         { file_path: "/project/src/nonexistent.ts", direction: "imports" },

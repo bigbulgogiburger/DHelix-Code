@@ -64,7 +64,12 @@ describe("DEFAULT_TIER_POLICIES", () => {
   it("should be ordered by privilege (T0 most, T3 least)", () => {
     const privilegeScore = (p: TierPolicy): number => {
       const score = (v: string) => (v === "allow" ? 2 : v === "ask" ? 1 : 0);
-      return score(p.fileReadProject) + score(p.fileWriteProject) + score(p.shellExecution) + score(p.networkOutbound);
+      return (
+        score(p.fileReadProject) +
+        score(p.fileWriteProject) +
+        score(p.shellExecution) +
+        score(p.networkOutbound)
+      );
     };
 
     const t0 = privilegeScore(DEFAULT_TIER_POLICIES[TrustTier.BuiltIn]);

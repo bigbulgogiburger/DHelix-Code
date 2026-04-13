@@ -23,11 +23,13 @@ const {
   mockCloseDocument: vi.fn(),
 }));
 
-const { mockGetServerConfig, mockIsServerInstalled, mockDetectAvailableServers } = vi.hoisted(() => ({
-  mockGetServerConfig: vi.fn(),
-  mockIsServerInstalled: vi.fn(),
-  mockDetectAvailableServers: vi.fn(),
-}));
+const { mockGetServerConfig, mockIsServerInstalled, mockDetectAvailableServers } = vi.hoisted(
+  () => ({
+    mockGetServerConfig: vi.fn(),
+    mockIsServerInstalled: vi.fn(),
+    mockDetectAvailableServers: vi.fn(),
+  }),
+);
 
 vi.mock("../../../src/lsp/server-connection.js", () => ({
   LSPServerConnection: vi.fn().mockImplementation(() => ({
@@ -127,17 +129,13 @@ describe("LSPManager", () => {
     it("should throw for unsupported language", async () => {
       mockGetServerConfig.mockReturnValue(undefined);
 
-      await expect(
-        manager.acquire("brainfuck" as never, "/project"),
-      ).rejects.toThrow();
+      await expect(manager.acquire("brainfuck" as never, "/project")).rejects.toThrow();
     });
 
     it("should throw when server binary is not installed", async () => {
       mockIsServerInstalled.mockResolvedValue(false);
 
-      await expect(
-        manager.acquire("typescript", "/project"),
-      ).rejects.toThrow();
+      await expect(manager.acquire("typescript", "/project")).rejects.toThrow();
     });
 
     it("should start new server when existing server is not alive", async () => {
@@ -161,7 +159,8 @@ describe("LSPManager", () => {
       mockGetServerConfig.mockImplementation((lang: string) => {
         if (lang === "typescript") return { language: "typescript", command: "tls", args: [] };
         if (lang === "go") return { language: "go", command: "gopls", args: [] };
-        if (lang === "python") return { language: "python", command: "pyright-langserver", args: [] };
+        if (lang === "python")
+          return { language: "python", command: "pyright-langserver", args: [] };
         return undefined;
       });
 

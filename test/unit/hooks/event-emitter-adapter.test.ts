@@ -128,7 +128,10 @@ describe("attach() / detach()", () => {
     // tool:start는 포함되어 있으므로 훅 실행
     events.emit("tool:start", { name: "bash_exec", id: "tc-003" });
     await new Promise((r) => setTimeout(r, 10));
-    expect(spy).toHaveBeenCalledWith("PreToolUse", expect.objectContaining({ event: "PreToolUse" }));
+    expect(spy).toHaveBeenCalledWith(
+      "PreToolUse",
+      expect.objectContaining({ event: "PreToolUse" }),
+    );
 
     adapter.detach();
   });
@@ -202,7 +205,12 @@ describe("tool:complete (isError: false) → PostToolUse 변환", () => {
     const adapter = createHookAdapter(events, runner, { workingDirectory: "/project" });
     adapter.attach();
 
-    events.emit("tool:complete", { name: "file_read", id: "tc-200", isError: false, output: "Hello" });
+    events.emit("tool:complete", {
+      name: "file_read",
+      id: "tc-200",
+      isError: false,
+      output: "Hello",
+    });
     await new Promise((r) => setTimeout(r, 20));
 
     expect(spy).toHaveBeenCalledWith(
@@ -358,9 +366,7 @@ describe("에러 격리", () => {
     await new Promise((r) => setTimeout(r, 20));
 
     // stderr에 경고가 출력되어야 함
-    expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining("[hook-adapter]"),
-    );
+    expect(stderrSpy).toHaveBeenCalledWith(expect.stringContaining("[hook-adapter]"));
 
     adapter.detach();
     stderrSpy.mockRestore();

@@ -395,7 +395,11 @@ describe("MCPToolFilter — glob pattern matching", () => {
       filter.setFilter("srv", { allowlist: ["fs_*"] });
       const result = filter.filterTools("srv", GLOB_TOOLS);
       expect(result).toHaveLength(3);
-      expect(result.map((t) => t.name)).toEqual(["fs_read_file", "fs_write_file", "fs_delete_file"]);
+      expect(result.map((t) => t.name)).toEqual([
+        "fs_read_file",
+        "fs_write_file",
+        "fs_delete_file",
+      ]);
     });
   });
 

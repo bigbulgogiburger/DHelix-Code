@@ -75,17 +75,12 @@ describe("scheduleCalls", () => {
 
     // file_read -> group 1 (parallel), goto_definition -> group 2 (sequential), file_read -> group 3 (parallel)
     expect(result.groups.length).toBeGreaterThanOrEqual(2);
-    const lspGroup = result.groups.find((g) =>
-      g.calls.some((c) => c.name === "goto_definition"),
-    );
+    const lspGroup = result.groups.find((g) => g.calls.some((c) => c.name === "goto_definition"));
     expect(lspGroup?.mode).toBe("sequential");
   });
 
   it("should keep bash_exec in parallel group", () => {
-    const calls = [
-      makeCall("file_read", "c1"),
-      makeCall("bash_exec", "c2"),
-    ];
+    const calls = [makeCall("file_read", "c1"), makeCall("bash_exec", "c2")];
     const result = scheduleCalls(calls);
 
     expect(result.groups).toHaveLength(1);

@@ -8,7 +8,11 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { z } from "zod";
 import { RetryEngine, calculateBackoff } from "../../../src/tools/retry-engine.js";
 import { ToolExecutionError } from "../../../src/tools/errors.js";
-import { type ToolDefinition, type ToolContext, type ToolResult } from "../../../src/tools/types.js";
+import {
+  type ToolDefinition,
+  type ToolContext,
+  type ToolResult,
+} from "../../../src/tools/types.js";
 
 /** 테스트용 도구 컨텍스트 생성 */
 function createTestContext(overrides: Partial<ToolContext> = {}): ToolContext {
@@ -182,9 +186,7 @@ describe("RetryEngine", () => {
       const context = createTestContext();
 
       // Pass empty args which should fail Zod validation
-      await expect(
-        engine.executeWithRetry(tool, {}, context),
-      ).rejects.toThrow();
+      await expect(engine.executeWithRetry(tool, {}, context)).rejects.toThrow();
     });
   });
 });

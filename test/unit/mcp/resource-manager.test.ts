@@ -34,13 +34,22 @@ function createMockPromptClient(
 }
 
 const SAMPLE_RESOURCES: readonly MCPResource[] = [
-  { uri: "file:///data/hello.txt", name: "hello", description: "Hello file", mimeType: "text/plain" },
+  {
+    uri: "file:///data/hello.txt",
+    name: "hello",
+    description: "Hello file",
+    mimeType: "text/plain",
+  },
   { uri: "postgres://localhost/mydb", name: "mydb", mimeType: "application/json" },
 ];
 
 const SAMPLE_PROMPTS = [
   { name: "summarize", description: "Summarize text", arguments: [] },
-  { name: "translate", description: "Translate text", arguments: [{ name: "lang", required: true }] },
+  {
+    name: "translate",
+    description: "Translate text",
+    arguments: [{ name: "lang", required: true }],
+  },
 ];
 
 const SAMPLE_MESSAGES: readonly PromptMessage[] = [
@@ -122,7 +131,9 @@ describe("ResourceManager", () => {
 
     it("should throw ResourceManagerError when listResources fails", async () => {
       const client = createMockResourceClient();
-      (client.listResources as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("Network error"));
+      (client.listResources as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error("Network error"),
+      );
       manager.registerClient("server-1", client);
 
       await expect(manager.listResources("server-1")).rejects.toThrow(ResourceManagerError);
@@ -155,7 +166,9 @@ describe("ResourceManager", () => {
 
     it("should throw ResourceManagerError when read fails", async () => {
       const client = createMockResourceClient();
-      (client.readResource as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("Not found"));
+      (client.readResource as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error("Not found"),
+      );
       manager.registerClient("server-1", client);
 
       await expect(manager.readResource("server-1", "file:///missing.txt")).rejects.toThrow(
@@ -220,10 +233,12 @@ describe("ResourceManager", () => {
     });
 
     it("should expand multiple variables", () => {
-      const result = manager.expandTemplate(
-        "file:///repo/{owner}/{repo}/blob/{ref}/{path}",
-        { owner: "alice", repo: "mycode", ref: "main", path: "src/index.ts" },
-      );
+      const result = manager.expandTemplate("file:///repo/{owner}/{repo}/blob/{ref}/{path}", {
+        owner: "alice",
+        repo: "mycode",
+        ref: "main",
+        path: "src/index.ts",
+      });
       expect(result).toBe("file:///repo/alice/mycode/blob/main/src%2Findex.ts");
     });
 
@@ -339,7 +354,9 @@ describe("ResourceManager", () => {
 
     it("should throw ResourceManagerError when getPrompt fails", async () => {
       const client = createMockPromptClient();
-      (client.getPrompt as ReturnType<typeof vi.fn>).mockRejectedValueOnce(new Error("Prompt not found"));
+      (client.getPrompt as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
+        new Error("Prompt not found"),
+      );
       manager.registerClient("server-1", client);
 
       await expect(manager.getPrompt("server-1", "missing-prompt")).rejects.toThrow(

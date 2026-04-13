@@ -246,10 +246,11 @@ describe("McpHealthMonitor", () => {
       const slowMonitor = makeMonitor({ pingTimeoutMs: 50 });
       // 실제 타임아웃을 사용해야 하므로 가짜 타이머를 쓰지 않음
       const slowPing = vi.fn().mockImplementation(
-        () => new Promise<void>((resolve) => {
-          // 300ms 후에 resolve 되는 함수 — 타임아웃(50ms)보다 느림
-          setTimeout(resolve, 300);
-        }),
+        () =>
+          new Promise<void>((resolve) => {
+            // 300ms 후에 resolve 되는 함수 — 타임아웃(50ms)보다 느림
+            setTimeout(resolve, 300);
+          }),
       );
       slowMonitor.registerServer("srv-1", "slow", slowPing);
 
@@ -438,7 +439,7 @@ describe("McpHealthMonitor", () => {
       const reconnectPromise = monitor.requestReconnect("srv-1", reconnect, {
         maxRetries: 2,
         baseDelayMs: 100_000, // 매우 큰 baseDelay
-        maxDelayMs: 10,       // 작은 maxDelay로 cap 확인
+        maxDelayMs: 10, // 작은 maxDelay로 cap 확인
         backoffMultiplier: 2.0,
       });
 

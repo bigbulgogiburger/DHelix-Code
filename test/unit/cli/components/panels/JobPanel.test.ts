@@ -108,8 +108,9 @@ describe("JobPanel — component", () => {
 describe("JobPanel — status types", () => {
   it("should accept all valid job statuses", async () => {
     const mod = await getModule();
-    const statuses: Array<import("../../../../../src/cli/components/panels/JobPanel.js").JobStatus> =
-      ["running", "completed", "failed", "pending"];
+    const statuses: Array<
+      import("../../../../../src/cli/components/panels/JobPanel.js").JobStatus
+    > = ["running", "completed", "failed", "pending"];
 
     for (const status of statuses) {
       const result = mod.JobPanel({

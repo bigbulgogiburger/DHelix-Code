@@ -10,7 +10,11 @@ import {
 import { type ExtractedToolCall } from "../../../../src/tools/types.js";
 import { ToolRegistry } from "../../../../src/tools/registry.js";
 
-function makeCall(name: string, id = "call-1", args: Record<string, unknown> = {}): ExtractedToolCall {
+function makeCall(
+  name: string,
+  id = "call-1",
+  args: Record<string, unknown> = {},
+): ExtractedToolCall {
   return { id, name, arguments: args };
 }
 

@@ -36,10 +36,7 @@ async function createTempFile(dir: string, name: string, content: string): Promi
   return filePath;
 }
 
-function makeEvent(
-  path: string,
-  type: FileChangeEvent["type"] = "created",
-): FileChangeEvent {
+function makeEvent(path: string, type: FileChangeEvent["type"] = "created"): FileChangeEvent {
   return { path, type, timestamp: Date.now() };
 }
 
@@ -272,10 +269,7 @@ describe("IncrementalIndexer", () => {
       const delFile = await createTempFile(tmpDir, "del.ts", "export const c = 3;");
 
       // 초기 인덱싱
-      await indexer.processChanges([
-        makeEvent(modFile, "created"),
-        makeEvent(delFile, "created"),
-      ]);
+      await indexer.processChanges([makeEvent(modFile, "created"), makeEvent(delFile, "created")]);
 
       // 내용 변경
       await writeFile(modFile, "export const b = 999;", "utf-8");

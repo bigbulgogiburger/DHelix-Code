@@ -5,7 +5,9 @@ import type { ExtractedToolCall, ToolCallResult } from "../../../src/tools/types
 // Mock modules that agent-loop.ts imports
 vi.mock("../../../src/tools/pipeline.js", () => ({
   ToolPipeline: vi.fn().mockImplementation(() => ({
-    execute: vi.fn().mockResolvedValue({ results: [], rejectedCount: 0, executedCount: 0, totalTimeMs: 0 }),
+    execute: vi
+      .fn()
+      .mockResolvedValue({ results: [], rejectedCount: 0, executedCount: 0, totalTimeMs: 0 }),
   })),
 }));
 

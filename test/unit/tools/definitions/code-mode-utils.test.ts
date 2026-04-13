@@ -106,12 +106,9 @@ describe("parseCodeBlocks", () => {
   });
 
   it("should detect multi-line import statements", () => {
-    const code = [
-      "import {",
-      "  readFile,",
-      "  writeFile,",
-      '} from "node:fs/promises";',
-    ].join("\n");
+    const code = ["import {", "  readFile,", "  writeFile,", '} from "node:fs/promises";'].join(
+      "\n",
+    );
     const blocks = parseCodeBlocks(code, "typescript");
     expect(blocks).toHaveLength(1);
     expect(blocks[0].type).toBe("import");
@@ -192,10 +189,38 @@ describe("parseCodeBlocks", () => {
 
 describe("findBlock", () => {
   const blocks: readonly CodeBlock[] = [
-    { type: "function", name: "foo", startLine: 1, endLine: 3, content: "function foo() {}", language: "ts" },
-    { type: "class", name: "MyClass", startLine: 5, endLine: 15, content: "class MyClass {}", language: "ts" },
-    { type: "method", name: "MyClass.bar", startLine: 6, endLine: 10, content: "bar() {}", language: "ts" },
-    { type: "interface", name: "IConfig", startLine: 17, endLine: 20, content: "interface IConfig {}", language: "ts" },
+    {
+      type: "function",
+      name: "foo",
+      startLine: 1,
+      endLine: 3,
+      content: "function foo() {}",
+      language: "ts",
+    },
+    {
+      type: "class",
+      name: "MyClass",
+      startLine: 5,
+      endLine: 15,
+      content: "class MyClass {}",
+      language: "ts",
+    },
+    {
+      type: "method",
+      name: "MyClass.bar",
+      startLine: 6,
+      endLine: 10,
+      content: "bar() {}",
+      language: "ts",
+    },
+    {
+      type: "interface",
+      name: "IConfig",
+      startLine: 17,
+      endLine: 20,
+      content: "interface IConfig {}",
+      language: "ts",
+    },
   ];
 
   it("should find block by simple name", () => {
@@ -353,7 +378,11 @@ describe("applyEdits", () => {
 
     const edits: readonly CodeEdit[] = [
       { action: "remove-block", targetBlock: "first" },
-      { action: "replace-block", targetBlock: "third", content: "function third() {\n  return 33;\n}" },
+      {
+        action: "replace-block",
+        targetBlock: "third",
+        content: "function third() {\n  return 33;\n}",
+      },
     ];
 
     const result = applyEdits(code, "typescript", edits);
@@ -405,9 +434,7 @@ describe("validateEdits", () => {
   });
 
   it("should fail for non-existent target block", () => {
-    const edits: readonly CodeEdit[] = [
-      { action: "remove-block", targetBlock: "nonExistent" },
-    ];
+    const edits: readonly CodeEdit[] = [{ action: "remove-block", targetBlock: "nonExistent" }];
     const result = validateEdits(blocks, edits);
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain("not found");
@@ -424,9 +451,7 @@ describe("validateEdits", () => {
   });
 
   it("should fail when rename-symbol has no newName", () => {
-    const edits: readonly CodeEdit[] = [
-      { action: "rename-symbol", targetBlock: "foo" },
-    ];
+    const edits: readonly CodeEdit[] = [{ action: "rename-symbol", targetBlock: "foo" }];
     const result = validateEdits(blocks, edits);
     expect(result.valid).toBe(false);
     expect(result.errors[0]).toContain("newName");
@@ -443,17 +468,13 @@ describe("validateEdits", () => {
   });
 
   it("should pass for remove-block without extra fields", () => {
-    const edits: readonly CodeEdit[] = [
-      { action: "remove-block", targetBlock: "foo" },
-    ];
+    const edits: readonly CodeEdit[] = [{ action: "remove-block", targetBlock: "foo" }];
     const result = validateEdits(blocks, edits);
     expect(result.valid).toBe(true);
   });
 
   it("should list available blocks in error message", () => {
-    const edits: readonly CodeEdit[] = [
-      { action: "remove-block", targetBlock: "missing" },
-    ];
+    const edits: readonly CodeEdit[] = [{ action: "remove-block", targetBlock: "missing" }];
     const result = validateEdits(blocks, edits);
     expect(result.errors[0]).toContain("foo");
     expect(result.errors[0]).toContain("bar");

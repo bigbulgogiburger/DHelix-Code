@@ -246,15 +246,11 @@ describe("maskSecrets", () => {
   describe("logMaskedCount option", () => {
     it("should not throw when logMaskedCount is true and secrets are found", () => {
       const input = "sk-abcdefghijklmnopqrstu";
-      expect(() =>
-        maskSecrets(input, { enabled: true, logMaskedCount: true }),
-      ).not.toThrow();
+      expect(() => maskSecrets(input, { enabled: true, logMaskedCount: true })).not.toThrow();
     });
 
     it("should not throw when logMaskedCount is true and no secrets found", () => {
-      expect(() =>
-        maskSecrets("safe text", { enabled: true, logMaskedCount: true }),
-      ).not.toThrow();
+      expect(() => maskSecrets("safe text", { enabled: true, logMaskedCount: true })).not.toThrow();
     });
   });
 });

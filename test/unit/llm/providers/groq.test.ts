@@ -230,9 +230,7 @@ describe("GroqProvider", () => {
     });
 
     it("sends to correct Groq endpoint with Bearer auth", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await provider.chat(
         createTestRequest({
@@ -340,9 +338,7 @@ describe("GroqProvider", () => {
         chunks.push(chunk);
       }
 
-      const toolChunks = (chunks as { type: string }[]).filter(
-        (c) => c.type === "tool-call-delta",
-      );
+      const toolChunks = (chunks as { type: string }[]).filter((c) => c.type === "tool-call-delta");
       expect(toolChunks.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -504,9 +500,7 @@ describe("GroqProvider", () => {
         baseUrl: "https://custom.groq.example.com",
       });
 
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await customProvider.chat(createTestRequest());
 

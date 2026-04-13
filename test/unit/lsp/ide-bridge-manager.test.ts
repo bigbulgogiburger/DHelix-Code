@@ -30,9 +30,7 @@ describe("ide-bridge-manager", () => {
 
   describe("getExtToLangMap", () => {
     it("should map TypeScript extensions correctly", async () => {
-      const { getExtToLangMap } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { getExtToLangMap } = await import("../../../src/lsp/ide-bridge-manager.js");
       const map = getExtToLangMap();
 
       expect(map[".ts"]).toBe("typescript");
@@ -44,9 +42,7 @@ describe("ide-bridge-manager", () => {
     });
 
     it("should map Python extensions correctly", async () => {
-      const { getExtToLangMap } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { getExtToLangMap } = await import("../../../src/lsp/ide-bridge-manager.js");
       const map = getExtToLangMap();
 
       expect(map[".py"]).toBe("python");
@@ -54,9 +50,7 @@ describe("ide-bridge-manager", () => {
     });
 
     it("should map Go, Rust, and Java extensions correctly", async () => {
-      const { getExtToLangMap } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { getExtToLangMap } = await import("../../../src/lsp/ide-bridge-manager.js");
       const map = getExtToLangMap();
 
       expect(map[".go"]).toBe("go");
@@ -65,9 +59,7 @@ describe("ide-bridge-manager", () => {
     });
 
     it("should include all common extensions", async () => {
-      const { getExtToLangMap } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { getExtToLangMap } = await import("../../../src/lsp/ide-bridge-manager.js");
       const map = getExtToLangMap();
       const expected = [
         ".ts",
@@ -88,9 +80,7 @@ describe("ide-bridge-manager", () => {
     });
 
     it("should not include unsupported extensions", async () => {
-      const { getExtToLangMap } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { getExtToLangMap } = await import("../../../src/lsp/ide-bridge-manager.js");
       const map = getExtToLangMap();
 
       expect(map[".txt"]).toBeUndefined();
@@ -112,9 +102,7 @@ describe("ide-bridge-manager", () => {
         getLSPManager: vi.fn(),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/file.txt", "/test");
       expect(result).toBeUndefined();
     });
@@ -127,9 +115,7 @@ describe("ide-bridge-manager", () => {
         getLSPManager: vi.fn(),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/file.xyz", "/test");
       expect(result).toBeUndefined();
     });
@@ -142,9 +128,7 @@ describe("ide-bridge-manager", () => {
         getLSPManager: vi.fn(),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/Makefile", "/test");
       expect(result).toBeUndefined();
     });
@@ -171,9 +155,7 @@ describe("ide-bridge-manager", () => {
         getLSPManager: vi.fn(),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/file.ts", "/test");
 
       expect(result).toBeDefined();
@@ -203,9 +185,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/file.ts", "/test");
 
       expect(result).toBeDefined();
@@ -223,9 +203,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/file.ts", "/test");
 
       expect(result).toBeUndefined();
@@ -241,9 +219,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       // Should not throw, just fall through to LSP manager
       const result = await acquireSmartSession("/test/file.ts", "/test");
       expect(result).toBeUndefined();
@@ -255,15 +231,11 @@ describe("ide-bridge-manager", () => {
       }));
       vi.doMock("../../../src/lsp/manager.js", () => ({
         getLSPManager: vi.fn().mockReturnValue({
-          detectAvailableServers: vi
-            .fn()
-            .mockRejectedValue(new Error("Server crash")),
+          detectAvailableServers: vi.fn().mockRejectedValue(new Error("Server crash")),
         }),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/file.ts", "/test");
       expect(result).toBeUndefined();
     });
@@ -301,9 +273,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       await acquireSmartSession("/test/file.ts", "/test");
 
       // IDE bridge should be tried first
@@ -337,9 +307,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/file.py", "/test");
 
       expect(result).toBeDefined();
@@ -369,9 +337,7 @@ describe("ide-bridge-manager", () => {
         getLSPManager: vi.fn(),
       }));
 
-      const { acquireSmartSession } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { acquireSmartSession } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await acquireSmartSession("/test/App.tsx", "/test");
 
       expect(result).toBeDefined();
@@ -389,9 +355,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { isIDEBridgeAvailable } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { isIDEBridgeAvailable } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await isIDEBridgeAvailable("/test/workspace");
       expect(result).toBe(false);
     });
@@ -403,9 +367,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { isIDEBridgeAvailable } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { isIDEBridgeAvailable } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await isIDEBridgeAvailable("/test/workspace");
       expect(result).toBe(true);
     });
@@ -415,9 +377,7 @@ describe("ide-bridge-manager", () => {
         throw new Error("Module not found");
       });
 
-      const { isIDEBridgeAvailable } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { isIDEBridgeAvailable } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await isIDEBridgeAvailable("/test/workspace");
       expect(result).toBe(false);
     });
@@ -427,9 +387,7 @@ describe("ide-bridge-manager", () => {
         getIDEBridge: vi.fn().mockReturnValue(undefined),
       }));
 
-      const { isIDEBridgeAvailable } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { isIDEBridgeAvailable } = await import("../../../src/lsp/ide-bridge-manager.js");
       const result = await isIDEBridgeAvailable("/test/workspace");
       expect(result).toBe(false);
     });
@@ -452,9 +410,7 @@ describe("ide-bridge-manager", () => {
         }),
       }));
 
-      const { disposeAllLSP } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { disposeAllLSP } = await import("../../../src/lsp/ide-bridge-manager.js");
       await disposeAllLSP();
 
       expect(disposeCalls).toContain("ide-bridge");
@@ -463,17 +419,13 @@ describe("ide-bridge-manager", () => {
 
     it("should not throw if IDE bridge disposal fails", async () => {
       vi.doMock("../../../src/lsp/ide-bridge.js", () => ({
-        disposeIDEBridge: vi
-          .fn()
-          .mockRejectedValue(new Error("Bridge disposal error")),
+        disposeIDEBridge: vi.fn().mockRejectedValue(new Error("Bridge disposal error")),
       }));
       vi.doMock("../../../src/lsp/manager.js", () => ({
         disposeLSPManager: vi.fn().mockResolvedValue(undefined),
       }));
 
-      const { disposeAllLSP } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { disposeAllLSP } = await import("../../../src/lsp/ide-bridge-manager.js");
       await expect(disposeAllLSP()).resolves.not.toThrow();
     });
 
@@ -482,32 +434,22 @@ describe("ide-bridge-manager", () => {
         disposeIDEBridge: vi.fn().mockResolvedValue(undefined),
       }));
       vi.doMock("../../../src/lsp/manager.js", () => ({
-        disposeLSPManager: vi
-          .fn()
-          .mockRejectedValue(new Error("Manager disposal error")),
+        disposeLSPManager: vi.fn().mockRejectedValue(new Error("Manager disposal error")),
       }));
 
-      const { disposeAllLSP } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { disposeAllLSP } = await import("../../../src/lsp/ide-bridge-manager.js");
       await expect(disposeAllLSP()).resolves.not.toThrow();
     });
 
     it("should not throw if both disposals fail", async () => {
       vi.doMock("../../../src/lsp/ide-bridge.js", () => ({
-        disposeIDEBridge: vi
-          .fn()
-          .mockRejectedValue(new Error("Bridge error")),
+        disposeIDEBridge: vi.fn().mockRejectedValue(new Error("Bridge error")),
       }));
       vi.doMock("../../../src/lsp/manager.js", () => ({
-        disposeLSPManager: vi
-          .fn()
-          .mockRejectedValue(new Error("Manager error")),
+        disposeLSPManager: vi.fn().mockRejectedValue(new Error("Manager error")),
       }));
 
-      const { disposeAllLSP } = await import(
-        "../../../src/lsp/ide-bridge-manager.js"
-      );
+      const { disposeAllLSP } = await import("../../../src/lsp/ide-bridge-manager.js");
       await expect(disposeAllLSP()).resolves.not.toThrow();
     });
   });

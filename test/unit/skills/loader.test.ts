@@ -57,10 +57,7 @@ describe("loadSkill", () => {
 
   it("should throw SkillLoadError for invalid frontmatter schema (missing description)", async () => {
     const skillPath = join(testDir, "bad-schema.md");
-    await writeFile(
-      skillPath,
-      ["---", "name: bad", "---", "body"].join("\n"),
-    );
+    await writeFile(skillPath, ["---", "name: bad", "---", "body"].join("\n"));
 
     await expect(loadSkill(skillPath)).rejects.toThrow("Failed to load skill");
   });
@@ -161,14 +158,7 @@ describe("loadSkill", () => {
     const skillPath = join(testDir, "null-vals.md");
     await writeFile(
       skillPath,
-      [
-        "---",
-        "name: null-test",
-        "description: null values",
-        "model: ~",
-        "---",
-        "body",
-      ].join("\n"),
+      ["---", "name: null-test", "description: null values", "model: ~", "---", "body"].join("\n"),
     );
 
     const skill = await loadSkill(skillPath);
@@ -380,15 +370,9 @@ describe("loadSkill", () => {
     const skillPath = join(testDir, "trimmed-body.md");
     await writeFile(
       skillPath,
-      [
-        "---",
-        "name: trim-test",
-        "description: trimmed",
-        "---",
-        "",
-        "  Content here  ",
-        "",
-      ].join("\n"),
+      ["---", "name: trim-test", "description: trimmed", "---", "", "  Content here  ", ""].join(
+        "\n",
+      ),
     );
 
     const skill = await loadSkill(skillPath);
@@ -402,20 +386,14 @@ describe("loadSkill", () => {
 
   it("should throw when name is missing", async () => {
     const skillPath = join(testDir, "no-name.md");
-    await writeFile(
-      skillPath,
-      ["---", "description: no name here", "---", "body"].join("\n"),
-    );
+    await writeFile(skillPath, ["---", "description: no name here", "---", "body"].join("\n"));
 
     await expect(loadSkill(skillPath)).rejects.toThrow();
   });
 
   it("should throw when description is missing", async () => {
     const skillPath = join(testDir, "no-desc.md");
-    await writeFile(
-      skillPath,
-      ["---", "name: no-desc", "---", "body"].join("\n"),
-    );
+    await writeFile(skillPath, ["---", "name: no-desc", "---", "body"].join("\n"));
 
     await expect(loadSkill(skillPath)).rejects.toThrow();
   });
@@ -428,13 +406,7 @@ describe("loadSkill", () => {
     const skillPath = join(testDir, "defaults.md");
     await writeFile(
       skillPath,
-      [
-        "---",
-        "name: default-test",
-        "description: defaults",
-        "---",
-        "body",
-      ].join("\n"),
+      ["---", "name: default-test", "description: defaults", "---", "body"].join("\n"),
     );
 
     const skill = await loadSkill(skillPath);

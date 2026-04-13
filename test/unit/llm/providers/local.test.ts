@@ -361,9 +361,7 @@ describe("LocalModelProvider.healthCheck()", () => {
   });
 
   it("returns healthy: true when server responds OK", async () => {
-    fetchMock.mockResolvedValueOnce(
-      createMockResponse({ data: [] }, 200),
-    );
+    fetchMock.mockResolvedValueOnce(createMockResponse({ data: [] }, 200));
 
     const provider = new LocalModelProvider({ baseUrl: "http://localhost:11434" });
     const status = await provider.healthCheck();
@@ -418,7 +416,10 @@ describe("LocalModelProvider.discoverModels()", () => {
       }),
     );
 
-    const provider = new LocalModelProvider({ serverType: "ollama", baseUrl: "http://localhost:11434" });
+    const provider = new LocalModelProvider({
+      serverType: "ollama",
+      baseUrl: "http://localhost:11434",
+    });
     const models = await provider.discoverModels();
 
     expect(models).toHaveLength(2);
@@ -437,7 +438,10 @@ describe("LocalModelProvider.discoverModels()", () => {
       }),
     );
 
-    const provider = new LocalModelProvider({ serverType: "ollama", baseUrl: "http://localhost:11434" });
+    const provider = new LocalModelProvider({
+      serverType: "ollama",
+      baseUrl: "http://localhost:11434",
+    });
     const models = await provider.discoverModels();
 
     expect(models.length).toBeGreaterThanOrEqual(0);
@@ -446,7 +450,10 @@ describe("LocalModelProvider.discoverModels()", () => {
   it("returns empty array when all discovery fails", async () => {
     fetchMock.mockRejectedValue(new Error("All failed"));
 
-    const provider = new LocalModelProvider({ serverType: "lmstudio", baseUrl: "http://localhost:1234" });
+    const provider = new LocalModelProvider({
+      serverType: "lmstudio",
+      baseUrl: "http://localhost:1234",
+    });
     const models = await provider.discoverModels();
 
     expect(Array.isArray(models)).toBe(true);
@@ -460,7 +467,10 @@ describe("LocalModelProvider.discoverModels()", () => {
       }),
     );
 
-    const provider = new LocalModelProvider({ serverType: "lmstudio", baseUrl: "http://localhost:1234" });
+    const provider = new LocalModelProvider({
+      serverType: "lmstudio",
+      baseUrl: "http://localhost:1234",
+    });
     const models = await provider.discoverModels();
 
     expect(models).toHaveLength(1);

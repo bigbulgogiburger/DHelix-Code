@@ -377,12 +377,14 @@ describe("runAgentLoop", () => {
     ]);
 
     mockPipelineExecute.mockResolvedValue({
-      results: [{
-        id: "tc-1",
-        name: "file_read",
-        output: "file contents",
-        isError: false,
-      }],
+      results: [
+        {
+          id: "tc-1",
+          name: "file_read",
+          output: "file contents",
+          isError: false,
+        },
+      ],
       rejectedCount: 0,
       executedCount: 1,
       totalTimeMs: 1,
@@ -503,12 +505,14 @@ describe("runAgentLoop", () => {
 
       // Pipeline receives only the approved call (file_read), not the denied one (file_write)
       mockPipelineExecute.mockResolvedValue({
-        results: [{
-          id: "tc-1",
-          name: "file_read",
-          output: "output-tc-1",
-          isError: false,
-        }],
+        results: [
+          {
+            id: "tc-1",
+            name: "file_read",
+            output: "output-tc-1",
+            isError: false,
+          },
+        ],
         rejectedCount: 0,
         executedCount: 1,
         totalTimeMs: 1,
@@ -572,7 +576,12 @@ describe("runAgentLoop", () => {
       mockPipelineExecute.mockResolvedValue({
         results: [
           { id: "tc-1", name: "file_read", output: "ok", isError: false },
-          { id: "tc-2", name: "file_read", output: 'Tool "file_read" failed: Unexpected executor crash', isError: true },
+          {
+            id: "tc-2",
+            name: "file_read",
+            output: 'Tool "file_read" failed: Unexpected executor crash',
+            isError: true,
+          },
         ],
         rejectedCount: 0,
         executedCount: 2,
@@ -756,13 +765,15 @@ describe("MCP tool failure recovery", () => {
 
     // Mock pipeline execution to return MCP timeout error
     mockPipelineExecute.mockResolvedValueOnce({
-      results: [{
-        id: "tc-mcp-1",
-        name: "mcp__playwright__browser_navigate",
-        output: "MCP tool error: Request timed out: tools/call",
-        isError: true,
-        metadata: { serverName: "playwright", mcpErrorType: "timeout" },
-      }],
+      results: [
+        {
+          id: "tc-mcp-1",
+          name: "mcp__playwright__browser_navigate",
+          output: "MCP tool error: Request timed out: tools/call",
+          isError: true,
+          metadata: { serverName: "playwright", mcpErrorType: "timeout" },
+        },
+      ],
       rejectedCount: 0,
       executedCount: 1,
       totalTimeMs: 1,

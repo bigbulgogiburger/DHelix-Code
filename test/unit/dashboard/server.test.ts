@@ -93,41 +93,45 @@ function createMockMetrics(): MetricsDataSource {
 // HTTP 요청 헬퍼
 // ---------------------------------------------------------------------------
 
-function httpGet(port: number, path: string): Promise<{ status: number; body: string; headers: Record<string, string | string[] | undefined> }> {
+function httpGet(
+  port: number,
+  path: string,
+): Promise<{
+  status: number;
+  body: string;
+  headers: Record<string, string | string[] | undefined>;
+}> {
   return new Promise((resolve, reject) => {
-    const req = httpRequest(
-      { hostname: "127.0.0.1", port, path, method: "GET" },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          resolve({
-            status: res.statusCode ?? 0,
-            body: Buffer.concat(chunks).toString("utf-8"),
-            headers: res.headers as Record<string, string | string[] | undefined>,
-          });
+    const req = httpRequest({ hostname: "127.0.0.1", port, path, method: "GET" }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => {
+        resolve({
+          status: res.statusCode ?? 0,
+          body: Buffer.concat(chunks).toString("utf-8"),
+          headers: res.headers as Record<string, string | string[] | undefined>,
         });
-      },
-    );
+      });
+    });
     req.on("error", reject);
     req.end();
   });
 }
 
-function httpOptions(port: number, path: string): Promise<{ status: number; headers: Record<string, string | string[] | undefined> }> {
+function httpOptions(
+  port: number,
+  path: string,
+): Promise<{ status: number; headers: Record<string, string | string[] | undefined> }> {
   return new Promise((resolve, reject) => {
-    const req = httpRequest(
-      { hostname: "127.0.0.1", port, path, method: "OPTIONS" },
-      (res) => {
-        res.resume();
-        res.on("end", () => {
-          resolve({
-            status: res.statusCode ?? 0,
-            headers: res.headers as Record<string, string | string[] | undefined>,
-          });
+    const req = httpRequest({ hostname: "127.0.0.1", port, path, method: "OPTIONS" }, (res) => {
+      res.resume();
+      res.on("end", () => {
+        resolve({
+          status: res.statusCode ?? 0,
+          headers: res.headers as Record<string, string | string[] | undefined>,
         });
-      },
-    );
+      });
+    });
     req.on("error", reject);
     req.end();
   });
@@ -135,19 +139,16 @@ function httpOptions(port: number, path: string): Promise<{ status: number; head
 
 function httpPost(port: number, path: string): Promise<{ status: number; body: string }> {
   return new Promise((resolve, reject) => {
-    const req = httpRequest(
-      { hostname: "127.0.0.1", port, path, method: "POST" },
-      (res) => {
-        const chunks: Buffer[] = [];
-        res.on("data", (chunk: Buffer) => chunks.push(chunk));
-        res.on("end", () => {
-          resolve({
-            status: res.statusCode ?? 0,
-            body: Buffer.concat(chunks).toString("utf-8"),
-          });
+    const req = httpRequest({ hostname: "127.0.0.1", port, path, method: "POST" }, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (chunk: Buffer) => chunks.push(chunk));
+      res.on("end", () => {
+        resolve({
+          status: res.statusCode ?? 0,
+          body: Buffer.concat(chunks).toString("utf-8"),
         });
-      },
-    );
+      });
+    });
     req.on("error", reject);
     req.end();
   });
@@ -368,7 +369,11 @@ describe("DashboardServer", () => {
   describe("GET /api/events (SSE)", () => {
     it("text/event-stream 응답을 반환하고 연결을 유지한다", async () => {
       // SSE 연결은 long-lived이므로 짧게 연결 후 해제
-      const result = await new Promise<{ status: number; headers: Record<string, string | string[] | undefined>; firstChunk: string }>((resolve, reject) => {
+      const result = await new Promise<{
+        status: number;
+        headers: Record<string, string | string[] | undefined>;
+        firstChunk: string;
+      }>((resolve, reject) => {
         const req = httpRequest(
           { hostname: "127.0.0.1", port, path: "/api/events", method: "GET" },
           (res) => {

@@ -107,13 +107,9 @@ function functionDeclaration(
 ): MockNode {
   const nameNode = identifier(name);
   const paramsNode = formalParameters(opts.params ?? "()");
-  const retNode = opts.returnType
-    ? returnTypeAnnotation(opts.returnType)
-    : null;
+  const retNode = opts.returnType ? returnTypeAnnotation(opts.returnType) : null;
 
-  const asyncNode = opts.isAsync
-    ? createNode({ type: "async", text: "async" })
-    : null;
+  const asyncNode = opts.isAsync ? createNode({ type: "async", text: "async" }) : null;
 
   const fields: Record<string, MockNode | null> = {
     name: nameNode,
@@ -160,9 +156,7 @@ function methodDefinition(
 ): MockNode {
   const nameNode = identifier(name);
   const paramsNode = formalParameters(opts.params ?? "()");
-  const retNode = opts.returnType
-    ? returnTypeAnnotation(opts.returnType)
-    : null;
+  const retNode = opts.returnType ? returnTypeAnnotation(opts.returnType) : null;
 
   const children: MockNode[] = [];
   if (opts.isStatic) children.push(createNode({ type: "static", text: "static" }));
@@ -250,9 +244,7 @@ function typeAliasDeclaration(
   } = {},
 ): MockNode {
   const nameNode = identifier(name);
-  const typeParamsNode = opts.typeParams
-    ? typeParameters(opts.typeParams)
-    : null;
+  const typeParamsNode = opts.typeParams ? typeParameters(opts.typeParams) : null;
 
   return createNode({
     type: "type_alias_declaration",
@@ -311,9 +303,7 @@ function exportClause(...specifiers: MockNode[]): MockNode {
 
 function exportSpecifier(name: string, alias?: string): MockNode {
   const nameNode = createNode({ type: "identifier", text: name });
-  const aliasNode = alias
-    ? createNode({ type: "identifier", text: alias })
-    : null;
+  const aliasNode = alias ? createNode({ type: "identifier", text: alias }) : null;
   return createNode({
     type: "export_specifier",
     text: alias ? `${name} as ${alias}` : name,
@@ -356,9 +346,7 @@ function importStatement(
     const specs = opts.specifiers.map((s) => {
       const parts = s.split(" as ");
       const nameNode = createNode({ type: "identifier", text: parts[0] });
-      const aliasNode = parts[1]
-        ? createNode({ type: "identifier", text: parts[1] })
-        : null;
+      const aliasNode = parts[1] ? createNode({ type: "identifier", text: parts[1] }) : null;
       return createNode({
         type: "import_specifier",
         text: s,
@@ -366,9 +354,7 @@ function importStatement(
         fields: { name: nameNode, alias: aliasNode },
       });
     });
-    namedChildren.push(
-      createNode({ type: "named_imports", namedChildren: specs }),
-    );
+    namedChildren.push(createNode({ type: "named_imports", namedChildren: specs }));
   }
 
   namedChildren.push(sourceNode);
@@ -396,11 +382,7 @@ function lexicalDeclaration(
   });
 }
 
-function variableDeclarator(
-  name: string,
-  value?: MockNode,
-  typeAnnotation?: string,
-): MockNode {
+function variableDeclarator(name: string, value?: MockNode, typeAnnotation?: string): MockNode {
   const nameNode = identifier(name);
   const typeNode = typeAnnotation
     ? createNode({ type: "type_annotation", text: `: ${typeAnnotation}` })
@@ -422,9 +404,7 @@ function arrowFunction(
   opts: { returnType?: string; isAsync?: boolean } = {},
 ): MockNode {
   const paramsNode = formalParameters(params);
-  const retNode = opts.returnType
-    ? returnTypeAnnotation(opts.returnType)
-    : null;
+  const retNode = opts.returnType ? returnTypeAnnotation(opts.returnType) : null;
   const children: MockNode[] = [];
   if (opts.isAsync) children.push(createNode({ type: "async", text: "async" }));
   children.push(paramsNode);
@@ -452,7 +432,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("export function foo => exported: true", () => {
       const fn = functionDeclaration("foo", { params: "()", returnType: "void" });
       const root = program(exportStatement(fn));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const foo = result.symbols.find((s) => s.name === "foo");
       expect(foo).toBeDefined();
@@ -463,7 +447,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("function bar (no export) => exported: false", () => {
       const fn = functionDeclaration("bar", { params: "()", returnType: "void" });
       const root = program(fn);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const bar = result.symbols.find((s) => s.name === "bar");
       expect(bar).toBeDefined();
@@ -473,39 +461,44 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("export default class => exported: true", () => {
       const cls = classDeclaration("Foo", classBody());
       const root = program(exportDefaultDeclaration(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
-
-      const foo = result.symbols.find(
-        (s) => s.name === "Foo" && s.kind === "class",
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
       );
+
+      const foo = result.symbols.find((s) => s.name === "Foo" && s.kind === "class");
       expect(foo).toBeDefined();
       expect(foo!.exported).toBe(true);
       expect(result.exports).toContain("default");
     });
 
     it("export { X, Y } => both in exports array", () => {
-      const clause = exportClause(
-        exportSpecifier("X"),
-        exportSpecifier("Y"),
-      );
+      const clause = exportClause(exportSpecifier("X"), exportSpecifier("Y"));
       const expStmt = createNode({
         type: "export_statement",
         namedChildren: [clause],
         fields: { source: null },
       });
       const root = program(expStmt);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.exports).toContain("X");
       expect(result.exports).toContain("Y");
     });
 
     it("export const => exported constant", () => {
-      const decl = lexicalDeclaration("const", [
-        variableDeclarator("MAX"),
-      ]);
+      const decl = lexicalDeclaration("const", [variableDeclarator("MAX")]);
       const root = program(exportStatement(decl));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const max = result.symbols.find((s) => s.name === "MAX");
       expect(max).toBeDefined();
@@ -516,7 +509,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("export type => exported type alias", () => {
       const typeDecl = typeAliasDeclaration("ID");
       const root = program(exportStatement(typeDecl));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const id = result.symbols.find((s) => s.name === "ID");
       expect(id).toBeDefined();
@@ -527,7 +524,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("export enum => exported enum", () => {
       const enumDecl = enumDeclaration("Color");
       const root = program(exportStatement(enumDecl));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const color = result.symbols.find((s) => s.name === "Color");
       expect(color).toBeDefined();
@@ -538,7 +539,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("export interface => exported", () => {
       const iface = interfaceDeclaration("Config");
       const root = program(exportStatement(iface));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const cfg = result.symbols.find((s) => s.name === "Config");
       expect(cfg).toBeDefined();
@@ -555,7 +560,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         specifiers: ["useState", "useEffect"],
       });
       const root = program(imp);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.imports.length).toBe(1);
       expect(result.imports[0].source).toBe("react");
@@ -568,7 +577,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("default import: import X from './file'", () => {
       const imp = importStatement("react", { defaultImport: "React" });
       const root = program(imp);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.imports.length).toBe(1);
       expect(result.imports[0].source).toBe("react");
@@ -581,7 +594,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         namespaceImport: "path",
       });
       const root = program(imp);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.imports.length).toBe(1);
       expect(result.imports[0].source).toBe("node:path");
@@ -592,7 +609,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("side-effect import: import './side-effect'", () => {
       const imp = importStatement("./side-effect", {});
       const root = program(imp);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.imports.length).toBe(1);
       expect(result.imports[0].source).toBe("./side-effect");
@@ -606,7 +627,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         specifiers: ["readFile as read"],
       });
       const root = program(imp);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.imports[0].specifiers).toContain("read");
     });
@@ -625,7 +650,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         startRow: 2,
       });
       const root = program(imp1, imp2, imp3);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.imports.length).toBe(3);
       const sources = result.imports.map((i) => i.source);
@@ -641,7 +670,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         startRow: 1,
       });
       const root = program(imp1, imp2);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.imports[0].line).toBe(1);
       expect(result.imports[1].line).toBe(2);
@@ -657,7 +690,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         returnType: "boolean",
       });
       const root = program(exportStatement(fn));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const calc = result.symbols.find((s) => s.name === "calc");
       expect(calc).toBeDefined();
@@ -673,7 +710,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         isAsync: true,
       });
       const root = program(exportStatement(fn));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const fetchData = result.symbols.find((s) => s.name === "fetchData");
       expect(fetchData).toBeDefined();
@@ -684,11 +725,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       const arrow = arrowFunction("(a: number, b: number)", {
         returnType: "number",
       });
-      const decl = lexicalDeclaration("const", [
-        variableDeclarator("add", arrow),
-      ]);
+      const decl = lexicalDeclaration("const", [variableDeclarator("add", arrow)]);
       const root = program(exportStatement(decl));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const add = result.symbols.find((s) => s.name === "add");
       expect(add).toBeDefined();
@@ -702,7 +745,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         params: "(x: string)",
       });
       const root = program(exportStatement(fn));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const noReturn = result.symbols.find((s) => s.name === "noReturn");
       expect(noReturn).toBeDefined();
@@ -722,11 +769,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       });
       const cls = classDeclaration("MyService", classBody(method));
       const root = program(exportStatement(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
-
-      const getData = result.symbols.find(
-        (s) => s.name === "getData" && s.kind === "method",
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
       );
+
+      const getData = result.symbols.find((s) => s.name === "getData" && s.kind === "method");
       expect(getData).toBeDefined();
       expect(getData!.parentName).toBe("MyService");
       expect(getData!.signature).toContain("async");
@@ -738,7 +787,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       });
       const cls = classDeclaration("MyService", classBody(ctor));
       const root = program(exportStatement(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const constructor = result.symbols.find(
         (s) => s.name === "constructor" && s.kind === "method",
@@ -755,11 +808,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       });
       const cls = classDeclaration("MyService", classBody(getter));
       const root = program(exportStatement(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
-
-      const nameGetter = result.symbols.find(
-        (s) => s.name === "name" && s.kind === "method",
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
       );
+
+      const nameGetter = result.symbols.find((s) => s.name === "name" && s.kind === "method");
       expect(nameGetter).toBeDefined();
       expect(nameGetter!.parentName).toBe("MyService");
       expect(nameGetter!.signature).toContain("get ");
@@ -772,11 +827,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       });
       const cls = classDeclaration("MyService", classBody(setter));
       const root = program(exportStatement(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
-
-      const nameSetter = result.symbols.find(
-        (s) => s.name === "name" && s.kind === "method",
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
       );
+
+      const nameSetter = result.symbols.find((s) => s.name === "name" && s.kind === "method");
       expect(nameSetter).toBeDefined();
       expect(nameSetter!.parentName).toBe("MyService");
       expect(nameSetter!.signature).toContain("set ");
@@ -790,11 +847,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       });
       const cls = classDeclaration("MyService", classBody(staticMethod));
       const root = program(exportStatement(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
-
-      const create = result.symbols.find(
-        (s) => s.name === "create" && s.kind === "method",
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
       );
+
+      const create = result.symbols.find((s) => s.name === "create" && s.kind === "method");
       expect(create).toBeDefined();
       expect(create!.parentName).toBe("MyService");
       expect(create!.signature).toContain("static ");
@@ -805,11 +864,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         superclass: "BaseService",
       });
       const root = program(exportStatement(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
-
-      const child = result.symbols.find(
-        (s) => s.name === "Child" && s.kind === "class",
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
       );
+
+      const child = result.symbols.find((s) => s.name === "Child" && s.kind === "class");
       expect(child).toBeDefined();
       expect(child!.signature).toContain("extends BaseService");
     });
@@ -820,7 +881,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
   describe("edge cases", () => {
     it("empty file returns empty symbols array", () => {
       const root = program();
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.symbols).toEqual([]);
       expect(result.imports).toEqual([]);
@@ -828,10 +893,7 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     });
 
     it("re-exports are tracked in exports array and imports for dependency", () => {
-      const clause1 = exportClause(
-        exportSpecifier("Foo"),
-        exportSpecifier("Bar"),
-      );
+      const clause1 = exportClause(exportSpecifier("Foo"), exportSpecifier("Bar"));
       const reExportSource = stringLiteral("./module");
       const reExport1 = createNode({
         type: "export_statement",
@@ -848,7 +910,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       });
 
       const root = program(reExport1, reExport2);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.exports).toContain("Foo");
       expect(result.exports).toContain("Bar");
@@ -863,7 +929,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     it("const enum is detected with const in signature", () => {
       const enumDecl = enumDeclaration("Direction", { isConst: true });
       const root = program(exportStatement(enumDecl));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const dir = result.symbols.find((s) => s.name === "Direction");
       expect(dir).toBeDefined();
@@ -876,7 +946,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         extendsClause: "extends Animal",
       });
       const root = program(exportStatement(iface));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const dog = result.symbols.find((s) => s.name === "Dog");
       expect(dog).toBeDefined();
@@ -889,7 +963,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         typeParams: "<T, E>",
       });
       const root = program(exportStatement(typeDecl));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const res = result.symbols.find((s) => s.name === "Result");
       expect(res).toBeDefined();
@@ -906,7 +984,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         fields: { name: nameNode },
       });
       const root = program(exportStatement(cls));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const handler = result.symbols.find((s) => s.name === "BaseHandler");
       expect(handler).toBeDefined();
@@ -915,11 +997,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
     });
 
     it("non-exported const (non-function) is not tracked", () => {
-      const decl = lexicalDeclaration("const", [
-        variableDeclarator("internal"),
-      ]);
+      const decl = lexicalDeclaration("const", [variableDeclarator("internal")]);
       const root = program(decl);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const internal = result.symbols.find((s) => s.name === "internal");
       expect(internal).toBeUndefined();
@@ -930,11 +1014,13 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         returnType: "Promise<User>",
         isAsync: true,
       });
-      const decl = lexicalDeclaration("const", [
-        variableDeclarator("fetchUser", arrow),
-      ]);
+      const decl = lexicalDeclaration("const", [variableDeclarator("fetchUser", arrow)]);
       const root = program(exportStatement(decl));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const fetchUser = result.symbols.find((s) => s.name === "fetchUser");
       expect(fetchUser).toBeDefined();
@@ -951,7 +1037,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         doc,
       });
       const root = program(exportStatement(fn));
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const greet = result.symbols.find((s) => s.name === "greet");
       expect(greet).toBeDefined();
@@ -963,7 +1053,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
       const fn2 = functionDeclaration("second", { startRow: 1 });
       const fn3 = functionDeclaration("third", { startRow: 2 });
       const root = program(fn1, fn2, fn3);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       const first = result.symbols.find((s) => s.name === "first");
       const second = result.symbols.find((s) => s.name === "second");
@@ -992,7 +1086,11 @@ describe("TypeScript extractor (extractTypeScriptSymbols)", () => {
         namedChildren: [],
       });
       const root = program(expr);
-      const result = extractTypeScriptSymbols(root as unknown as import("web-tree-sitter").Node, FILE, "");
+      const result = extractTypeScriptSymbols(
+        root as unknown as import("web-tree-sitter").Node,
+        FILE,
+        "",
+      );
 
       expect(result.symbols).toEqual([]);
     });

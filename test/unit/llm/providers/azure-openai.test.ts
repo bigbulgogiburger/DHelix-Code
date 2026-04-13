@@ -201,9 +201,9 @@ describe("AzureOpenAIProvider", () => {
       const originalEnv = { ...process.env };
       delete process.env["AZURE_OPENAI_RESOURCE_NAME"];
 
-      expect(
-        () => new AzureOpenAIProvider({ apiKey: "test-key" }),
-      ).toThrow(/resource name not found/);
+      expect(() => new AzureOpenAIProvider({ apiKey: "test-key" })).toThrow(
+        /resource name not found/,
+      );
 
       process.env = originalEnv;
     });
@@ -274,9 +274,7 @@ describe("AzureOpenAIProvider", () => {
     });
 
     it("sends correct Azure-specific headers and URL", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await provider.chat(
         createTestRequest({
@@ -316,9 +314,7 @@ describe("AzureOpenAIProvider", () => {
     });
 
     it("does not include model field in request body (Azure uses deployment name in URL)", async () => {
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await provider.chat(createTestRequest());
 
@@ -331,9 +327,7 @@ describe("AzureOpenAIProvider", () => {
     it("throws LLMError on non-retryable HTTP error", async () => {
       fetchSpy.mockResolvedValueOnce(createMockResponse({ error: "bad request" }, 400));
 
-      await expect(provider.chat(createTestRequest())).rejects.toThrow(
-        /Azure OpenAI API error/,
-      );
+      await expect(provider.chat(createTestRequest())).rejects.toThrow(/Azure OpenAI API error/);
     });
   });
 
@@ -403,9 +397,7 @@ describe("AzureOpenAIProvider", () => {
         chunks.push(chunk);
       }
 
-      const toolChunks = (chunks as { type: string }[]).filter(
-        (c) => c.type === "tool-call-delta",
-      );
+      const toolChunks = (chunks as { type: string }[]).filter((c) => c.type === "tool-call-delta");
       expect(toolChunks.length).toBeGreaterThanOrEqual(1);
     });
 
@@ -492,7 +484,7 @@ describe("AzureOpenAIProvider", () => {
 
       // azure-gpt-4o-mini: input=$0.15/1M, output=$0.60/1M
       expect(cost.inputCost).toBeCloseTo(0.15);
-      expect(cost.outputCost).toBeCloseTo(0.30);
+      expect(cost.outputCost).toBeCloseTo(0.3);
       expect(cost.totalCost).toBeCloseTo(0.45);
     });
 
@@ -551,9 +543,7 @@ describe("AzureOpenAIProvider", () => {
     it("uses custom api version in URL", async () => {
       const customProvider = createTestProvider({ apiVersion: "2023-12-01-preview" });
 
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await customProvider.chat(createTestRequest());
 
@@ -564,9 +554,7 @@ describe("AzureOpenAIProvider", () => {
     it("uses custom deployment name in URL", async () => {
       const customProvider = createTestProvider({ deploymentName: "my-gpt4-deployment" });
 
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await customProvider.chat(createTestRequest());
 
@@ -577,9 +565,7 @@ describe("AzureOpenAIProvider", () => {
     it("uses custom resource name in URL", async () => {
       const customProvider = createTestProvider({ resourceName: "my-custom-resource" });
 
-      fetchSpy.mockResolvedValueOnce(
-        createMockResponse(createChatCompletionResponse("ok")),
-      );
+      fetchSpy.mockResolvedValueOnce(createMockResponse(createChatCompletionResponse("ok")));
 
       await customProvider.chat(createTestRequest());
 

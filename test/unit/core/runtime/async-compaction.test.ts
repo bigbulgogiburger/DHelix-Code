@@ -406,19 +406,19 @@ describe("AsyncCompactionEngine", () => {
 
   describe("threshold 설정", () => {
     it("기본 임계치가 올바르다", () => {
-      expect(engine.getProactiveThreshold()).toBe(0.70);
+      expect(engine.getProactiveThreshold()).toBe(0.7);
       expect(engine.getReactiveThreshold()).toBe(0.85);
     });
 
     it("커스텀 임계치를 설정할 수 있다", () => {
       const customEngine = new AsyncCompactionEngine({
         contextManager: mockContextManager,
-        proactiveThreshold: 0.60,
-        reactiveThreshold: 0.90,
+        proactiveThreshold: 0.6,
+        reactiveThreshold: 0.9,
       });
 
-      expect(customEngine.getProactiveThreshold()).toBe(0.60);
-      expect(customEngine.getReactiveThreshold()).toBe(0.90);
+      expect(customEngine.getProactiveThreshold()).toBe(0.6);
+      expect(customEngine.getReactiveThreshold()).toBe(0.9);
     });
   });
 

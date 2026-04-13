@@ -57,7 +57,11 @@ import { Readable, Writable } from "node:stream";
 function createMockProcess() {
   return {
     stdout: new Readable({ read() {} }),
-    stdin: new Writable({ write(_c: unknown, _e: unknown, cb: () => void) { cb(); } }),
+    stdin: new Writable({
+      write(_c: unknown, _e: unknown, cb: () => void) {
+        cb();
+      },
+    }),
     stderr: new Readable({ read() {} }),
     kill: vi.fn(),
     on: vi.fn(),
@@ -114,7 +118,11 @@ describe("LSPServerConnection", () => {
     it("should throw when spawn fails (no stdout)", async () => {
       mockSpawn.mockReturnValue({
         stdout: null,
-        stdin: new Writable({ write(_c: unknown, _e: unknown, cb: () => void) { cb(); } }),
+        stdin: new Writable({
+          write(_c: unknown, _e: unknown, cb: () => void) {
+            cb();
+          },
+        }),
         stderr: null,
         kill: vi.fn(),
         on: vi.fn(),
@@ -358,9 +366,7 @@ describe("LSPServerConnection", () => {
       await connection.shutdown();
 
       // shutdown uses ShutdownRequest.type which is { method: "shutdown" }
-      expect(mockSendRequest).toHaveBeenCalledWith(
-        expect.objectContaining({ method: "shutdown" }),
-      );
+      expect(mockSendRequest).toHaveBeenCalledWith(expect.objectContaining({ method: "shutdown" }));
       // exit uses ExitNotification.type
       expect(mockSendNotification).toHaveBeenCalledWith("exit");
       // isAlive is a getter

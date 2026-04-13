@@ -50,19 +50,27 @@ describe("TaskClassifier", () => {
   });
 
   describe("plan keywords (English)", () => {
-    it.each(["plan", "design", "analyze", "analyse", "review", "architecture", "strategy", "approach", "proposal", "rfc"])(
-      "should classify '%s' as plan",
-      (keyword) => {
-        const result = classifier.classify(
-          makeContext({
-            currentMessage: `Let's ${keyword} the module`,
-            recentHistory: [makeUserMessage("previous message")],
-          }),
-        );
-        expect(result.phase).toBe("plan");
-        expect(result.confidence).toBeGreaterThanOrEqual(0.7);
-      },
-    );
+    it.each([
+      "plan",
+      "design",
+      "analyze",
+      "analyse",
+      "review",
+      "architecture",
+      "strategy",
+      "approach",
+      "proposal",
+      "rfc",
+    ])("should classify '%s' as plan", (keyword) => {
+      const result = classifier.classify(
+        makeContext({
+          currentMessage: `Let's ${keyword} the module`,
+          recentHistory: [makeUserMessage("previous message")],
+        }),
+      );
+      expect(result.phase).toBe("plan");
+      expect(result.confidence).toBeGreaterThanOrEqual(0.7);
+    });
   });
 
   describe("execute keywords (Korean)", () => {

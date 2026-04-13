@@ -21,10 +21,7 @@ afterAll(async () => {
  * @param moduleCode - 플러그인 모듈 소스코드
  * @returns manifest.json 절대 경로
  */
-async function createTestPlugin(
-  name: string,
-  moduleCode: string,
-): Promise<string> {
+async function createTestPlugin(name: string, moduleCode: string): Promise<string> {
   const pluginDir = join(testDir, name);
   await mkdir(pluginDir, { recursive: true });
 
@@ -84,10 +81,7 @@ describe("PluginRegistry", () => {
   describe("unregister", () => {
     it("should unregister a registered plugin", async () => {
       const pluginName = "unreg-" + Date.now();
-      const manifestPath = await createTestPlugin(
-        pluginName,
-        `export function activate() {}`,
-      );
+      const manifestPath = await createTestPlugin(pluginName, `export function activate() {}`);
 
       const instance = await registry.register(manifestPath);
       expect(registry.get(instance.manifest.id)).toBeDefined();
@@ -105,10 +99,7 @@ describe("PluginRegistry", () => {
   describe("get", () => {
     it("should return instance for registered plugin", async () => {
       const pluginName = "get-" + Date.now();
-      const manifestPath = await createTestPlugin(
-        pluginName,
-        `export function activate() {}`,
-      );
+      const manifestPath = await createTestPlugin(pluginName, `export function activate() {}`);
 
       await registry.register(manifestPath);
       const instance = registry.get(pluginName);

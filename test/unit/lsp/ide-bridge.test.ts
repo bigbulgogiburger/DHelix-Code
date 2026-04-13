@@ -173,9 +173,7 @@ describe("IDEBridgeClient", () => {
     }
     if (method === "lsp/rename") {
       return {
-        edits: [
-          { filePath: "/test/file.ts", line: 10, column: 5, newText: "bar" },
-        ],
+        edits: [{ filePath: "/test/file.ts", line: 10, column: 5, newText: "bar" }],
         source: "ide",
       };
     }
@@ -395,36 +393,28 @@ describe("IDEBridgeClient", () => {
       const { IDEBridgeClient } = await import("../../../src/lsp/ide-bridge.js");
       const client = new IDEBridgeClient({ workspacePath: "/test" });
 
-      await expect(client.gotoDefinition("/test.ts", 1, 1)).rejects.toThrow(
-        "Not connected",
-      );
+      await expect(client.gotoDefinition("/test.ts", 1, 1)).rejects.toThrow("Not connected");
     });
 
     it("should reject findReferences when not connected", async () => {
       const { IDEBridgeClient } = await import("../../../src/lsp/ide-bridge.js");
       const client = new IDEBridgeClient({ workspacePath: "/test" });
 
-      await expect(client.findReferences("/test.ts", 1, 1)).rejects.toThrow(
-        "Not connected",
-      );
+      await expect(client.findReferences("/test.ts", 1, 1)).rejects.toThrow("Not connected");
     });
 
     it("should reject getTypeInfo when not connected", async () => {
       const { IDEBridgeClient } = await import("../../../src/lsp/ide-bridge.js");
       const client = new IDEBridgeClient({ workspacePath: "/test" });
 
-      await expect(client.getTypeInfo("/test.ts", 1, 1)).rejects.toThrow(
-        "Not connected",
-      );
+      await expect(client.getTypeInfo("/test.ts", 1, 1)).rejects.toThrow("Not connected");
     });
 
     it("should reject rename when not connected", async () => {
       const { IDEBridgeClient } = await import("../../../src/lsp/ide-bridge.js");
       const client = new IDEBridgeClient({ workspacePath: "/test" });
 
-      await expect(client.rename("/test.ts", 1, 1, "newName")).rejects.toThrow(
-        "Not connected",
-      );
+      await expect(client.rename("/test.ts", 1, 1, "newName")).rejects.toThrow("Not connected");
     });
 
     it("should throw on connection to non-existent socket", async () => {
@@ -451,7 +441,10 @@ describe("IDEBridgeClient", () => {
             if (headerEnd === -1) break;
             const header = buffer.slice(0, headerEnd);
             const match = header.match(/Content-Length:\s*(\d+)/i);
-            if (!match) { buffer = buffer.slice(headerEnd + 4); continue; }
+            if (!match) {
+              buffer = buffer.slice(headerEnd + 4);
+              continue;
+            }
             const contentLength = parseInt(match[1], 10);
             const bodyStart = headerEnd + 4;
             const bodyEnd = bodyStart + contentLength;
@@ -462,7 +455,8 @@ describe("IDEBridgeClient", () => {
             let response: string;
             if (msg.method === "initialize") {
               response = JSON.stringify({
-                jsonrpc: "2.0", id: msg.id,
+                jsonrpc: "2.0",
+                id: msg.id,
                 result: {
                   capabilities: {
                     languages: ["typescript"],
@@ -479,7 +473,8 @@ describe("IDEBridgeClient", () => {
             } else {
               // Return a proper JSON-RPC error with the correct id
               response = JSON.stringify({
-                jsonrpc: "2.0", id: msg.id,
+                jsonrpc: "2.0",
+                id: msg.id,
                 error: { code: -32603, message: "Symbol not found" },
               });
             }
@@ -499,9 +494,7 @@ describe("IDEBridgeClient", () => {
       const client = await createConnectedClient();
       await client.connect();
 
-      await expect(client.gotoDefinition("/test.ts", 1, 1)).rejects.toThrow(
-        "Symbol not found",
-      );
+      await expect(client.gotoDefinition("/test.ts", 1, 1)).rejects.toThrow("Symbol not found");
 
       await client.disconnect();
     });

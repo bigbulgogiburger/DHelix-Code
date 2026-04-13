@@ -76,9 +76,7 @@ describe("JSONL to SQLite Migration", () => {
   /**
    * Helper: create index.json
    */
-  async function createIndex(
-    entries: Array<{ id: string; name: string }>,
-  ): Promise<void> {
+  async function createIndex(entries: Array<{ id: string; name: string }>): Promise<void> {
     const now = new Date().toISOString();
     const indexEntries = entries.map((e) => ({
       id: e.id,

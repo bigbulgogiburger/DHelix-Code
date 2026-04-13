@@ -35,10 +35,7 @@ describe("ide-bridge-protocol", () => {
 
     it("should use the first 8 chars of md5 hash", () => {
       const workspace = "/test/my-project";
-      const expectedHash = createHash("md5")
-        .update(workspace)
-        .digest("hex")
-        .slice(0, 8);
+      const expectedHash = createHash("md5").update(workspace).digest("hex").slice(0, 8);
       const socketPath = getSocketPath(workspace);
       expect(socketPath).toContain(expectedHash);
     });

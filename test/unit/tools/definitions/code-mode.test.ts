@@ -70,7 +70,7 @@ describe("code_mode tool", () => {
           {
             action: "replace-block",
             targetBlock: "greet",
-            content: 'function greet(name: string) {\n  return `Hi, ${name}!`;\n}',
+            content: "function greet(name: string) {\n  return `Hi, ${name}!`;\n}",
           },
         ],
         dryRun: false,

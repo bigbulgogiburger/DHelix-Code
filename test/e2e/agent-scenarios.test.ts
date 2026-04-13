@@ -2,10 +2,7 @@ import { describe, it, expect } from "vitest";
 import { runAgentLoop } from "../../src/core/agent-loop.js";
 import { ToolRegistry } from "../../src/tools/registry.js";
 import { selectStrategy } from "../../src/llm/tool-call-strategy.js";
-import {
-  createEventEmitter,
-  type AppEventEmitter,
-} from "../../src/utils/events.js";
+import { createEventEmitter, type AppEventEmitter } from "../../src/utils/events.js";
 import {
   createMockLLMProvider,
   mockChatCompletion,
@@ -73,11 +70,7 @@ function createMockToolRegistry(): ToolRegistry {
       new_string: z.string(),
     }),
     permissionLevel: "safe",
-    execute: async (params: {
-      file_path: string;
-      old_string: string;
-      new_string: string;
-    }) => ({
+    execute: async (params: { file_path: string; old_string: string; new_string: string }) => ({
       output: `Edited ${params.file_path}: replaced "${params.old_string}" with "${params.new_string}"`,
       isError: false,
     }),
@@ -349,9 +342,7 @@ describe("Agent Scenarios — E2E Validation", () => {
       events.on("agent:iteration", () => eventLog.push("iteration"));
       events.on("llm:start", () => eventLog.push("llm:start"));
       events.on("llm:complete", () => eventLog.push("llm:complete"));
-      events.on("agent:assistant-message", () =>
-        eventLog.push("assistant-message"),
-      );
+      events.on("agent:assistant-message", () => eventLog.push("assistant-message"));
       events.on("agent:usage-update", () => eventLog.push("usage-update"));
       events.on("agent:complete", () => eventLog.push("complete"));
 
@@ -398,11 +389,7 @@ describe("Agent Scenarios — E2E Validation", () => {
           new_string: z.string(),
         }),
         permissionLevel: "safe",
-        execute: async (params: {
-          file_path: string;
-          old_string: string;
-          new_string: string;
-        }) => {
+        execute: async (params: { file_path: string; old_string: string; new_string: string }) => {
           editedFiles.push(params.file_path);
           return {
             output: `Edited ${params.file_path}`,
@@ -418,9 +405,7 @@ describe("Agent Scenarios — E2E Validation", () => {
             old_string: "const x = 1",
             new_string: "const x = 2",
           }),
-          mockChatCompletion(
-            "I've updated the variable value in src/app.ts.",
-          ),
+          mockChatCompletion("I've updated the variable value in src/app.ts."),
         ],
         tools: registry,
       });

@@ -59,9 +59,27 @@ describe("find_references tool", () => {
   it("should return references on success", async () => {
     mockAcquire.mockResolvedValue({
       findReferences: vi.fn().mockResolvedValue([
-        { filePath: "/project/src/a.ts", line: 1, column: 10, context: "import { foo } from", isDefinition: false },
-        { filePath: "/project/src/b.ts", line: 5, column: 3, context: "foo()", isDefinition: false },
-        { filePath: "/project/src/c.ts", line: 12, column: 7, context: "const x = foo()", isDefinition: false },
+        {
+          filePath: "/project/src/a.ts",
+          line: 1,
+          column: 10,
+          context: "import { foo } from",
+          isDefinition: false,
+        },
+        {
+          filePath: "/project/src/b.ts",
+          line: 5,
+          column: 3,
+          context: "foo()",
+          isDefinition: false,
+        },
+        {
+          filePath: "/project/src/c.ts",
+          line: 12,
+          column: 7,
+          context: "const x = foo()",
+          isDefinition: false,
+        },
       ]),
     });
 
@@ -134,12 +152,7 @@ describe("find_references tool", () => {
       mockContext,
     );
 
-    expect(mockFindRefs).toHaveBeenCalledWith(
-      expect.any(String),
-      1,
-      1,
-      false,
-    );
+    expect(mockFindRefs).toHaveBeenCalledWith(expect.any(String), 1, 1, false);
   });
 
   it("should handle unsupported file type with fallback", async () => {
