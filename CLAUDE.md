@@ -19,17 +19,17 @@ graph TD
         SUBAG[Subagents — Manifest + P2P MessageBus + EventStore]
     end
     subgraph INFRA["Layer 3: Infrastructure"]
-        LLM[LLM — 8 Providers + Registry + TaskClassifier + A/B + Pool]
+        LLM[LLM — 8 Providers + Registry + TaskClassifier]
         TOOLS[Tools — 29 built-in + 4-Stage Pipeline + Code Mode]
         GUARD[Guardrails — injection, secrets, output masking, ReDoS]
-        PERM[Permissions — Policy Engine + Trust T0-T3 + Approval DB]
+        PERM[Permissions — Trust T0-T3 + Approval DB]
         MCP_[MCP — Health + A2A + Registry + OAuth PKCE + Streaming]
         LSP[LSP — On-Demand + IDE Integration v2]
         SANDBOX[Sandbox — Seatbelt + Bubblewrap + Container + Env]
     end
     subgraph LEAF["Layer 4: Leaf Modules"]
-        UTILS[Utils — logger, events, OTLP, SIEM export]
-        CONFIG["Config — 5-layer merge + Policy Bundles"]
+        UTILS[Utils — logger, events, OTLP]
+        CONFIG["Config — 5-layer merge"]
         SKILLS[Skills — Typed Manifest + Composer + Plugin Platform]
         MEM[Memory — project-scoped persistence + Search API]
         IDX[Indexing — Tree-Sitter 10 langs + Semantic Vector Search]
@@ -37,8 +37,8 @@ graph TD
     subgraph PLATFORM["Layer 5: Platform Services"]
         DASH[Dashboard — REST API + SSE Event Bridge]
         CLOUD[Cloud — Job Queue + Agent Runner + Result Sync]
-        AUTH[Auth — SSO/SAML + OAuth Token Store]
-        CMD[Commands — Unified Graph (builtin/mcp/skill/plugin)]
+        AUTH[Auth — OAuth Token Store]
+        CMD[Commands — builtin + mcp + skill + plugin]
     end
 
     APP --> PIPE
@@ -79,19 +79,20 @@ npm run ci           # typecheck + lint + coverage + build
 
 ## Skills
 
-| Skill                           | When to Use                                     |
-| ------------------------------- | ----------------------------------------------- |
-| `verify-tool-metadata-pipeline` | After tool definition/executor/display changes  |
-| `verify-model-capabilities`     | After LLM model config or default model changes |
-| `verify-architecture`           | After new module/import changes/refactoring     |
-| `add-slash-command`             | When adding a new slash command                 |
-| `add-tool`                      | When adding a new built-in tool                 |
-| `debug-test-failure`            | When tests fail and need systematic diagnosis   |
+| Skill                           | When to Use                                       |
+| ------------------------------- | ------------------------------------------------- |
+| `verify-tool-metadata-pipeline` | After tool definition/executor/display changes    |
+| `verify-model-capabilities`     | After LLM model config or default model changes   |
+| `verify-architecture`           | After new module/import changes/refactoring       |
+| `add-slash-command`             | When adding a new slash command                   |
+| `add-tool`                      | When adding a new built-in tool                   |
+| `debug-test-failure`            | When tests fail and need systematic diagnosis     |
 | `sprint-execution`              | When executing improvement plans with agent teams |
 
 ## Compact Instructions
 
 When compacting, always preserve:
+
 - Current phase and deliverable progress (X/N complete)
 - Recent test failures and their root causes
 - Architecture decisions made during this session
@@ -100,18 +101,18 @@ When compacting, always preserve:
 
 ## Reference Docs
 
-| 문서 | 참조 시점 | 경로 |
-|------|----------|------|
-| Directory Structure | 파일 위치, 모듈 배치 | `.claude/docs/reference/directory-structure.md` |
-| Architecture Deep | RuntimePipeline, 컨텍스트, 서브에이전트 | `.claude/docs/reference/architecture-deep.md` |
-| Interfaces & Tools | Tool 추가 (29개), LLM 연동, MCP 브리지 | `.claude/docs/reference/interfaces-and-tools.md` |
-| Config & Instructions | DHELIX.md, 설정 계층, MCP 스코프 | `.claude/docs/reference/config-system.md` |
-| Skills & Commands | 스킬 개발, 슬래시 명령 | `.claude/docs/reference/skills-and-commands.md` |
-| Coding Conventions | TS 설정, 이벤트 패턴, 팀 컨벤션 | `.claude/docs/reference/coding-conventions.md` |
-| MCP System | Health + A2A + Registry + OAuth PKCE + Streaming | `.claude/docs/reference/mcp-system.md` |
-| Subagents & Teams | P2P MessageBus, 팀 오케스트레이션 | `.claude/docs/reference/subagents-and-teams.md` |
-| E2E Test Guide | headless QA, NEXUS.md 패턴 | `.claude/docs/reference/e2e-test-guide.md` |
-| Naming & Brand | 네이밍 규칙, 브랜드 컬러, 키보드 단축키, 도구 목록 | `.claude/docs/reference/naming-and-brand.md` |
-| LLM Providers | 8개 프로바이더 (Anthropic~Local), benchmark, A/B | `.claude/docs/reference/llm-providers.md` |
-| Security & Sandbox | Trust tiers, Policy engine, Seatbelt/Container | `.claude/docs/reference/security-sandbox.md` |
-| Dashboard & Cloud | REST API, SSE, Job queue, Agent runner | `.claude/docs/reference/dashboard-cloud.md` |
+| 문서                  | 참조 시점                                          | 경로                                             |
+| --------------------- | -------------------------------------------------- | ------------------------------------------------ |
+| Directory Structure   | 파일 위치, 모듈 배치                               | `.claude/docs/reference/directory-structure.md`  |
+| Architecture Deep     | RuntimePipeline, 컨텍스트, 서브에이전트            | `.claude/docs/reference/architecture-deep.md`    |
+| Interfaces & Tools    | Tool 추가 (29개), LLM 연동, MCP 브리지             | `.claude/docs/reference/interfaces-and-tools.md` |
+| Config & Instructions | DHELIX.md, 설정 계층, MCP 스코프                   | `.claude/docs/reference/config-system.md`        |
+| Skills & Commands     | 스킬 개발, 슬래시 명령                             | `.claude/docs/reference/skills-and-commands.md`  |
+| Coding Conventions    | TS 설정, 이벤트 패턴, 팀 컨벤션                    | `.claude/docs/reference/coding-conventions.md`   |
+| MCP System            | Health + A2A + Registry + OAuth PKCE + Streaming   | `.claude/docs/reference/mcp-system.md`           |
+| Subagents & Teams     | P2P MessageBus, 팀 오케스트레이션                  | `.claude/docs/reference/subagents-and-teams.md`  |
+| E2E Test Guide        | headless QA, NEXUS.md 패턴                         | `.claude/docs/reference/e2e-test-guide.md`       |
+| Naming & Brand        | 네이밍 규칙, 브랜드 컬러, 키보드 단축키, 도구 목록 | `.claude/docs/reference/naming-and-brand.md`     |
+| LLM Providers         | 8개 프로바이더 (Anthropic~Local), TaskClassifier   | `.claude/docs/reference/llm-providers.md`        |
+| Security & Sandbox    | Trust tiers, Seatbelt/Container                    | `.claude/docs/reference/security-sandbox.md`     |
+| Dashboard & Cloud     | REST API, SSE, Job queue, Agent runner             | `.claude/docs/reference/dashboard-cloud.md`      |

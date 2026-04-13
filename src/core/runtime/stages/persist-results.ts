@@ -12,6 +12,7 @@ import { type RuntimeStage, type RuntimeContext } from "../types.js";
 import { type ToolCallResult } from "../../../tools/types.js";
 import { type ChatMessage } from "../../../llm/provider.js";
 import { countTokens } from "../../../llm/token-counter.js";
+import { extractFilePath } from "../../tool-call-utils.js";
 
 /**
  * 도구 결과를 토큰 예산에 맞게 잘라냅니다.
@@ -57,17 +58,6 @@ function truncateToolResult(
 }
 
 /**
- * 도구 호출의 인자에서 파일 경로를 추출합니다.
- */
-function extractFilePath(call: { readonly arguments: unknown }): string | undefined {
-  const args = call.arguments as Record<string, unknown>;
-  if (typeof args["file_path"] === "string") return args["file_path"];
-  if (typeof args["path"] === "string") return args["path"];
-  if (typeof args["filePath"] === "string") return args["filePath"];
-  return undefined;
-}
-
-/**
  * PersistResults stage를 생성합니다.
  *
  * 1. 도구 사용량을 usage aggregator에 기록
@@ -92,11 +82,7 @@ export function createPersistResultsStage(): RuntimeStage {
 
       // Track file accesses for context manager rehydration
       for (const call of ctx.extractedCalls) {
-        if (
-          call.name === "file_read" ||
-          call.name === "file_edit" ||
-          call.name === "file_write"
-        ) {
+        if (call.name === "file_read" || call.name === "file_edit" || call.name === "file_write") {
           const filePath = extractFilePath(call);
           if (filePath) {
             contextManager.trackFileAccess(filePath);
@@ -114,15 +100,12 @@ export function createPersistResultsStage(): RuntimeStage {
       ctx.messages.push(...toolMessages);
 
       // MCP tool failure detection → inject recovery guidance
-      const mcpFailures = ctx.toolResults.filter(
-        (r) => r.isError && r.name.startsWith("mcp__"),
-      );
+      const mcpFailures = ctx.toolResults.filter((r) => r.isError && r.name.startsWith("mcp__"));
       if (mcpFailures.length > 0) {
         const failedToolNames = mcpFailures.map((r) => r.name).join(", ");
         const hasTimeout = mcpFailures.some(
           (r) =>
-            r.metadata?.mcpErrorType === "timeout" ||
-            r.output.toLowerCase().includes("timed out"),
+            r.metadata?.mcpErrorType === "timeout" || r.output.toLowerCase().includes("timed out"),
         );
         const hasDenial = mcpFailures.some((r) =>
           r.output.toLowerCase().includes("permission denied"),

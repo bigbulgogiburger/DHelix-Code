@@ -9,30 +9,17 @@
 
 import { type RuntimeStage, type RuntimeContext } from "../types.js";
 import { type ChatMessage } from "../../../llm/provider.js";
+import { extractFilePath, FILE_WRITE_TOOLS } from "../../tool-call-utils.js";
 
 const trace = (tag: string, msg: string) => {
   if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
 };
-
-/** 파일에 쓰는 도구들 */
-const FILE_WRITE_TOOLS = new Set(["file_write", "file_edit"]);
 
 /** 중복 도구 호출 최대 횟수 */
 const MAX_DUPLICATE_TOOL_CALLS = 3;
 
 /** Incomplete 응답 최대 재시도 횟수 */
 const MAX_INCOMPLETE_RETRIES = 2;
-
-/**
- * 도구 호출의 인자에서 파일 경로를 추출합니다.
- */
-function extractFilePath(call: { readonly arguments: unknown }): string | undefined {
-  const args = call.arguments as Record<string, unknown>;
-  if (typeof args["file_path"] === "string") return args["file_path"];
-  if (typeof args["path"] === "string") return args["path"];
-  if (typeof args["filePath"] === "string") return args["filePath"];
-  return undefined;
-}
 
 /**
  * EvaluateContinuation stage를 생성합니다.
@@ -182,7 +169,7 @@ export function createEvaluateContinuationStage(): RuntimeStage {
         const textLenHistory = ctx.messages
           .filter((m: ChatMessage) => m.role === "assistant")
           .slice(-3)
-          .map((m: ChatMessage) => typeof m.content === "string" ? m.content.length : 0);
+          .map((m: ChatMessage) => (typeof m.content === "string" ? m.content.length : 0));
 
         // If last 3 assistant messages are all long text with few tool calls,
         // the agent may be "thinking out loud" instead of acting
@@ -223,9 +210,7 @@ export function createEvaluateContinuationStage(): RuntimeStage {
       if (!circuitBreaker.shouldContinue()) {
         const status = circuitBreaker.getStatus();
         events.emit("llm:error", {
-          error: new Error(
-            `Circuit breaker opened: ${status.reason ?? "No progress detected"}`,
-          ),
+          error: new Error(`Circuit breaker opened: ${status.reason ?? "No progress detected"}`),
         });
       }
 
