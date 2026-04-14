@@ -1,6 +1,5 @@
-import { describe, it, expect, afterEach, vi } from "vitest";
+import { describe, it, expect, afterEach } from "vitest";
 import { resolveToken, saveToken } from "../../../src/auth/token-store.js";
-import { TokenManager } from "../../../src/auth/token-manager.js";
 import { writeFile, mkdir } from "node:fs/promises";
 
 describe("token-store", () => {
@@ -46,105 +45,9 @@ describe("token-store", () => {
   });
 });
 
-describe("TokenManager", () => {
-  const originalEnv = { ...process.env };
-
-  afterEach(() => {
-    process.env = { ...originalEnv };
-  });
-
-  it("should cache resolved token", async () => {
-    process.env.DHELIX_API_KEY = "cached-key";
-    const manager = new TokenManager();
-
-    const first = await manager.getToken();
-    const second = await manager.getToken();
-    expect(first).toBe(second); // Same reference = cached
-  });
-
-  it("should clear cache", async () => {
-    process.env.DHELIX_API_KEY = "key1";
-    const manager = new TokenManager();
-
-    await manager.getToken();
-    manager.clearCache();
-
-    process.env.DHELIX_API_KEY = "key2";
-    const token = await manager.getToken();
-    expect(token!.config.token).toBe("key2");
-  });
-
-  it("should throw on requireToken with no token", async () => {
-    const manager = new TokenManager();
-    manager.clearCache();
-
-    // Force getToken to return undefined
-    vi.spyOn(manager, "getToken").mockResolvedValueOnce(undefined);
-
-    await expect(manager.requireToken()).rejects.toThrow("No API token configured");
-  });
-
-  it("should build bearer auth headers", async () => {
-    process.env.DHELIX_API_KEY = "test-bearer";
-    const manager = new TokenManager();
-    manager.clearCache();
-    const headers = await manager.getAuthHeaders();
-    expect(headers.Authorization).toBe("Bearer test-bearer");
-  });
-
-  it("should return empty headers when no token", async () => {
-    delete process.env.DHELIX_API_KEY;
-    delete process.env.OPENAI_API_KEY;
-    const manager = new TokenManager();
-    manager.clearCache();
-    const headers = await manager.getAuthHeaders();
-    // May be empty or from file
-    expect(typeof headers).toBe("object");
-  });
-
-  it("should build api-key auth headers", async () => {
-    process.env.DHELIX_API_KEY = "test-api-key";
-    const manager = new TokenManager();
-    manager.clearCache();
-
-    // We need to force the method to api-key — use setToken
-    await manager.setToken({ method: "api-key", token: "my-api-key" });
-    const headers = await manager.getAuthHeaders();
-    expect(headers["X-API-Key"]).toBe("my-api-key");
-  });
-
-  it("should build custom-header auth headers", async () => {
-    const manager = new TokenManager();
-    manager.clearCache();
-
-    await manager.setToken({
-      method: "custom-header",
-      token: "custom-val",
-      headerName: "X-Custom",
-    });
-    const headers = await manager.getAuthHeaders();
-    expect(headers["X-Custom"]).toBe("custom-val");
-  });
-
-  it("should build custom-header with default header name", async () => {
-    const manager = new TokenManager();
-    manager.clearCache();
-
-    await manager.setToken({ method: "custom-header", token: "custom-val" });
-    const headers = await manager.getAuthHeaders();
-    expect(headers["Authorization"]).toBe("custom-val");
-  });
-
-  it("should use cached token after setToken", async () => {
-    const manager = new TokenManager();
-    manager.clearCache();
-
-    await manager.setToken({ method: "bearer", token: "stored-token" });
-    const token = await manager.getToken();
-    expect(token!.config.token).toBe("stored-token");
-    expect(token!.source).toBe("file");
-  });
-});
+// TokenManager describe block removed — src/auth/token-manager.ts was deleted
+// in the cleanup that removed weighted-selector, benchmark, ab-testing, etc.
+// The token-store resolveToken/saveToken API is still tested below.
 
 describe("saveToken", () => {
   it("should save bearer token to file", async () => {
