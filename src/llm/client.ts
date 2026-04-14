@@ -781,7 +781,6 @@ export class OpenAICompatibleClient implements LLMProvider {
     try {
       const iterator = stream[Symbol.asyncIterator]();
 
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const result = await Promise.race([iterator.next(), chunkTimeoutPromise()]);
 
@@ -918,7 +917,6 @@ export class OpenAICompatibleClient implements LLMProvider {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const iterator = (stream as any)[Symbol.asyncIterator]();
 
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         const result = await Promise.race([iterator.next(), chunkTimeoutPromise()]);
 

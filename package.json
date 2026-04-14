@@ -27,7 +27,9 @@
     "test:coverage": "vitest run --coverage",
     "ci": "npm run typecheck && npm run lint && npm run test:coverage && npm run build",
     "prepublishOnly": "npm run ci",
-    "check": "npm run typecheck && npm run lint && npm test && npm run build"
+    "check": "npm run typecheck && npm run lint && npm test && npm run build",
+    "docs": "typedoc",
+    "quality": "npm run typecheck && npm run lint && npm run test:coverage && npx madge --circular src/ && npm run build"
   },
   "dependencies": {
     "@types/better-sqlite3": "^7.6.13",

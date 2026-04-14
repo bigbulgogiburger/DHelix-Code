@@ -141,3 +141,86 @@ export function getRecoveryExplanation(strategy: RecoveryStrategy, attempt: numb
       return description;
   }
 }
+
+/**
+ * Maximum backoff cap in milliseconds (30 seconds).
+ * Prevents exponential backoff from growing unbounded.
+ */
+const MAX_BACKOFF_MS = 30_000;
+
+/**
+ * Action escalation order: retry → compact → fallback-strategy.
+ * When a previous action fails, ChainedRecoveryStrategy advances to the next level.
+ */
+const ACTION_PRIORITY: readonly RecoveryStrategy["action"][] = [
+  "retry",
+  "compact",
+  "fallback-strategy",
+];
+
+/**
+ * Chained recovery strategy that escalates through action types.
+ *
+ * Given a chain of RecoveryStrategy entries, it picks the first matching
+ * strategy for an error. If a previous action already failed, it escalates
+ * to the next action type in priority order (retry → compact → fallback-strategy).
+ *
+ * Backoff values are capped at MAX_BACKOFF_MS (30 seconds).
+ */
+export class ChainedRecoveryStrategy {
+  private readonly chain: readonly RecoveryStrategy[];
+
+  constructor(chain: readonly RecoveryStrategy[]) {
+    this.chain = chain;
+  }
+
+  /**
+   * Find the next recovery strategy for the given error.
+   *
+   * @param error - The error to match against
+   * @param previousAction - The action that was already tried and failed (if any)
+   * @returns A matching strategy with capped backoff, or undefined if none match
+   */
+  findNext(
+    error: Error,
+    previousAction?: RecoveryStrategy["action"],
+  ): RecoveryStrategy | undefined {
+    const matching = this.chain.filter((s) => s.errorPattern.test(error.message));
+
+    if (matching.length === 0) {
+      return undefined;
+    }
+
+    // Determine the minimum action priority to use
+    const minPriorityIndex = previousAction ? ACTION_PRIORITY.indexOf(previousAction) + 1 : 0;
+
+    if (minPriorityIndex >= ACTION_PRIORITY.length) {
+      return undefined;
+    }
+
+    const allowedActions = ACTION_PRIORITY.slice(minPriorityIndex);
+
+    // Find the first matching strategy whose action is in the allowed set
+    const candidate = matching.find((s) => allowedActions.includes(s.action));
+
+    if (!candidate) {
+      return undefined;
+    }
+
+    // Cap the backoff at MAX_BACKOFF_MS
+    const cappedBackoff =
+      candidate.backoffMs !== undefined ? Math.min(candidate.backoffMs, MAX_BACKOFF_MS) : undefined;
+
+    return {
+      ...candidate,
+      backoffMs: cappedBackoff,
+    };
+  }
+}
+
+/**
+ * Creates a ChainedRecoveryStrategy with the default RECOVERY_STRATEGIES.
+ */
+export function createDefaultRecoveryChain(): ChainedRecoveryStrategy {
+  return new ChainedRecoveryStrategy(RECOVERY_STRATEGIES);
+}

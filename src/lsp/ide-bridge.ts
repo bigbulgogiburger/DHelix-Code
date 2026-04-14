@@ -415,6 +415,7 @@ export class IDEBridgeClient {
    * Document open/close are no-ops since the IDE manages document lifecycle.
    */
   createSession(language: LSPLanguageId): LSPSession {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- needed for getter in returned object literal
     const client = this;
 
     return {

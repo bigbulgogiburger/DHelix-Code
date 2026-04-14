@@ -44,6 +44,7 @@ program
     "text",
   )
   .option("--add-dir <dirs...>", "Additional directories to include (monorepo/multi-repo)")
+  .option("--max-budget-usd <amount>", "Maximum session budget in USD", parseFloat)
   .action(
     async (opts: {
       model?: string;
@@ -55,6 +56,7 @@ program
       print?: string;
       outputFormat: string;
       addDir?: string[];
+      maxBudgetUsd?: number;
     }) => {
       // ── dotenv 로드 ──
       const { config: dotenvConfig } = await import("dotenv");

@@ -125,6 +125,7 @@ export class CostTracker {
       cost,
       timestamp: Date.now(),
     });
+    this.checkBudgetThresholds();
   }
 
   /**
@@ -199,4 +200,90 @@ export class CostTracker {
   get entryCount(): number {
     return this._entries.length;
   }
+
+  // --- Budget Management ---
+
+  /** 세션 예산 (USD), undefined이면 예산 제한 없음 */
+  private _sessionBudgetUSD: number | undefined;
+  /** 일별 예산 (USD), undefined이면 일별 제한 없음 */
+  private _dailyBudgetUSD: number | undefined;
+  /** 예산 초과 이벤트 콜백 */
+  private _onBudgetThreshold: ((status: BudgetStatus) => void) | undefined;
+
+  /**
+   * 세션/일별 예산을 설정합니다.
+   *
+   * @param sessionBudgetUSD - 세션 예산 (USD). 0 이하이면 무시됩니다.
+   * @param dailyBudgetUSD - 일별 예산 (USD, 선택적)
+   */
+  setBudget(sessionBudgetUSD: number, dailyBudgetUSD?: number): void {
+    if (sessionBudgetUSD > 0) {
+      this._sessionBudgetUSD = sessionBudgetUSD;
+    }
+    if (dailyBudgetUSD !== undefined && dailyBudgetUSD > 0) {
+      this._dailyBudgetUSD = dailyBudgetUSD;
+    }
+  }
+
+  /**
+   * 예산 초과 임계값 이벤트 콜백을 설정합니다.
+   * 80% 도달, 100% 초과 시 콜백이 호출됩니다.
+   *
+   * @param callback - BudgetStatus를 수신하는 콜백
+   */
+  onBudgetThreshold(callback: (status: BudgetStatus) => void): void {
+    this._onBudgetThreshold = callback;
+  }
+
+  /**
+   * 현재 예산 상태를 확인합니다.
+   *
+   * @returns 예산 상태 (예산 미설정 시 withinBudget=true, percentUsed=0)
+   */
+  checkBudget(): BudgetStatus {
+    if (this._sessionBudgetUSD === undefined) {
+      return { withinBudget: true, percentUsed: 0, remaining: Infinity };
+    }
+    const summary = this.getSummary();
+    const used = summary.totalCost;
+    const budget = this._sessionBudgetUSD;
+    const percentUsed = budget > 0 ? (used / budget) * 100 : 0;
+    const remaining = Math.max(0, budget - used);
+
+    return {
+      withinBudget: used <= budget,
+      percentUsed: Math.min(percentUsed, 100),
+      remaining,
+      sessionBudgetUSD: budget,
+      dailyBudgetUSD: this._dailyBudgetUSD,
+    };
+  }
+
+  /**
+   * 예산 임계값을 체크하고, 80%/100% 도달 시 콜백을 호출합니다.
+   * addUsage() 이후 자동으로 호출됩니다.
+   */
+  private checkBudgetThresholds(): void {
+    if (!this._onBudgetThreshold || this._sessionBudgetUSD === undefined) return;
+    const status = this.checkBudget();
+    if (status.percentUsed >= 100 || status.percentUsed >= 80) {
+      this._onBudgetThreshold(status);
+    }
+  }
+}
+
+/**
+ * 예산 상태 — checkBudget()의 반환 타입
+ */
+export interface BudgetStatus {
+  /** 예산 내인지 여부 */
+  readonly withinBudget: boolean;
+  /** 사용 비율 (0-100) */
+  readonly percentUsed: number;
+  /** 남은 예산 (USD) */
+  readonly remaining: number;
+  /** 설정된 세션 예산 (USD) */
+  readonly sessionBudgetUSD?: number;
+  /** 설정된 일별 예산 (USD) */
+  readonly dailyBudgetUSD?: number;
 }

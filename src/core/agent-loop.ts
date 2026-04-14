@@ -26,6 +26,9 @@ import { type ChatMessage } from "../llm/provider.js";
 import { resetRetryState } from "./recovery-executor.js";
 import { createRuntimeContext } from "./runtime/context-factory.js";
 import { createPipeline } from "./runtime/pipeline.js";
+import { metrics } from "../telemetry/metrics.js";
+import { loadTelemetryConfig } from "../telemetry/config.js";
+import { createTelemetryBridge } from "../telemetry/agent-telemetry-bridge.js";
 
 // Re-export types from dedicated config module for backward compatibility
 export { type AgentLoopConfig, type PermissionResult } from "./agent-loop-config.js";
@@ -95,45 +98,16 @@ export async function runAgentLoop(
   const ctx = createRuntimeContext(config, initialMessages);
   const pipeline = createPipeline({});
 
-  while (ctx.iteration < ctx.maxIterations && ctx.circuitBreaker.shouldContinue()) {
-    if (config.signal?.aborted) {
-      const usage = ctx.usageAggregator.snapshot();
-      config.events.emit("agent:complete", {
-        iterations: ctx.iteration,
-        totalTokens: usage.totalTokens,
-        toolCallCount: usage.toolCallCount,
-        aborted: true,
-        reason: "aborted",
-      });
-      trace("agent-loop", `Loop complete: reason=aborted, iterations=${ctx.iteration}`);
-      return { messages: ctx.messages, iterations: ctx.iteration, aborted: true, usage };
-    }
+  // Telemetry bridge — connects event system to MetricsCollector
+  const telemetryConfig = loadTelemetryConfig();
+  const telemetryBridge = createTelemetryBridge(config.events, {
+    metricsCollector: metrics,
+    enabled: telemetryConfig.enabled,
+  });
 
-    ctx.iteration++;
-    config.events.emit("agent:iteration", { iteration: ctx.iteration });
-    trace("agent-loop", `--- Iteration ${ctx.iteration} start ---`);
-
-    const outcome = await pipeline.executeIteration(ctx);
-
-    switch (outcome.action) {
-      case "continue":
-        continue; // Next iteration
-      case "complete": {
-        const usage = ctx.usageAggregator.snapshot();
-        config.events.emit("agent:complete", {
-          iterations: ctx.iteration,
-          totalTokens: usage.totalTokens,
-          toolCallCount: usage.toolCallCount,
-          aborted: false,
-          reason: "completed",
-        });
-        trace(
-          "agent-loop",
-          `Loop complete: reason=no-tool-calls, iterations=${ctx.iteration}, aborted=false`,
-        );
-        return { messages: ctx.messages, iterations: ctx.iteration, aborted: false, usage };
-      }
-      case "abort": {
+  try {
+    while (ctx.iteration < ctx.maxIterations && ctx.circuitBreaker.shouldContinue()) {
+      if (config.signal?.aborted) {
         const usage = ctx.usageAggregator.snapshot();
         config.events.emit("agent:complete", {
           iterations: ctx.iteration,
@@ -145,24 +119,64 @@ export async function runAgentLoop(
         trace("agent-loop", `Loop complete: reason=aborted, iterations=${ctx.iteration}`);
         return { messages: ctx.messages, iterations: ctx.iteration, aborted: true, usage };
       }
-      case "error":
-        throw outcome.error;
+
+      ctx.iteration++;
+      config.events.emit("agent:iteration", { iteration: ctx.iteration });
+      trace("agent-loop", `--- Iteration ${ctx.iteration} start ---`);
+
+      const outcome = await pipeline.executeIteration(ctx);
+
+      switch (outcome.action) {
+        case "continue":
+          continue; // Next iteration
+        case "complete": {
+          const usage = ctx.usageAggregator.snapshot();
+          config.events.emit("agent:complete", {
+            iterations: ctx.iteration,
+            totalTokens: usage.totalTokens,
+            toolCallCount: usage.toolCallCount,
+            aborted: false,
+            reason: "completed",
+          });
+          trace(
+            "agent-loop",
+            `Loop complete: reason=no-tool-calls, iterations=${ctx.iteration}, aborted=false`,
+          );
+          return { messages: ctx.messages, iterations: ctx.iteration, aborted: false, usage };
+        }
+        case "abort": {
+          const usage = ctx.usageAggregator.snapshot();
+          config.events.emit("agent:complete", {
+            iterations: ctx.iteration,
+            totalTokens: usage.totalTokens,
+            toolCallCount: usage.toolCallCount,
+            aborted: true,
+            reason: "aborted",
+          });
+          trace("agent-loop", `Loop complete: reason=aborted, iterations=${ctx.iteration}`);
+          return { messages: ctx.messages, iterations: ctx.iteration, aborted: true, usage };
+        }
+        case "error":
+          throw outcome.error;
+      }
     }
+
+    // Max iterations or circuit breaker
+    const finalUsage = ctx.usageAggregator.snapshot();
+    const reason = ctx.circuitBreaker.shouldContinue() ? "max-iterations" : "circuit-breaker";
+    config.events.emit("agent:complete", {
+      iterations: ctx.iteration,
+      totalTokens: finalUsage.totalTokens,
+      toolCallCount: finalUsage.toolCallCount,
+      aborted: false,
+      reason,
+    });
+    trace("agent-loop", `Loop complete: reason=${reason}, iterations=${ctx.iteration}`);
+
+    return { messages: ctx.messages, iterations: ctx.iteration, aborted: false, usage: finalUsage };
+  } finally {
+    telemetryBridge.dispose();
   }
-
-  // Max iterations or circuit breaker
-  const finalUsage = ctx.usageAggregator.snapshot();
-  const reason = ctx.circuitBreaker.shouldContinue() ? "max-iterations" : "circuit-breaker";
-  config.events.emit("agent:complete", {
-    iterations: ctx.iteration,
-    totalTokens: finalUsage.totalTokens,
-    toolCallCount: finalUsage.toolCallCount,
-    aborted: false,
-    reason,
-  });
-  trace("agent-loop", `Loop complete: reason=${reason}, iterations=${ctx.iteration}`);
-
-  return { messages: ctx.messages, iterations: ctx.iteration, aborted: false, usage: finalUsage };
 }
 
 // resolveDeferredFromHistory — moved to runtime/stages/resolve-tools.ts

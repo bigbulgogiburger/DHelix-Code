@@ -96,6 +96,8 @@ export interface SkillManifest extends SkillFrontmatter {
   readonly requires?: SkillRequirements;
   /** 신뢰 수준 (기본: 'project') */
   readonly trustLevel?: SkillTrustLevel;
+  /** Skill dependencies — names of other skills that must be loaded first */
+  readonly dependencies?: readonly string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +152,7 @@ export const skillManifestSchema = skillFrontmatterSchema.extend({
   outputs: z.record(z.string(), skillOutputSchema).optional(),
   requires: skillRequirementsSchema.optional(),
   trustLevel: z.enum(["built-in", "project", "community", "untrusted"]).optional(),
+  dependencies: z.array(z.string()).optional(),
 });
 
 // ---------------------------------------------------------------------------

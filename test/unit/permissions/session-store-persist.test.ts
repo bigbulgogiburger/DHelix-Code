@@ -23,42 +23,42 @@ describe("SessionApprovalStore persistence", () => {
     cleanupPersistFile();
   });
 
-  it("should save and load approvals", () => {
+  it("should save and load approvals", async () => {
     const store = new SessionApprovalStore();
     store.approve("file_read");
     store.approve("grep_search");
-    store.save();
+    await store.save();
 
     const newStore = new SessionApprovalStore();
-    newStore.load();
+    await newStore.load();
     expect(newStore.isApproved("file_read")).toBe(true);
     expect(newStore.isApproved("grep_search")).toBe(true);
     expect(newStore.isApproved("file_write")).toBe(false);
   });
 
-  it("should handle load when no file exists", () => {
+  it("should handle load when no file exists", async () => {
     const newStore = new SessionApprovalStore();
     // Should not throw
-    expect(() => newStore.load()).not.toThrow();
+    await expect(newStore.load()).resolves.toBeUndefined();
     expect(newStore.size).toBe(0);
   });
 
-  it("should merge loaded approvals with existing ones", () => {
+  it("should merge loaded approvals with existing ones", async () => {
     const store = new SessionApprovalStore();
     store.approve("file_read");
-    store.save();
+    await store.save();
 
     const newStore = new SessionApprovalStore();
     newStore.approve("bash_exec");
-    newStore.load();
+    await newStore.load();
 
     expect(newStore.isApproved("file_read")).toBe(true);
     expect(newStore.isApproved("bash_exec")).toBe(true);
   });
 
-  it("should handle save errors gracefully", () => {
+  it("should handle save errors gracefully", async () => {
     const store = new SessionApprovalStore();
     // save() has a try-catch, so should not throw even if path is invalid
-    expect(() => store.save()).not.toThrow();
+    await expect(store.save()).resolves.toBeUndefined();
   });
 });

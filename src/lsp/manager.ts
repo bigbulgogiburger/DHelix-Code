@@ -401,6 +401,7 @@ export class LSPManager {
    */
   private createSession(managed: ManagedServer): LSPSession {
     const { connection, language } = managed;
+    // eslint-disable-next-line @typescript-eslint/no-this-alias -- needed for closures in returned session
     const manager = this;
     const key = this.serverKey(managed.language, managed.projectDir);
 

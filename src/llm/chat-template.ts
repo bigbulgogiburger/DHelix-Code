@@ -229,7 +229,7 @@ export const CHAT_TEMPLATE_GENERIC: ChatTemplate = { ...CHAT_TEMPLATE_CHATML, ty
  */
 const MODEL_TEMPLATE_PATTERNS: ReadonlyArray<[RegExp, ChatTemplate]> = [
   // Llama 3.x (llama3 앞에 배치해야 함)
-  [/llama[-_]?3[._\-]?\d/i, CHAT_TEMPLATE_LLAMA3],
+  [/llama[-_]?3[._-]?\d/i, CHAT_TEMPLATE_LLAMA3],
   [/llama[-_]?3(?!\.\d)/i, CHAT_TEMPLATE_LLAMA3],
   // Llama 2
   [/llama[-_]?2/i, CHAT_TEMPLATE_LLAMA2],

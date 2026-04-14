@@ -17,7 +17,7 @@
  * - 영구 저장소: settings.json에 저장, 세션 간 유지
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFile, writeFile, mkdir } from "node:fs/promises";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
@@ -122,13 +122,13 @@ export class SessionApprovalStore {
    * JSON 배열 형태로 저장되며, 최선 노력(best-effort) 방식으로
    * 저장 실패 시 에러를 무시합니다 (세션 데이터이므로 유실되어도 무방).
    */
-  save(): void {
+  async save(): Promise<void> {
     try {
       const dir = join(homedir(), ".dhelix");
       // 디렉토리가 없으면 생성 (recursive: true)
-      mkdirSync(dir, { recursive: true });
+      await mkdir(dir, { recursive: true });
       // Set을 배열로 변환하여 JSON으로 직렬화
-      writeFileSync(this.persistPath, JSON.stringify([...this.approved]), "utf-8");
+      await writeFile(this.persistPath, JSON.stringify([...this.approved]), "utf-8");
     } catch {
       // 최선 노력 영속화 — 저장 실패해도 기능에 지장 없음
     }
@@ -140,9 +140,9 @@ export class SessionApprovalStore {
    * 이전 세션의 승인 상태를 이어서 사용하고 싶을 때 호출합니다.
    * 파일이 없거나 파싱 실패 시 빈 상태에서 시작합니다.
    */
-  load(): void {
+  async load(): Promise<void> {
     try {
-      const data = readFileSync(this.persistPath, "utf-8");
+      const data = await readFile(this.persistPath, "utf-8");
       const approvals = JSON.parse(data) as string[];
       for (const key of approvals) {
         this.approved.add(key);

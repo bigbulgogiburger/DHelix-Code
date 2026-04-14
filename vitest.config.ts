@@ -31,6 +31,12 @@ export default defineConfig({
         "src/llm/provider.ts",
         "src/utils/logger.ts",
       ],
+      thresholds: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80,
+      },
     },
   },
 });

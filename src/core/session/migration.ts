@@ -263,7 +263,7 @@ async function migrateOneSession(
 
   // 3. transcript.jsonl 파싱 및 메시지 삽입
   const transcriptPath = join(sessionDir, "transcript.jsonl");
-  let messages: JsonlMessage[] = [];
+  const messages: JsonlMessage[] = [];
   try {
     const content = await readFile(transcriptPath, "utf-8");
     if (content.trim()) {

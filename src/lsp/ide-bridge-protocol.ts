@@ -94,7 +94,7 @@ export interface InitializeResult {
 }
 
 // lsp/definition
-export interface DefinitionParams extends DocumentPosition {}
+export type DefinitionParams = DocumentPosition;
 
 export interface DefinitionResponse {
   readonly results: readonly DefinitionResult[];
@@ -112,7 +112,7 @@ export interface ReferencesResponse {
 }
 
 // lsp/hover
-export interface HoverParams extends DocumentPosition {}
+export type HoverParams = DocumentPosition;
 
 export interface HoverResponse {
   readonly result: TypeInfoResult | undefined;
@@ -213,7 +213,7 @@ export interface DocumentSymbolsResponse {
 }
 
 // lsp/callHierarchy/prepare
-export interface CallHierarchyPrepareParams extends DocumentPosition {}
+export type CallHierarchyPrepareParams = DocumentPosition;
 
 export interface CallHierarchyItem {
   readonly name: string;
@@ -257,6 +257,7 @@ export interface CallHierarchyOutgoingResponse {
 }
 
 // shutdown
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 export interface ShutdownParams {}
 
 export interface ShutdownResponse {

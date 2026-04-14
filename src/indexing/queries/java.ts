@@ -83,10 +83,8 @@ function extractModifiers(node: Node): string[] {
   return modifiers;
 }
 
-/**
- * Extract Javadoc comment preceding a node.
- * Javadoc comments start with /** and end with *​/
- */
+// Extract Javadoc comment preceding a node.
+// Javadoc comments start with `/**` and end with `*/`
 function extractJavadoc(node: Node): string | undefined {
   // Check previous siblings for block_comment that looks like Javadoc
   let prev = node.previousNamedSibling;

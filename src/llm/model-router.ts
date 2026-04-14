@@ -25,6 +25,18 @@ import { AnthropicProvider } from "./providers/anthropic.js";
 import { OpenAICompatibleClient } from "./client.js";
 import { ResponsesAPIClient, isResponsesOnlyModel } from "./responses-client.js";
 
+/** 스트리밍 폴백 경고 정보 */
+export interface StreamFallbackWarning {
+  /** 원래 사용하던 모델 이름 */
+  readonly fromModel: string;
+  /** 전환된 대체 모델 이름 */
+  readonly toModel: string;
+  /** 폴백 시점까지 수신한 부분 텍스트 */
+  readonly partialText: string;
+  /** 원본 에러 */
+  readonly error: unknown;
+}
+
 /** 모델 라우터 설정 */
 export interface ModelRouterConfig {
   /** 주 모델 프로바이더 — 기본적으로 사용하는 LLM 클라이언트 */
@@ -41,6 +53,8 @@ export interface ModelRouterConfig {
   readonly retryDelayMs?: number;
   /** 복잡도 임계값 (토큰 수) — 향후 복잡도 기반 라우팅에 사용 예정 */
   readonly complexityThreshold?: number;
+  /** 스트리밍 중 폴백 발생 시 호출되는 콜백 (선택적) */
+  readonly onStreamFallback?: (warning: StreamFallbackWarning) => void;
 }
 
 // classifyError and sleep — imported from core/error-classification.js (deduplicated)
@@ -72,6 +86,7 @@ export class ModelRouter implements LLMProvider {
   private readonly fallbackModel: string | undefined;
   private readonly maxRetries: number;
   private readonly retryDelayMs: number;
+  private readonly onStreamFallback?: (warning: StreamFallbackWarning) => void;
 
   /** 현재 대체 모델을 사용 중인지 여부 */
   private usingFallback = false;
@@ -83,6 +98,7 @@ export class ModelRouter implements LLMProvider {
     this.fallbackModel = config.fallbackModel;
     this.maxRetries = config.maxRetries ?? 3;
     this.retryDelayMs = config.retryDelayMs ?? 1000;
+    this.onStreamFallback = config.onStreamFallback;
   }
 
   /**
@@ -196,10 +212,11 @@ export class ModelRouter implements LLMProvider {
   }
 
   /**
-   * 스트리밍 채팅 요청 — 에러 시 대체 모델로 폴백
+   * 스트리밍 채팅 요청 — 에러 시 부분 응답을 보존하며 대체 모델로 폴백
    *
    * 스트리밍은 부분적으로 데이터를 받은 후 에러가 발생할 수 있으므로,
-   * 재시도보다는 대체 모델로의 폴백에 중점을 둡니다.
+   * 수신된 부분 텍스트를 버퍼링하고, 에러 발생 시 대체 모델로 전환하면서
+   * 부분 컨텍스트를 함께 전달합니다.
    *
    * @param request - 채팅 요청
    * @yields ChatChunk — 실시간 응답 조각
@@ -210,27 +227,81 @@ export class ModelRouter implements LLMProvider {
       model: this.activeModel,
     };
 
+    // 부분 텍스트를 버퍼링하여 폴백 시 컨텍스트를 보존
+    const textParts: string[] = [];
+    let streamErrored = false;
+    let caughtError: unknown;
+
     try {
-      yield* this.activeProvider.stream(activeRequest);
-    } catch (error) {
-      const errorClass = classifyError(error);
-
-      // 과부하/일시적 에러일 때 대체 모델로 폴백
-      if (
-        (errorClass === "overload" || errorClass === "transient") &&
-        this.canSwitchToFallback() &&
-        !this.usingFallback
-      ) {
-        this.usingFallback = true;
-        yield* this.fallback!.stream({
-          ...request,
-          model: this.fallbackModel!,
-        });
-        return;
+      for await (const chunk of this.activeProvider.stream(activeRequest)) {
+        if (chunk.type === "text-delta" && chunk.text) {
+          textParts.push(chunk.text);
+        }
+        yield chunk;
       }
-
-      throw error;
+    } catch (error) {
+      streamErrored = true;
+      caughtError = error;
     }
+
+    if (!streamErrored) {
+      return;
+    }
+
+    const errorClass = classifyError(caughtError);
+    const partialText = textParts.join("");
+
+    // 과부하/일시적 에러일 때 대체 모델로 폴백 (부분 응답 컨텍스트 포함)
+    if (
+      (errorClass === "overload" || errorClass === "transient") &&
+      this.canSwitchToFallback() &&
+      !this.usingFallback
+    ) {
+      this.usingFallback = true;
+
+      // 폴백 경고 이벤트 발생
+      const warning: StreamFallbackWarning = {
+        fromModel: this.primaryModel,
+        toModel: this.fallbackModel!,
+        partialText,
+        error: caughtError,
+      };
+      this.onStreamFallback?.(warning);
+
+      // 부분 텍스트가 있으면 대체 모델에 컨텍스트로 전달
+      const fallbackRequest = this.buildFallbackRequest(request, partialText);
+      yield* this.fallback!.stream(fallbackRequest);
+      return;
+    }
+
+    throw caughtError;
+  }
+
+  /**
+   * 폴백 요청 구성 — 부분 텍스트가 있으면 어시스턴트 메시지로 추가
+   *
+   * 부분 응답을 대체 모델에 전달하여 이어서 생성할 수 있도록 합니다.
+   */
+  private buildFallbackRequest(originalRequest: ChatRequest, partialText: string): ChatRequest {
+    if (!partialText) {
+      return {
+        ...originalRequest,
+        model: this.fallbackModel!,
+      };
+    }
+
+    // 부분 텍스트를 어시스턴트 메시지로 추가하여 대체 모델이 이어서 생성
+    return {
+      ...originalRequest,
+      model: this.fallbackModel!,
+      messages: [
+        ...originalRequest.messages,
+        {
+          role: "assistant" as const,
+          content: partialText,
+        },
+      ],
+    };
   }
 
   /**

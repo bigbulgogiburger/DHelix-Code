@@ -13,9 +13,28 @@
 
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { createRequire } from "node:module";
 
-/** 애플리케이션 버전 — package.json과 동기화 */
-export const VERSION = "0.2.0";
+/**
+ * 애플리케이션 버전 — package.json에서 자동 동기화
+ *
+ * 빌드 시: tsup의 define으로 process.env.__DHELIX_VERSION__에 주입됨
+ * 개발/테스트: createRequire로 package.json에서 직접 읽음
+ */
+function resolveVersion(): string {
+  if (process.env.__DHELIX_VERSION__) {
+    return process.env.__DHELIX_VERSION__;
+  }
+  try {
+    const require = createRequire(import.meta.url);
+    const pkg = require("../package.json") as { version: string };
+    return pkg.version;
+  } catch {
+    return "0.0.0-unknown";
+  }
+}
+
+export const VERSION = resolveVersion();
 
 /** 애플리케이션 이름 — 디렉토리명, 환경변수 접두사 등에 사용 */
 export const APP_NAME = "dhelix";

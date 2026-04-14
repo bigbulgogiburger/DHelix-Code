@@ -1,0 +1,10 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["src/index.ts"],
+  "out": "docs/api",
+  "plugin": [],
+  "exclude": ["**/node_modules/**", "**/*.test.ts"],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "skipErrorChecking": true
+}
