@@ -1,12 +1,6 @@
-# E2E Test Harness Template
-
-## Complete Test File Template
-
-```typescript
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { execSync } from "node:child_process";
 import { existsSync, rmSync, readFileSync, mkdirSync, writeFileSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { resolve } from "node:path";
 import { type ChatMessage } from "../../src/llm/provider.js";
 import { runAgentLoop, type AgentLoopConfig } from "../../src/core/agent-loop.js";
 import { createLLMClientForModel } from "../../src/llm/client-factory.js";
@@ -25,9 +19,9 @@ import { grepSearchTool } from "../../src/tools/definitions/grep-search.js";
 // CONFIGURATION
 // ============================================================
 
-const STACK_NAME = "__STACK_NAME__"; // e.g., "Spring Boot + React (TypeScript)"
-const PROJECT_DIR_NAME = "__DIR_NAME__"; // e.g., "springboot-react-taskboard"
-const TOTAL_TURNS = __TOTAL_TURNS__; // e.g., 9
+const STACK_NAME = "Conversation Quality — Context Retention";
+const PROJECT_DIR_NAME = "conversation-quality-1";
+const TOTAL_TURNS = 5;
 const MODEL = process.env.E2E_MODEL ?? "gpt-4.1-mini";
 const hasApiKey = !!process.env.OPENAI_API_KEY;
 
@@ -74,7 +68,6 @@ function writeProgress(
           iterations: metrics.totalIterations,
           turnsCompleted: metrics.turnsCompleted,
           dhelixReads: metrics.dhelixReads.length,
-          dhelixReadTurns: metrics.dhelixReads,
           lastToolCall: metrics.toolCalls.at(-1)?.tool ?? "none",
           totalToolCalls: metrics.toolCalls.length,
           errors: metrics.errors,
@@ -86,7 +79,7 @@ function writeProgress(
       ),
     );
   } catch {
-    // Progress file is best-effort, don't fail the test
+    // best-effort
   }
 }
 
@@ -95,7 +88,7 @@ function writeProgress(
 // ============================================================
 
 describe.skipIf(!hasApiKey)(
-  `E2E: ${STACK_NAME} Multi-Turn Session`,
+  `E2E: ${STACK_NAME}`,
   () => {
     const messages: ChatMessage[] = [];
     let config: AgentLoopConfig;
@@ -109,19 +102,15 @@ describe.skipIf(!hasApiKey)(
       errors: [],
     };
 
-    // ---- Setup ----
     beforeAll(async () => {
-      // Clean project directory
-      if (existsSync(projectDir)) {
-        rmSync(projectDir, { recursive: true, force: true });
-      }
+      if (existsSync(projectDir)) rmSync(projectDir, { recursive: true, force: true });
       mkdirSync(projectDir, { recursive: true });
 
-      // Create LLM client and tools
       const client = createLLMClientForModel({
         model: MODEL,
         baseURL: process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1",
         apiKey: process.env.OPENAI_API_KEY!,
+        apiKeyHeader: process.env.OPENAI_API_KEY_HEADER,
       });
 
       const toolRegistry = new ToolRegistry();
@@ -135,20 +124,20 @@ describe.skipIf(!hasApiKey)(
       ]);
 
       const events = createEventEmitter();
-
-      // Monitor DHELIX.md reads and all tool calls
-      events.on(
-        "tool:start",
-        ({ name, id, args }: { name: string; id: string; args?: Record<string, unknown> }) => {
-          metrics.toolCalls.push({ turn: currentTurn, tool: name, args: args ?? {}, tMs: Date.now() });
-          if (name === "file_read" && args?.file_path?.toString().includes("DHELIX.md")) {
-            metrics.dhelixReads.push(`Turn ${currentTurn}`);
-          }
-        },
-      );
+      events.on("tool:start", ({ name, args }) => {
+        metrics.toolCalls.push({
+          turn: currentTurn,
+          tool: name,
+          args: (args ?? {}) as Record<string, unknown>,
+          tMs: Date.now(),
+        });
+        const fp = (args as { file_path?: unknown } | undefined)?.file_path;
+        if (name === "file_read" && typeof fp === "string" && fp.includes("DHELIX.md")) {
+          metrics.dhelixReads.push(`Turn ${currentTurn}`);
+        }
+      });
 
       const strategy = selectStrategy(MODEL);
-
       const systemPrompt = buildSystemPrompt({
         toolRegistry,
         workingDirectory: projectDir,
@@ -168,28 +157,18 @@ describe.skipIf(!hasApiKey)(
         checkPermission: async () => ({ allowed: true }),
       };
 
-      // Initialize system message
       messages.push({ role: "system", content: systemPrompt });
-
-      // Write initial progress
       writeProgress(metrics, 0, "Setup", "running");
     }, 30_000);
 
-    // ---- sendTurn Helper ----
     async function sendTurn(
       userMessage: string,
       turnName?: string,
-    ): Promise<{
-      iterations: number;
-      lastContent: string;
-    }> {
+    ): Promise<{ iterations: number; lastContent: string }> {
       currentTurn++;
       const name = turnName ?? `Turn ${currentTurn}`;
-
       console.log(`\n--- Turn ${currentTurn}/${TOTAL_TURNS}: ${name} ---`);
       console.log(`User: ${userMessage.slice(0, 120)}...`);
-
-      // Write progress: starting this turn
       writeProgress(metrics, currentTurn, name, "running");
 
       messages.push({ role: "user", content: userMessage });
@@ -204,24 +183,22 @@ describe.skipIf(!hasApiKey)(
         metrics.turnsCompleted++;
 
         const lastMsg = result.messages[result.messages.length - 1];
+        const lastContent = lastMsg?.content ?? "";
         metrics.turns.push({
           turn: currentTurn,
           name,
           userMessage,
-          lastContent: lastMsg?.content ?? "",
+          lastContent: typeof lastContent === "string" ? lastContent : JSON.stringify(lastContent),
           iterations: result.iterations,
           durationMs: Date.now() - turnStart,
         });
 
-        console.log(`  Iterations: ${result.iterations}`);
-        console.log(`  Total iterations so far: ${metrics.totalIterations}`);
-
-        // Write progress: turn completed
+        console.log(`  Iterations: ${result.iterations} (${Date.now() - turnStart}ms)`);
         writeProgress(metrics, currentTurn, name, "completed");
 
         return {
           iterations: result.iterations,
-          lastContent: lastMsg?.content ?? "",
+          lastContent: typeof lastContent === "string" ? lastContent : JSON.stringify(lastContent),
         };
       } catch (error) {
         const errorMsg = error instanceof Error ? error.message : String(error);
@@ -231,121 +208,92 @@ describe.skipIf(!hasApiKey)(
       }
     }
 
-    // ---- Turn Tests (INSERT TURNS HERE) ----
-    // See references/stack-*.md for per-stack turn definitions
-    //
-    // Example:
-    // it("Turn 0: Initialize project with DHELIX.md", async () => {
-    //   await sendTurn("Run /init to initialize...", "Initialize DHELIX.md");
-    //   expect(existsSync(resolve(projectDir, "DHELIX.md"))).toBe(true);
-    // }, 180_000);
+    it("Turn 1: create config.json with initial values", async () => {
+      await sendTurn(
+        `Create a file called config.json with these settings:
+  - appName: "MyApp"
+  - version: "2.1.0"
+  - maxRetries: 3
+  - timeout: 5000`,
+        "Create config.json",
+      );
+      expect(existsSync(resolve(projectDir, "config.json"))).toBe(true);
+    }, 180_000);
 
-    // ---- Final Evaluation ----
+    it("Turn 2: create README.md documenting config.json", async () => {
+      await sendTurn(
+        `Create a file called README.md that documents config.json.
+List each setting name and its current value.`,
+        "Document config.json",
+      );
+      expect(existsSync(resolve(projectDir, "README.md"))).toBe(true);
+    }, 180_000);
+
+    it("Turn 3: update config.json", async () => {
+      await sendTurn(
+        `Now update config.json: change maxRetries to 5 and add a new field
+"logLevel" with value "debug".`,
+        "Update config.json",
+      );
+      const cfg = readFileSync(resolve(projectDir, "config.json"), "utf-8");
+      expect(cfg).toMatch(/"maxRetries"\s*:\s*5/);
+      expect(cfg).toMatch(/"logLevel"\s*:\s*"debug"/);
+    }, 180_000);
+
+    it("Turn 4: recall original value and new field name", async () => {
+      const { lastContent } = await sendTurn(
+        `What were the ORIGINAL values of maxRetries before I asked you to change it?
+And what new field did I ask you to add? Answer in a single sentence.`,
+        "Recall originals",
+      );
+      expect(lastContent).toMatch(/\b3\b/);
+      expect(lastContent.toLowerCase()).toContain("loglevel");
+    }, 180_000);
+
+    it("Turn 5: sync README.md to config.json", async () => {
+      await sendTurn(
+        `Update README.md to reflect the current config.json values.
+Make sure it matches exactly.`,
+        "Sync README",
+      );
+      const readme = readFileSync(resolve(projectDir, "README.md"), "utf-8");
+      expect(readme).toMatch(/\b5\b/);
+      expect(readme.toLowerCase()).toContain("debug");
+    }, 180_000);
+
     afterAll(() => {
-      const report = `
-========== E2E SESSION REPORT ==========
-Stack: ${STACK_NAME}
-Project: ${projectDir}
+      const totalMs = metrics.turns.reduce((s, t) => s + t.durationMs, 0);
+      console.log(`
+========== CONVERSATION QUALITY REPORT ==========
+Scenario: Context Retention
 Model: ${MODEL}
 Turns Completed: ${metrics.turnsCompleted} / ${TOTAL_TURNS}
 Total Iterations: ${metrics.totalIterations}
-Avg Iterations/Turn: ${(metrics.totalIterations / Math.max(metrics.turnsCompleted, 1)).toFixed(1)}
-DHELIX.md Reads: ${metrics.dhelixReads.length} (${metrics.dhelixReads.join(", ") || "none"})
+Total Duration: ${(totalMs / 1000).toFixed(1)}s
 Total Tool Calls: ${metrics.toolCalls.length}
 Errors: ${metrics.errors.length}
-${metrics.errors.length > 0 ? "Error Details:\n" + metrics.errors.map((e) => `  - ${e}`).join("\n") : ""}
-==========================================`;
-      console.log(report);
+${metrics.errors.length > 0 ? "Errors:\n" + metrics.errors.map((e) => `  - ${e}`).join("\n") : ""}
+==================================================`);
 
-      // Write final progress
       writeProgress(metrics, currentTurn, "Complete", "completed");
 
-      // Write session log (consumed by scripts/grade-session.ts)
-      const sessionLog = {
-        stack: STACK_NAME,
-        projectDir,
-        model: MODEL,
-        startedAt: startTime,
-        endedAt: new Date().toISOString(),
-        totalDurationMs: metrics.turns.reduce((sum, t) => sum + t.durationMs, 0),
-        metrics,
-      };
       writeFileSync(
         resolve(projectDir, "session-log.json"),
-        JSON.stringify(sessionLog, null, 2),
+        JSON.stringify(
+          {
+            stack: STACK_NAME,
+            projectDir,
+            model: MODEL,
+            startedAt: startTime,
+            endedAt: new Date().toISOString(),
+            totalDurationMs: totalMs,
+            metrics,
+          },
+          null,
+          2,
+        ),
       );
     });
   },
   { timeout: 1_800_000 },
-); // 30 minute total timeout
-```
-
-## Permission Handling
-
-For E2E tests, bypass permissions since all tool calls are expected:
-
-```typescript
-const config: AgentLoopConfig = {
-  // ... other config ...
-  checkPermission: async () => ({ allowed: true }),
-};
-```
-
-## Build Validation Pattern
-
-Use this INSIDE the test assertions (not run by Claude directly):
-
-```typescript
-function validateBuild(command: string, cwd: string): { success: boolean; output: string } {
-  try {
-    const output = execSync(command, {
-      cwd,
-      timeout: 120_000,
-      encoding: "utf-8",
-      stdio: ["pipe", "pipe", "pipe"],
-    });
-    return { success: true, output };
-  } catch (err) {
-    const error = err as { stderr?: string; stdout?: string };
-    return {
-      success: false,
-      output: `STDOUT: ${error.stdout ?? ""}\nSTDERR: ${error.stderr ?? ""}`,
-    };
-  }
-}
-```
-
-## Coverage Parsing Pattern
-
-```typescript
-function parseCoverage(output: string): number | null {
-  // Vitest/Jest format: "All files  |  85.2 |  80.1 |  90.3 |  85.2"
-  const vitestMatch = output.match(/All files\s*\|\s*([\d.]+)/);
-  if (vitestMatch) return parseFloat(vitestMatch[1]);
-
-  // JaCoCo format: "Total: 85%"
-  const jacocoMatch = output.match(/Total:\s*([\d.]+)%/);
-  if (jacocoMatch) return parseFloat(jacocoMatch[1]);
-
-  // lcov/istanbul format: "Statements   : 85.2%"
-  const istanbulMatch = output.match(/Statements\s*:\s*([\d.]+)%/);
-  if (istanbulMatch) return parseFloat(istanbulMatch[1]);
-
-  // Flutter format: "85.2% coverage"
-  const flutterMatch = output.match(/([\d.]+)%\s*coverage/i);
-  if (flutterMatch) return parseFloat(flutterMatch[1]);
-
-  return null;
-}
-```
-
-## Important Reminders
-
-1. **This test file is the ONLY thing Claude writes.** All project files inside
-   `test-projects/` are created by dhelix's agent loop (the LLM inside `runAgentLoop()`).
-
-2. **Claude runs this test, then watches.** After generating this file, Claude runs
-   `npx vitest run` in the background and monitors `.e2e-progress.json` every 30 seconds.
-
-3. **If dhelix fails to produce working code, that's the test result.** Claude does NOT
-   fix the generated code — it reports the failure.
+);

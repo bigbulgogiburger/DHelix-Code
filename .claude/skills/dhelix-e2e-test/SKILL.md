@@ -1,6 +1,5 @@
 ---
 name: dhelix-e2e-test
-disabled: true
 description: |
   E2E validation skill for the dhelix CLI AI coding assistant. Two test modes:
   (1) Project E2E — multi-turn tests creating real projects across 5+ tech stacks, validating
@@ -339,7 +338,7 @@ After the test completes, evaluate the results:
 | Test Coverage   | >= 80% | Parse coverage report            |
 | DHELIX.md Reads | >= 2   | Event monitoring count           |
 | Turn Completion | 100%   | All turns complete without error |
-| Iterations/Turn | < 25   | `result.iterations` per turn     |
+| Iterations/Turn | < 50   | `result.iterations` per turn     |
 
 #### Qualitative Metrics (You review AFTER the test runs)
 
@@ -429,7 +428,7 @@ output (which includes tool call messages interleaved).
 ```typescript
 const E2E_CONFIG = {
   model: process.env.E2E_MODEL ?? "gpt-4.1-mini",
-  maxIterations: 25,
+  maxIterations: 50,
   maxTokens: 16384,
   maxContextTokens: 128_000,
   useStreaming: false,

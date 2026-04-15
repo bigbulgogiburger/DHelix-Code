@@ -119,26 +119,41 @@
         {
           "name": "original_value_recalled",
           "type": "response_contains",
+          "turn": 4,
+          "needle": "3",
           "description": "Agent's Turn 4 response mentions original maxRetries value (3)"
         },
         {
           "name": "new_field_recalled",
           "type": "response_contains",
+          "turn": 4,
+          "needle": "logLevel",
           "description": "Agent's Turn 4 response mentions 'logLevel' as the new field"
         },
         {
-          "name": "config_updated",
+          "name": "config_max_retries_updated",
           "type": "file_contains",
-          "description": "config.json has maxRetries: 5 and logLevel: 'debug' after Turn 3"
+          "path": "config.json",
+          "needle": "\"maxRetries\": 5",
+          "description": "config.json has maxRetries: 5 after Turn 3"
+        },
+        {
+          "name": "config_log_level_added",
+          "type": "file_contains",
+          "path": "config.json",
+          "needle": "\"logLevel\": \"debug\"",
+          "description": "config.json has logLevel: debug after Turn 3"
         },
         {
           "name": "readme_consistent",
           "type": "file_consistency",
+          "path": "config.json,README.md",
           "description": "README.md values match config.json after Turn 5"
         },
         {
-          "name": "no_hallucination",
+          "name": "no_hallucination_999",
           "type": "response_absence",
+          "needle": "999",
           "description": "Agent does not invent values not mentioned in any turn"
         }
       ]
