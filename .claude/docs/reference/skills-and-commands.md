@@ -31,7 +31,10 @@ user_invocable: true
 Skill prompt content with $ARGUMENTS substitution...
 ```
 
-## Slash Commands (42 total — 39 registered + 3 unregistered)
+## Slash Commands (43 total — 40 registered in `builtin-commands.ts` + 3 unregistered)
+
+등록은 `src/bootstrap/command-registry-factory.ts` → `builtinCommands` 배럴을 통해 일괄 처리됩니다.
+스킬 기반 명령은 `SkillManager` → `createSkillCommands()`로 자동 변환됩니다.
 
 ### Core
 
@@ -97,14 +100,24 @@ Skill prompt content with $ARGUMENTS substitution...
 
 ### External Integration
 
-| 명령      | 설명                                     |
-| --------- | ---------------------------------------- |
-| `/mcp`    | MCP 서버 관리 (list/add/remove, 3-scope) |
-| `/voice`  | 음성 입력 토글                           |
-| `/update` | 업데이트 확인                            |
-| `/bug`    | 버그 리포트                              |
+| 명령          | 설명                                           |
+| ------------- | ---------------------------------------------- |
+| `/mcp`        | MCP 서버 관리 (list/add/remove, 3-scope)       |
+| `/voice`      | 음성 입력 토글                                 |
+| `/update`     | 업데이트 확인                                  |
+| `/bug`        | 버그 리포트                                    |
+| `/extensions` | 플러그인/확장 관리 (`src/plugins/` 기반)       |
+| `/dashboard`  | 대시보드 서버 기동 (`src/dashboard/server.ts`) |
 
-### Agent & Team
+### Dual Model Routing
+
+| 명령         | 설명                              |
+| ------------ | --------------------------------- |
+| `/architect` | Architect(계획) 모델 전용 모드    |
+| `/editor`    | Editor(실행) 모델 전용 모드       |
+| `/dual`      | Architect/Editor 자동 전환 (기본) |
+
+### Agent & Team (unregistered — builtin 배럴 미포함)
 
 | 명령      | 설명              | 상태                    |
 | --------- | ----------------- | ----------------------- |
@@ -140,7 +153,8 @@ Session analytics dashboard — displays:
 - Cost per turn and cumulative cost
 - Implementation: `src/cli/analytics.ts`
 
-새 명령 추가: `src/commands/`에 파일 생성 → `registry.ts`에 등록
+새 명령 추가: `src/commands/<name>.ts`에 export → `src/commands/builtin-commands.ts` 배럴에 추가 → `src/bootstrap/command-registry-factory.ts`가 자동 등록
+(또는 스킬로 작성하고 `user_invocable: true`를 설정하면 `SkillManager`가 자동으로 슬래시 명령 변환)
 
 ## Input History
 

@@ -31,26 +31,74 @@ interface ToolCallStrategy {
 }
 ```
 
-## Built-in Tools (16)
+## Built-in Tools (29)
 
-| Tool          | Permission | Description                                               |
-| ------------- | ---------- | --------------------------------------------------------- |
-| file_read     | safe       | Read with line numbers, offset/limit, image/PDF support   |
-| file_write    | confirm    | Create/overwrite (must read first if exists)              |
-| file_edit     | confirm    | Search/Replace with uniqueness validation, diff preview   |
-| bash_exec     | confirm    | Shell execution with timeout, background support          |
-| bash_output   | safe       | Read output from background bash process                  |
-| kill_shell    | confirm    | Kill a running background shell process                   |
-| glob_search   | safe       | File pattern matching, sorted by mtime                    |
-| grep_search   | safe       | Regex content search (ripgrep wrapper)                    |
-| list_dir      | safe       | Directory listing with metadata                           |
-| web_fetch     | confirm    | HTTP fetch with 15-min cache, content extraction          |
-| web_search    | confirm    | Brave Search + DuckDuckGo fallback                        |
-| notebook_edit | confirm    | Jupyter notebook cell editing                             |
-| mkdir         | confirm    | Create directories recursively                            |
-| ask_user      | safe       | Ask user questions with choices                           |
-| agent         | confirm    | Spawn subagent (explore/plan/general) via factory pattern |
-| todo_write    | safe       | Task tracking with pending/in_progress/completed states   |
+### File I/O
+
+| Tool          | Permission | Description                                             |
+| ------------- | ---------- | ------------------------------------------------------- |
+| file_read     | safe       | Read with line numbers, offset/limit, image/PDF support |
+| file_write    | confirm    | Create/overwrite (must read first if exists)            |
+| file_edit     | confirm    | Search/Replace with uniqueness validation, diff preview |
+| list_dir      | safe       | Directory listing with metadata                         |
+| mkdir         | confirm    | Create directories recursively                          |
+| notebook_edit | confirm    | Jupyter notebook cell editing                           |
+
+### Shell
+
+| Tool        | Permission | Description                                      |
+| ----------- | ---------- | ------------------------------------------------ |
+| bash_exec   | confirm    | Shell execution with timeout, background support |
+| bash_output | safe       | Read output from background bash process         |
+| kill_shell  | confirm    | Kill a running background shell process          |
+
+### Search
+
+| Tool        | Permission | Description                            |
+| ----------- | ---------- | -------------------------------------- |
+| glob_search | safe       | File pattern matching, sorted by mtime |
+| grep_search | safe       | Regex content search (ripgrep wrapper) |
+
+### Code Intelligence (Tier 1: tree-sitter)
+
+| Tool              | Permission | Description                                |
+| ----------------- | ---------- | ------------------------------------------ |
+| symbol_search     | safe       | Symbol lookup across 10 languages          |
+| code_outline      | safe       | Structural outline (classes/funcs/imports) |
+| find_dependencies | safe       | Trace import/require dependencies          |
+
+### LSP (Tier 2: on-demand)
+
+| Tool            | Permission | Description                     |
+| --------------- | ---------- | ------------------------------- |
+| goto_definition | safe       | Jump to symbol definition       |
+| find_references | safe       | Find all references to a symbol |
+| get_type_info   | safe       | Hover-style type info           |
+| safe_rename     | confirm    | Cross-file rename via LSP       |
+
+### Batch / Refactor
+
+| Tool           | Permission | Description                           |
+| -------------- | ---------- | ------------------------------------- |
+| apply_patch    | confirm    | Apply unified diff patch              |
+| batch_file_ops | confirm    | Multi-file create/write/delete batch  |
+| refactor       | confirm    | Semi-structured refactor helpers      |
+| code_mode      | confirm    | Structured code-mode multi-step edits |
+
+### Web
+
+| Tool       | Permission | Description                        |
+| ---------- | ---------- | ---------------------------------- |
+| web_fetch  | confirm    | HTTP fetch with cache + extraction |
+| web_search | confirm    | Brave Search + DuckDuckGo fallback |
+
+### Meta
+
+| Tool       | Permission | Description                                             |
+| ---------- | ---------- | ------------------------------------------------------- |
+| agent      | confirm    | Spawn subagent (explore/plan/general/custom) + worktree |
+| ask_user   | safe       | Ask user questions with choices                         |
+| todo_write | safe       | Task tracking with pending/in_progress/completed states |
 
 **Hot tools** (always included in schema): file_read, file_write, file_edit, bash_exec, glob_search, grep_search
 
@@ -111,7 +159,7 @@ Tool schemas adapt to model capability tiers:
 
 ## 주의사항
 
-- 새 도구 추가 시: `src/tools/definitions/`에 파일 생성 → `registry.ts`에 등록 → `tool-display.ts`에 표시 설정 추가
+- 새 도구 추가 시: `src/tools/definitions/`에 파일 생성 → `src/bootstrap/tool-registry-factory.ts`에 등록 → `tool-display.ts`에 표시 설정 추가
 - `ToolResult.metadata`는 executor에서 자동 전달 → `verify-tool-metadata-pipeline` 스킬로 검증
 - permissionLevel 변경은 보안 영향 — "safe"는 자동 실행, "confirm"은 사용자 승인 필요
 - adaptive-schema 변경 시: 3개 티어 모두에서 tool 동작 검증 필요

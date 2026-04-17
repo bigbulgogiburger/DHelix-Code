@@ -75,22 +75,28 @@ MCP 서버 설정은 3개 스코프로 관리됩니다. 우선순위: local > pr
 - **MCPManager** (`src/mcp/manager.ts`): `loadScopedConfigs()` → `connectAll()` → 도구 등록
 - **레거시 fallback**: `~/.dhelix/mcp.json` (`{ mcpServers: {...} }` 형식) — scope-manager가 없을 때만 사용
 
-## DEFAULT_MODEL Resolution
+## DEFAULT_MODEL & Base URL Resolution
 
-Model selection follows env-var priority chain:
+`src/constants.ts`에서 단일 진실 소스로 결정:
 
 ```
-DHELIX_MODEL > OPENAI_MODEL > "gpt-5.1-codex-mini" (schema.ts hardcoded default)
+Model   : LOCAL_MODEL > DHELIX_MODEL > OPENAI_MODEL > "gpt-4o-mini" (builtin fallback)
+Base URL: LOCAL_API_BASE_URL > DHELIX_BASE_URL > OPENAI_BASE_URL > OpenAI 공식
+API Key : LOCAL_API_KEY > DHELIX_API_KEY > OPENAI_API_KEY (provider별 override)
 ```
+
+- **LOCAL\_\* 우선**: 사내 게이트웨이/셀프호스트 모델을 기본으로 두는 배포 패턴 지원
+- **LOCAL_API_KEY_HEADER**: Bearer 대신 custom 헤더명 사용 가능 (예: `model-api-key`)
+- 모델 ID는 서버가 광고하는 값과 정확히 일치해야 함 (`GET /v1/models`로 확인)
 
 **dotenv 타이밍 주의사항:**
 
-- `src/index.ts`에서 dotenv는 **패키지 루트의 `.env`만** 로드 (cwd의 `.env`는 읽지 않음)
-- `config/schema.ts`의 Zod 기본값은 **import 시점**(dotenv 로드 전)에 평가되므로 `"gpt-5.1-codex-mini"` 하드코딩 필수
+- `src/index.ts`에서 dotenv는 **패키지 루트의 `.env`** 우선 로드
+- `config/schema.ts`의 Zod 기본값은 **import 시점**에 평가되므로 상수 하드코딩 필수
 - 런타임 env 오버라이드는 `config/loader.ts`의 `loadEnvConfig()`에서 처리
 - `/model` 명령의 Default 항목은 실행 시점에 `process.env`를 직접 읽어 정확한 env 모델 표시
 
-CLI `--model` flag overrides all.
+CLI `--model` / `--base-url` flag overrides all.
 
 ## Permission Audit Logging
 

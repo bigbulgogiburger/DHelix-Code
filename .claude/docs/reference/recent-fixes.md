@@ -2,6 +2,15 @@
 
 > 참조 시점: 최근 수정 이력 확인, 비슷한 이슈 디버깅 시
 
+## 2026-04-15 — Local Provider 설정 가이드
+
+| #   | 이슈 / 발견 사항                                                           | 조치                                                                                     |
+| --- | -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 1   | `LOCAL_MODEL` 오타로 404 (`GLM-4.5-Air-FP8` vs 서버 ID `GLM45AirFP8`)      | **모델 ID는 `GET {base}/v1/models`로 서버 광고값과 정확히 일치시킬 것** (하이픈/점 없이) |
+| 2   | `LOCAL_API_BASE_URL`을 `/chat/completions`까지 지정해도 client가 자동 제거 | 표준 방식은 `https://host/v1`만 지정 (client.ts가 엔드포인트 부착)                       |
+| 3   | `LOCAL_API_KEY_HEADER=model-api-key` 커스텀 헤더로 Bearer 대체 지원        | provider 관례가 다른 게이트웨이에서 사용                                                 |
+| 4   | Headless 호출 기본 스모크 테스트                                           | `node dist/index.js -p "Say hello" --output-format text` — 200 OK 응답 확인 프로토콜     |
+
 ## 2026-03-18~19 수정 내역
 
 | #   | 수정 내용                                             | 파일                                       |

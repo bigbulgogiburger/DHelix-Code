@@ -2,6 +2,37 @@
 
 > 참조 시점: Agent loop, 컨텍스트 관리, 서브에이전트, 렌더링 시스템 작업 시
 
+## Bootstrap (Composition Root)
+
+`src/bootstrap/`는 Ink UI 모드와 headless 모드가 공통으로 소비하는 `AppContext`를 조립합니다.
+
+```
+index.ts (commander .action)
+  └─ bootstrap/app-factory.ts → createAppContext(options)
+       ├─ config/loader.ts                 → ResolvedConfig
+       ├─ tool-registry-factory.ts         → ToolRegistry (29 builtin)
+       ├─ command-registry-factory.ts      → CommandRegistry (40 builtin + skill commands)
+       ├─ skills/manager.ts                → SkillManager
+       ├─ mcp/manager.ts                   → MCPManager + tool-bridge
+       └─ permissions/manager.ts           → PermissionManager
+```
+
+- `AppContext`는 App.tsx와 `cli/headless.ts`가 모두 소비
+- 부팅 성능 로그는 `DHELIX_VERBOSE=1`로 활성화 (stderr에 stage별 ms 출력)
+
+## Runtime Pipeline (9 Stages)
+
+`src/core/runtime/` — Agent loop의 한 턴을 9단계로 구조화한 파이프라인.
+
+```
+prepare-context → preflight-policy → resolve-tools → sample-llm → extract-calls
+  → execute-tools → persist-results → evaluate-continuation → compact-context
+```
+
+- 각 stage는 `stages/*.ts`에 독립 파일로 구현
+- `runtime/metrics.ts`가 stage별 latency/counters 수집
+- `async-compaction.ts`가 백그라운드에서 컨텍스트를 압축 (메인 루프 블로킹 방지)
+
 ## Agent Loop (ReAct Pattern)
 
 ```mermaid

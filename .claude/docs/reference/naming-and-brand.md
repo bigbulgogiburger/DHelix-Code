@@ -33,7 +33,7 @@ Theme SSOT: `src/cli/renderer/theme.ts`
 
 Customizable: `~/.dhelix/keybindings.json`
 
-## Tool System (25 built-in)
+## Tool System (29 built-in)
 
 | Category          | Tools                                                                | Note                                |
 | ----------------- | -------------------------------------------------------------------- | ----------------------------------- |
@@ -43,5 +43,5 @@ Customizable: `~/.dhelix/keybindings.json`
 | Code Intelligence | `symbol_search`, `code_outline`, `find_dependencies`                 | Tier 1: tree-sitter                 |
 | LSP               | `goto_definition`, `find_references`, `get_type_info`, `safe_rename` | Tier 2: LSP on-demand               |
 | Web               | `web_search`, `web_fetch`                                            | Brave + DuckDuckGo                  |
-| Batch             | `apply_patch`, `batch_file_ops`                                      | Multi-file operations               |
+| Batch             | `apply_patch`, `batch_file_ops`, `refactor`, `code_mode`             | Multi-file + structured edits       |
 | Meta              | `agent`, `ask_user`, `todo_write`, `notebook_edit`                   | Subagents, UI                       |

@@ -25,6 +25,7 @@ import { loadInstructions } from "../instructions/loader.js";
 import { createEventEmitter } from "../utils/events.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 import { MemoryManager } from "../memory/manager.js";
+import { type SessionManager } from "../core/session-manager.js";
 
 /** 헤드리스 모드의 출력 형식 — text(기본), json(구조화), stream-json(스트리밍) */
 export type HeadlessOutputFormat = "text" | "json" | "stream-json";
@@ -58,14 +59,22 @@ export interface HeadlessOptions {
   readonly workingDirectory?: string;
   /** 최대 에이전트 반복 횟수 */
   readonly maxIterations?: number;
+  /** 현재 세션 ID (JSON 출력에 포함) */
+  readonly sessionId?: string;
+  /** 세션 재개 시 이전 대화 기록 (resume/continue 모드에서 주입) */
+  readonly priorMessages?: readonly ChatMessage[];
+  /** 세션 매니저 — 대화 결과를 세션에 저장하여 이후 resume 시 컨텍스트 유지 */
+  readonly sessionManager?: SessionManager;
 }
 
-/** JSON 형식 출력의 구조체 — result, model, iterations, aborted 필드를 포함 */
+/** JSON 형식 출력의 구조체 — result, model, iterations, aborted, sessionId 필드를 포함 */
 interface HeadlessJsonOutput {
   readonly result: string;
   readonly model: string;
   readonly iterations: number;
   readonly aborted: boolean;
+  readonly sessionId?: string;
+  readonly totalCost?: number;
   readonly error?: string;
 }
 
@@ -94,6 +103,9 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     outputFormat,
     workingDirectory,
     maxIterations,
+    sessionId,
+    priorMessages,
+    sessionManager,
   } = options;
 
   const events = createEventEmitter();
@@ -113,10 +125,18 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     isHeadless: true,
   });
 
-  const initialMessages: ChatMessage[] = [
-    { role: "system", content: systemPrompt },
-    { role: "user", content: prompt },
-  ];
+  // 세션 재개 시: 이전 대화 기록을 포함하여 컨텍스트 연속성 유지
+  // priorMessages가 있으면 시스템 프롬프트 + 이전 기록 + 현재 프롬프트 순서로 구성
+  const initialMessages: ChatMessage[] = priorMessages && priorMessages.length > 0
+    ? [
+        { role: "system", content: systemPrompt },
+        ...priorMessages.filter((m) => m.role !== "system"),
+        { role: "user", content: prompt },
+      ]
+    : [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: prompt },
+      ];
 
   // 헤드리스 모드에서는 사용자 입력을 받을 수 없으므로 ask_user에 자동 응답
   // HeadlessGuard: 더 명확한 지시문으로 LLM이 진행하도록 유도
@@ -242,9 +262,24 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     }
   }
 
+  // 세션에 새 메시지 저장 — 다음 resume/continue 시 컨텍스트 연속성 보장
+  if (result && sessionId && sessionManager) {
+    // priorMessages에 없는 새 메시지만 추출하여 저장
+    const priorCount = priorMessages ? priorMessages.filter((m) => m.role !== "system").length : 0;
+    const allNonSystem = result.messages.filter((m) => m.role !== "system");
+    const newMessages = allNonSystem.slice(priorCount);
+    if (newMessages.length > 0) {
+      sessionManager.appendMessages(sessionId, newMessages).catch((err: unknown) => {
+        process.stderr.write(
+          `[headless] Failed to save session messages: ${err instanceof Error ? err.message : String(err)}\n`,
+        );
+      });
+    }
+  }
+
   // HeadlessGuard: 결과 출력 (에러 발생 시에도 부분 결과가 있으면 출력)
   if (result) {
-    emitHeadlessOutput(result, model, outputFormat);
+    emitHeadlessOutput(result, model, outputFormat, sessionId);
   } else {
     // 에이전트 루프 자체가 실패한 경우 — 에러 정보와 함께 종료
     const errorMsg =
@@ -269,6 +304,7 @@ function emitHeadlessOutput(
   result: AgentLoopResult,
   model: string,
   outputFormat: HeadlessOutputFormat,
+  sessionId?: string,
 ): void {
   const responseText = extractLastAssistantContent(result);
 
@@ -282,6 +318,7 @@ function emitHeadlessOutput(
         model,
         iterations: result.iterations,
         aborted: result.aborted,
+        ...(sessionId !== undefined && { sessionId }),
       };
       process.stdout.write(JSON.stringify(output, null, 2) + "\n");
       break;
@@ -293,6 +330,7 @@ function emitHeadlessOutput(
           text: responseText,
           iterations: result.iterations,
           aborted: result.aborted,
+          ...(sessionId !== undefined && { sessionId }),
         }) + "\n",
       );
       break;

@@ -16,9 +16,11 @@
 | GET    | `/api/events`       | SSE 실시간 스트림 |
 | GET    | `/health`           | 헬스체크          |
 
-### SSE 이벤트 (`DashboardEventBridge`)
+### SSE / WebSocket 이벤트
 
-- `session:updated`, `mcp:health-changed`, `job:progress`, `metrics:updated`, `agent:message`
+- REST: `src/dashboard/server.ts`
+- WebSocket: `src/dashboard/websocket.ts` — 실시간 스트림 (세션/작업/에이전트 메시지)
+- 이벤트: `session:updated`, `mcp:health-changed`, `job:progress`, `metrics:updated`, `agent:message`
 - 30초 heartbeat, 클라이언트 자동 정리
 - 데이터 소스 DI 패턴 (SessionDataSource 등)
 
@@ -43,5 +45,7 @@
 
 ## Auth (`src/auth/`)
 
-- **SSO/SAML** (`sso-saml.ts`) — AuthnRequest 생성, SAML Response 파싱, 시간 유효성 검증
-- **OAuth Token Store** (`mcp/oauth-pkce.ts`) — PKCE 챌린지 + 파일 기반 토큰 저장
+- **Token Store** (`token-store.ts`) — Bearer / API-Key / Custom-header 토큰 저장
+- **OAuth Token Store** (`mcp/oauth-pkce.ts`) — MCP 서버용 PKCE 챌린지 + 파일 기반 토큰 저장
+
+> 이전 문서의 `sso-saml.ts`는 현재 소스에 존재하지 않음 (로드맵 항목).

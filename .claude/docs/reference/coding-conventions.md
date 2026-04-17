@@ -21,8 +21,10 @@
 ## Import Rules
 
 - ESM only: `.js` extension in relative imports (`import { foo } from './bar.js'`)
-- No circular dependencies — verify with `madge --circular src/`
+- No circular dependencies — verify with `madge --circular src/` (통합: `npm run quality`)
 - Layer boundary: no importing from `cli/` inside `core/`, `llm/`, `tools/`, or `utils/`
+- `src/bootstrap/`는 Composition Root — 여기서만 여러 레이어를 조립. 일반 모듈은 bootstrap을 import하지 않음
+- `src/constants.ts`는 Leaf 모듈 — 다른 어떤 `src/` 모듈도 import하지 않음 (순환 방지)
 
 ## Core Patterns
 

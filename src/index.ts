@@ -73,6 +73,9 @@ program
           if (!opts.model && wizardResult.llm.model) opts.model = wizardResult.llm.model;
           if (!opts.baseUrl && wizardResult.llm.baseUrl) opts.baseUrl = wizardResult.llm.baseUrl;
           if (wizardResult.llm.apiKey) opts.apiKey = wizardResult.llm.apiKey;
+          if (wizardResult.llm.apiKeyHeader) {
+            process.env["LOCAL_API_KEY_HEADER"] = wizardResult.llm.apiKeyHeader;
+          }
         }
       }
 
@@ -83,6 +86,31 @@ program
       // ── 헤드리스 모드 ──
       if (opts.print) {
         const { runHeadless } = await import("./cli/headless.js");
+
+        // 헤드리스 모드에서도 세션 관리 — sessionId를 JSON 출력에 포함하기 위해
+        let headlessSessionId: string | undefined;
+        let headlessPriorMessages: readonly import("./llm/provider.js").ChatMessage[] | undefined;
+
+        if (opts.continue) {
+          headlessSessionId = (await ctx.sessionManager.getMostRecentSessionId()) ?? undefined;
+        } else if (opts.resume) {
+          headlessSessionId = opts.resume;
+        }
+
+        // 세션 재개 시 이전 대화 기록 로드 — 컨텍스트 연속성 보장
+        if (headlessSessionId && (opts.continue || opts.resume)) {
+          headlessPriorMessages = await ctx.sessionManager
+            .loadMessages(headlessSessionId)
+            .catch(() => []);
+        }
+
+        if (!headlessSessionId) {
+          headlessSessionId = await ctx.sessionManager.createSession({
+            workingDirectory: process.cwd(),
+            model: ctx.model,
+          });
+        }
+
         await runHeadless({
           prompt: opts.print,
           client: ctx.client,
@@ -91,6 +119,9 @@ program
           toolRegistry: ctx.toolRegistry,
           outputFormat: opts.outputFormat as "text" | "json" | "stream-json",
           workingDirectory: process.cwd(),
+          sessionId: headlessSessionId,
+          priorMessages: headlessPriorMessages,
+          sessionManager: ctx.sessionManager,
         });
         return;
       }
@@ -203,7 +234,7 @@ function handleError(error: unknown): never {
     combined.includes("incorrect api key")
   ) {
     process.stderr.write(
-      `Error: Invalid API key.\nSet with: dhelix --api-key <key> or OPENAI_API_KEY env var\n`,
+      `Error: Invalid API key.\nCloud: set OPENAI_API_KEY or ANTHROPIC_API_KEY env var\nLocal: set LOCAL_API_KEY (and LOCAL_API_KEY_HEADER if needed)\nOr run dhelix with: --api-key <key> --base-url <url>\n`,
     );
   } else if (
     combined.includes("404") ||
