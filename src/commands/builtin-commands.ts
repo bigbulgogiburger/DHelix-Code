@@ -40,6 +40,8 @@ import { reviewCommand } from "./review.js";
 import { commitCommand } from "./commit.js";
 import { createSkillCommand } from "./create-skill.js";
 import { skillEvalCommand } from "./skill-eval.js";
+import { skillImproveCommand } from "./skill-improve.js";
+import { skillReviewCommand } from "./skill-review.js";
 import { toneCommand } from "./tone.js";
 import { bugCommand } from "./bug.js";
 import { voiceCommand } from "./voice.js";
@@ -83,6 +85,8 @@ export const builtinCommands: readonly SlashCommand[] = [
   commitCommand,
   createSkillCommand,
   skillEvalCommand,
+  skillImproveCommand,
+  skillReviewCommand,
   toneCommand,
   bugCommand,
   voiceCommand,
