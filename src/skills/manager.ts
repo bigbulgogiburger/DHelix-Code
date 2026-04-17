@@ -2,16 +2,19 @@
  * 스킬 매니저 — 여러 디렉토리에서 스킬을 로드하고 관리하는 중앙 허브
  *
  * 스킬 로딩 디렉토리 (우선순위 순서, 뒤의 것이 앞의 것을 덮어씀):
- * 1. ~/.dhelix/skills/ — 사용자 전역 스킬
- * 2. ~/.dhelix/commands/ — 사용자 전역 커맨드
- * 3. .dhelix/skills/ — 프로젝트 로컬 스킬
- * 4. .dhelix/commands/ — 프로젝트 로컬 커맨드 (가장 높은 우선순위)
+ * 1. <dhelix>/.claude/skills/ — dhelix 번들 스킬 (가장 낮은 우선순위, 기본 제공)
+ * 2. ~/.dhelix/skills/ — 사용자 전역 스킬
+ * 3. ~/.dhelix/commands/ — 사용자 전역 커맨드
+ * 4. .dhelix/skills/ — 프로젝트 로컬 스킬
+ * 5. .dhelix/commands/ — 프로젝트 로컬 커맨드 (가장 높은 우선순위)
  *
  * 같은 이름의 스킬이 여러 디렉토리에 있으면, 프로젝트 레벨이 전역 레벨을 덮어씁니다.
+ * 번들 스킬은 가장 낮은 우선순위여서 사용자/프로젝트 오버라이드가 가능합니다.
  * 이를 통해 프로젝트별로 전역 스킬을 커스터마이징할 수 있습니다.
  */
 
-import { join } from "node:path";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import { homedir } from "node:os";
 import { APP_NAME } from "../constants.js";
 import { loadSkillsFromDirectory } from "./loader.js";
@@ -24,6 +27,10 @@ import { type SkillDefinition, type SkillContext, type SkillExecutionResult } fr
  * 각 함수는 스킬 파일을 검색할 디렉토리 경로를 반환합니다.
  * commands/와 skills/ 두 종류가 있지만, 기능적 차이는 없고
  * 조직화 목적으로 분리되어 있습니다.
+ *
+ * `bundledSkills`는 dhelix 패키지와 함께 배포되는 기본 스킬 세트의 위치입니다.
+ * 개발 환경(src 빌드 전)에서는 `<repo>/.claude/skills`,
+ * 배포된 패키지에서는 `<pkg>/.claude/skills`(또는 `<pkg>/dist/..`에서 상대 경로)로 해석됩니다.
  */
 const SKILL_DIRS = {
   /** 프로젝트 레벨 커맨드: {프로젝트}/.dhelix/commands/ */
@@ -34,6 +41,25 @@ const SKILL_DIRS = {
   globalCommands: () => join(homedir(), `.${APP_NAME}`, "commands"),
   /** 사용자 전역 스킬: ~/.dhelix/skills/ */
   globalSkills: () => join(homedir(), `.${APP_NAME}`, "skills"),
+  /**
+   * 번들 스킬: dhelix와 함께 배포되는 기본 스킬 디렉토리
+   *
+   * 위치: `<repo|pkg>/.claude/skills/`
+   *
+   * import.meta.url 기준 해석 전략:
+   *   - 이 파일 경로: `<root>/src/skills/manager.ts` (dev) 또는 `<root>/dist/skills/manager.js` (build)
+   *   - 상위 3개 디렉토리로 올라가면 `<root>/`에 도달 (skills → src/dist → root)
+   *   - 거기에 `.claude/skills`를 붙이면 번들 스킬 루트가 나옵니다.
+   *
+   * 경로가 존재하지 않더라도 `loadSkillsFromDirectory`가 ENOENT를
+   * 우아하게 처리하므로(loader.ts:237) startup crash는 발생하지 않습니다.
+   */
+  bundledSkills: () => {
+    const thisFilePath = fileURLToPath(new URL(import.meta.url));
+    // manager.(ts|js) → <root>/<src|dist>/skills/manager.* → <root>
+    const root = dirname(dirname(dirname(thisFilePath)));
+    return join(root, ".claude", "skills");
+  },
 } as const;
 
 /**
@@ -96,24 +122,38 @@ export class SkillManager {
   }
 
   /**
-   * 4개 디렉토리에서 모든 스킬을 로드
+   * 5개 디렉토리에서 모든 스킬을 로드
    *
    * 역순 우선순위로 로드하여, 높은 우선순위 스킬이 낮은 우선순위를 덮어씁니다:
-   * 1. globalSkills (가장 낮은 우선순위)
-   * 2. globalCommands
-   * 3. projectSkills
-   * 4. projectCommands (가장 높은 우선순위)
+   * 1. bundledSkills (가장 낮은 우선순위 — dhelix 기본 제공 스킬)
+   * 2. globalSkills
+   * 3. globalCommands
+   * 4. projectSkills
+   * 5. projectCommands (가장 높은 우선순위)
+   *
+   * 번들 스킬 경로가 없거나 읽을 수 없으면 (ENOENT 등) 조용히 건너뜁니다 —
+   * `loadSkillsFromDirectory`가 이미 ENOENT를 빈 배열로 반환하지만,
+   * import.meta.url 해석이 실패할 가능성에 대비해 try/catch로 감쌉니다.
    *
    * @param workingDirectory - 프로젝트 루트 디렉토리 (프로젝트 레벨 스킬 검색 기준)
    */
   async loadAll(workingDirectory: string): Promise<void> {
     // 낮은 우선순위부터 로드 → 높은 우선순위가 Map에서 같은 키를 덮어씀
-    const dirs = [
+    const dirs: string[] = [];
+
+    // 번들 스킬 경로 해석은 import.meta.url 문제로 실패할 수 있으므로 가드
+    try {
+      dirs.push(SKILL_DIRS.bundledSkills());
+    } catch {
+      // 번들 경로 해석 실패 → 번들 스킬 없이 진행 (startup crash 방지)
+    }
+
+    dirs.push(
       SKILL_DIRS.globalSkills(),
       SKILL_DIRS.globalCommands(),
       SKILL_DIRS.projectSkills(workingDirectory),
       SKILL_DIRS.projectCommands(workingDirectory),
-    ];
+    );
 
     for (const dir of dirs) {
       const skills = await loadSkillsFromDirectory(dir);

@@ -38,6 +38,7 @@ import { memoryCommand } from "./memory.js";
 import { keybindingsCommand } from "./keybindings.js";
 import { reviewCommand } from "./review.js";
 import { commitCommand } from "./commit.js";
+import { createSkillCommand } from "./create-skill.js";
 import { toneCommand } from "./tone.js";
 import { bugCommand } from "./bug.js";
 import { voiceCommand } from "./voice.js";
@@ -79,6 +80,7 @@ export const builtinCommands: readonly SlashCommand[] = [
   keybindingsCommand,
   reviewCommand,
   commitCommand,
+  createSkillCommand,
   toneCommand,
   bugCommand,
   voiceCommand,

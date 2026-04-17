@@ -81,13 +81,13 @@ describe("SkillManager", () => {
   });
 
   describe("loadAll", () => {
-    it("should load skills from all 4 directories", async () => {
+    it("should load skills from all 5 directories (bundled + 4 user/project)", async () => {
       mockLoadSkillsFromDirectory.mockResolvedValue([]);
 
       await manager.loadAll("/project");
 
-      // 4 directories: globalSkills, globalCommands, projectSkills, projectCommands
-      expect(mockLoadSkillsFromDirectory).toHaveBeenCalledTimes(4);
+      // 5 directories: bundledSkills, globalSkills, globalCommands, projectSkills, projectCommands
+      expect(mockLoadSkillsFromDirectory).toHaveBeenCalledTimes(5);
     });
 
     it("should include project directory in project-level paths", async () => {
@@ -128,13 +128,14 @@ describe("SkillManager", () => {
         description: "Project deploy",
       });
 
-      // loadAll loads in order: globalSkills, globalCommands, projectSkills, projectCommands
-      // Call index 0 = globalSkills, call index 2 = projectSkills
+      // loadAll loads in order:
+      //   bundledSkills, globalSkills, globalCommands, projectSkills, projectCommands
+      // Call index 1 (0-indexed) = bundledSkills, 2 = globalSkills, 4 = projectSkills
       let callIndex = 0;
       mockLoadSkillsFromDirectory.mockImplementation(async () => {
         callIndex++;
-        if (callIndex === 1) return [globalSkill]; // globalSkills
-        if (callIndex === 3) return [projectSkill]; // projectSkills
+        if (callIndex === 2) return [globalSkill]; // globalSkills
+        if (callIndex === 4) return [projectSkill]; // projectSkills
         return [];
       });
 
@@ -151,6 +152,65 @@ describe("SkillManager", () => {
       await manager.loadAll("/project");
 
       expect(manager.getAll()).toEqual([]);
+    });
+
+    it("should include a bundled skills directory path containing '.claude/skills'", async () => {
+      await manager.loadAll("/project");
+
+      const calls = mockLoadSkillsFromDirectory.mock.calls.map((c) => c[0]);
+      // Bundled directory lives at <repo|pkg>/.claude/skills (cross-platform separator agnostic)
+      const bundledCall = calls.find((p) => /\.claude[\\/]skills/.test(p));
+      expect(bundledCall).toBeDefined();
+    });
+
+    it("should query the bundled directory as the FIRST (lowest priority) call", async () => {
+      await manager.loadAll("/project");
+
+      const firstCall = mockLoadSkillsFromDirectory.mock.calls[0][0];
+      // First call must be the bundled dir — earliest load = lowest priority
+      expect(firstCall).toMatch(/\.claude[\\/]skills/);
+    });
+
+    it("should allow project skills to override bundled skills with the same name", async () => {
+      const bundledSkill = makeSkill({
+        name: "shared",
+        description: "Bundled version",
+      });
+      const projectSkill = makeSkill({
+        name: "shared",
+        description: "Project version",
+      });
+
+      // Call order: 1=bundled, 2=globalSkills, 3=globalCommands, 4=projectSkills, 5=projectCommands
+      let callIndex = 0;
+      mockLoadSkillsFromDirectory.mockImplementation(async () => {
+        callIndex++;
+        if (callIndex === 1) return [bundledSkill];
+        if (callIndex === 4) return [projectSkill];
+        return [];
+      });
+
+      await manager.loadAll("/project");
+
+      const result = manager.get("shared");
+      expect(result).toBeDefined();
+      expect(result!.frontmatter.description).toBe("Project version");
+    });
+
+    it("should still load other tiers when bundled directory is empty", async () => {
+      const globalSkill = makeSkill({ name: "only-global" });
+
+      let callIndex = 0;
+      mockLoadSkillsFromDirectory.mockImplementation(async () => {
+        callIndex++;
+        // bundled returns empty, globalSkills (call 2) returns a skill
+        if (callIndex === 2) return [globalSkill];
+        return [];
+      });
+
+      await manager.loadAll("/project");
+
+      expect(manager.has("only-global")).toBe(true);
     });
   });
 

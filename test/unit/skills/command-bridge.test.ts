@@ -357,6 +357,114 @@ describe("createSkillCommands", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Regression: skill:fork wiring contract + modelOverride propagation
+  // -------------------------------------------------------------------------
+
+  describe("regression — skill:fork listener contract", () => {
+    it("should emit exactly one skill:fork event payload matching the SkillExecutionResult", async () => {
+      const forkResult: SkillExecutionResult = {
+        prompt: "Plan a migration",
+        fork: true,
+        agentType: "plan",
+        model: "claude-opus-4-20250514",
+        allowedTools: ["file_read", "grep_search"],
+      };
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "migrate" })],
+        executeResult: forkResult,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const emitFn = vi.fn();
+      await commands[0].execute("", makeCommandContext({ emit: emitFn }));
+
+      expect(emitFn).toHaveBeenCalledTimes(1);
+      expect(emitFn).toHaveBeenCalledWith("skill:fork", {
+        prompt: "Plan a migration",
+        model: "claude-opus-4-20250514",
+        agentType: "plan",
+        allowedTools: ["file_read", "grep_search"],
+      });
+    });
+
+    it("should forward the skill:fork payload shape required by useAgentLoop's spawnSubagent wiring", async () => {
+      // This test pins the payload contract that useAgentLoop.ts depends on.
+      // If this shape changes, the listener in useAgentLoop must be updated in lockstep.
+      const forkResult: SkillExecutionResult = {
+        prompt: "Explore src/",
+        fork: true,
+        agentType: "explore",
+      };
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "explore-src" })],
+        executeResult: forkResult,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const emitFn = vi.fn();
+      await commands[0].execute("src/", makeCommandContext({ emit: emitFn }));
+
+      const [event, payload] = emitFn.mock.calls[0];
+      expect(event).toBe("skill:fork");
+
+      // Required keys for useAgentLoop listener: prompt (required), model, agentType, allowedTools
+      const data = payload as {
+        prompt: string;
+        model: string | undefined;
+        agentType: string | undefined;
+        allowedTools: readonly string[] | undefined;
+      };
+      expect(typeof data.prompt).toBe("string");
+      expect(data.prompt.length).toBeGreaterThan(0);
+      expect(["explore", "plan", "general", undefined]).toContain(data.agentType);
+    });
+  });
+
+  describe("regression — modelOverride propagation", () => {
+    it("should return modelOverride on inline success so useAgentLoop can switch models before processMessage", async () => {
+      const inlineResult: SkillExecutionResult = {
+        prompt: "Use Claude Opus for this",
+        fork: false,
+        model: "claude-opus-4-20250514",
+      };
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "deep-think" })],
+        executeResult: inlineResult,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const result = await commands[0].execute("", makeCommandContext());
+
+      // Contract useAgentLoop relies on:
+      expect(result.success).toBe(true);
+      expect(result.shouldInjectAsUserMessage).toBe(true);
+      expect(result.modelOverride).toBe("claude-opus-4-20250514");
+      // Output must be the processed prompt so it can be injected as a user message
+      expect(result.output).toBe("Use Claude Opus for this");
+    });
+
+    it("should NOT leak modelOverride on fork skills (fork uses its own spawn payload)", async () => {
+      const forkResult: SkillExecutionResult = {
+        prompt: "Forked work",
+        fork: true,
+        model: "claude-opus-4-20250514",
+        agentType: "general",
+      };
+      mockManager = makeMockSkillManager({
+        invocableSkills: [makeSkill({ name: "forked" })],
+        executeResult: forkResult,
+      });
+
+      const commands = createSkillCommands(mockManager);
+      const result = await commands[0].execute("", makeCommandContext({ emit: vi.fn() }));
+
+      // Fork branch must not set modelOverride (model is carried in the event payload instead)
+      expect(result.modelOverride).toBeUndefined();
+      expect(result.shouldInjectAsUserMessage).toBeUndefined();
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // Multiple commands independence
   // -------------------------------------------------------------------------
 

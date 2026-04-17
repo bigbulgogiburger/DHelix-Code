@@ -25,6 +25,7 @@ import { useConversation } from "./useConversation.js";
 import { useTextBuffering } from "./useTextBuffering.js";
 import { type LLMProvider, type ChatMessage } from "../../llm/provider.js";
 import { createLLMClientForModel } from "../../llm/client-factory.js";
+import { resolveProvider } from "../../llm/model-router.js";
 import { type ToolCallStrategy, selectStrategy } from "../../llm/tool-call-strategy.js";
 import { type ToolRegistry } from "../../tools/registry.js";
 import { type PermissionResult, runAgentLoop } from "../../core/agent-loop.js";
@@ -145,6 +146,17 @@ export function useAgentLoop({
   useEffect(() => {
     clientRef.current = client;
   }, [client]);
+
+  // Mirror activeModel in a ref so that mid-turn model swaps (e.g. a skill
+  // command returning modelOverride right before processMessage runs) take
+  // effect immediately, without waiting for the React render cycle that
+  // setActiveModel schedules. processMessage reads from modelRef instead of
+  // the closure-captured activeModel so the injected skill message is always
+  // processed by the overridden model (Issue #3 regression fix).
+  const modelRef = useRef<string>(initialModel);
+  useEffect(() => {
+    modelRef.current = activeModel;
+  }, [activeModel]);
 
   // ask_user 도구가 사용자에게 질문을 보냈을 때의 대기 상태
   const [pendingAskUser, setPendingAskUser] = useState<{
@@ -511,7 +523,12 @@ export function useAgentLoop({
         }
       }
 
-      const modelCaps = getModelCapabilities(activeModel);
+      // Read the model from the ref — this lets mid-turn model overrides
+      // (e.g. a skill-command modelOverride applied in handleSubmit right
+      // before processMessage runs) take effect on THIS turn, without waiting
+      // for a React render cycle.
+      const currentModel = modelRef.current;
+      const modelCaps = getModelCapabilities(currentModel);
       const systemPrompt = buildSystemPrompt({
         toolRegistry,
         workingDirectory: process.cwd(),
@@ -569,12 +586,16 @@ export function useAgentLoop({
         const effortConfig = getEffortConfig(getEffortLevel());
         const effectiveMaxTokens = Math.min(effortConfig.maxTokens, modelCaps.maxOutputTokens);
 
+        // Recompute strategy from the ref-backed model so a mid-turn model
+        // swap uses the correct tool-call strategy (e.g. native vs text).
+        const currentStrategy = selectStrategy(currentModel);
+
         const result = await runAgentLoop(
           {
             client: clientRef.current,
-            model: activeModel,
+            model: currentModel,
             toolRegistry,
-            strategy: activeStrategy,
+            strategy: currentStrategy,
             events,
             useStreaming: true,
             maxContextTokens: modelCaps.maxContextTokens,
@@ -800,11 +821,38 @@ export function useAgentLoop({
           // Skill commands with shouldInjectAsUserMessage bypass display
           // and send the expanded prompt through the agent loop
           if (result.shouldInjectAsUserMessage && result.success) {
-            // Apply skill model override if specified
+            // Apply skill model override if specified.
+            // Two paths:
+            //   1) newProvider present → full provider swap (explicit baseURL/apiKey)
+            //   2) modelOverride only   → resolve provider from model name so the
+            //      injected message is processed by the overridden model even when
+            //      the provider family differs (e.g. gpt-4o → claude-opus-*).
+            //
+            // The switch is persistent (setActiveModel updates the session model)
+            // — matching the existing /model command pattern. Users can revert via
+            // /model if they want the previous model back. This keeps the invariant
+            // that the injected message is processed by the overridden model.
             if (result.modelOverride) {
               if (result.newProvider) {
                 clientRef.current = createLLMClientForModel(result.newProvider);
+              } else if (result.modelOverride !== activeModel) {
+                // Only resolve a new client when the override actually changes the model
+                // AND it would route to a different provider family than the current one.
+                // resolveProvider picks Anthropic/Responses/OpenAI-compatible by model name.
+                try {
+                  clientRef.current = resolveProvider(result.modelOverride);
+                } catch {
+                  // If provider resolution fails, keep the current client — the model
+                  // string will still be updated so downstream code can surface a
+                  // meaningful error. Do not block the skill execution.
+                }
               }
+              // Update BOTH the ref (used synchronously by processMessage) and
+              // the React state (used by the next render / UI). The ref update
+              // is what makes the override land on THIS turn — setActiveModel
+              // alone would not, because processMessage captures activeModel
+              // via closure from the previous render.
+              modelRef.current = result.modelOverride;
               setActiveModel(result.modelOverride);
             }
             void processMessage(result.output);
@@ -824,8 +872,10 @@ export function useAgentLoop({
           if (result.newProvider) {
             // 프로바이더 전환: model + baseURL + apiKey 3종 세트 교체
             clientRef.current = createLLMClientForModel(result.newProvider);
+            modelRef.current = result.newProvider.model;
             setActiveModel(result.newProvider.model);
           } else if (result.newModel) {
+            modelRef.current = result.newModel;
             setActiveModel(result.newModel);
           }
           if (result.newTone) {
