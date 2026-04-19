@@ -122,6 +122,7 @@ program
           sessionId: headlessSessionId,
           priorMessages: headlessPriorMessages,
           sessionManager: ctx.sessionManager,
+          hookRunner: ctx.hookRunner,
         });
         return;
       }

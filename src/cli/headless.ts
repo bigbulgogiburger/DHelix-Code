@@ -23,6 +23,8 @@ import { runAgentLoop, type AgentLoopResult } from "../core/agent-loop.js";
 import { buildSystemPrompt } from "../core/system-prompt-builder.js";
 import { loadInstructions } from "../instructions/loader.js";
 import { createEventEmitter } from "../utils/events.js";
+import { createHookAdapter } from "../hooks/event-emitter-adapter.js";
+import { type HookRunner } from "../hooks/runner.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 import { MemoryManager } from "../memory/manager.js";
 import { type SessionManager } from "../core/session-manager.js";
@@ -65,6 +67,8 @@ export interface HeadlessOptions {
   readonly priorMessages?: readonly ChatMessage[];
   /** 세션 매니저 — 대화 결과를 세션에 저장하여 이후 resume 시 컨텍스트 유지 */
   readonly sessionManager?: SessionManager;
+  /** Hook event adapter를 attach하기 위한 공유 HookRunner (없으면 훅 비활성) */
+  readonly hookRunner?: HookRunner;
 }
 
 /** JSON 형식 출력의 구조체 — result, model, iterations, aborted, sessionId 필드를 포함 */
@@ -106,10 +110,70 @@ export async function runHeadless(options: HeadlessOptions): Promise<void> {
     sessionId,
     priorMessages,
     sessionManager,
+    hookRunner,
   } = options;
 
   const events = createEventEmitter();
   const cwd = workingDirectory ?? process.cwd();
+
+  // Wire Hook Event Adapter — AppEventEmitter 이벤트를 HookRunner로 중계한다.
+  // Ink 경로(useAgentLoop.ts)와 대칭이며, 헤드리스는 try/finally로 detach를 보장한다.
+  const hookAdapter = hookRunner
+    ? createHookAdapter(events, hookRunner, {
+        sessionId,
+        workingDirectory: cwd,
+      })
+    : undefined;
+  hookAdapter?.attach();
+
+  try {
+    await runHeadlessSession({
+      prompt,
+      client,
+      model,
+      strategy,
+      toolRegistry,
+      outputFormat,
+      workingDirectory,
+      maxIterations,
+      sessionId,
+      priorMessages,
+      sessionManager,
+      cwd,
+      events,
+    });
+  } finally {
+    hookAdapter?.detach();
+  }
+}
+
+/**
+ * 헤드리스 세션 본문 — 어댑터 라이프사이클 바깥에서 실제 에이전트 루프를 실행.
+ * runHeadless에서 try/finally로 감싸 HookEventAdapter의 detach를 보장한다.
+ */
+interface HeadlessSessionOptions
+  extends Omit<HeadlessOptions, "hookRunner"> {
+  readonly cwd: string;
+  readonly events: ReturnType<typeof createEventEmitter>;
+}
+
+async function runHeadlessSession(options: HeadlessSessionOptions): Promise<void> {
+  const {
+    prompt,
+    client,
+    model,
+    strategy,
+    toolRegistry,
+    outputFormat,
+    workingDirectory,
+    maxIterations,
+    sessionId,
+    priorMessages,
+    sessionManager,
+    cwd,
+    events,
+  } = options;
+
   const instructions = await loadInstructions(cwd).catch(() => null);
 
   // 현재 프로젝트의 자동 메모리(이전 대화에서 저장한 기억)를 로드
