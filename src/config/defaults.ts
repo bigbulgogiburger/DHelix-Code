@@ -79,4 +79,10 @@ export const DEFAULT_CONFIG: AppConfig = {
     editorModel: "gpt-4o-mini", // 코드 생성용 비용 효율 모델
     routingStrategy: "auto" as const, // 라우팅 전략: auto(키워드 기반 자동)
   },
+  /** 플라스미드(GAL-1) 설정 — Phase 1 기본 비활성, DHELIX_PLASMID_ENABLED 환경변수로 활성화 */
+  plasmid: {
+    enabled: false,
+    registryPath: ".dhelix/plasmids",
+    draftsPath: ".dhelix/plasmids/.drafts",
+  },
 };

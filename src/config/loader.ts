@@ -103,6 +103,13 @@ function loadEnvConfig(): Partial<AppConfig> {
     env.verbose = true;
   }
 
+  // DHELIX_PLASMID_ENABLED=true 이면 플라스미드 시스템(GAL-1) 활성화
+  // Phase 1 단계에서는 opt-in. 프로젝트/사용자 설정보다 낮은 우선순위지만,
+  // 일반 DEFAULT_CONFIG 보다는 높다.
+  if (process.env.DHELIX_PLASMID_ENABLED === "true") {
+    env.plasmid = { ...DEFAULT_CONFIG.plasmid, enabled: true };
+  }
+
   return env;
 }
 
