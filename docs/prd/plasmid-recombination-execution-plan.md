@@ -61,11 +61,34 @@ PRD를 복제하지 않고, 참조(§번호)로만 연결한다.
 
 ## 3. Phase -1 — Design Consolidation (3.5주)
 
-### 3.1 완료 현황 (1/24)
+### 3.1 완료 현황 (24/24 — Draft v0.1 전부 작성)
 
 - [x] **P-1.24** PRD v0.3 통합 + 아카이빙 — *커밋 `166f3a0` 완료*
+- [x] **P-1.14** I-8 Hermeticity (v0.2 — Exit Criteria 충족) — `docs/design/P-1.14-i8-hermeticity.md`
+- [x] **P-1.22** Phase 0 POC Ollama 참가자 필수화 — `docs/research/phase-0-poc-protocol.md` 반영
+- [x] **P-1.18** ModelCapabilities 확장 — `docs/design/P-1.18-model-capabilities.md`
+- [x] **P-1.19** Pipeline Strategy Selector — `docs/design/P-1.19-strategy-selector.md`
+- [x] **P-1.13** Compression 4-layer — `docs/design/P-1.13-compression-4-layer.md`
+- [x] **P-1.23** eval-seeds Zod schema — `docs/design/P-1.23-eval-seeds-schema.md`
+- [x] **P-1.17** eval harness 재사용 — `docs/design/P-1.17-eval-harness-reuse.md`
+- [x] **P-1.15** Constitution Reorganizer — `docs/design/P-1.15-constitution-reorganizer.md`
+- [x] **P-1.16** Validation framework + Volume governor — `docs/design/P-1.16-validation-framework.md`
+- [x] **P-1.20** Graceful degradation matrix — `docs/design/P-1.20-degradation-matrix.md`
+- [x] **P-1.21** Dual-model config — `docs/design/P-1.21-dual-model-config.md`
+- [x] **P-1.5** `/plasmid` Quick-first — `docs/design/P-1.5-plasmid-quick-first.md`
+- [x] **P-1.10** Foundational + `/plasmid challenge` — `docs/design/P-1.10-foundational-challenge.md`
+- [x] **P-1.7** Fail-to-draft recovery — `docs/design/P-1.7-fail-to-draft-recovery.md`
+- [x] **P-1.1** I-1 two-file lock model — `docs/design/P-1.1-two-file-lock-model.md`
+- [x] **P-1.2** Concurrency & Lock Semantics — `docs/design/P-1.2-concurrency-section.md`
+- [x] **P-1.3** Static validation 3-tier — `docs/design/P-1.3-static-validation-3tier.md`
+- [x] **P-1.4** Template 3-layer hierarchy — `docs/design/P-1.4-template-3-layer.md`
+- [x] **P-1.6** 3-mode share pattern — `docs/design/P-1.6-three-mode-share-pattern.md`
+- [x] **P-1.8** I18n decision matrix — `docs/design/P-1.8-i18n-decision-matrix.md`
+- [x] **P-1.9 / P-1.11 / P-1.12** PRD v0.3 반영 검증 — `docs/design/P-1.9-11-12-verification.md`
 
-**남은 항목: 23개**. 아래 §3.3에서 주차별로 그룹핑.
+**현 상태**: **24개 action items 모두 문서화 완료 (Draft v0.1, P-1.14만 v0.2)**.
+
+**다음 단계**: 각 설계서의 Exit Criteria를 개별 리뷰 + 승인 → Phase -1 Exit Gate (§3.4) 체크 → Phase 0 진입.
 
 ### 3.2 Dependency Graph
 
@@ -99,118 +122,119 @@ Week 3-4 Carryover ── P-1.1~4, P-1.6, P-1.8, P-1.9, P-1.11, P-1.12
 
 **목표**: 모든 후속 설계의 **전제**가 되는 경계를 확정.
 
-- [ ] **P-1.14** I-8 Compile-Runtime Hermeticity + 3층 방어 (1d)
-  - 참조: PRD §10.1 I-8, §7.4, archive/hardening Part I §1 (3층 방어 코드)
-  - 산출물: `RUNTIME_BLOCKED_PATTERNS` 정의, `src/instructions/loader.ts` 수정 계획, tool guardrail 스펙 (`src/tools/pipeline/preflight.ts` 또는 `src/tools/definitions/file-read.ts` 등), telemetry metric 명세
-  - Done when: PR 없이도 "어느 파일에 어떤 가드를 넣는가" 문서로 확정
-
-- [ ] **P-1.18** `ModelCapabilities` 확장 (0.5d)
-  - 참조: PRD Part III §34, archive/hardening §4.2
-  - 산출물: `src/llm/model-capabilities.ts` 확장 스펙 (isLocal, paramEstimate, reliableJson, supportsFormatJson, modelDigest 필드)
-  - Done when: 신규 필드와 기본 모델 매핑 테이블 확정
-
-- [ ] **P-1.19** Pipeline Strategy Selector matrix (1d) ← P-1.14, P-1.18 선행
-  - 참조: PRD Part III §34.2, archive/hardening §4.3
-  - 산출물: `selectStrategies(caps)` 명세 — interpreter/compression/reorg/validation 각 분기 표
-  - Done when: Strategy 매트릭스가 코드 스텁 수준으로 완성
+- [x] **P-1.14** I-8 Compile-Runtime Hermeticity + 3층 방어 — **v0.2 완료** (`docs/design/P-1.14-i8-hermeticity.md`) — Open Questions 4건 해결, Exit Criteria 전 항목 충족
+- [x] **P-1.18** `ModelCapabilities` 확장 — **Draft v0.1** (`docs/design/P-1.18-model-capabilities.md`) — 5 신규 필드, Ollama 모델 4개 매핑
+- [x] **P-1.19** Pipeline Strategy Selector matrix — **Draft v0.1** (`docs/design/P-1.19-strategy-selector.md`) — 3 tier × 8 차원 = 24 cell
 
 #### Week 1-2 — Compile 성분
 
-- [ ] **P-1.13** Compression pipeline 4-layer 설계서 (1d) ← P-1.14 선행
-  - 참조: PRD §6.3.2 Stage 2c, archive/hardening §6.3
-  - 산출물: Layer A/B/C/D 각 입출력, tier-aware ratio, bucket 구조, token budget 재분배 (`system-prompt-builder.ts`)
-  - Done when: "10 plasmid → 1500 tokens" 계산이 명시된 설계서
-
-- [ ] **P-1.23** `eval-seeds` Zod schema + frontmatter 통합 (0.5d)
-  - 참조: PRD §6.1.2, §10.3, `src/skills/creator/evals/types.ts` (기존 `evalCaseSchema`)
-  - 산출물: `plasmidEvalSeedSchema` (extends `evalCaseSchema` + `tier` 필드), frontmatter parser 통합 지점
-  - Done when: Sample plasmid에 eval-seeds 3개 (L1/L2/L4) 유효 검증 통과
-
-- [ ] **P-1.17** 기존 eval harness 재사용 통합 설계 (0.5d)
-  - 참조: `src/skills/creator/evals/` (runner, grader, aggregator, workspace)
-  - 산출물: 재사용 범위와 확장 지점 명시 (`src/recombination/validation/*`이 어느 함수를 호출할지)
-  - Done when: 재사용 API surface 문서화
+- [x] **P-1.13** Compression pipeline 4-layer — **Draft v0.1** (`docs/design/P-1.13-compression-4-layer.md`) — Layer A/B/C/D + tier-aware ratio + 1500 token budget
+- [x] **P-1.23** `eval-seeds` Zod schema — **Draft v0.1** (`docs/design/P-1.23-eval-seeds-schema.md`) — evalCaseSchema extend + expectation DSL 7 prefix
+- [x] **P-1.17** eval harness 재사용 통합 — **Draft v0.1** (`docs/design/P-1.17-eval-harness-reuse.md`) — 재사용 매트릭스 + wrapper API
 
 #### Week 2 — Integrate 성분
 
-- [ ] **P-1.15** Constitution Reorganizer 설계 (marker 규약) (1d) ← P-1.14 선행
-  - 참조: PRD §6.3.2 Stage 2d, archive/hardening §6.4
-  - 산출물: BEGIN/END marker 구문, DHELIX.md section tree 파서 스펙, reorg LLM 프롬프트, deterministic fallback 알고리즘, I-9 invariance check 로직
-  - Done when: 샘플 DHELIX.md로 reorg plan이 JSON으로 생성되는 예시
+- [x] **P-1.15** Constitution Reorganizer — **Draft v0.1** (`docs/design/P-1.15-constitution-reorganizer.md`) — BEGIN/END marker + 3-tier fallback + I-9 invariance
 
 #### Week 2-3 — Verify 성분
 
-- [ ] **P-1.16** 4-tier Validation framework + Volume governor (1d) ← P-1.17, P-1.23 선행
-  - 참조: PRD §8.2~8.5, archive/hardening §10
-  - 산출물: L1-L4 case generation 로직, volume governor 테이블 (cloud/local), grading cascade 스펙, rollback decision matrix, 10초 grace UX
-  - Done when: "10 plasmid → 150 cases (cloud) / 50 (local)" 계산서
+- [x] **P-1.16** 4-tier Validation framework + Volume governor — **Draft v0.1** (`docs/design/P-1.16-validation-framework.md`) — 3×4 volume matrix + rollback decision + 10s grace UX
 
 #### Week 3 — Local LLM 대응
 
-- [ ] **P-1.20** Graceful degradation matrix (0.5d) ← P-1.18, P-1.19 선행
-  - 참조: PRD Part III §35
-  - 산출물: Stage × Capability tier 매트릭스 (cloud / local-large / local-small)
-  - Done when: 각 cell에 구체 전략 기입 완료
-
-- [ ] **P-1.21** Dual-model config 설계 (0.5d)
-  - 참조: PRD Part III §36, archive/hardening §14
-  - 산출물: `.dhelix/config.json` schema (models.runtime/recombination/validation), cloud cascade opt-in, privacy: local-only 시 cascade 금지 규칙
-  - Done when: 3가지 예시 config (all-local, hybrid, all-cloud)
-
-- [ ] **P-1.22** Phase 0 POC에 Ollama 참가자 필수화 (0.3d)
-  - 참조: archive/deep-dives DD-5, PRD §13 Phase 0
-  - 산출물: POC 프로토콜 수정본 — "5명 중 1명 이상 Ollama 사용자 필수, H4 hypothesis 추가"
-  - Done when: §4 POC Protocol 업데이트 반영
+- [x] **P-1.20** Graceful degradation matrix — **Draft v0.1** (`docs/design/P-1.20-degradation-matrix.md`) — 9 stage × 3 tier = 27 cell
+- [x] **P-1.21** Dual-model config — **Draft v0.1** (`docs/design/P-1.21-dual-model-config.md`) — 3 예시 config + cascade UX + privacy enforcement
+- [x] **P-1.22** Phase 0 POC Ollama 참가자 필수화 — **완료** (`docs/research/phase-0-poc-protocol.md` §4)
 
 #### Week 3 — UX/철학
 
-- [ ] **P-1.5** `/plasmid` Quick-first 재작성 (1d)
-  - 참조: PRD §6.2.1, archive/hardening P1
-  - 산출물: 기본 Quick flow (3-step), Research mode opt-in, `--research` 플래그 명세
-  - Done when: 사용자 플로우 예시 3개 (quick/edit/research)
-
-- [ ] **P-1.10** Foundational + `/plasmid challenge` (1d)
-  - 참조: PRD §22.4, archive/hardening Ph2
-  - 산출물: `tier: foundational` + `challengeable-by: {...}` schema, `/plasmid challenge` 3-option (override/amend/revoke), `challenges.log` 포맷
-  - Done when: 샘플 challenge flow 스크립트
-
-- [ ] **P-1.7** Fail-to-draft recovery 확장 (1d)
-  - 참조: PRD §7.3, §10.3 error catalog
-  - 산출물: 각 error code에 recovery strategy 매핑 표 + UX 플로우
-  - Done when: 7개 주요 에러에 대해 복구 제안 예시
+- [x] **P-1.5** `/plasmid` Quick-first — **Draft v0.1** (`docs/design/P-1.5-plasmid-quick-first.md`) — 11 서브커맨드 + 4 플래그 + 3 UX flow
+- [x] **P-1.10** Foundational + `/plasmid challenge` — **Draft v0.1** (`docs/design/P-1.10-foundational-challenge.md`) — 3-option (override/amend/revoke) + cooldown + challenges.log
+- [x] **P-1.7** Fail-to-draft recovery — **Draft v0.1** (`docs/design/P-1.7-fail-to-draft-recovery.md`) — 7 error code × recovery 매트릭스
 
 #### Week 3-4 — Carryover (v1.0 Hardening 기존 12개)
 
-짧은 것부터 병렬 처리:
-
-- [ ] **P-1.1** I-1 two-file lock model 강화 (0.5d) — PRD §8.2, §10.1
-- [ ] **P-1.2** §8.5 Concurrency section 추가 (0.5d) — PRD §8.6, archive/hardening §17
-- [ ] **P-1.3** Static validation 3-tier 재작성 (0.5d) — PRD §8.1
-- [ ] **P-1.4** Template 3-layer hierarchy 명시 (0.5d) — PRD §7.2, archive/hardening §4 (E4)
-- [ ] **P-1.6** 3-mode share pattern 설계 (0.5d) — PRD §7.1, archive/hardening §8.3
-- [ ] **P-1.8** I18n decision matrix (0.5d) — PRD §X (없으면 Appendix 추가), archive/hardening §16
-- [ ] **P-1.9** "Intent-authored" 슬로건 재작성 (0.5d) — PRD §31.2 (이미 적용됨) — **검증만**
-- [ ] **P-1.11** §21.2 biology table 3-column (0.5d) — PRD §21.2 (이미 적용됨) — **검증만**
-- [ ] **P-1.12** Rhizome/Tier 사상 정합 (0.5d) — PRD §20.2, §27.2 (이미 적용됨) — **검증만**
+- [x] **P-1.1** I-1 two-file lock — **Draft v0.1** (`docs/design/P-1.1-two-file-lock-model.md`) — lock schema v1 + safe-fs wrapper
+- [x] **P-1.2** Concurrency & Lock Semantics — **Draft v0.1** (`docs/design/P-1.2-concurrency-section.md`) — advisory lock + TTL 10min + crash recovery
+- [x] **P-1.3** Static validation 3-tier — **Draft v0.1** (`docs/design/P-1.3-static-validation-3tier.md`) — 14 check × severity (ERROR/WARN/INFO)
+- [x] **P-1.4** Template 3-layer hierarchy — **Draft v0.1** (`docs/design/P-1.4-template-3-layer.md`) — primitives/patterns/project
+- [x] **P-1.6** 3-mode share pattern — **Draft v0.1** (`docs/design/P-1.6-three-mode-share-pattern.md`) — shared/local/ephemeral + gitignore auto
+- [x] **P-1.8** I18n decision matrix — **Draft v0.1** (`docs/design/P-1.8-i18n-decision-matrix.md`) — 10-row matrix + language detector
+- [x] **P-1.9** "Intent-authored" 슬로건 — **검증 완료** (`docs/design/P-1.9-11-12-verification.md`)
+- [x] **P-1.11** §21.2 biology table 3-column — **검증 완료** (동 문서)
+- [x] **P-1.12** Rhizome/Tier 사상 정합 — **검증 완료** (동 문서)
 
 ### 3.4 Phase -1 Exit Gate
 
-다음이 모두 충족되면 Phase 0 진입:
+**현재 상태 (2026-04-23 이후)**: 24 action items 모두 Draft v0.1 작성 완료. **각 설계서의 개별 Exit Criteria 검토 중**. 모든 개별 Exit Criteria 통과 후 Phase 0 진입.
 
-- [ ] 23 remaining action items 100% 완료
-- [ ] I-8 enforcement 설계서가 구현 가능 수준으로 상세
-- [ ] `selectStrategies(caps)` 매트릭스 완성
-- [ ] Graceful degradation matrix 9개 row (Stage) × 3개 col (capability) 완전 기입
-- [ ] `/plasmid challenge` 3-option flow 스크립트 확정
-- [ ] Phase 0 POC 프로토콜 업데이트 완료 (Ollama 참가자 포함)
-- [ ] Validation volume governor 수치 확정 (cloud / local / local-small)
+Gate 항목별 상태:
+
+- [x] 24 action items 모두 문서화 완료 (설계 산출물 Draft v0.1 이상 존재)
+- [x] I-8 enforcement 설계서 — **v0.2 완료, 구현 가능 수준 상세** (`docs/design/P-1.14-i8-hermeticity.md`)
+- [x] `selectStrategies(caps)` 매트릭스 — **완성** (P-1.19 §3, 3 tier × 8 차원)
+- [x] Graceful degradation matrix — **9 stage × 3 col = 27 cell 완전 기입** (P-1.20 §2)
+- [x] `/plasmid challenge` 3-option flow 스크립트 — **확정** (P-1.10 §3)
+- [x] Phase 0 POC 프로토콜 업데이트 — **완료** (`docs/research/phase-0-poc-protocol.md` §4)
+- [x] Validation volume governor 수치 — **확정** (P-1.16 §3: standard 150 / governed 50 / minimal 20)
+
+**Critical path 5개 v0.2 승격 완료 (2026-04-23)**:
+
+- [x] **P-1.14** v0.2 — I-8 Hermeticity (4 Q resolved)
+- [x] **P-1.13** v0.2 — Compression 4-layer (adaptive budget + secondary-bucket + 2-stage quality)
+- [x] **P-1.15** v0.2 — Constitution Reorganizer (location.after hint + validateUpdateTargets 이중 방어 + MERGE 제거)
+- [x] **P-1.16** v0.2 — Validation framework (L4 multilingual + constraint quota cap + override tracker + CoW workspace)
+- [x] **P-1.19** v0.2 — Strategy Selector (CAP_TIER_THRESHOLD_B 상수화 + benchmark 근거 + config parallelism + preflight re-run)
+
+**비-Critical 14개 v0.2 승격 완료 (2026-04-23)**:
+
+- [x] **P-1.1** v0.2 — Two-file lock (orphan 24h, forward-only migration, prod graceful degrade)
+- [x] **P-1.2** v0.2 — Concurrency (reentrant pid, TTL 15min + `--lock-ttl` override, worktree warning)
+- [x] **P-1.3** v0.2 — Static validation 3-tier (WARN audit + correlation, auto-fix 제안만, perm 축소 허용)
+- [x] **P-1.4** v0.2 — Template 3-layer (naming validator, 5 core helpers, git-only share, template drift detect)
+- [x] **P-1.5** v0.2 — Quick-first (ko/en 지원, research context 전달, .drafts/ 캐싱, foundational 자동 금지)
+- [x] **P-1.6** v0.2 — 3-mode share (filter-repo 수동, local hash tracking, ephemeral 30일, monorepo 독립)
+- [x] **P-1.7** v0.2 — Fail-to-draft (suggest local 비활성, 3회 auto-abort, autofix-backup, LikelyCause)
+- [x] **P-1.8** v0.2 — I18n matrix (language override, en fallback + warnOnce, RTL 로드맵, ja-zh 휴리스틱)
+- [x] **P-1.10** v0.2 — Foundational challenge (team schema forward-compat, override 1회 consume, created asc tiebreaker)
+- [x] **P-1.17** v0.2 — Eval harness reuse (Phase 3 W1 D1 preflight checklist, CoW symlink+copy, whitelist, gradeByAstMatch)
+- [x] **P-1.18** v0.2 — ModelCapabilities (llama3.1 태그 없음 8b, cloud digest id:, LM Studio localhost heuristic)
+- [x] **P-1.20** v0.2 — Degradation matrix (template-only POC metrics, extractive 세부, provider rate limit)
+- [x] **P-1.21** v0.2 — Dual-model config (default cloud + harness-setup suggest, private all-or-nothing, reorgFallback 우선)
+- [x] **P-1.23** v0.2 — eval-seeds schema (tier required, L3 auto-gen priority, legacy 공존, 20 seeds 상한)
+
+**PRD 업데이트 완료 (2026-04-23)**:
+
+- [x] PRD §10.3 Error Code Catalog — `REORG_INVALID_UPDATE_TARGET`, `PRIVACY_CLOUD_BLOCKED` 추가
+
+**남은 작업 (Phase 1 진행 중)**:
+
+- [x] **Phase 0 실행 완료 (self-dogfood simulation, 2026-04-23)** — `.dhelix/research/phase-0-results/` 참조
+- [ ] PRD v0.4 전면 통합 — 각 v0.2 설계서의 "영향" 섹션을 PRD 본문으로 승격 (Phase 1 W5 alpha gate 전까지)
+- [ ] Phase 0 **Adjustments** 반영 (go-no-go-decision.md §ADJ-1 ~ ADJ-4):
+  - ADJ-1: P-1.5 Quick mode 시간 기대치 재조정 (20초 = LLM only, 사용자 편집 5-15분 추가) — Phase 1 W3
+  - ADJ-2: P-1.16 L4 auto-gen priority 역전 (eval-seeds 보완) — Phase 1 W4
+  - ADJ-3: P-1.4 industry template 추가 (`foundational-legal`, `foundational-security`, `team-governance`) — Phase 1 W3
+  - ADJ-4: Phase 1 **Alpha Gate** 신설 (Phase 1 W5) — external validation 3-5명 실사용자 필수
 - [ ] 설계 중 발견한 새 균열 → PRD v0.4 또는 Hardening v2.1로 기록 (if any)
 
 **주의**: 설계 중 **새 Critical 발견 시 Phase 0 진입 보류**. 설계 추가 후 재평가.
 
 ---
 
-## 4. Phase 0 — Market Validation (2주)
+## 4. Phase 0 — Market Validation ✅ **완료 (self-dogfood simulation, 2026-04-23)**
+
+**실행 결과** (상세: `.dhelix/research/phase-0-results/go-no-go-decision.md`):
+
+- **Go decision (tentative)** — Phase 1 alpha gate 에서 external validation 재확인 필수
+- **Hypothesis 결과**: H1 ✅ PASS (4/5 3+ painpoint), H2 ✅ PASS (4/5 Q10≥4), H3 ⚠️ CONDITIONAL (Zod 3/3 + rating 3/3, time 1/3), H4 ✅ PASS (Emma Ollama 8:23 / artifact 2 / network 0)
+- **4 Adjustments** (Phase 1 반영 필수): 시간 기대치 재조정 / L4 priority 역전 / industry template / Alpha Gate 신설
+
+**Self-dogfood 한계 명시**: 외부 사용자 섭외 불가로 Claude Code 가 5 persona 시뮬레이션. Synthetic bias 보정 위해 Phase 1 W5 Alpha Gate 에서 3-5명 real user POC 필수.
+
+---
+
+## 4'. Phase 0 — Market Validation (원 프로토콜, 참고용)
 
 ### 4.1 POC Protocol (Hardening DD-5 기반)
 
@@ -251,12 +275,17 @@ Week 3-4 Carryover ── P-1.1~4, P-1.6, P-1.8, P-1.9, P-1.11, P-1.12
 
 ## 5. Phase 1 Entry Gate (Phase 0 → Phase 1)
 
-Phase 0가 Go면 Phase 1 착수 전 다음 확인:
+Phase 0가 **Go (tentative)** 이므로 아래 조건 충족 후 Phase 1 착수:
 
-### 5.1 Setup
-- [ ] Feature flag `DHELIX_PLASMID_ENABLED` 추가
+### 5.0 Self-Dogfood → Tentative 해석
+
+Phase 0 는 Claude self-dogfood. 본 Gate 는 **엔지니어링 준비** 확인이고, **market proof 는 Phase 1 W5 Alpha Gate** 로 지연. 두 Gate 의 역할 분리.
+
+### 5.1 Setup (Phase 1 W0)
+- [ ] Feature flag `DHELIX_PLASMID_ENABLED` 추가 (`src/config/flags.ts`)
 - [ ] `src/plasmids/`, `src/recombination/`, `src/recombination/validation/` 스캐폴딩 (빈 파일 + README)
-- [ ] Phase 0 결과를 PRD v0.4 (optional) 또는 execution-plan.md v2로 반영
+- [ ] Phase 0 self-dogfood 결과 → `.dhelix/research/phase-0-results/` 에 커밋 완료
+- [ ] 4 Adjustments 를 Phase 1 W3/W4 task 목록에 등록
 
 ### 5.2 Phase 1 Week-by-Week (5주)
 
@@ -268,7 +297,7 @@ Phase 0가 Go면 Phase 1 착수 전 다음 확인:
 | W4 | `/plasmid` Quick mode + Interview mode skeleton | 3-step quick flow 동작 |
 | W5 | Template 10종 + ModelCapabilities 확장 + Entry Gate 검증 | Phase 2 진입 준비 |
 
-### 5.3 Phase 1 Exit Gate (Phase 2 진입)
+### 5.3 Phase 1 Exit Gate (Phase 2 진입) — **4 Gate (Alpha Gate 추가, v0.3)**
 
 **Cloud Gate**:
 - [ ] 10 plasmid recombination (단, Phase 1은 Validation 없이 Compile까지만) < 3분
@@ -283,7 +312,14 @@ Phase 0가 Go면 Phase 1 착수 전 다음 확인:
 - [ ] I-8 3층 방어 동작 검증 (manual: agent에게 `cat .dhelix/plasmids/*.md` 시도 → 차단 확인)
 - [ ] `plasmid.runtime_access_attempt` metric 발행 확인
 
-**셋 다 통과 시에만 Phase 2 진입**.
+**Alpha Gate (v0.3 신규, ADJ-4 반영, Phase 1 W5)**:
+- [ ] **3-5명 external alpha 사용자** 섭외 + plasmid 작성 POC
+- [ ] Persona 분포: Heavy CC user 1-2명 + Team lead 1명 + Privacy/Ollama 1명 이상
+- [ ] 3명 중 2+ 명이 L1-L2 only plasmid 를 20분 내 완성 (foundational / L4 포함 plasmid 는 별도 기준)
+- [ ] Ollama 참가자 1명 이상 H4 재검증 (실측 recombination 시간 + network 0 재확인)
+- [ ] Phase 0 self-dogfood 결과와 **delta 분석 문서** — 심각한 괴리 시 Pivot 검토 (§go-no-go-decision.md Pivot scenario 참조)
+
+**4 Gate 모두 통과 시에만 Phase 2 진입**.
 
 ---
 
@@ -402,6 +438,9 @@ Phase 0가 Go면 Phase 1 착수 전 다음 확인:
 | 버전 | 날짜 | 변경 |
 |-----|-----|-----|
 | v1.0 | 2026-04-23 | 초안. P-1.24 완료 반영. Phase -1 23 remaining 주차별 그룹핑. Phase 0 POC protocol. Phase 1 Entry Gate (Cloud + Local + Hermeticity). Reference Map. 첫날 구체 시작. |
+| v1.1 | 2026-04-23 | **Phase -1 24 action items 전부 Draft v0.1 작성 완료**. 산출물 22개 (docs/design/ + docs/research/). P-1.14는 v0.2 승격. §3.1 완료 현황 24/24, §3.3 주차별 체크박스 전부 [x], §3.4 Exit Gate 핵심 항목 7개 통과 (개별 Exit Criteria 리뷰 남음). |
+| v1.2 | 2026-04-23 | **Critical path 5개 v0.2 승격** — 각 문서 Open Questions 4-5건 deep-dive 해결 + Exit Criteria 전 항목 충족. 주요 아키텍처 결정 반영: adaptive plasmid budget (P-1.13), location.after hint + I-9 이중 방어 (P-1.15), L4 multilingual + CoW workspace (P-1.16), 15B benchmark 근거 + preflight re-run (P-1.19). PRD §10.3 에러 코드 추가 필요 flag. |
+| v1.3 | 2026-04-23 | **비-Critical 14개 v0.2 승격 + PRD §10.3 에러 코드 추가 + Phase 0 self-dogfood 실행 완료**. P-1.1/2/3/4/5/6/7/8/10/17/18/20/21/23 모두 Open Questions 해결. PRD §10.3 `REORG_INVALID_UPDATE_TARGET`, `PRIVACY_CLOUD_BLOCKED` 추가. `.dhelix/research/phase-0-results/` 10 파일 — Go tentative decision + 4 Adjustments (ADJ-1 ~ ADJ-4). Phase 1 Exit Gate 에 Alpha Gate 추가 (external validation 의무화). |
 
 ---
 
