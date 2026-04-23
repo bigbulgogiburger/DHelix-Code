@@ -1118,7 +1118,9 @@ privacy: local-only
 | INTERPRETER_JSON_FAILURE | 2a | LLM JSON 실패 | XML fallback / retry |
 | GENERATOR_ERROR | 2b | artifact 생성 실패 | 원인 + 부분 롤백 |
 | REORG_FALLBACK_USED | 2d | LLM reorg 실패 | deterministic fallback, warn |
-| REORG_USER_AREA_VIOLATION | 2d | I-9 위반 시도 | abort |
+| REORG_USER_AREA_VIOLATION | 2d | I-9 위반 시도 (verifyUserAreaInvariance 캐치) | abort |
+| REORG_INVALID_UPDATE_TARGET | 2d | LLM/plan 이 unknown marker update 시도 (v0.4, P-1.15 §Q2) | abort 조기 거부 |
+| PRIVACY_CLOUD_BLOCKED | all | `privacy: local-only` plasmid active 시 cloud cascade 시도 (v0.4, P-1.21 §4.3) | abort + 안내 |
 | WIRING_VALIDATION_ERROR | 5 | static 실패 | 항목별 리포트 |
 | VALIDATION_FAILED_L1 | 6 | L1 threshold 미만 | **auto-rollback** |
 | VALIDATION_FAILED_L2 | 6 | L2 threshold 미만 | **auto-rollback** |
