@@ -14,6 +14,7 @@
 import { type ExtractedToolCall, type ToolContext, type ToolCallResult } from "../types.js";
 import { type ToolRegistry } from "../registry.js";
 import { applyInputGuardrails } from "../../guardrails/index.js";
+import { plasmidHermeticityCheck } from "../../plasmids/preflight-integration.js";
 
 /**
  * 단일 preflight 검사 결과
@@ -145,6 +146,7 @@ const DEFAULT_CHECKS: readonly PreflightCheck[] = [
   { name: "capability-filter", check: checkCapabilityFilter },
   { name: "permission-check", check: checkPermissionLevel },
   { name: "guardrail-scan", check: checkGuardrailScan },
+  plasmidHermeticityCheck,
 ];
 
 /**
