@@ -12,10 +12,40 @@
  */
 import type { LoadResult, PlasmidScope } from "../../plasmids/types.js";
 import { ActivationStore } from "../../plasmids/activation.js";
-import { loadPlasmids, type LoaderOptions } from "../../plasmids/__stubs__/loader.js";
+import {
+  loadPlasmids as realLoadPlasmids,
+  type LoaderOptions as RealLoaderOptions,
+} from "../../plasmids/loader.js";
+
+/**
+ * Loader options as seen by the `/plasmid` commands.
+ *
+ * Extends Team 1's `LoaderOptions` with two Phase-1 advisory knobs
+ * (`draftsPath`, `scopes`) that the commands pass through from
+ * `CommandDeps`. Phase 1's real loader honours its built-in defaults;
+ * both knobs are reserved for Phase 2 overrides and dropped here.
+ */
+export interface LoaderOptions extends RealLoaderOptions {
+  readonly draftsPath?: string;
+  readonly scopes?: readonly PlasmidScope[];
+}
 
 /** Loader signature as seen by commands — re-exported for test convenience. */
 export type LoadPlasmidsFn = (opts: LoaderOptions) => Promise<LoadResult>;
+
+/**
+ * Phase-1 production loader wrapper. Drops the advisory fields before
+ * forwarding to Team 1's loader; see {@link LoaderOptions} for the
+ * rationale.
+ */
+const loadPlasmids: LoadPlasmidsFn = (opts) => {
+  const { draftsPath: _draftsPath, scopes: _scopes, ...rest } = opts;
+  // Suppress unused-variable diagnostics without losing the advisory
+  // types at the call site.
+  void _draftsPath;
+  void _scopes;
+  return realLoadPlasmids(rest);
+};
 
 /**
  * Everything the /plasmid command tree needs from the outside world.
@@ -24,7 +54,7 @@ export type LoadPlasmidsFn = (opts: LoaderOptions) => Promise<LoadResult>;
  * literal with no spies and no module-level mocks.
  */
 export interface CommandDeps {
-  /** Plasmid loader (Team 1's `loadPlasmids`). */
+  /** Plasmid loader (Team 1's `loadPlasmids`, wrapped for Phase-1 extras). */
   readonly loadPlasmids: LoadPlasmidsFn;
   /** Activation store factory — callers pass `workingDirectory`. */
   readonly activationStore: ActivationStore;

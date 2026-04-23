@@ -24,8 +24,11 @@ export interface SplitResult {
   readonly body: string;
 }
 
-// Leading delimiter may optionally be preceded by a BOM / leading whitespace.
-const FRONTMATTER_OPEN_REGEX = /^﻿?\s*---\r?\n/;
+// Leading delimiter may optionally be preceded by a BOM (U+FEFF) / whitespace.
+// We reference the BOM via its codepoint rather than embedding the character
+// directly so the file stays free of irregular whitespace per ESLint's
+// `no-irregular-whitespace` rule.
+const FRONTMATTER_OPEN_REGEX = new RegExp(`^\\uFEFF?\\s*---\\r?\\n`);
 
 /**
  * Split `source` into a `(rawMetadata, body)` pair.

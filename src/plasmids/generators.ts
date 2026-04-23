@@ -35,7 +35,6 @@ export interface TemplateContext {
  */
 export function renderTemplate(template: string, ctx: TemplateContext): string {
   const vars = contextToRecord(ctx);
-  // eslint-disable-next-line no-useless-escape
   return template.replace(/\\\$\{[a-zA-Z_][a-zA-Z0-9_]*\}|\$\{([a-zA-Z_][a-zA-Z0-9_]*)\}/g, (match, name?: string) => {
     if (match.startsWith("\\")) {
       // escaped form → strip the backslash, keep literal placeholder
