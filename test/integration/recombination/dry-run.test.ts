@@ -229,3 +229,95 @@ describe("integration: /recombination --dry-run", () => {
     expect(await exists(join(workdir, ".dhelix/recombination/.lock"))).toBe(false);
   });
 });
+
+describe("integration: /recombination extend (Stage 4 real write path)", () => {
+  it(
+    "writes DHELIX.md with team-4 marker grammar, 40-project-profile.md path, " +
+      "and transcript.reorgMarkerIds matching applyPlan output",
+    async () => {
+      await seedPlasmid(workdir, "alpha");
+      await seedActivation(workdir, ["alpha"]);
+
+      // Seed an existing DHELIX.md with user content so verifyUserAreaInvariance
+      // has a meaningful baseline to check after Stage 4c.
+      const originalUserText = "# Project Principles\n\nUser-owned content.\n";
+      await writeFile(join(workdir, "DHELIX.md"), originalUserText, "utf-8");
+
+      const reorganize: ReorganizeFn = vi.fn<
+        (...args: Parameters<ReorganizeFn>) => Promise<ReorgPlan>
+      >(async () => ({
+        ops: [
+          {
+            kind: "insert",
+            markerId: "alpha/security-gate",
+            heading: "Security Gate",
+            body: "Enforce the OWASP top-10 baseline on every PR.",
+            sourcePlasmid: "alpha" as PlasmidId,
+          },
+        ],
+        keptMarkerIds: [],
+        preReorgContentHash: "pre",
+        intentGraphHash: "graph",
+        fallbackTier: "llm-only",
+      }));
+
+      const compress: CompressFn = vi.fn<
+        (...args: Parameters<CompressFn>) => Promise<CompressionOutput>
+      >(async () => ({
+        summaries: [],
+        sections: [],
+        projectProfileMarkdown: "# Project Profile\n\nGenerated profile body.\n",
+        totalTokenEstimate: 42,
+        budgetTokens: 1500,
+        droppedPlasmidIds: [] as readonly PlasmidId[],
+      }));
+
+      const base = stubbedDeps();
+      const deps = { ...base, reorganize, compress };
+
+      const opts: RecombinationOptions = {
+        workingDirectory: workdir,
+        registryPath: ".dhelix/plasmids",
+        mode: "extend",
+        approvalMode: "auto",
+        staticValidation: "warn-only",
+      };
+
+      const result = await executeRecombination(opts, deps);
+      expect(result.applied).toBe(true);
+
+      // DHELIX.md now carries the team-4 marker grammar (not the legacy
+      // `PLASMID-BEGIN` form the executor used before the fix).
+      const writtenConstitution = await readFile(
+        join(workdir, "DHELIX.md"),
+        "utf-8",
+      );
+      expect(writtenConstitution).toContain(
+        "<!-- BEGIN plasmid-derived: alpha/security-gate -->",
+      );
+      expect(writtenConstitution).toContain(
+        "<!-- END plasmid-derived: alpha/security-gate -->",
+      );
+      expect(writtenConstitution).not.toContain("PLASMID-BEGIN");
+
+      // User-owned area preserved byte-for-byte (I-9).
+      expect(writtenConstitution).toContain(originalUserText.trim());
+
+      // Project profile lands at the PRD §7.1 canonical path (40-*, not 90-*).
+      expect(
+        await exists(
+          join(workdir, ".dhelix/prompt-sections/generated/40-project-profile.md"),
+        ),
+      ).toBe(true);
+      expect(
+        await exists(
+          join(workdir, ".dhelix/prompt-sections/generated/90-project-profile.md"),
+        ),
+      ).toBe(false);
+
+      // Transcript records the marker ids *actually* written (insert ops),
+      // not the unused `keptMarkerIds` field.
+      expect(result.transcript.reorgMarkerIds).toEqual(["alpha/security-gate"]);
+    },
+  );
+});

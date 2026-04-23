@@ -150,7 +150,11 @@ export { routeBucket } from "./bucket-router.js";
 export { computeBudget, resolveOverflow } from "./budget.js";
 export { buildProjectProfile } from "./project-profiler.js";
 export { summarizePlasmid, SUMMARIZER_VERSION } from "./plasmid-summarizer.js";
-export { assembleSections } from "./section-assembler.js";
+export {
+  assembleSections,
+  projectProfileRelativePath,
+  projectProfileHeading,
+} from "./section-assembler.js";
 export { estimateTokens } from "./token-estimator.js";
 export { extractFrontmatter } from "./frontmatter-extractor.js";
 export { cacheKey, cachePath, readCache, writeCache } from "./cache.js";

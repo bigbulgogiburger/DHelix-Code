@@ -33,6 +33,7 @@ import { getModelCapabilities } from "../llm/model-capabilities.js";
 import type { LoadedPlasmid } from "../plasmids/types.js";
 import { ActivationStore } from "../plasmids/activation.js";
 import { loadPlasmids } from "../plasmids/loader.js";
+import { projectProfileRelativePath } from "./compression/index.js";
 import {
   applyPlan as applyConstitutionPlan,
   parse as parseConstitution,
@@ -54,7 +55,6 @@ import {
 } from "./transcript.js";
 import {
   CONSTITUTION_FILE,
-  PROMPT_SECTIONS_GENERATED_DIR,
   type AssembledSection,
   type CompiledPlasmidIR,
   type CompressionOutput,
@@ -216,7 +216,13 @@ export const executeRecombination: ExecuteRecombinationFn = async (
     transcript.recordStageStart(3, "preview", stage3Started);
 
     if (opts.mode === "dry-run") {
-      transcript.recordReorgMarkers(reorgPlan.keptMarkerIds);
+      // Dry-run still reports the markers the plan would touch (insert +
+      // update), not `keptMarkerIds`. Useful for previews and /cure
+      // simulations that consume the transcript.
+      const dryRunMarkerIds = reorgPlan.ops
+        .filter((op) => op.kind === "insert" || op.kind === "update")
+        .map((op) => op.markerId);
+      transcript.recordReorgMarkers(dryRunMarkerIds);
       transcript.recordStageFinish(3, now(), "skipped", "dry-run: skipping apply");
       transcript.recordStageFinish(6, now(), "skipped", "runtime validation phase-3");
       transcript.recordStageStart(7, "release", now());
@@ -306,10 +312,13 @@ export const executeRecombination: ExecuteRecombinationFn = async (
       });
     }
     if (compression.projectProfileMarkdown.trim() !== "") {
+      // Use Team 3's canonical path helper — PRD §7.1 locks this to
+      // `.dhelix/prompt-sections/generated/40-project-profile.md`. Hard-
+      // coding `90-project-profile.md` here used to shadow Team 3 and
+      // broke the runtime loader's ordering convention.
       const profilePath = join(
         opts.workingDirectory,
-        PROMPT_SECTIONS_GENERATED_DIR,
-        "90-project-profile.md",
+        projectProfileRelativePath(),
       );
       await atomicWrite(profilePath, compression.projectProfileMarkdown);
       const entry: WrittenFile = {
@@ -355,7 +364,10 @@ export const executeRecombination: ExecuteRecombinationFn = async (
         /* ignore */
       }
     });
-    transcript.recordReorgMarkers(reorgPlan.keptMarkerIds);
+    // Record the marker ids actually rendered into DHELIX.md (inserts +
+    // updates) rather than the plan's `keptMarkerIds`, so /cure can undo
+    // exactly what Stage 4 wrote.
+    transcript.recordReorgMarkers(applyResult.markerIdsWritten);
     transcript.recordStageFinish(4, now(), "ok");
 
     // ── Stage 5: static wiring validation ───────────────────────────────
