@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "layer": "primitives",
+  "description": "Minimal fallback templates for recombination artifact generators (Phase 2 Stage 2b).",
+  "templates": [
+    {
+      "basename": "rule.basic.hbs",
+      "kind": "rule",
+      "slots": ["summary", "rationale"]
+    },
+    {
+      "basename": "skill.basic.hbs",
+      "kind": "skill",
+      "slots": ["overview", "usage"]
+    },
+    {
+      "basename": "command.basic.hbs",
+      "kind": "command",
+      "slots": ["summary", "behavior"]
+    }
+  ]
+}
