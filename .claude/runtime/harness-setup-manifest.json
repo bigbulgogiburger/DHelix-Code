@@ -1,0 +1,41 @@
+{
+  "_generated_at": "2026-04-23T00:00:00+09:00",
+  "_generator": "/harness-setup full",
+  "_stack": "react (Tier 1) — Ink 5.1 CLI / TS 5.8 / ESM / Vitest 3",
+  "_prefix": "dhelix",
+  "_mode": "suggest",
+  "created_files": [
+    ".claude/hooks/harness-context-inject.sh",
+    ".claude/hooks/compile-check.sh",
+    ".claude/hooks/review-gate.sh",
+    ".claude/hooks/persist-checkpoint.sh",
+    ".claude/agents/dhelix-explorer.md",
+    ".claude/agents/dhelix-security-reviewer.md",
+    ".claude/agents/dhelix-test-writer.md",
+    ".claude/agents/dhelix-build-resolver.md",
+    ".claude/agents/dhelix-architecture-reviewer.md",
+    ".claude/agents/dhelix-tool-reviewer.md",
+    ".claude/agents/dhelix-llm-adapter-reviewer.md",
+    ".claude/agents/dhelix-ink-ui-reviewer.md",
+    ".claude/agents/dhelix-agent-loop-reviewer.md",
+    ".claude/agents/dhelix-mcp-reviewer.md",
+    ".claude/agents/dhelix-guardrails-reviewer.md",
+    ".claude/agents/dhelix-permissions-reviewer.md",
+    ".claude/agents/dhelix-skills-reviewer.md",
+    ".claude/runtime/sprint-contract/",
+    ".claude/runtime/agent-outputs/",
+    ".claude/runtime/archive/",
+    ".claude/runtime/harness-metrics/aggregate.py",
+    ".claude/runtime/harness-metrics/aggregate.sh",
+    ".claude/runtime/harness-metrics/scorecard.md",
+    ".gitattributes"
+  ],
+  "modified_files": [
+    ".claude/settings.local.json",
+    "CLAUDE.md"
+  ],
+  "backup_files": [
+    ".claude/settings.local.json.bak"
+  ],
+  "skipped_files": []
+}

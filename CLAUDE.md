@@ -133,4 +133,48 @@ When compacting, always preserve:
 
 ---
 
-Last Updated: 2026-04-15
+## Harness Engineering Integration
+
+### 운영 모드
+
+- `HARNESS_MODE`는 `.claude/settings.local.json` 의 `env` 섹션에서 관리한다.
+- `auto`: UserPromptSubmit hook이 harness 단계를 강제 주입하고, `git commit` 전 `aggregate-verdict.md` 가 PASS가 아니면 커밋을 차단한다.
+- `suggest` (기본): hook이 제안만 하며 차단하지 않는다.
+- `off`: Harness 비활성.
+
+### 워크플로 규칙
+
+- `/jira-plan` 완료 후 `/harness-plan` 실행을 제안한다.
+- `/jira-execute` 각 Phase 완료 후 `/harness-review` 를 제안한다.
+- `/jira-commit` 전 `.claude/runtime/aggregate-verdict.md` 의 verdict 확인을 권장한다.
+
+### 에이전트 디스패치 (프로젝트 > 글로벌)
+
+- `dhelix-*` 로 시작하는 프로젝트 에이전트는 동일 역할의 글로벌 에이전트보다 **우선** 선택한다.
+- 대표 디스패치 규칙:
+  - 코드베이스 탐색 → `dhelix-explorer`
+  - 보안 리뷰 → `dhelix-security-reviewer`
+  - 테스트 드래프트 → `dhelix-test-writer`
+  - 빌드/타입 에러 → `dhelix-build-resolver`
+  - 새 모듈/import/리팩토링 → `dhelix-architecture-reviewer`
+  - 새/수정된 built-in tool → `dhelix-tool-reviewer`
+  - LLM provider/capabilities/registry 변경 → `dhelix-llm-adapter-reviewer`
+  - `src/cli/` (Ink 컴포넌트·훅·레이아웃) 변경 → `dhelix-ink-ui-reviewer`
+  - RuntimePipeline/Recovery/Compaction/Session 변경 → `dhelix-agent-loop-reviewer`
+  - MCP (3-scope·OAuth·A2A) 변경 → `dhelix-mcp-reviewer`
+  - `src/guardrails/` 변경 → `dhelix-guardrails-reviewer`
+  - Trust tier·ApprovalDB·SIEM·Sandbox 변경 → `dhelix-permissions-reviewer`
+  - Skills·슬래시 커맨드·Command Bridge 변경 → `dhelix-skills-reviewer`
+
+### 아티팩트 경로
+
+- dev-guide: `docs/{ISSUE-KEY}-dev-guide.md`
+- Sprint Contract: `.claude/runtime/sprint-contract/{ISSUE-KEY}.md`
+- Verdict: `.claude/runtime/aggregate-verdict.md`
+- Workflow State: `.claude/runtime/workflow-state.json`
+- Checkpoint: `.claude/runtime/checkpoint.md`
+- Metrics Scorecard: `.claude/runtime/harness-metrics/scorecard.md` (aggregate.sh 로 갱신)
+
+---
+
+Last Updated: 2026-04-23

@@ -1,0 +1,2 @@
+# Harness hooks must have LF endings on all platforms.
+*.sh text eol=lf

@@ -18,6 +18,11 @@ testJava/
 .gradle/
 DHELIX.local.md
 .claude/settings.local.json
+.claude/settings.local.json.bak
+.claude/runtime/changed-files.txt
+.claude/runtime/aggregate-verdict.md
+.claude/runtime/workflow-state.json
+.claude/runtime/checkpoint.md
 
 # 임시/개인 파일
 bash.exe.stackdump
