@@ -1,0 +1,33 @@
+---
+name: {{kebabCase intent.title}}
+description: "{{intent.description}}"
+sourcePlasmid: {{plasmid.metadata.name}}
+sourcePlasmidId: {{plasmid.plasmidId}}
+tier: {{plasmid.metadata.tier}}
+triggers: []
+allowedTools: []
+generated: true
+---
+
+# {{titleCase intent.title}}
+
+{{!-- slot:overview --}}
+{{intent.description}}
+{{!-- /slot --}}
+
+## When to use
+
+{{!-- slot:usage --}}
+Invoke this skill whenever the user references `{{intent.title}}` or a closely related task.
+{{!-- /slot --}}
+
+## Constraints
+
+{{#if intent.constraints}}{{#each intent.constraints}}- {{this}}
+{{/each}}{{else}}- (none declared){{/if}}
+
+## Workflow
+
+1. Understand the request in the context of `{{plasmid.metadata.name}}`.
+2. Apply the constraints listed above.
+3. Report back with the outcome and any follow-up actions.

@@ -1,0 +1,27 @@
+---
+name: {{intent.title}}
+sourcePlasmid: {{plasmid.metadata.name}}
+sourcePlasmidId: {{plasmid.plasmidId}}
+tier: {{plasmid.metadata.tier}}
+generated: true
+---
+
+# {{titleCase intent.title}}
+
+{{!-- slot:summary --}}
+{{intent.description}}
+{{!-- /slot --}}
+
+## Constraints
+
+{{#if intent.constraints}}{{#each intent.constraints}}- {{this}}
+{{/each}}{{else}}- (no structural constraints declared){{/if}}
+
+{{#if intent.evidence}}## Evidence
+
+{{#each intent.evidence}}- {{this}}
+{{/each}}{{/if}}
+
+{{!-- slot:rationale --}}
+This rule is derived from plasmid `{{plasmid.metadata.name}}` ({{plasmid.metadata.tier}}).
+{{!-- /slot --}}

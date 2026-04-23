@@ -1,0 +1,26 @@
+---
+name: {{kebabCase intent.title}}
+description: "{{intent.description}}"
+sourcePlasmid: {{plasmid.metadata.name}}
+sourcePlasmidId: {{plasmid.plasmidId}}
+tier: {{plasmid.metadata.tier}}
+trustLevel: T1
+generated: true
+---
+
+# /{{kebabCase intent.title}}
+
+{{!-- slot:summary --}}
+{{intent.description}}
+{{!-- /slot --}}
+
+## Behavior
+
+{{!-- slot:behavior --}}
+Run the steps described in `{{plasmid.metadata.name}}` and report the outcome.
+{{!-- /slot --}}
+
+## Constraints
+
+{{#if intent.constraints}}{{#each intent.constraints}}- {{this}}
+{{/each}}{{else}}- (none declared){{/if}}
