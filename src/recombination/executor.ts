@@ -34,6 +34,11 @@ import type { LoadedPlasmid } from "../plasmids/types.js";
 import { ActivationStore } from "../plasmids/activation.js";
 import { loadPlasmids } from "../plasmids/loader.js";
 import {
+  applyPlan as applyConstitutionPlan,
+  parse as parseConstitution,
+  verifyUserAreaInvariance,
+} from "./constitution/index.js";
+import {
   aborted,
   generatorError,
   interpreterJsonFailure,
@@ -324,10 +329,16 @@ export const executeRecombination: ExecuteRecombinationFn = async (
       });
     }
 
-    // 4c — apply the reorg plan to DHELIX.md (atomic + invariance check)
+    // 4c — apply the reorg plan to DHELIX.md (atomic + invariance check).
+    // Delegated to Team 4's `applyPlan` / `verifyUserAreaInvariance` so the
+    // marker grammar (`<!-- BEGIN plasmid-derived: <id> -->`) stays single-
+    // sourced — see P-1.15 §1.1.
     const constitutionPath = join(opts.workingDirectory, CONSTITUTION_FILE);
-    const nextConstitution = applyReorgPlan(existingConstitution, reorgPlan);
-    verifyUserAreaInvariance(existingConstitution, nextConstitution);
+    const beforeTree = parseConstitution(existingConstitution);
+    const applyResult = applyConstitutionPlan(existingConstitution, reorgPlan);
+    const nextConstitution = applyResult.newConstitution;
+    const afterTree = parseConstitution(nextConstitution);
+    verifyUserAreaInvariance(beforeTree, afterTree);
     await atomicWrite(constitutionPath, nextConstitution);
     const constEntry: WrittenFile = {
       path: constitutionPath,
@@ -503,101 +514,11 @@ async function runBounded<I, O>(
 }
 
 // ─── reorg plan application (Phase-2 scope) ──────────────────────────────────
-
-const MARKER_BEGIN = (id: string): string => `<!-- PLASMID-BEGIN ${id} -->`;
-const MARKER_END = (id: string): string => `<!-- PLASMID-END ${id} -->`;
-
-/**
- * Apply a {@link ReorgPlan} to the existing DHELIX.md content.
- *
- * The executor owns the layout semantics: every plasmid-authored block
- * lives between a pair of BEGIN/END markers. User-owned content (outside
- * marker blocks) is preserved byte-for-byte — {@link verifyUserAreaInvariance}
- * re-asserts this after the apply.
- */
-function applyReorgPlan(existing: string, plan: ReorgPlan): string {
-  let next = existing;
-  for (const op of plan.ops) {
-    switch (op.kind) {
-      case "keep":
-        continue;
-      case "remove":
-        next = removeMarkerBlock(next, op.markerId);
-        break;
-      case "update":
-        next = upsertMarkerBlock(next, op.markerId, op.heading, op.body);
-        break;
-      case "insert":
-        next = upsertMarkerBlock(next, op.markerId, op.heading, op.body);
-        break;
-    }
-  }
-  return next;
-}
-
-function removeMarkerBlock(src: string, markerId: string): string {
-  const begin = MARKER_BEGIN(markerId);
-  const end = MARKER_END(markerId);
-  const bi = src.indexOf(begin);
-  if (bi === -1) return src;
-  const ei = src.indexOf(end, bi);
-  if (ei === -1) return src;
-  const after = ei + end.length;
-  // Also consume one trailing newline if present to avoid empty-line drift.
-  const trimAfter = src[after] === "\n" ? after + 1 : after;
-  return src.slice(0, bi) + src.slice(trimAfter);
-}
-
-function upsertMarkerBlock(
-  src: string,
-  markerId: string,
-  heading: string,
-  body: string,
-): string {
-  const block = [
-    MARKER_BEGIN(markerId),
-    heading.startsWith("#") ? heading : `## ${heading}`,
-    "",
-    body.trim(),
-    MARKER_END(markerId),
-  ].join("\n");
-
-  const begin = MARKER_BEGIN(markerId);
-  const end = MARKER_END(markerId);
-  const bi = src.indexOf(begin);
-  if (bi !== -1) {
-    const ei = src.indexOf(end, bi);
-    const after = ei === -1 ? src.length : ei + end.length;
-    return src.slice(0, bi) + block + src.slice(after);
-  }
-  const separator = src.length > 0 && !src.endsWith("\n\n") ? "\n\n" : "";
-  return src + separator + block + "\n";
-}
-
-/**
- * Assert that no non-marker region changed between `before` and `after`.
- * Throws {@link RecombinationError} REORG_USER_AREA_VIOLATION when it
- * detects drift. Used in Stage 4 after applying the reorg plan.
- */
-function verifyUserAreaInvariance(before: string, after: string): void {
-  const userBefore = stripMarkerBlocks(before);
-  const userAfter = stripMarkerBlocks(after);
-  if (userBefore !== userAfter) {
-    throw new RecombinationError(
-      "REORG_USER_AREA_VIOLATION",
-      "Reorganizer modified user-owned area of DHELIX.md.",
-      {},
-    );
-  }
-}
-
-function stripMarkerBlocks(text: string): string {
-  // Greedy strip anything between PLASMID-BEGIN/PLASMID-END pairs.
-  return text.replace(
-    /<!-- PLASMID-BEGIN [^>]+ -->[\s\S]*?<!-- PLASMID-END [^>]+ -->\n?/g,
-    "",
-  );
-}
+//
+// Reorg-plan rendering + I-9 invariance enforcement is delegated to the
+// Team-4 constitution module (`./constitution/index.js`). This keeps the
+// locked `<!-- BEGIN plasmid-derived: <id> -->` grammar single-sourced and
+// ensures `remove` ops on a previous run's markers actually succeed.
 
 interface NodeError extends Error {
   code?: string;
