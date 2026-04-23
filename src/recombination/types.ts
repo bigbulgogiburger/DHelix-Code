@@ -332,5 +332,98 @@ export const COMPRESSION_DEFAULT_BUDGET_TOKENS = 1500;
 export const COMPRESSION_PER_PLASMID_TOKENS = 150;
 export const COMPRESSION_MIN_BUDGET_TOKENS = 300;
 
+// ─── Shared LLM adapter (dependency-injected by teams) ───────────────────────
+
+/** Minimal completion shape every team shares. Kept provider-agnostic. */
+export interface LLMCompletionRequest {
+  readonly system: string;
+  readonly user: string;
+  readonly jsonMode?: boolean;
+  readonly temperature?: number;
+  readonly maxTokens?: number;
+  readonly signal?: AbortSignal;
+}
+
+/** Unified completion callable. Implementations wrap `OpenAICompatibleClient`. */
+export type LLMCompletionFn = (req: LLMCompletionRequest) => Promise<string>;
+
+// ─── Top-level team entry points (public API surface) ───────────────────────
+
+/** Team 1 — interpret a single plasmid. */
+export interface InterpretRequest {
+  readonly plasmid: LoadedPlasmid;
+  readonly strategy: InterpreterStrategy;
+  readonly retries: number;
+  readonly modelId: string;
+  readonly workingDirectory: string;
+  readonly llm: LLMCompletionFn;
+  readonly signal?: AbortSignal;
+}
+export interface InterpretResult {
+  readonly ir: CompiledPlasmidIR;
+  readonly cacheHit: boolean;
+  readonly warnings: readonly string[];
+}
+export type InterpretFn = (req: InterpretRequest) => Promise<InterpretResult>;
+
+/** Team 2 — render artifacts from interpreter IRs. */
+export interface GenerateRequest {
+  readonly irs: readonly CompiledPlasmidIR[];
+  readonly strategies: PipelineStrategies;
+  readonly workingDirectory: string;
+  readonly llm: LLMCompletionFn;
+  readonly signal?: AbortSignal;
+}
+export interface GenerateResult {
+  readonly artifacts: readonly GeneratedArtifact[];
+  readonly warnings: readonly string[];
+}
+export type GenerateFn = (req: GenerateRequest) => Promise<GenerateResult>;
+
+/** Team 3 — compress plasmids into prompt sections. */
+export interface CompressRequest {
+  readonly irs: readonly CompiledPlasmidIR[];
+  readonly strategies: PipelineStrategies;
+  readonly workingDirectory: string;
+  readonly llm: LLMCompletionFn;
+  readonly signal?: AbortSignal;
+}
+export type CompressFn = (req: CompressRequest) => Promise<CompressionOutput>;
+
+/** Team 4 — reorganize DHELIX.md based on interpreter graph. */
+export interface ReorganizeRequest {
+  readonly irs: readonly CompiledPlasmidIR[];
+  readonly existingConstitution: string;
+  readonly strategies: PipelineStrategies;
+  readonly workingDirectory: string;
+  readonly llm: LLMCompletionFn;
+  readonly signal?: AbortSignal;
+}
+export type ReorganizeFn = (req: ReorganizeRequest) => Promise<ReorgPlan>;
+
+/** Team 5 — orchestrate stages 0–5 with injected dependencies. */
+export interface ExecutorDeps {
+  readonly interpret: InterpretFn;
+  readonly generate: GenerateFn;
+  readonly compress: CompressFn;
+  readonly reorganize: ReorganizeFn;
+  readonly llm: LLMCompletionFn;
+}
+
+export interface RecombinationResult {
+  readonly transcript: RecombinationTranscript;
+  readonly plan: {
+    readonly artifacts: readonly GeneratedArtifact[];
+    readonly compression: CompressionOutput;
+    readonly reorg: ReorgPlan;
+  };
+  readonly applied: boolean; // false in dry-run / abort paths
+}
+
+export type ExecuteRecombinationFn = (
+  opts: RecombinationOptions,
+  deps: ExecutorDeps,
+) => Promise<RecombinationResult>;
+
 /** Re-export types the adjacent modules import as public surface. */
 export type { LoadedPlasmid };
