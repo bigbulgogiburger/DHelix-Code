@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -euo pipefail
+# Generated from plasmid {{plasmid.plasmidId}} intent {{intent.id}}
+# Event: {{intent.params.event}}
+# Available env vars: $TOOL_NAME $FILE_PATH $SESSION_ID
+
+{{!-- slot:body --}}
+# {{intent.description}}
+echo "hook fired: {{intent.title}}"
+{{!-- /slot --}}

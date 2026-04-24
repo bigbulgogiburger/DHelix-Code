@@ -1,0 +1,25 @@
+---
+name: {{kebabCase intent.title}}
+sourcePlasmid: {{plasmid.metadata.name}}
+sourcePlasmidId: {{plasmid.plasmidId}}
+tier: {{plasmid.metadata.tier}}
+generated: true
+---
+
+# {{titleCase intent.title}}
+
+{{!-- slot:overview --}}
+{{intent.description}}
+{{!-- /slot --}}
+
+## Suggested settings.json fragment
+
+__HARNESS_SETTINGS_FRAGMENT__
+
+## How to apply
+
+{{!-- slot:apply --}}
+1. Open your project's `.dhelix/settings.json` (create it if missing).
+2. Merge the fragment above into the `hooks` section — preserve existing entries.
+3. Restart any active dhelix session so hooks re-register.
+{{!-- /slot --}}

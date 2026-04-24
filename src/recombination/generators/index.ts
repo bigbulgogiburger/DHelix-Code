@@ -25,6 +25,8 @@ import type {
 } from "../types.js";
 
 import { generateCommandArtifact } from "./command-generator.js";
+import { generateHarnessArtifact } from "./harness-generator.js";
+import { generateHookArtifacts } from "./hook-generator.js";
 import { generateRuleArtifact } from "./rule-generator.js";
 import { generateSkillArtifact } from "./skill-generator.js";
 import {
@@ -32,7 +34,7 @@ import {
   type TemplateResolver,
 } from "./template-resolver.js";
 
-const DEFERRED_KINDS: ReadonlySet<IntentKind> = new Set(["agent", "hook", "harness"]);
+const DEFERRED_KINDS: ReadonlySet<IntentKind> = new Set(["agent"]);
 
 export interface GeneratorOptions {
   /** Override the resolver (tests / custom primitive roots). */
@@ -94,6 +96,12 @@ async function doGenerate(
             break;
           case "command":
             artifacts.push(await generateCommandArtifact(ir, intent, deps));
+            break;
+          case "hook":
+            artifacts.push(...(await generateHookArtifacts(ir, intent, deps)));
+            break;
+          case "harness":
+            artifacts.push(await generateHarnessArtifact(ir, intent, deps));
             break;
           default:
             // Exhaustiveness check — IntentKind was extended without

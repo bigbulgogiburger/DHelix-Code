@@ -52,26 +52,33 @@ describe("generate (Stage 2b entry)", () => {
     expect(kinds).toEqual(["command", "rule", "skill"]);
   });
 
-  it("records deferred warnings for agent/hook/harness", async () => {
+  it("records deferred warning for agent and dispatches hook/harness (Phase 4 Team 2)", async () => {
     const ir = makeIR({
       intents: [
         makeIntent("agent", { id: "a-1" }),
-        makeIntent("hook", { id: "h-1" }),
-        makeIntent("harness", { id: "x-1" }),
+        makeIntent("hook", {
+          id: "h-1",
+          params: { event: "PreToolUse" },
+        }),
+        makeIntent("harness", {
+          id: "x-1",
+          params: { settings: { hooks: {} } },
+        }),
       ],
     });
     const bound = createGenerator({ resolver: resolverFor(workDir) });
     const result = await bound({
       irs: [ir],
-      strategies: makeStrategies(),
+      strategies: makeStrategies({ artifactGeneration: "template-only" }),
       workingDirectory: workDir,
       llm: stubLlm,
     });
-    expect(result.artifacts).toEqual([]);
-    expect(result.warnings).toHaveLength(3);
-    for (const w of result.warnings) {
-      expect(w).toMatch(/deferred to phase 4/);
-    }
+    // hook → 2 artifacts (script + manifest); harness → 1 artifact; agent still deferred.
+    expect(result.artifacts).toHaveLength(3);
+    const kinds = result.artifacts.map((a) => a.kind).sort();
+    expect(kinds).toEqual(["harness", "hook", "hook"]);
+    expect(result.warnings).toHaveLength(1);
+    expect(result.warnings[0]).toMatch(/agent generator deferred to phase 4/);
   });
 
   it("aborts early when the signal is already cancelled", async () => {
