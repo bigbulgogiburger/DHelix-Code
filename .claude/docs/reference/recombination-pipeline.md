@@ -1,12 +1,12 @@
-# Recombination Pipeline (Phase 2–3 — GAL-1)
+# Recombination Pipeline (Phase 2–4 — GAL-1)
 
-> 참조 시점: `/recombination` / `/cure` 실행 흐름, `src/recombination/` 모듈 수정, plasmid→artifact 변환, Stage 6 runtime validation(L1-L4), I-10 auto-rollback, I-1/3/5/7/8/9/10 불변식이 관여하는 작업.
+> 참조 시점: `/recombination` / `/cure` 실행 흐름, `src/recombination/` 모듈 수정, plasmid→artifact 변환, Stage 6 runtime validation(L1-L4), I-10 auto-rollback, I-1/3/5/7/8/9/10 불변식이 관여하는 작업. **Phase 5 의 research-mode + foundational `/plasmid challenge` governance 는 별도 문서 [`plasmid-governance.md`](./plasmid-governance.md) 참조.**
 
 ## 개요
 
-`/recombination`은 활성화된 plasmid들을 읽어 `.dhelix/` 하위 artifact (rules/skills/commands) + prompt-section 파일 + DHELIX.md marker 블록으로 변환하는 8-stage 파이프라인이다. Phase 2가 Stage 0–5를 구현, Phase 3는 Stage 6 (runtime validation L1-L4) + Stage 7 (release: telemetry + `refs/plasmids/<id>`) + I-10 auto-rollback + `/cure` 역전 명령을 구현.
+`/recombination`은 활성화된 plasmid들을 읽어 `.dhelix/` 하위 artifact (rules/skills/commands) + prompt-section 파일 + DHELIX.md marker 블록으로 변환하는 8-stage 파이프라인이다. Phase 2가 Stage 0–5를 구현, Phase 3는 Stage 6 (runtime validation L1-L4) + Stage 7 (release: telemetry + `refs/plasmids/<id>`) + I-10 auto-rollback + `/cure` 역전 명령을 구현. Phase 4 가 advanced generators(agent/hook/harness) + `--mode rebuild` + Cure v1 3-way merge 추가, **Phase 5 가 executor Stage 1 에 foundational override 1회성 소비 hook 추가** (`consumePendingOverrides` — `enforcePrivacy` 보다 먼저 실행, drop 된 id 는 `transcript.consumedOverrides` 에 기록).
 
-**SSOT**: `docs/prd/plasmid-recombination-system.md` §6.3 + §6.4 + §8 + §10.1. 실행 계획은 `docs/prd/plasmid-recombination-execution-plan.md` v1.6.
+**SSOT**: `docs/prd/plasmid-recombination-system.md` §6.3 + §6.4 + §8 + §10.1. 실행 계획은 `docs/prd/plasmid-recombination-execution-plan.md` v1.8.
 
 ## 구조
 

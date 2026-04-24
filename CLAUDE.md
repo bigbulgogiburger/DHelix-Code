@@ -2,7 +2,7 @@
 
 CLI AI coding assistant for local/external LLMs. (Double Helix = DNA of your code)
 Node.js 20+ / TypeScript 5.8 / ESM only / Ink 5.1 (React for CLI) / Vitest 3 / tsup 8
-`package.json: v0.2.0` (internal v0.7 — GAL-1 Phase 2 Recombination MVP merged)
+`package.json: v0.2.0` (internal v0.8 — GAL-1 Phase 5 complete: research-assisted authoring + foundational `/plasmid challenge`)
 
 ## Architecture
 
@@ -19,7 +19,7 @@ graph TD
         SESSION[Session — SQLite + Fork/Branch + Checkpoint]
         SUBAG[Subagents — Manifest + P2P MessageBus + Memory]
         RECOV[Recovery Executor + Circuit Breaker]
-        RECOMB[Recombination — /recombination 8-stage · 5 team modules · I-8/9]
+        RECOMB[Recombination — /recombination 8-stage · /cure · validation L1-L4 · rebuild · 3-way merge · override consumption]
     end
     subgraph INFRA["Layer 3: Infrastructure"]
         LLM[LLM — 8 Providers + Registry + TaskClassifier + CostTracker]
@@ -37,12 +37,12 @@ graph TD
         MEM[Memory — project-scoped persistence]
         IDX[Indexing — Tree-Sitter 10 langs + Semantic Search]
         AUTH[Auth — Bearer/API-Key + OAuth Token Store]
-        PLASMID[Plasmids — Zod schema + loader + runtime-guard I-8]
+        PLASMID[Plasmids — Zod schema + loader + runtime-guard I-8 + research-mode + governance challenge/cooldown/overrides]
     end
     subgraph PLATFORM["Layer 5: Platform Services"]
         DASH[Dashboard — REST + WebSocket + SSE Bridge]
         CLOUD[Cloud — Job Queue + Agent Runner + Result Sync]
-        CMD[Commands — 40+ builtin incl. /plasmid & /recombination]
+        CMD[Commands — 40+ builtin incl. /plasmid (list/show/edit/archive/inspect/research/challenge) · /recombination · /cure]
         BOOT[Bootstrap — AppFactory + ToolReg + CommandReg]
     end
 
@@ -65,7 +65,7 @@ graph TD
 ```bash
 npm run dev          # tsup --watch
 npm run build        # tsup (ESM output, code splitting)
-npm test             # vitest run (~407 files / ~7,297 tests)
+npm test             # vitest run (~449 files / ~7,741 tests)
 npm run test:watch   # vitest
 npm run test:coverage# vitest --coverage
 npm run typecheck    # tsc --noEmit
@@ -86,7 +86,7 @@ npm run ci           # typecheck + lint + coverage + build
 - **NEVER** block with sync fs — all I/O async; use `src/utils/path.ts` for cross-platform paths
 - **NEVER** omit `AbortSignal` on cancellable operations — propagate to all network/tool calls
 - **NEVER** introduce circular deps — verify with `npm run quality` before commit
-- **NEVER** let plasmid bodies or `.dhelix/recombination/` contents flow into runtime prompt — I-8 hermeticity is enforced by `src/plasmids/runtime-guard.ts` + loader + tool guardrail
+- **NEVER** let `.dhelix/plasmids/`, `.dhelix/recombination/`, or `.dhelix/governance/` contents flow into runtime prompt — I-8 hermeticity is enforced by `src/plasmids/runtime-guard.ts` + loader + tool guardrail (see `RUNTIME_BLOCKED_PATTERNS`)
 - **Commit**: `feat(module)`, `fix(module)`, `test(module)`, `refactor(module)` — `npm run check` passes first
 
 ## Skills
@@ -134,7 +134,8 @@ When compacting, always preserve:
 | Security & Sandbox         | Trust T0-T3, Sandbox 5-layer, Guardrails, SIEM           | `.claude/docs/reference/security-sandbox.md`     |
 | Dashboard & Cloud          | REST / SSE, Job Queue, Agent Runner, SSO/SAML            | `.claude/docs/reference/dashboard-cloud.md`      |
 | Recent Fixes               | 최근 수정 이력, QA 결과, Local 프로바이더 이슈           | `.claude/docs/reference/recent-fixes.md`         |
-| **Recombination Pipeline** | `/recombination` · 8-stage · I-1/3/5/7/8/9/10 · marker grammar · 5 team modules | `.claude/docs/reference/recombination-pipeline.md` |
+| **Recombination Pipeline** | `/recombination` 8-stage · `/cure` · validation L1-L4 · rebuild · 3-way merge · I-1/3/5/7/8/9/10 | `.claude/docs/reference/recombination-pipeline.md` |
+| **Plasmid Governance**     | `/plasmid --research` · `/plasmid challenge` (override/amend/revoke) · cooldown · overrides queue · `.dhelix/governance/` · I-8 확장 | `.claude/docs/reference/plasmid-governance.md` |
 | **Harness Engineering**    | `HARNESS_MODE`, Jira+harness 워크플로, dhelix-* 에이전트 디스패치 규칙, `.claude/runtime/` 아티팩트 | `.claude/docs/reference/harness-engineering.md` |
 
 ## Harness (one-liner)
