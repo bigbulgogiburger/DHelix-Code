@@ -330,6 +330,12 @@ export interface RecombinationTranscript {
    * this rebuild ran. Absent on Phase 2/3 transcripts.
    */
   readonly rebuildLineage?: RebuildLineage;
+  /**
+   * Phase 5 — plasmid ids that were skipped this run because a foundational
+   * `/plasmid challenge --action override` had been queued and was consumed
+   * here. Each id appears once. Absent on Phase 2/3/4 transcripts.
+   */
+  readonly consumedOverrides?: readonly PlasmidId[];
 }
 
 // ─── Error catalog (PRD §10.3) ───────────────────────────────────────────────

@@ -53,6 +53,11 @@ export const RUNTIME_BLOCKED_PATTERNS: readonly RegExp[] = [
   // identifiers and override reasons. Entire `.dhelix/recombination/` tree
   // is off-limits at runtime (I-8 defense-in-depth).
   /[\\/]\.dhelix[\\/]recombination([\\/]|$)/i,
+  // Phase 5 — governance ledger (challenges.log, overrides.pending.json).
+  // These carry plasmid ids + free-form rationales authored under the
+  // foundational challenge ceremony — leaking them into runtime context
+  // would let a session reason about its own override gate. Off-limits.
+  /[\\/]\.dhelix[\\/]governance([\\/]|$)/i,
 ] as const;
 
 /**

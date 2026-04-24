@@ -16,6 +16,7 @@
 
 import { z } from "zod";
 import type {
+  ChallengeableBy,
   ExpectationPrefix,
   PlasmidEvalCase,
   PlasmidEvalExpectation,
@@ -24,6 +25,8 @@ import type {
   PlasmidPrivacy,
   PlasmidScope,
   PlasmidTier,
+  ResearchSource,
+  ResearchSourceRef,
 } from "./types.js";
 
 // ---------------------------------------------------------------------------
@@ -125,6 +128,76 @@ export const expectationSchema = z
   });
 
 // ---------------------------------------------------------------------------
+// Phase 5 — Research provenance + foundational governance (optional fields)
+// ---------------------------------------------------------------------------
+
+/** Canonical https URL — caller is expected to canonicalise before validating. */
+export const researchSourceRefSchema = z
+  .object({
+    url: z.string().url(),
+    title: z.string().min(1).max(500),
+    snippet: z.string().max(2000).optional(),
+    fetchedAt: isoDatetimeSchema,
+    contentSha256: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/i, "contentSha256 must be a 64-char hex sha256")
+      .optional(),
+  })
+  .strict();
+
+// Compile-time compatibility check (output shape ⊆ public type).
+type _ResearchSourceRefCompat = z.infer<typeof researchSourceRefSchema> extends ResearchSourceRef
+  ? true
+  : never;
+const _researchSourceRefCompat: _ResearchSourceRefCompat = true;
+void _researchSourceRefCompat;
+
+export const researchSourceSchema = z
+  .object({
+    engine: z.literal("web"),
+    query: z.string().min(1).max(500),
+    references: z.array(researchSourceRefSchema).max(8).readonly(),
+    researchedAt: isoDatetimeSchema,
+  })
+  .strict();
+
+type _ResearchSourceCompat = z.infer<typeof researchSourceSchema> extends ResearchSource
+  ? true
+  : never;
+const _researchSourceCompat: _ResearchSourceCompat = true;
+void _researchSourceCompat;
+
+/**
+ * Foundational challenge contract — only meaningful when the surrounding
+ * plasmid has `foundational: true`. Values mirror P-1.10 §2 verbatim.
+ *
+ * Note: kebab-case keys preserved on purpose so YAML round-trip is faithful.
+ * `min-justification-length` enforces a hard floor of 20 — anything lower
+ * defeats the purpose of the ceremony.
+ */
+export const challengeableBySchema = z
+  .object({
+    "require-justification": z.boolean().default(true),
+    "min-justification-length": z.number().int().min(20).default(50),
+    "audit-log": z.boolean().default(true),
+    "require-cooldown": z
+      .string()
+      .regex(/^\d+[hdw]$/, 'cooldown must match `\\d+[hdw]` (e.g. "24h", "3d", "1w")')
+      .default("24h"),
+    "require-team-consensus": z.boolean().default(false),
+    "min-approvers": z.number().int().min(1).default(1),
+    "approver-roles": z.array(z.string().min(1).max(64)).optional(),
+  })
+  .strict();
+
+// Compile-time compatibility — schema OUTPUT must satisfy public `ChallengeableBy`.
+type _ChallengeableByCompat = z.infer<typeof challengeableBySchema> extends ChallengeableBy
+  ? true
+  : never;
+const _challengeableByCompat: _ChallengeableByCompat = true;
+void _challengeableByCompat;
+
+// ---------------------------------------------------------------------------
 // Metadata
 // ---------------------------------------------------------------------------
 
@@ -159,6 +232,9 @@ export const plasmidMetadataSchema = z
       .string()
       .regex(/^[a-z][a-z0-9-]*$/, "template must be kebab-case")
       .optional(),
+    // Phase 5 — research provenance (PRD §9.4) + foundational governance (P-1.10).
+    source: researchSourceSchema.optional(),
+    challengeable: challengeableBySchema.optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
