@@ -1257,13 +1257,13 @@ privacy: local-only
 - [ ] Audit log
 - [ ] `--dry-run` 기본
 
-### Phase 4 — Advanced Generators + Cure v1 (4주)
+### Phase 4 — Advanced Generators + Cure v1 (4주) ✅ 완료 (2026-04-24)
 
-- [ ] agent / hook / harness generator
-- [ ] Permission alignment 검증
-- [ ] `/recombination --mode rebuild`
-- [ ] Cyclical dependency 검사
-- [ ] Cure v1: modify rollback 3-way merge
+- [x] agent / hook / harness generator
+- [x] Permission alignment 검증
+- [x] `/recombination --mode rebuild`
+- [x] Cyclical dependency 검사
+- [x] Cure v1: modify rollback 3-way merge
 
 ### Phase 5 — Research-Assisted + Foundational (3주)
 
