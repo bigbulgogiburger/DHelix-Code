@@ -63,8 +63,15 @@ describe("validateWiring — happy path", () => {
   });
 
   it("tolerates namespace:tool references (mcp:foo)", async () => {
+    // Phase 4: requires an explicit trustLevel for bash (T2+); pre-Phase-4
+    // callers that omit trustLevel now trigger WIRING_PERMISSION_MISMATCH.
     const report = await validateWiring(
-      [art({ requiredTools: ["read", "mcp:whatever", "bash"] })],
+      [
+        art({
+          requiredTools: ["read", "mcp:whatever", "bash"],
+          trustLevel: "T2",
+        }),
+      ],
       emptyReorg(),
       "/tmp/project",
     );
