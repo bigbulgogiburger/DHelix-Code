@@ -1,12 +1,12 @@
-# Recombination Pipeline (Phase 2 — GAL-1)
+# Recombination Pipeline (Phase 2–3 — GAL-1)
 
-> 참조 시점: `/recombination` 실행 흐름, `src/recombination/` 모듈 수정, plasmid→artifact 변환 로직, I-1/3/5/7/8/9/10 불변식이 관여하는 작업.
+> 참조 시점: `/recombination` / `/cure` 실행 흐름, `src/recombination/` 모듈 수정, plasmid→artifact 변환, Stage 6 runtime validation(L1-L4), I-10 auto-rollback, I-1/3/5/7/8/9/10 불변식이 관여하는 작업.
 
 ## 개요
 
-`/recombination`은 활성화된 plasmid들을 읽어 `.dhelix/` 하위 artifact (rules/skills/commands) + prompt-section 파일 + DHELIX.md marker 블록으로 변환하는 8-stage 파이프라인이다. Phase 2는 Stage 0–5를 구현, Stage 6 (runtime validation L1-L4)과 Stage 7 (release) 확장은 Phase 3+.
+`/recombination`은 활성화된 plasmid들을 읽어 `.dhelix/` 하위 artifact (rules/skills/commands) + prompt-section 파일 + DHELIX.md marker 블록으로 변환하는 8-stage 파이프라인이다. Phase 2가 Stage 0–5를 구현, Phase 3는 Stage 6 (runtime validation L1-L4) + Stage 7 (release: telemetry + `refs/plasmids/<id>`) + I-10 auto-rollback + `/cure` 역전 명령을 구현.
 
-**SSOT**: `docs/prd/plasmid-recombination-system.md` §6.3. Phase 2 실행 계획은 `docs/prd/plasmid-recombination-execution-plan.md` v1.5.
+**SSOT**: `docs/prd/plasmid-recombination-system.md` §6.3 + §6.4 + §8 + §10.1. 실행 계획은 `docs/prd/plasmid-recombination-execution-plan.md` v1.6.
 
 ## 구조
 
@@ -45,8 +45,8 @@ graph TD
 | 3 | Preview + approval | dry-run 분기 / `approvalMode` ("auto" | "interactive" | "auto-on-clean") | 2 ✓ |
 | 4 | Persist | atomic write (tmp+rename): 4a artifacts → 4b sections + 40-project-profile → 4c DHELIX.md (applyPlan + I-9 verify) | 2 ✓ |
 | 5 | Static wiring validation | `validateWiring(artifacts, plan, …)` (P-1.3, 8 MVP checks) · strict fail → rollback | 2 ✓ |
-| 6 | Runtime validation | L1-L4 cascade · auto-rollback (I-10) | **3** (stub) |
-| 7 | Release | `persistTranscript` · audit.log · lock release (finally) | 2 ✓ |
+| 6 | Runtime validation | `deps.validate(...)` → case gen → CoW workspace → run → grade cascade → `decideRollback` → 10s grace → rollback or keep+audit | **3 ✓** |
+| 7 | Release | `persistTranscript` · audit.log · `writePlasmidRef` per active plasmid · lock release (finally) | 2/3 ✓ |
 
 ## 팀 모듈 경계
 
@@ -118,11 +118,77 @@ graph TD
 3. **Transcript 필드 의미**: `reorgMarkerIds`는 "actually written" 이어야 함 (`applyResult.markerIdsWritten`), plan.keptMarkerIds 아님 — `/cure`가 이 필드로 undo.
 4. **Integration test가 실 write 경로를 exercise하는지 확인**: dry-run만 커버하면 Stage 4 이후 통합 버그를 놓침. `test/integration/recombination/dry-run.test.ts` 끝에 extend-mode E2E 테스트 같이 둠.
 
-## Phase 3 backlog (이 파이프라인 관련)
+## Phase 3 모듈 맵 (Stage 6 + /cure)
 
-- Stage 6 runtime validation L1-L4 + grading cascade + volume governor (P-1.16)
-- I-10 auto-rollback (10s grace, per-run opt-out)
-- `/cure` command (PRD §6.4)
-- extend 재실행 idempotency E2E (실 reorganizer + deterministic planner)
-- Stage 4b/4c fs 에러 → `GENERATOR_ERROR` 등 typed wrapping
-- `/recombination` 출력에 artifact diff / DHELIX.md diff 렌더링
+### Runtime validation (`src/recombination/validation/`)
+
+| 파일 | 역할 | 팀 |
+|-----|-----|---|
+| `expectation-dsl.ts` | DSL 7-prefix 파서 (output contains/excludes, file:, exit code, tool:, hook:) + free-text | 1 |
+| `eval-seeds.ts` | Zod schema (tier required, max 20, duplicate-id check) + YAML/JSON 로더 + legacy auto-convert | 1 |
+| `volume-governor.ts` | PRD §8.3 matrix × profile scale × `categorizePlasmid()` 파생(foundational/policy/tactical) | 1 |
+| `case-generator.ts` | 3-source priority: seeds → deterministic(L1 trig+desc, L2 behavior conditionals, L3 constraints) → LLM auto (L4 multilingual) | 1 |
+| `artifact-env.ts` | CoW workspace (symlink/copy, I-8 FORBIDDEN_DIRS assertion) + cleanup | 2 |
+| `runtime-executor.ts` | LLMCompletionFn 직접 소비 + `tool:<name>`/`hook:<event>` marker line 규약 + parallelism + time budget + error-run ceiling | 2 |
+| `grader-cascade.ts` | deterministic → semi → llm 라우팅; skipped on unavailable tier; LLM judge 에러 graceful degrade | 2 |
+| `rollback-decision.ts` | I-10 matrix: L1/L2 miss → rollback; 파운데이셔널 L4 ≥5% fail → rollback; L3 / non-foundational L4 → warn | 3 |
+| `reporter.ts` | PRD §6.3.3 포맷 렌더러 + 10s grace frame + `awaitRollbackDecision` (GracePromptIO 주입) + `autoTimeoutDecisionIO` (headless) | 3 |
+| `override-tracker.ts` | `validation-overrides.jsonl` 추가 전용 + `countOverrides(plasmidId, sinceDays)` | 3 |
+| `regression-tracker.ts` | `validation-history.jsonl` + `detectRegressions` (≥5% drop 감지) | 3 |
+| `index.ts` | `createValidate(deps)` facade composition + `buildValidationReport` + `defaultValidateFacadeDeps` | 5 |
+
+### `/cure` (`src/recombination/cure/` + `src/commands/cure/`)
+
+| 파일 | 역할 |
+|-----|-----|
+| `cure/planner.ts` | 4개 mode (latest/all/transcript/plasmid) → `CurePlan` (delete-file + remove-marker + archive-plasmid + clear-refs) + warnings (manual-edit, later-transcript, git-uncommitted, unknown-marker) |
+| `cure/restorer.ts` | lock 획득 → dry-run short-circuit → hash-gated delete → **reverse ReorgPlan** via `applyPlan` + `verifyConcatenatedUserArea` (cure-local I-9 check) → archive (I-1 safe move) → audit.log 추가 |
+| `cure/edit-detector.ts` | SHA-256 vs `WrittenFile.contentHash` + 1s mtime slack |
+| `cure/refs.ts` | `.dhelix/recombination/refs/plasmids/<id>` atomic tmp+rename |
+| `cure/index.ts` | `createCure(deps)` + `defaultCureFacadeDeps` |
+| `commands/cure/{index,extend,deps,render}.ts` | 슬래시 명령 (`--all`/`--transcript`/`--plasmid`/`--dry-run`/`--purge`/`--yes`); MVP는 `--yes` 필수, 아니면 미리보기만 |
+
+### Executor Stage 6/7 연결 (Team 5)
+
+`executor.ts` 주요 변경:
+1. **Stage 1**: `preReorgSnapshot = { beforeContent, beforeHash, capturedAt }` 저장 → transcript
+2. **Stage 2d**: `transcript.recordReorgOps(reorgPlan.ops)` — /cure가 정확한 역전 plan 구성에 사용
+3. **Stage 6**: `opts.validateProfile && deps.validate` 가드 뒤 `deps.validate(...)` 호출. Rollback 시 `rollbackErrorCode` 매핑 (`VALIDATION_FAILED_L1|L2|FOUNDATIONAL_L4`), rollback actions 실행 → 조기 반환; warn은 status만 `"warn"`; crash는 `"warn"` with preserved continuation
+4. **Stage 7**: `writePlasmidRef(cwd, id, transcript.id)` 각 active plasmid (non-fatal)
+
+`transcript.ts`: `recordValidation / recordOverride / recordPreReorgSnapshot / recordReorgOps` 추가. `build()`는 optional 필드 설정된 경우에만 포함 → Phase-2 transcript shape 보존.
+
+`commands/recombination/extend.ts`: `--validate=<profile>` → `opts.validateProfile` 실제 전달. 보고서에 `renderReport(validation)` 인클루드.
+
+## Marker Grammar 주의 (Phase 3에서 재학습)
+
+`src/recombination/constitution/marker.ts` 의 regex는 `[a-z0-9-]+(?:/[a-z0-9-]+)?` — **콜론 미허용**. Phase 3 fixture 작성 시 `plasmid-derived:foo:bar` 형식은 silent-fail. `foo/bar` 또는 `<kebab-slug>` 만 사용.
+
+## I-9 다중 상태 엣지 케이스 (Phase 3 학습)
+
+Phase 2의 `verifyUserAreaInvariance`는 user section을 multiset-of-hashes로 비교한다. Forward flow (insert는 user section을 둘로 쪼갬)에서는 정확하지만, **cure의 marker 제거 역방향**에서는 인접 user section이 병합되면서 `missing=2, added=1` 형태의 거짓 위반이 발생한다. 해결: `src/recombination/cure/restorer.ts::verifyConcatenatedUserArea` — user section 연결문자열을 공백 정규화(`\n{2,}` → `\n\n`)한 뒤 비교. Phase 2 API 유지, cure-local 완화만.
+
+## Phase 3 에러 코드
+
+| 코드 | 발생 | 대응 |
+|-----|-----|-----|
+| `VALIDATION_FAILED_L1` | L1 pass-rate < threshold | auto-rollback |
+| `VALIDATION_FAILED_L2` | L2 pass-rate < threshold | auto-rollback |
+| `VALIDATION_FAILED_FOUNDATIONAL_L4` | 파운데이셔널 plasmid L4 실패 ≥5% | auto-rollback |
+| `VALIDATION_TIMEOUT` | time budget 초과 | partial + warn |
+| `VALIDATION_REGRESSION_DETECTED` | 이전 transcript 대비 ≥5% drop | warning (비차단) |
+| `CURE_CONFLICT` | file hash ≠ expected, `--yes` 없음 | 중단 + 사용자 안내 |
+| `TRANSCRIPT_CORRUPT` | transcript JSON 파싱/shape 실패 | abort |
+| `CURE_ABORTED` | I-9 위반 감지 또는 signal abort | abort + partial 보고 |
+| `CURE_NO_TRANSCRIPT` | mode 대상 transcript 없음 | abort |
+
+## Phase 4+ 백로그
+
+- rebuild 모드 (PRD §6.3.1)
+- 대화형 grace UX (현재는 `GracePromptIO` 인터페이스만, 터미널 구현은 Phase 4)
+- `--yes` 프롬프트 → 대화형 y/N
+- validation-overrides 누적 후 자동 blocking (Phase 3는 audit-only)
+- 실제 sub-agent spawn 통합 (현재는 `LLMCompletionFn` 직접 소비 + marker-line 규약)
+- gradeByAstMatch (`code matches:` DSL)
+- `/recombination --validate=ci` JUnit XML export
+- 터미널 대화형 approval (현재 `/cure`는 `--yes` 게이트)
