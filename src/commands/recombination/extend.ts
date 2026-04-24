@@ -19,11 +19,11 @@ import type {
   RecombinationOptions,
   RecombinationResult,
   StaticValidationMode,
+  ValidateProfile,
 } from "../../recombination/types.js";
 import { RecombinationError } from "../../recombination/errors.js";
+import { renderReport as renderValidationReport } from "../../recombination/validation/reporter.js";
 import type { PlasmidId } from "../../plasmids/types.js";
-
-type ValidateProfile = "smoke" | "local" | "exhaustive" | "none" | "ci";
 
 const VALIDATE_PROFILES: readonly ValidateProfile[] = [
   "smoke",
@@ -71,6 +71,7 @@ export async function runRecombination(
     approvalMode: "auto",
     ...(args.plasmidId !== undefined ? { plasmidId: args.plasmidId } : {}),
     ...(args.modelOverride !== undefined ? { modelOverride: args.modelOverride } : {}),
+    ...(args.validate !== undefined ? { validateProfile: args.validate } : {}),
   };
 
   try {
@@ -80,6 +81,7 @@ export async function runRecombination(
       compress: deps.compress,
       reorganize: deps.reorganize,
       llm: deps.llm,
+      ...(deps.validate !== undefined ? { validate: deps.validate } : {}),
     });
     return {
       output: renderReport(result, args),
@@ -250,7 +252,16 @@ function renderReport(result: RecombinationResult, args: ParsedArgs): string {
   }
   if (args.validate !== undefined) {
     lines.push("");
-    lines.push(`  (validate=${args.validate} — recorded in transcript, Phase-3)`);
+    lines.push(`  (validate=${args.validate})`);
+  }
+  if (result.transcript.validation !== undefined) {
+    lines.push("");
+    try {
+      lines.push(renderValidationReport(result.transcript.validation));
+    } catch {
+      // Reporter may still be a Team-3 stub — keep the command resilient.
+      lines.push("  (validation report rendering unavailable)");
+    }
   }
   return lines.join("\n");
 }

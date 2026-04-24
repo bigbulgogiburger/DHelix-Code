@@ -10,8 +10,13 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import type {
+  OverrideRecord,
   PipelineStrategies,
+  PreReorgSnapshot,
   RecombinationTranscript,
+  ReorgOp,
+  ValidationReport,
+  VolumePlan,
   WiringReport,
 } from "../../../src/recombination/types.js";
 import {
@@ -120,6 +125,89 @@ describe("createTranscript", () => {
     expect(built.cacheHits).toBe(3);
     expect(built.cacheMisses).toBe(7);
     expect(built.activePlasmidIds).toEqual(["p1", "p2"]);
+  });
+
+  it("omits phase-3 optional fields when never recorded", () => {
+    const builder = createTranscript({
+      startedAt: new Date(),
+      mode: "extend",
+      model: "gpt-4o",
+      strategies: fakeStrategies(),
+      activePlasmidIds: [],
+    });
+    const built = builder.build(new Date());
+    expect(built.validation).toBeUndefined();
+    expect(built.validationOverride).toBeUndefined();
+    expect(built.preReorgSnapshot).toBeUndefined();
+    expect(built.reorgOps).toBeUndefined();
+  });
+
+  it("records phase-3 validation / override / snapshot / reorg ops when set", () => {
+    const builder = createTranscript({
+      startedAt: new Date(),
+      mode: "extend",
+      model: "gpt-4o",
+      strategies: fakeStrategies(),
+      activePlasmidIds: ["p1" as PlasmidId],
+    });
+    const plan: VolumePlan = {
+      profile: "minimal",
+      totalBudget: 5,
+      perPlasmid: new Map(),
+      timeBudgetMs: 1000,
+      parallelism: 1,
+    };
+    const report: ValidationReport = {
+      startedAt: "2026-04-24T12:00:00.000Z",
+      finishedAt: "2026-04-24T12:00:01.000Z",
+      durationMs: 1000,
+      profile: "local",
+      plan,
+      totalCases: 0,
+      perTier: [],
+      perPlasmid: [],
+      caseGradings: [],
+      earlyExit: false,
+      timeBudgetExceeded: false,
+      overallPassed: true,
+      dropped: [],
+    };
+    const override: OverrideRecord = {
+      timestamp: "2026-04-24T12:00:02.000Z",
+      transcriptId: "tid",
+      plasmidId: "p1" as PlasmidId,
+      tier: "L1",
+      reason: "kept by user",
+      passRate: 0.5,
+      threshold: 0.95,
+      actor: "1234@host",
+    };
+    const snapshot: PreReorgSnapshot = {
+      beforeContent: "# Existing\n",
+      beforeHash: "hash",
+      capturedAt: "2026-04-24T12:00:00.000Z",
+    };
+    const ops: readonly ReorgOp[] = [
+      {
+        kind: "insert",
+        markerId: "p1/intent",
+        heading: "Intent",
+        body: "body",
+      },
+    ];
+    builder.recordValidation(report);
+    builder.recordOverride(override);
+    builder.recordPreReorgSnapshot(snapshot);
+    builder.recordReorgOps(ops);
+
+    const built = builder.build(new Date());
+    expect(built.validation).toEqual(report);
+    expect(built.validationOverride).toEqual(override);
+    expect(built.preReorgSnapshot).toEqual(snapshot);
+    expect(built.reorgOps).toEqual(ops);
+    // ReorgOps should be a defensive copy — mutating the source array
+    // must NOT change the transcript view.
+    expect(built.reorgOps).not.toBe(ops);
   });
 
   it("auto-generates filesystem-safe ids via makeTranscriptId", () => {

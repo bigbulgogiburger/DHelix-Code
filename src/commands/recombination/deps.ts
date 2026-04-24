@@ -26,8 +26,13 @@ import type {
   InterpretFn,
   LLMCompletionFn,
   ReorganizeFn,
+  ValidateFn,
 } from "../../recombination/types.js";
 import { executeRecombination } from "../../recombination/executor.js";
+import {
+  createValidate,
+  defaultValidateFacadeDeps,
+} from "../../recombination/validation/index.js";
 
 export type LoadPlasmidsFn = (opts: RealLoaderOptions) => Promise<LoadResult>;
 
@@ -40,6 +45,12 @@ export interface CommandDeps {
   readonly generate: GenerateFn;
   readonly compress: CompressFn;
   readonly reorganize: ReorganizeFn;
+  /**
+   * Phase 3 — Stage 6 runtime validation facade. Optional; when omitted
+   * the executor records Stage 6 as `"skipped"` and preserves Phase 2
+   * behavior end-to-end.
+   */
+  readonly validate?: ValidateFn;
   readonly execute: ExecuteRecombinationFn;
   readonly registryPath: string;
   readonly model: string;
@@ -96,6 +107,12 @@ export function defaultDeps(workingDirectory: string, model?: string): CommandDe
       await loadPeer<{ reorganize: ReorganizeFn }>("team-4 constitution", "constitution")
     ).reorganize(req);
 
+  // Phase 3 — Stage 6 runtime validation facade. Team 1-3 entries are
+  // lazily wired via defaultValidateFacadeDeps; promptIO is omitted so
+  // rollback decisions default to the I-10 auto path unless a command
+  // layer injects a terminal-aware IO explicitly.
+  const validate: ValidateFn = createValidate(defaultValidateFacadeDeps());
+
   return {
     loadPlasmids: realLoadPlasmids,
     readActivation: makeReadActivation({ workingDirectory, registryPath }),
@@ -104,6 +121,7 @@ export function defaultDeps(workingDirectory: string, model?: string): CommandDe
     generate,
     compress,
     reorganize,
+    validate,
     execute: executeRecombination,
     registryPath,
     model: modelId,

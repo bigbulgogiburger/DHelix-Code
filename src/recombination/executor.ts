@@ -63,13 +63,17 @@ import {
   type GeneratedArtifact,
   type InterpretResult,
   type PipelineStrategies,
+  type PreReorgSnapshot,
+  type RecombinationErrorCode,
   type RecombinationOptions,
   type RecombinationResult,
   type ReorgPlan,
+  type RollbackDecision,
   type StaticValidationMode,
   type WrittenFile,
 } from "./types.js";
 import { validateWiring } from "./wiring-validator.js";
+import { writePlasmidRef } from "./cure/refs.js";
 
 export const EXECUTOR_VERSION = "1.0.0";
 
@@ -148,6 +152,14 @@ export const executeRecombination: ExecuteRecombinationFn = async (
     const existingConstitution = await readFileOrEmpty(
       join(opts.workingDirectory, CONSTITUTION_FILE),
     );
+    // Phase 3 — capture a pre-reorg snapshot so `/cure` can verify I-9
+    // invariance exactly (not via heuristic reverse reorg).
+    const preReorgSnapshot: PreReorgSnapshot = {
+      beforeContent: existingConstitution,
+      beforeHash: sha256(existingConstitution),
+      capturedAt: now().toISOString(),
+    };
+    transcript.recordPreReorgSnapshot(preReorgSnapshot);
     transcript.recordStageFinish(1, now(), "ok");
 
     // ── Stage 2a: interpret (parallel, capped) ──────────────────────────
@@ -209,6 +221,8 @@ export const executeRecombination: ExecuteRecombinationFn = async (
       llm: deps.llm,
       ...(opts.signal !== undefined ? { signal: opts.signal } : {}),
     });
+    // Phase 3 — record the reorg ops for `/cure` precise reverse planning.
+    transcript.recordReorgOps(reorgPlan.ops);
 
     // ── Stage 3: preview + approval ─────────────────────────────────────
     throwIfAborted(opts.signal, "stage-3");
@@ -403,13 +417,92 @@ export const executeRecombination: ExecuteRecombinationFn = async (
       report.passed ? undefined : `${report.warnCount} warning(s)`,
     );
 
-    // ── Stage 6: runtime validation (Phase 3 — skipped) ────────────────
+    // ── Stage 6: runtime validation (Phase 3) ───────────────────────────
     transcript.recordStageStart(6, "runtime-validation", now());
-    transcript.recordStageFinish(6, now(), "skipped", "phase-3 not yet implemented");
+    if (opts.validateProfile && opts.validateProfile !== "none" && deps.validate) {
+      try {
+        const validateResult = await deps.validate({
+          irs,
+          artifacts,
+          reorgPlan,
+          writtenFiles,
+          strategies,
+          model: modelId,
+          workingDirectory: opts.workingDirectory,
+          transcriptId: transcript.id,
+          profile: opts.validateProfile,
+          llm: deps.llm,
+          ...(opts.signal !== undefined ? { signal: opts.signal } : {}),
+        });
+        transcript.recordValidation(validateResult.report);
+        if (validateResult.overrideRecorded) {
+          transcript.recordOverride(validateResult.overrideRecorded);
+        }
+        if (validateResult.decision.action === "rollback") {
+          const code = rollbackErrorCode(validateResult.decision);
+          await rollbackAll(rollbackActions);
+          applied = false;
+          transcript.recordError(code, validateResult.decision.reason);
+          transcript.recordStageFinish(
+            6,
+            now(),
+            "error",
+            validateResult.decision.reason,
+          );
+          const builtEarly = transcript.build(now());
+          await persistTranscript(builtEarly, opts.workingDirectory, opts.signal);
+          return {
+            transcript: builtEarly,
+            plan: { artifacts, compression, reorg: reorgPlan },
+            applied: false,
+          };
+        }
+        transcript.recordStageFinish(
+          6,
+          now(),
+          validateResult.decision.action === "warn" ? "warn" : "ok",
+          validateResult.decision.reason,
+        );
+      } catch (err) {
+        // Validation crash — preserve Phase-2 behavior (continue) with
+        // a warning stage record. No rollback on infrastructure failure.
+        const msg = err instanceof Error ? err.message : String(err);
+        transcript.recordStageFinish(6, now(), "warn", `validation error: ${msg}`);
+      }
+    } else {
+      transcript.recordStageFinish(
+        6,
+        now(),
+        "skipped",
+        opts.validateProfile === "none"
+          ? "explicit --validate=none"
+          : deps.validate === undefined
+            ? "no validator injected"
+            : "phase-2 compatible path",
+      );
+    }
 
     // ── Stage 7: release ────────────────────────────────────────────────
     transcript.recordStageStart(7, "release", now());
     applied = true;
+    // Phase 3 — persist plasmid → transcript refs for `/cure --plasmid <id>`.
+    // Telemetry: Phase-3 scope does not yet wire OTLP spans here.
+    const refPlasmidIds =
+      opts.plasmidId !== undefined
+        ? [opts.plasmidId]
+        : activePlasmids.map((p) => p.metadata.id);
+    for (const plasmidId of refPlasmidIds) {
+      try {
+        await writePlasmidRef(
+          opts.workingDirectory,
+          plasmidId,
+          transcript.id,
+          opts.signal,
+        );
+      } catch {
+        /* non-fatal — ref write is best-effort */
+      }
+    }
     const built = transcript.build(now());
     await persistTranscript(built, opts.workingDirectory, opts.signal);
     transcript.recordStageFinish(7, now(), "ok");
@@ -538,4 +631,17 @@ interface NodeError extends Error {
 
 function isNodeError(err: unknown): err is NodeError {
   return err instanceof Error && typeof (err as NodeError).code === "string";
+}
+
+/**
+ * Map a Phase-3 rollback decision to the canonical `RecombinationErrorCode`
+ * recorded on the transcript. Foundational L4 failures win over tier-specific
+ * codes so audit consumers can quickly surface the highest-severity signal.
+ */
+function rollbackErrorCode(decision: RollbackDecision): RecombinationErrorCode {
+  if (decision.foundationalL4Triggered === true)
+    return "VALIDATION_FAILED_FOUNDATIONAL_L4";
+  if (decision.failingTier === "L1") return "VALIDATION_FAILED_L1";
+  if (decision.failingTier === "L2") return "VALIDATION_FAILED_L2";
+  return "RECOMBINATION_PLAN_ERROR";
 }

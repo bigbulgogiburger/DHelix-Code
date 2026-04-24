@@ -19,12 +19,16 @@ import { appendFile, mkdir, rename, unlink, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
 import type {
+  OverrideRecord,
   PipelineStrategies,
+  PreReorgSnapshot,
   RecombinationErrorCode,
   RecombinationMode,
   RecombinationStageId,
   RecombinationTranscript,
+  ReorgOp,
   StageRecord,
+  ValidationReport,
   WiringReport,
   WrittenFile,
 } from "./types.js";
@@ -71,6 +75,14 @@ export interface TranscriptBuilder {
   recordWiring(report: WiringReport): void;
   recordError(code: RecombinationErrorCode, message: string): void;
   recordCacheCounters(hits: number, misses: number): void;
+  /** Phase 3 — Stage 6 validation report. Only included in `build()` when set. */
+  recordValidation(report: ValidationReport): void;
+  /** Phase 3 — keep-override audit. Only included in `build()` when set. */
+  recordOverride(override: OverrideRecord): void;
+  /** Phase 3 — pre-Stage-4 snapshot of DHELIX.md. Only included when set. */
+  recordPreReorgSnapshot(snapshot: PreReorgSnapshot): void;
+  /** Phase 3 — reorg ops actually applied at Stage 2d. Only included when set. */
+  recordReorgOps(ops: readonly ReorgOp[]): void;
   build(finishedAt: Date): RecombinationTranscript;
 }
 
@@ -86,6 +98,10 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
   let errorMessage: string | undefined;
   let cacheHits = 0;
   let cacheMisses = 0;
+  let validation: ValidationReport | undefined;
+  let validationOverride: OverrideRecord | undefined;
+  let preReorgSnapshot: PreReorgSnapshot | undefined;
+  let reorgOps: readonly ReorgOp[] | undefined;
 
   return {
     id,
@@ -139,6 +155,18 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
       cacheHits = hits;
       cacheMisses = misses;
     },
+    recordValidation(report) {
+      validation = report;
+    },
+    recordOverride(override) {
+      validationOverride = override;
+    },
+    recordPreReorgSnapshot(snapshot) {
+      preReorgSnapshot = snapshot;
+    },
+    recordReorgOps(ops) {
+      reorgOps = [...ops];
+    },
     build(finishedAt: Date): RecombinationTranscript {
       return {
         id,
@@ -156,6 +184,10 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
         ...(errorMessage !== undefined ? { errorMessage } : {}),
         cacheHits,
         cacheMisses,
+        ...(validation !== undefined ? { validation } : {}),
+        ...(validationOverride !== undefined ? { validationOverride } : {}),
+        ...(preReorgSnapshot !== undefined ? { preReorgSnapshot } : {}),
+        ...(reorgOps !== undefined ? { reorgOps: [...reorgOps] } : {}),
       };
     },
   };
