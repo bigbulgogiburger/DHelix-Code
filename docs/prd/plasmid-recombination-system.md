@@ -1265,13 +1265,13 @@ privacy: local-only
 - [x] Cyclical dependency 검사
 - [x] Cure v1: modify rollback 3-way merge
 
-### Phase 5 — Research-Assisted + Foundational (3주)
+### Phase 5 — Research-Assisted + Foundational (3주) ✅ 완료 (2026-04-24)
 
-- [ ] `/plasmid --research` (WebSearch/WebFetch 통합)
-- [ ] Scope/question aggregation
-- [ ] Source tracking + evidence 링크
-- [ ] **Foundational plasmid + `/plasmid challenge`**
-- [ ] Privacy 옵션 enforcement
+- [x] `/plasmid --research` (WebSearch/WebFetch 통합)
+- [x] Scope/question aggregation
+- [x] Source tracking + evidence 링크
+- [x] **Foundational plasmid + `/plasmid challenge`**
+- [x] Privacy 옵션 enforcement
 
 ### Phase 6 — Polish & Dogfood (2주)
 
