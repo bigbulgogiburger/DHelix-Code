@@ -54,6 +54,11 @@ export async function archiveSubcommand(
   }
 
   const archivedPath = await moveToArchive(target, context, deps);
+  // Keep activation state in sync — silently no-op if the id was never
+  // activated. Without this the next /recombination would still consider
+  // the (now-missing) id "active", which manifests as confusing "X plasmids
+  // active but only Y loaded" UX.
+  await deps.activationStore.deactivate([target.metadata.id]);
   return {
     output: [
       `Archived plasmid '${parsed.id}'.`,

@@ -582,6 +582,56 @@ describe("/plasmid challenge — happy paths", () => {
     const { readdir } = await import("node:fs/promises");
     const contents = await readdir(archiveDir);
     expect(contents.some((f) => f.startsWith("core-values-"))).toBe(true);
+
+    // Activation store no longer references the revoked id (orphan mode
+    // intentionally leaves dependents alone so the user can audit them).
+    const after = await fx.deps.activationStore.read();
+    expect(after.activePlasmidIds).not.toContain("core-values" as PlasmidId);
+    // Dependents in orphan mode are NOT auto-deactivated.
+    // (No assertion about dep-a/b/c here — they may or may not be active
+    // depending on test prelude, but they MUST NOT be auto-removed.)
+  });
+
+  it("revoke with --dependents revoke cascades deactivation to dependents", async () => {
+    const fx = await buildDeps({
+      initial: [
+        { metadata: meta({ foundational: true }) },
+        {
+          metadata: meta({
+            id: "dep-a" as PlasmidId,
+            extends: "core-values" as PlasmidId,
+          }),
+        },
+      ],
+    });
+    cleanups.push(fx.cleanup);
+    // Pre-activate so we can observe the cascade.
+    await fx.deps.activationStore.activate([
+      "core-values" as PlasmidId,
+      "dep-a" as PlasmidId,
+    ]);
+
+    const r = await challengeSubcommand(
+      [
+        "core-values",
+        "--action",
+        "revoke",
+        "--rationale",
+        LONG_RATIONALE,
+        "--dependents",
+        "revoke",
+        "--confirm",
+        "REVOKE",
+        "core-values",
+      ],
+      makeContext(fx.workingDirectory),
+      fx.deps,
+    );
+    expect(r.success).toBe(true);
+
+    const after = await fx.deps.activationStore.read();
+    expect(after.activePlasmidIds).not.toContain("core-values" as PlasmidId);
+    expect(after.activePlasmidIds).not.toContain("dep-a" as PlasmidId);
   });
 });
 

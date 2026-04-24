@@ -286,6 +286,9 @@ describe("/plasmid --research — Phase 5 Team 2 integration", () => {
     const cmd = makePlasmidCommand(deps);
     const result = await cmd.execute('--research "x"', makeContext());
     expect(result.success).toBe(false);
-    expect(result.output).toMatch(/runResearchMode/u);
+    expect(result.output).toMatch(/Research mode is not enabled/u);
+    // Verify we no longer leak the internal team name into user-facing output.
+    expect(result.output).not.toMatch(/Team [0-9]/u);
+    expect(result.output).not.toMatch(/runResearchMode/u);
   });
 });

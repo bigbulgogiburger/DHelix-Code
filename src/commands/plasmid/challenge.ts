@@ -392,6 +392,14 @@ async function doRevoke(
   };
   await c.deps.appendChallenge(entry, c.context.workingDirectory);
 
+  // Keep activation state in sync — silently no-op when not active. Without
+  // this the next /recombination would still consider the (now-archived) id
+  // active. For dependents=revoke we cascade the deactivation; orphan/keep
+  // intentionally leaves them so the user can audit.
+  const idsToDeactivate: PlasmidId[] = [id];
+  if (dependentsMode === "revoke") idsToDeactivate.push(...dependents);
+  await c.deps.activationStore.deactivate(idsToDeactivate);
+
   const lines = [
     `Revoked '${id}'.`,
     `  archived:   ${targetPath}`,

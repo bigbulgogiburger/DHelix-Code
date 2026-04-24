@@ -92,13 +92,18 @@ export async function researchSubcommand(
     }
   }
 
-  // ── 3. Resolve research adapter (DI seam — Team 1 may not have landed) ──
+  // ── 3. Resolve research adapter ─────────────────────────────────────────
   const runResearch = deps.runResearch;
   if (!runResearch) {
     return {
-      output:
-        "Research mode is not wired in this build. Team 1's `runResearchMode` " +
-        "is required; the orchestrator must inject it via deps.runResearch.",
+      output: [
+        "Research mode is not enabled in this build.",
+        "",
+        "Phase 5 ships the orchestration layer, web adapters, and CLI wiring,",
+        "but the LLM synthesis step is reserved for Phase 6. As a workaround",
+        "you can author plasmids manually with `/plasmid edit <id>` and cite",
+        "sources in the body's `## Evidence` section.",
+      ].join("\n"),
       success: false,
     };
   }

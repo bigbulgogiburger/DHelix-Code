@@ -113,6 +113,30 @@ describe("/plasmid archive", () => {
     expect(archived.endsWith(".md")).toBe(true);
   });
 
+  it("deactivates the plasmid id so the activation store stays in sync", async () => {
+    const fx = await fakeDeps({ loaded: [] });
+    cleanups.push(fx.cleanup);
+
+    const srcDir = join(fx.workingDirectory, ".dhelix/plasmids/beta");
+    await mkdir(srcDir, { recursive: true });
+    const sourcePath = join(srcDir, "body.md");
+    await writeFile(sourcePath, "# beta body\n", "utf-8");
+
+    const beta = "beta" as PlasmidId;
+    const loaded = makeLoaded(makeMetadata({ id: beta, foundational: false }), { sourcePath });
+    // Pre-activate so we can observe the deactivation post-archive.
+    await fx.deps.activationStore.activate([beta]);
+    const before = await fx.deps.activationStore.read();
+    expect(before.activePlasmidIds).toContain(beta);
+
+    const deps = { ...fx.deps, loadPlasmids: async () => ({ loaded: [loaded], failed: [] }) };
+    const r = await archiveSubcommand(["beta"], makeContext(fx.workingDirectory), deps);
+    expect(r.success).toBe(true);
+
+    const after = await fx.deps.activationStore.read();
+    expect(after.activePlasmidIds).not.toContain(beta);
+  });
+
   it("refuses a foundational plasmid and cites the revoke hint", async () => {
     const fx = await fakeDeps({
       loaded: [
