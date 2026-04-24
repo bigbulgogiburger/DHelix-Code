@@ -50,6 +50,11 @@ export interface RecombinationOptions {
   readonly approvalMode?: "interactive" | "auto" | "auto-on-clean";
   /** Static validation — strict by default; `warn-only` skips Stage-5 rollback. */
   readonly staticValidation?: StaticValidationMode;
+  /**
+   * Phase 3 — Stage 6 runtime validation profile (`--validate=<profile>`).
+   * `undefined` disables Stage 6 (Phase 2 behavior). `"none"` is explicit skip.
+   */
+  readonly validateProfile?: ValidateProfile;
   /** Propagated through every I/O call; aborts are observed at stage boundaries. */
   readonly signal?: AbortSignal;
 }
@@ -300,6 +305,25 @@ export interface RecombinationTranscript {
   readonly errorMessage?: string;
   readonly cacheHits: number;
   readonly cacheMisses: number;
+  /**
+   * Phase 3 — Stage 6 runtime validation report. Absent when validation was
+   * skipped (`validateProfile` undefined or `"none"`). Phase 2 transcripts
+   * parse cleanly because the field is optional.
+   */
+  readonly validation?: ValidationReport;
+  /** Phase 3 — recorded when a user keeps a failed run after grace period. */
+  readonly validationOverride?: OverrideRecord;
+  /**
+   * Phase 3 — pre-Stage-4 snapshot of DHELIX.md. Lets /cure verify I-9
+   * exactly (not just via I-9-safe reverse reorg). Absent in Phase 2
+   * transcripts; `/cure` must handle both paths.
+   */
+  readonly preReorgSnapshot?: PreReorgSnapshot;
+  /**
+   * Phase 3 — reorg ops actually applied at Stage 2d, in order. Allows
+   * /cure to construct a precise reverse plan instead of heuristic removal.
+   */
+  readonly reorgOps?: readonly ReorgOp[];
 }
 
 // ─── Error catalog (PRD §10.3) ───────────────────────────────────────────────
@@ -316,7 +340,20 @@ export type RecombinationErrorCode =
   | "PRIVACY_CLOUD_BLOCKED"
   | "WIRING_VALIDATION_ERROR"
   | "LOCAL_LLM_UNAVAILABLE"
-  | "MODEL_DRIFT_DETECTED";
+  | "MODEL_DRIFT_DETECTED"
+  // Phase 3 — Stage 6/7
+  | "VALIDATION_FAILED_L1"
+  | "VALIDATION_FAILED_L2"
+  | "VALIDATION_FAILED_FOUNDATIONAL_L4"
+  | "VALIDATION_TIMEOUT"
+  | "VALIDATION_CONSTRAINT_CASES_DROPPED"
+  | "VALIDATION_REGRESSION_DETECTED"
+  // Phase 3 — /cure
+  | "CURE_CONFLICT"
+  | "TRANSCRIPT_CORRUPT"
+  | "CURE_PARTIAL_FAILURE"
+  | "CURE_ABORTED"
+  | "CURE_NO_TRANSCRIPT";
 
 /** Well-known path under the project root for compile-time artefacts. */
 export const RECOMBINATION_DIR = ".dhelix/recombination";
@@ -408,6 +445,12 @@ export interface ExecutorDeps {
   readonly compress: CompressFn;
   readonly reorganize: ReorganizeFn;
   readonly llm: LLMCompletionFn;
+  /**
+   * Phase 3 — Stage 6 runtime validation facade. Optional: when omitted, the
+   * executor records Stage 6 as `"skipped"` and skips rollback based on
+   * runtime results (Phase 2 behavior preserved).
+   */
+  readonly validate?: ValidateFn;
 }
 
 export interface RecombinationResult {
@@ -427,3 +470,445 @@ export type ExecuteRecombinationFn = (
 
 /** Re-export types the adjacent modules import as public surface. */
 export type { LoadedPlasmid };
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 3 — RUNTIME VALIDATION (Stage 6) + /cure + I-10 AUTO-ROLLBACK
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Invariants added in this phase:
+//   - I-10 L1/L2 validation failure → auto-rollback with 10s grace period.
+//          Foundational plasmids rollback on L4 ≥5% failure too.
+//   - I-5  Validation history + override ledger are append-only (jsonl).
+//   - I-8  Validation executor must run inside a copy-on-write workspace —
+//          it reads compiled artifacts but must not mutate the real project.
+//
+// Ownership (Phase 3 5-team split):
+//   Team 1 — eval-seeds schema, expectation DSL, case-generator, volume-governor
+//   Team 2 — runtime-executor, grader-cascade, artifact-env (CoW workspace)
+//   Team 3 — rollback-decision, reporter (grace UX), override-tracker,
+//            regression-tracker
+//   Team 4 — /cure command + cure/{planner,restorer,edit-detector,refs}
+//   Team 5 — executor Stage 6/7 wiring, transcript extensions, --validate=
+//            flag routing, validate facade (index.ts), integration tests
+//
+// Every Phase 3 team implements strictly against the contracts below. The
+// executor degrades gracefully when `ExecutorDeps.validate` is omitted
+// (records Stage 6 as "skipped") to preserve Phase 2 call sites.
+
+// ─── Validation level + case origin ──────────────────────────────────────────
+
+/** Runtime validation tier (PRD §8.2 / P-1.16). */
+export type ValidationLevel = "L1" | "L2" | "L3" | "L4";
+
+/** Where a case came from — tracked for audit + telemetry. */
+export type CaseOrigin = "eval-seed" | "deterministic" | "llm-auto";
+
+/** `/recombination --validate=<profile>` flag values. */
+export type ValidateProfile = "smoke" | "local" | "exhaustive" | "ci" | "none";
+
+// ─── Expectation DSL (P-1.23 §4) ─────────────────────────────────────────────
+//
+// Seven prefixes; free-text falls through to the LLM judge. Parsed once per
+// case at grade time by the grader-cascade. `original` is retained verbatim
+// for reporting.
+
+export type Expectation =
+  | { readonly kind: "output-contains"; readonly text: string; readonly original: string }
+  | { readonly kind: "output-excludes"; readonly text: string; readonly original: string }
+  | { readonly kind: "file-exists"; readonly path: string; readonly original: string }
+  | { readonly kind: "file-modified"; readonly path: string; readonly original: string }
+  | { readonly kind: "exit-code"; readonly code: number; readonly original: string }
+  | { readonly kind: "tool-called"; readonly tool: string; readonly original: string }
+  | { readonly kind: "hook-fired"; readonly event: string; readonly original: string }
+  | { readonly kind: "free-text"; readonly text: string; readonly original: string };
+
+/** Which grader tier handled a given expectation (for report + skip tracking). */
+export type GraderHandler = "deterministic" | "semi" | "llm" | "skipped";
+
+// ─── Runtime case + volume plan ──────────────────────────────────────────────
+
+/** A generated L1-L4 case ready for execution in the CoW workspace. */
+export interface RuntimeCase {
+  readonly id: string;
+  readonly plasmidId: PlasmidId;
+  readonly tier: ValidationLevel;
+  readonly origin: CaseOrigin;
+  readonly prompt: string;
+  /** Raw DSL expectation strings — parsed at grade time. */
+  readonly expectations: readonly string[];
+  /** Optional setup files for the isolated workspace. */
+  readonly setupFiles?: readonly {
+    readonly path: string;
+    readonly content: string;
+  }[];
+  readonly tags?: readonly string[];
+}
+
+/** Per-plasmid quota at each level — sized by volume governor. */
+export interface PlasmidQuota {
+  readonly L1: number;
+  readonly L2: number;
+  readonly L3: number;
+  readonly L4: number;
+}
+
+/** Output of volume governor — total budget + per-plasmid allocations. */
+export interface VolumePlan {
+  readonly profile: ValidationVolumeProfile;
+  readonly totalBudget: number;
+  readonly perPlasmid: ReadonlyMap<PlasmidId, PlasmidQuota>;
+  /** Wall-clock budget for the full Stage 6 (ms). */
+  readonly timeBudgetMs: number;
+  /** Max parallelism (1 for local, 10 for cloud). */
+  readonly parallelism: number;
+}
+
+export interface DroppedCase {
+  readonly plasmidId: PlasmidId;
+  readonly tier: ValidationLevel;
+  readonly reason: string;
+}
+
+export interface RuntimeCaseSet {
+  readonly cases: readonly RuntimeCase[];
+  readonly droppedCount: number;
+  readonly droppedReasons: readonly DroppedCase[];
+}
+
+// ─── Team 1 entry: case-generator + volume-governor ──────────────────────────
+
+export interface VolumeGovernorRequest {
+  readonly irs: readonly CompiledPlasmidIR[];
+  readonly strategies: PipelineStrategies;
+}
+export type VolumeGovernorFn = (req: VolumeGovernorRequest) => VolumePlan;
+
+export interface GenerateCasesRequest {
+  readonly irs: readonly CompiledPlasmidIR[];
+  readonly strategies: PipelineStrategies;
+  readonly plan: VolumePlan;
+  readonly workingDirectory: string;
+  readonly llm: LLMCompletionFn;
+  readonly signal?: AbortSignal;
+}
+export type GenerateCasesFn = (req: GenerateCasesRequest) => Promise<RuntimeCaseSet>;
+
+// ─── Team 2 entry: runtime-executor + grader-cascade ─────────────────────────
+
+/** Captured output of a single case run — fed to the grader cascade. */
+export interface RuntimeRunResult {
+  readonly caseId: string;
+  readonly plasmidId: PlasmidId;
+  readonly tier: ValidationLevel;
+  readonly output: string;
+  /** Tool names observed in the case transcript — used for semi grading. */
+  readonly toolCalls: readonly string[];
+  readonly hookFires: readonly string[];
+  /** File system effects observed inside the isolated workspace. */
+  readonly filesTouched: readonly {
+    readonly path: string;
+    readonly op: "create" | "update" | "delete";
+  }[];
+  readonly exitCode?: number;
+  readonly durationMs: number;
+  readonly status: "ok" | "timeout" | "error" | "skipped";
+  readonly errorMessage?: string;
+}
+
+export interface RunCasesRequest {
+  readonly cases: readonly RuntimeCase[];
+  readonly strategies: PipelineStrategies;
+  readonly workingDirectory: string;
+  /** Pre-allocated copy-on-write workspace root (see artifact-env). */
+  readonly workspaceRoot: string;
+  readonly llm: LLMCompletionFn;
+  readonly timeBudgetMs: number;
+  readonly parallelism: number;
+  readonly signal?: AbortSignal;
+}
+export type RunCasesFn = (req: RunCasesRequest) => Promise<readonly RuntimeRunResult[]>;
+
+export interface ExpectationResult {
+  readonly original: string;
+  readonly parsed: Expectation;
+  readonly handler: GraderHandler;
+  readonly passed: boolean;
+  readonly evidence?: string;
+  readonly llmConfidence?: number;
+}
+
+export interface CaseGrading {
+  readonly caseId: string;
+  readonly plasmidId: PlasmidId;
+  readonly tier: ValidationLevel;
+  readonly passed: boolean;
+  readonly expectationResults: readonly ExpectationResult[];
+}
+
+export interface GradeCasesRequest {
+  readonly cases: readonly RuntimeCase[];
+  readonly runs: readonly RuntimeRunResult[];
+  readonly strategies: PipelineStrategies;
+  readonly llm: LLMCompletionFn;
+  readonly signal?: AbortSignal;
+}
+export type GradeCasesFn = (req: GradeCasesRequest) => Promise<readonly CaseGrading[]>;
+
+// ─── Copy-on-write workspace (Team 2) ────────────────────────────────────────
+
+export interface ArtifactEnv {
+  readonly workspaceRoot: string;
+  /** Call once validation is done to free disk. */
+  readonly cleanup: () => Promise<void>;
+  /** Symlink-first on posix; copy-fallback on windows / cross-device. */
+  readonly mode: "symlink" | "copy";
+}
+
+export interface BuildArtifactEnvRequest {
+  readonly workingDirectory: string;
+  readonly transcriptId: string;
+  readonly artifacts: readonly GeneratedArtifact[];
+  readonly writtenFiles: readonly WrittenFile[];
+  readonly signal?: AbortSignal;
+}
+export type BuildArtifactEnvFn = (
+  req: BuildArtifactEnvRequest,
+) => Promise<ArtifactEnv>;
+
+// ─── Validation report ───────────────────────────────────────────────────────
+
+export interface TierStats {
+  readonly tier: ValidationLevel;
+  readonly total: number;
+  readonly passed: number;
+  readonly rate: number; // 0..1
+  readonly threshold: number; // 0..1 — PipelineStrategies.passThresholds[tier] normalized
+  readonly meetsThreshold: boolean;
+  readonly skipped: number;
+}
+
+export interface PlasmidValidationSummary {
+  readonly plasmidId: PlasmidId;
+  readonly tier: PlasmidTier;
+  readonly perLevel: ReadonlyMap<ValidationLevel, TierStats>;
+  readonly overallPassed: boolean;
+}
+
+export interface ValidationReport {
+  readonly startedAt: string;
+  readonly finishedAt: string;
+  readonly durationMs: number;
+  readonly profile: ValidateProfile;
+  readonly plan: VolumePlan;
+  readonly totalCases: number;
+  readonly perTier: readonly TierStats[];
+  readonly perPlasmid: readonly PlasmidValidationSummary[];
+  readonly caseGradings: readonly CaseGrading[];
+  readonly earlyExit: boolean;
+  readonly timeBudgetExceeded: boolean;
+  readonly overallPassed: boolean;
+  readonly dropped: readonly DroppedCase[];
+}
+
+// ─── Team 3 entry: rollback decision + override + regression ─────────────────
+
+export type RollbackAction =
+  | "continue"
+  | "rollback"
+  | "warn"
+  | "require-override";
+
+export interface RollbackDecision {
+  readonly action: RollbackAction;
+  readonly reason: string;
+  readonly failingTier?: ValidationLevel;
+  readonly failingPlasmidId?: PlasmidId;
+  readonly foundationalL4Triggered?: boolean;
+}
+
+export interface DecideRollbackRequest {
+  readonly report: ValidationReport;
+  readonly plasmids: readonly CompiledPlasmidIR[];
+  readonly strategies: PipelineStrategies;
+}
+export type DecideRollbackFn = (req: DecideRollbackRequest) => RollbackDecision;
+
+export interface OverrideRecord {
+  readonly timestamp: string;
+  readonly transcriptId: string;
+  readonly plasmidId: PlasmidId;
+  readonly tier: ValidationLevel;
+  readonly reason: string;
+  readonly passRate: number;
+  readonly threshold: number;
+  readonly actor: string;
+}
+
+export interface RegressionFinding {
+  readonly plasmidId: PlasmidId;
+  readonly tier: ValidationLevel;
+  readonly previousRate: number;
+  readonly currentRate: number;
+  readonly delta: number;
+  readonly previousTranscriptId: string;
+}
+
+export interface HistoryEntry {
+  readonly timestamp: string;
+  readonly transcriptId: string;
+  readonly perTier: readonly {
+    readonly tier: ValidationLevel;
+    readonly rate: number;
+  }[];
+  readonly perPlasmid: readonly {
+    readonly plasmidId: PlasmidId;
+    readonly L1: number;
+    readonly L2: number;
+    readonly L3: number;
+    readonly L4: number;
+  }[];
+}
+
+// ─── Grace-period IO (Team 3 reporter, consumed by executor + command) ──────
+
+export type GraceInput = "rollback" | "keep" | "rerun" | "inspect" | "edit";
+
+export interface GracePromptIO {
+  prompt(
+    frameRenderer: (secondsRemaining: number) => string,
+    timeoutMs: number,
+    validInputs: readonly GraceInput[],
+  ): Promise<GraceInput>;
+}
+
+// ─── Team 5 facade: `ValidateFn` consumed by executor Stage 6 ────────────────
+
+export interface ValidateRequest {
+  readonly irs: readonly CompiledPlasmidIR[];
+  readonly artifacts: readonly GeneratedArtifact[];
+  readonly reorgPlan: ReorgPlan;
+  readonly writtenFiles: readonly WrittenFile[];
+  readonly strategies: PipelineStrategies;
+  readonly model: string;
+  readonly workingDirectory: string;
+  readonly transcriptId: string;
+  readonly profile: ValidateProfile;
+  readonly llm: LLMCompletionFn;
+  readonly signal?: AbortSignal;
+}
+
+export interface ValidateResult {
+  readonly report: ValidationReport;
+  readonly decision: RollbackDecision;
+  readonly regressions: readonly RegressionFinding[];
+  readonly overrideRecorded?: OverrideRecord;
+}
+
+export type ValidateFn = (req: ValidateRequest) => Promise<ValidateResult>;
+
+// ─── /cure (Team 4 — PRD §6.4) ───────────────────────────────────────────────
+
+export type CureMode =
+  | { readonly kind: "latest" }
+  | { readonly kind: "all" }
+  | { readonly kind: "transcript"; readonly id: string }
+  | { readonly kind: "plasmid"; readonly id: PlasmidId };
+
+export interface CureOptions {
+  readonly workingDirectory: string;
+  readonly mode: CureMode;
+  readonly dryRun: boolean;
+  /** When true, also archive plasmid `.md` to `.dhelix/plasmids/archive/`. */
+  readonly purge?: boolean;
+  readonly approvalMode?: "interactive" | "auto";
+  readonly signal?: AbortSignal;
+}
+
+export type CureStep =
+  | {
+      readonly kind: "delete-file";
+      readonly path: string;
+      readonly expectedHash: string;
+    }
+  | { readonly kind: "remove-marker"; readonly markerId: string }
+  | { readonly kind: "archive-plasmid"; readonly plasmidId: PlasmidId }
+  | { readonly kind: "clear-refs"; readonly plasmidId: PlasmidId };
+
+export type CureWarningKind =
+  | "manual-edit"
+  | "later-transcript"
+  | "git-uncommitted"
+  | "transcript-orphan"
+  | "constitution-user-conflict"
+  | "unknown-marker";
+
+export interface CureWarning {
+  readonly kind: CureWarningKind;
+  readonly path?: string;
+  readonly markerId?: string;
+  readonly plasmidId?: PlasmidId;
+  readonly message: string;
+}
+
+export interface CurePlan {
+  /** One entry per transcript consumed (1 for `latest`/`plasmid`, many for `all`). */
+  readonly transcriptIds: readonly string[];
+  readonly steps: readonly CureStep[];
+  readonly warnings: readonly CureWarning[];
+  /** Human-readable preview — PRD §6.4.3. */
+  readonly preview: string;
+}
+
+export interface CureResult {
+  readonly plan: CurePlan;
+  readonly executed: boolean;
+  readonly filesDeleted: readonly string[];
+  readonly markersRemoved: readonly string[];
+  readonly plasmidsArchived: readonly PlasmidId[];
+  readonly errorCode?: CureErrorCode;
+  readonly errorMessage?: string;
+}
+
+export type CureErrorCode =
+  | "CURE_CONFLICT"
+  | "TRANSCRIPT_CORRUPT"
+  | "CURE_PARTIAL_FAILURE"
+  | "CURE_ABORTED"
+  | "CURE_NO_TRANSCRIPT";
+
+export interface PlanCureRequest {
+  readonly options: CureOptions;
+}
+export type PlanCureFn = (req: PlanCureRequest) => Promise<CurePlan>;
+
+export interface RestoreCureRequest {
+  readonly options: CureOptions;
+  readonly plan: CurePlan;
+}
+export type RestoreCureFn = (req: RestoreCureRequest) => Promise<CureResult>;
+
+export type ExecuteCureFn = (opts: CureOptions) => Promise<CureResult>;
+
+// ─── Optional transcript extensions (Phase 3 adds, Phase 2 absent) ──────────
+
+export interface PreReorgSnapshot {
+  readonly beforeContent: string;
+  readonly beforeHash: string;
+  readonly capturedAt: string;
+}
+
+// ─── Phase 3 path constants ──────────────────────────────────────────────────
+
+export const VALIDATION_HISTORY_FILE =
+  ".dhelix/recombination/validation-history.jsonl";
+export const VALIDATION_OVERRIDES_FILE =
+  ".dhelix/recombination/validation-overrides.jsonl";
+export const VALIDATION_FAILURES_DIR =
+  ".dhelix/recombination/validation-failures";
+export const RECOMBINATION_REFS_DIR = ".dhelix/recombination/refs/plasmids";
+export const PLASMIDS_ARCHIVE_DIR = ".dhelix/plasmids/archive";
+
+/** Grace period for I-10 auto-rollback (ms). PRD §10.1. */
+export const ROLLBACK_GRACE_PERIOD_MS = 10_000;
+/** Hardcoded minimum foundational-L4 failure rate that triggers rollback. */
+export const FOUNDATIONAL_L4_ROLLBACK_THRESHOLD = 0.05;
