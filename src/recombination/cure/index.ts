@@ -10,6 +10,9 @@ import type {
   RestoreCureFn,
 } from "../types.js";
 
+import { planCure } from "./planner.js";
+import { restoreCure } from "./restorer.js";
+
 export * from "./planner.js";
 export * from "./restorer.js";
 export * from "./edit-detector.js";
@@ -20,10 +23,22 @@ export interface CureFacadeDeps {
   readonly restoreCure: RestoreCureFn;
 }
 
-export const createCure: (deps: CureFacadeDeps) => ExecuteCureFn = () => {
-  throw new Error("TODO Phase 3 Team 4: createCure");
-};
+export const createCure: (deps: CureFacadeDeps) => ExecuteCureFn =
+  (deps) => async (options) => {
+    const plan = await deps.planCure({ options });
+    if (options.dryRun) {
+      return {
+        plan,
+        executed: false,
+        filesDeleted: [],
+        markersRemoved: [],
+        plasmidsArchived: [],
+      };
+    }
+    return deps.restoreCure({ options, plan });
+  };
 
-export const defaultCureFacadeDeps: () => CureFacadeDeps = () => {
-  throw new Error("TODO Phase 3 Team 4: defaultCureFacadeDeps");
-};
+export const defaultCureFacadeDeps: () => CureFacadeDeps = () => ({
+  planCure,
+  restoreCure,
+});
