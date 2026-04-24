@@ -78,6 +78,19 @@ describe("isPathBlocked — positive cases", () => {
   it("blocks file:// scheme plasmid paths", () => {
     expect(isPathBlocked("file:///abs/project/.dhelix/plasmids/foo.md", CWD)).not.toBeNull();
   });
+
+  it("blocks `.dhelix/recombination/**` (Phase-3 I-8 defense-in-depth)", () => {
+    // Transcripts, refs (which leak plasmid ids), objects store, audit.log,
+    // validation-history.jsonl, validation-overrides.jsonl all live under
+    // `.dhelix/recombination/` and must be invisible to the runtime agent.
+    expect(isPathBlocked(".dhelix/recombination/transcripts/foo.json", CWD)).not.toBeNull();
+    expect(isPathBlocked(".dhelix/recombination/refs/plasmids/sec-gate", CWD)).not.toBeNull();
+    expect(isPathBlocked(".dhelix/recombination/validation-overrides.jsonl", CWD)).not.toBeNull();
+    expect(isPathBlocked(".dhelix/recombination/validation-history.jsonl", CWD)).not.toBeNull();
+    expect(isPathBlocked(".dhelix/recombination/audit.log", CWD)).not.toBeNull();
+    expect(isPathBlocked(".dhelix/recombination", CWD)).not.toBeNull();
+    expect(isPathBlocked(".DHELIX/RECOMBINATION/transcripts/x.json", CWD)).not.toBeNull();
+  });
 });
 
 describe("isPathBlocked — negative cases (must NOT block)", () => {

@@ -47,6 +47,12 @@ export const RUNTIME_BLOCKED_PATTERNS: readonly RegExp[] = [
   // Reserved filenames — only block when under .dhelix/plasmids context.
   // (This is enforced by the combined check below; listed here for telemetry clarity.)
   /[\\/]\.dhelix[\\/]plasmids[\\/].*[\\/](?:metadata\.ya?ml|body\.md)$/i,
+  // Phase 3 — recombination system boundary (transcripts, refs, objects,
+  // audit + validation ledgers). Runtime agents must not read these: refs
+  // would leak plasmid ids and validation jsonl lines can carry plasmid
+  // identifiers and override reasons. Entire `.dhelix/recombination/` tree
+  // is off-limits at runtime (I-8 defense-in-depth).
+  /[\\/]\.dhelix[\\/]recombination([\\/]|$)/i,
 ] as const;
 
 /**

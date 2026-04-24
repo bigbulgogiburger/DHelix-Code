@@ -341,6 +341,12 @@ async function executeCase(args: ExecuteCaseArgs): Promise<RuntimeRunResult> {
       toolCalls,
       hookFires,
       filesTouched,
+      // Phase-3 MVP executor doesn't spawn a real sub-agent process, so
+      // there's no OS exit code. Normalize successful runs to `0` so the
+      // grader's `exit-code` handler (deterministic equality) has a defined
+      // value to compare against — eval-seeds with `exit code 0` then
+      // behave intuitively instead of always failing against `undefined`.
+      exitCode: 0,
       durationMs: Date.now() - start,
       status: "ok",
     };
