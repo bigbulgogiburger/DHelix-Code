@@ -107,6 +107,18 @@ const ATTACKS: readonly AttackCase[] = [
     label: "11. list_dir against the plasmids root",
     call: call("list_dir", { path: ".dhelix/plasmids" }),
   },
+  {
+    label: "12. Phase 5 — file_read against governance challenges.log",
+    call: call("file_read", { path: ".dhelix/governance/challenges.log" }),
+  },
+  {
+    label: "13. Phase 5 — bash `cat` against overrides.pending.json",
+    call: call("bash_exec", { command: "cat .dhelix/governance/overrides.pending.json" }),
+  },
+  {
+    label: "14. Phase 5 — glob over governance subtree",
+    call: call("glob_search", { pattern: ".dhelix/governance/**" }),
+  },
 ];
 
 describe("I-8 Hermeticity — attack surface (must block every vector)", () => {
