@@ -39,6 +39,7 @@ import {
   plasmidMetadataSchema,
 } from "./schema.js";
 import type {
+  ChallengeableBy,
   LoadFailure,
   LoadResult,
   LoadedPlasmid,
@@ -50,6 +51,21 @@ import type {
   PlasmidScope,
 } from "./types.js";
 import { SCOPE_PRECEDENCE } from "./types.js";
+
+/**
+ * Loader-level default for `metadata.challengeable` when a plasmid is
+ * `foundational: true` but omits the block. Mirrors the `challengeableBySchema`
+ * defaults exactly (Phase 5 dev-guide §4 / P-1.10 §2). Filling at the loader
+ * keeps the Zod schema input/output types narrow — see dev-guide §6 rationale.
+ */
+const DEFAULT_FOUNDATIONAL_CHALLENGEABLE: ChallengeableBy = {
+  "require-justification": true,
+  "min-justification-length": 50,
+  "audit-log": true,
+  "require-cooldown": "24h",
+  "require-team-consensus": false,
+  "min-approvers": 1,
+};
 
 /** Options for {@link loadPlasmids}. */
 export interface LoaderOptions {
@@ -354,7 +370,13 @@ function finalize(
       { path: candidate.metadataPath, issues: metadataResult.error.issues },
     );
   }
-  const metadata = metadataResult.data as PlasmidMetadata;
+  const parsedMetadata = metadataResult.data as PlasmidMetadata;
+  // Phase 5 — fill the foundational `challengeable` default at loader time so
+  // the Zod schema's input/output types stay narrow (see dev-guide §6).
+  const metadata: PlasmidMetadata =
+    parsedMetadata.foundational === true && parsedMetadata.challengeable === undefined
+      ? { ...parsedMetadata, challengeable: DEFAULT_FOUNDATIONAL_CHALLENGEABLE }
+      : parsedMetadata;
 
   if (metadata.id !== (candidate.id as PlasmidId)) {
     throw new PlasmidSchemaError(

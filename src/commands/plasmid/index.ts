@@ -22,6 +22,8 @@ import { validateSubcommand } from "./validate.js";
 import { activateSubcommand } from "./activate.js";
 import { deactivateSubcommand } from "./deactivate.js";
 import { editSubcommand } from "./edit.js";
+import { archiveSubcommand } from "./archive.js";
+import { inspectSubcommand } from "./inspect.js";
 import { type CommandDeps, defaultDeps } from "./deps.js";
 
 type Subcommand =
@@ -30,7 +32,9 @@ type Subcommand =
   | "validate"
   | "activate"
   | "deactivate"
-  | "edit";
+  | "edit"
+  | "archive"
+  | "inspect";
 
 const SUBCOMMANDS: readonly Subcommand[] = [
   "list",
@@ -39,13 +43,15 @@ const SUBCOMMANDS: readonly Subcommand[] = [
   "activate",
   "deactivate",
   "edit",
+  "archive",
+  "inspect",
 ];
 
 function usage(): string {
   return [
     "Usage: /plasmid <subcommand> [args...]",
     "",
-    "Subcommands (Phase 1):",
+    "Subcommands:",
     "  list [--tier <L1..L4>] [--scope <scope>] [--active]",
     "                                Tabular index of plasmids",
     "  show <id> [--body] [--force]  Metadata + optional body preview",
@@ -53,8 +59,8 @@ function usage(): string {
     "  activate <id> [<id>...]       Add ids to the active set",
     "  deactivate <id> [<id>...]     Remove ids (L4 requires /plasmid challenge)",
     "  edit <id>                     Open body.md in $EDITOR",
-    "",
-    "Phase-2+ subcommands (archive, challenge, inspect, ...) are not yet wired.",
+    "  archive <id>                  Move to .dhelix/plasmids/archive/ (foundational refused)",
+    "  inspect compression <id>      Body→summary token counts + preserved constraints",
   ].join("\n");
 }
 
@@ -70,8 +76,9 @@ export function makePlasmidCommand(
 ): SlashCommand {
   return {
     name: "plasmid",
-    description: "Plasmid registry / activation / editor (Phase 1)",
-    usage: "/plasmid <list|show|validate|activate|deactivate|edit> [args...]",
+    description: "Plasmid registry / activation / editor",
+    usage:
+      "/plasmid <list|show|validate|activate|deactivate|edit|archive|inspect> [args...]",
     async execute(argStr: string, context: CommandContext): Promise<CommandResult> {
       const deps =
         typeof depsOrFactory === "function" ? depsOrFactory(context) : depsOrFactory;
@@ -123,6 +130,10 @@ async function dispatch(
       return deactivateSubcommand(rest, context, deps);
     case "edit":
       return editSubcommand(rest, context, deps);
+    case "archive":
+      return archiveSubcommand(rest, context, deps);
+    case "inspect":
+      return inspectSubcommand(rest, context, deps);
   }
 }
 

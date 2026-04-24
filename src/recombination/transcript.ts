@@ -90,6 +90,12 @@ export interface TranscriptBuilder {
    * consumed. Only included in `build()` when set.
    */
   recordRebuildLineage(lineage: RebuildLineage): void;
+  /**
+   * Phase 5 — record the plasmid ids whose foundational `/plasmid challenge
+   * --action override` was consumed at Stage 1. Empty input is a no-op so
+   * the Phase-4 transcript shape stays unchanged when no overrides fire.
+   */
+  recordConsumedOverrides(ids: readonly PlasmidId[]): void;
   build(finishedAt: Date): RecombinationTranscript;
 }
 
@@ -110,6 +116,7 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
   let preReorgSnapshot: PreReorgSnapshot | undefined;
   let reorgOps: readonly ReorgOp[] | undefined;
   let rebuildLineage: RebuildLineage | undefined;
+  let consumedOverrides: readonly PlasmidId[] = [];
 
   return {
     id,
@@ -178,6 +185,9 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
     recordRebuildLineage(lineage) {
       rebuildLineage = lineage;
     },
+    recordConsumedOverrides(ids) {
+      consumedOverrides = [...ids];
+    },
     build(finishedAt: Date): RecombinationTranscript {
       return {
         id,
@@ -200,6 +210,9 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
         ...(preReorgSnapshot !== undefined ? { preReorgSnapshot } : {}),
         ...(reorgOps !== undefined ? { reorgOps: [...reorgOps] } : {}),
         ...(rebuildLineage !== undefined ? { rebuildLineage } : {}),
+        ...(consumedOverrides.length > 0
+          ? { consumedOverrides: [...consumedOverrides] }
+          : {}),
       };
     },
   };

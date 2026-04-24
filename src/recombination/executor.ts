@@ -30,6 +30,7 @@ import {
 } from "node:fs/promises";
 import { dirname, join } from "node:path";
 
+import { getLogger } from "../utils/logger.js";
 import { getModelCapabilities } from "../llm/model-capabilities.js";
 import type {
   LoadedPlasmid,
@@ -165,10 +166,26 @@ export const executeRecombination: ExecuteRecombinationFn = async (
     const activation = await activationStore.read();
     const activeIdSet = new Set<string>(activation.activePlasmidIds);
 
-    const activePlasmids: readonly LoadedPlasmid[] = loadResult.loaded.filter((p) => {
+    const preOverrideActive: readonly LoadedPlasmid[] = loadResult.loaded.filter((p) => {
       if (opts.plasmidId !== undefined) return p.metadata.id === opts.plasmidId;
       return activeIdSet.has(p.metadata.id);
     });
+
+    // Phase 5 — best-effort consumption of any queued foundational overrides
+    // (`/plasmid challenge --action override`). Drops the matching plasmid
+    // ids so the rest of the pipeline (privacy gate, generators, validators)
+    // never sees them for this run. Failures here MUST NOT fail the run —
+    // missing pending file or absent governance module → no drops.
+    const consumedOverrideIds = await consumePendingOverrides(
+      opts.workingDirectory,
+      preOverrideActive.map((p) => p.metadata.id),
+      opts.signal,
+    );
+    const consumedSet = new Set<PlasmidId>(consumedOverrideIds);
+    const activePlasmids: readonly LoadedPlasmid[] =
+      consumedSet.size === 0
+        ? preOverrideActive
+        : preOverrideActive.filter((p) => !consumedSet.has(p.metadata.id));
 
     const modelId = opts.modelOverride ?? "gpt-4o"; // sane default; UX fills it in
     const caps = getModelCapabilities(modelId);
@@ -185,6 +202,9 @@ export const executeRecombination: ExecuteRecombinationFn = async (
     transcript.recordStageStart(0, "preflight", stage0Started);
     if (pendingRebuildLineage !== null) {
       transcript.recordRebuildLineage(pendingRebuildLineage);
+    }
+    if (consumedOverrideIds.length > 0) {
+      transcript.recordConsumedOverrides(consumedOverrideIds);
     }
     transcript.recordStageFinish(
       0,
@@ -726,6 +746,83 @@ function buildPlasmidTiersMap(
  * swallowed — blob archival is advisory (I-7) and MUST NOT fail the
  * pipeline.
  */
+/**
+ * Phase 5 — best-effort consumption of foundational overrides queued via
+ * `/plasmid challenge --action override`. Returns the subset of `candidateIds`
+ * whose pending entry was consumed (each id gets `true` from `consumeOverride`
+ * exactly once per queued entry, then `false` thereafter).
+ *
+ * Best-effort surface (dev-guide §6 MUST):
+ *   - Missing pending file → []
+ *   - Governance module absent / fails to import → log + []
+ *   - Per-id consume failure → log + skip that id
+ *
+ * Implementation note: we resolve the governance module via dynamic import
+ * so this file compiles even when Team 3's `consumeOverride` is still a
+ * placeholder export. When Team 3 lands the real surface, no executor edit
+ * is required.
+ */
+async function consumePendingOverrides(
+  workingDirectory: string,
+  candidateIds: readonly PlasmidId[],
+  signal: AbortSignal | undefined,
+): Promise<readonly PlasmidId[]> {
+  if (candidateIds.length === 0) return [];
+  let consumeOverride: ConsumeOverrideFn | undefined;
+  try {
+    const mod = (await import(
+      "../plasmids/governance/overrides-pending.js"
+    )) as Partial<{ consumeOverride: ConsumeOverrideFn }>;
+    consumeOverride = mod.consumeOverride;
+  } catch (err) {
+    // Governance module unavailable — Phase-2/3/4 worktrees won't have it
+    // wired yet. Treat as no-op rather than failing the pipeline.
+    getLogger().debug(
+      { err: messageOf(err) },
+      "consumePendingOverrides: governance module not loadable; skipping",
+    );
+    return [];
+  }
+  if (typeof consumeOverride !== "function") {
+    return [];
+  }
+  if (signal?.aborted === true) return [];
+
+  const consumed: PlasmidId[] = [];
+  for (const id of candidateIds) {
+    try {
+      const wasConsumed = await consumeOverride({
+        workingDirectory,
+        plasmidId: id,
+        ...(signal !== undefined ? { signal } : {}),
+      });
+      if (wasConsumed === true) consumed.push(id);
+    } catch (err) {
+      getLogger().warn(
+        { plasmidId: id, err: messageOf(err) },
+        "consumePendingOverrides: consume failed for plasmid id",
+      );
+    }
+  }
+  return consumed;
+}
+
+/**
+ * Surface of Team 3's `consumeOverride`. Kept narrow so the dynamic import
+ * does not couple the executor to a specific signature shape — only the
+ * boolean return matters here.
+ */
+type ConsumeOverrideFn = (req: {
+  readonly workingDirectory: string;
+  readonly plasmidId: PlasmidId;
+  readonly signal?: AbortSignal;
+}) => Promise<boolean> | boolean;
+
+function messageOf(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
 async function bestEffortBlob(
   cwd: string,
   hash: string,
