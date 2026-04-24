@@ -43,13 +43,36 @@ import {
 } from "../types.js";
 import type {
   CureErrorCode,
+  CureOptions,
   CureResult,
   CureStep,
   ReorgPlan,
   RestoreCureFn,
+  ThreeWayMergeMode,
 } from "../types.js";
 
+import { readBlob } from "./object-store.js";
 import { clearPlasmidRef } from "./refs.js";
+import { threeWayMerge } from "./three-way-merge.js";
+
+/**
+ * Temporary extension type — Phase 4 Cure v1.
+ *
+ * `CureOptions.mergeMode` is NOT yet part of the public `CureOptions`
+ * interface in `../types.ts` (the types file is frozen for Phase 4 and
+ * Team 5 will propagate the CLI flag in a follow-up integration). Until
+ * then, `restoreCure` narrows the option via this local intersection type
+ * and falls back to `"block"` (the Phase-3 behavior) when undefined so
+ * every existing call site keeps working untouched.
+ *
+ * TODO (Phase 5): promote `mergeMode` into `CureOptions` proper and drop
+ * this local alias. Also surface a `warnings: readonly CureWarning[]`
+ * field on `CureResult` so the "user edit preserved" signal can reach
+ * callers instead of being dropped into `filesDeleted=[]` silence.
+ */
+type CureOptionsExt = CureOptions & {
+  readonly mergeMode?: ThreeWayMergeMode;
+};
 
 interface NodeError extends Error {
   code?: string;
@@ -124,6 +147,8 @@ export const restoreCure: RestoreCureFn = async ({ options, plan }) => {
   const handle = await acquire(cwd, { ttlSec: 300 });
   try {
     // 1. delete-file steps.
+    const mergeMode: ThreeWayMergeMode =
+      (options as CureOptionsExt).mergeMode ?? "block";
     const deleteSteps = plan.steps.filter(
       (s): s is Extract<CureStep, { kind: "delete-file" }> => s.kind === "delete-file",
     );
@@ -139,16 +164,61 @@ export const restoreCure: RestoreCureFn = async ({ options, plan }) => {
       // expectedHash === "" means the Phase-2 transcript lacked hashes;
       // auto-approve deletion rather than permanently block /cure.
       const hashOk = step.expectedHash === "" || current === step.expectedHash;
-      if (!hashOk && options.approvalMode !== "auto") {
-        return {
-          plan,
-          executed: false,
-          filesDeleted,
-          markersRemoved,
-          plasmidsArchived,
-          errorCode: "CURE_CONFLICT" as CureErrorCode,
-          errorMessage: `Hash mismatch for ${step.path}: expected ${step.expectedHash}, got ${current}. Re-run with --yes to override, or restore the file manually first.`,
-        };
+      if (!hashOk) {
+        // Dispatch based on mergeMode. "block" preserves Phase-3 behavior
+        // exactly (including `approvalMode=auto` override). Other modes
+        // consult the object store + 3-way merge.
+        if (mergeMode === "block") {
+          if (options.approvalMode !== "auto") {
+            return {
+              plan,
+              executed: false,
+              filesDeleted,
+              markersRemoved,
+              plasmidsArchived,
+              errorCode: "CURE_CONFLICT" as CureErrorCode,
+              errorMessage: `Hash mismatch for ${step.path}: expected ${step.expectedHash}, got ${current}. Re-run with --yes to override, or restore the file manually first.`,
+            };
+          }
+          // approvalMode=auto → fall through to the unlink below.
+        } else if (mergeMode === "keep-user") {
+          // TODO (Phase 5): emit a CureWarning{kind:"manual-edit"} onto
+          // CureResult.warnings once that field exists. For now we just
+          // skip the delete so the user's edits survive.
+          continue;
+        } else {
+          // "auto" or "prompt" (treated as auto for Phase 4).
+          const base = await readBlob(cwd, step.expectedHash, options.signal);
+          if (base === null) {
+            // No base blob available → preserve the user's file (safe
+            // fallback matching `keep-user` semantics).
+            continue;
+          }
+          let userContent: string;
+          try {
+            userContent = await readFile(step.path, "utf-8");
+          } catch (err) {
+            if (isNodeError(err) && err.code === "ENOENT") continue;
+            throw err;
+          }
+          const result = threeWayMerge(base, userContent, "");
+          if (result.outcome === "clean-merge" && result.mergedContent === "") {
+            // User didn't actually change the file (hash drift was likely
+            // newline normalization). Proceed with deletion.
+          } else if (result.outcome === "kept-user") {
+            // Real user edit → skip deletion.
+            continue;
+          } else if (result.outcome === "conflict-markers") {
+            // Write conflict markers in place and leave the file on disk
+            // so the user can resolve them manually. Do NOT unlink.
+            await atomicWrite(step.path, result.mergedContent);
+            continue;
+          } else {
+            // "identical" — shouldn't happen when !hashOk, but treat as a
+            // safe skip.
+            continue;
+          }
+        }
       }
       try {
         await unlink(step.path);

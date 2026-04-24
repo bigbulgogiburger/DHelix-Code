@@ -17,6 +17,8 @@ export * from "./planner.js";
 export * from "./restorer.js";
 export * from "./edit-detector.js";
 export * from "./refs.js";
+export * from "./three-way-merge.js";
+export * from "./object-store.js";
 
 export interface CureFacadeDeps {
   readonly planCure: PlanCureFn;
