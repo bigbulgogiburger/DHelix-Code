@@ -50,6 +50,9 @@ import { voiceCommand } from "./voice.js";
 import { architectCommand, editorCommand, dualCommand } from "./dual-model.js";
 import { extensionsCommand } from "./extensions.js";
 import { dashboardCommand } from "./dashboard.js";
+import { plasmidCommand } from "./plasmid/index.js";
+import { recombinationCommand } from "./recombination/index.js";
+import { cureCommand } from "./cure/index.js";
 
 export const builtinCommands: readonly SlashCommand[] = [
   clearCommand,
@@ -99,6 +102,9 @@ export const builtinCommands: readonly SlashCommand[] = [
   dualCommand,
   extensionsCommand,
   dashboardCommand,
+  plasmidCommand,
+  recombinationCommand,
+  cureCommand,
 ];
 
 /** helpCommand에서 전체 명령어 목록을 설정하기 위한 setter */

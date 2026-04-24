@@ -4,7 +4,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["test/**/*.test.ts"],
+    include: ["test/**/*.test.ts", "src/**/__tests__/**/*.test.ts"],
     exclude: [
       "test/integration/real-api.test.ts",
       "test/integration/multi-turn.test.ts",
@@ -18,6 +18,7 @@ export default defineConfig({
       provider: "v8",
       include: ["src/**/*.ts"],
       exclude: [
+        "src/**/__tests__/**",
         "src/**/*.tsx",
         "src/index.ts",
         "src/cli/hooks/**",

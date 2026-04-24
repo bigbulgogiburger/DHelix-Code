@@ -9,6 +9,7 @@ coverage/
 Thumbs.db
 *.log
 .claude/ralph-loop.local.md
+.claude/worktrees/
 
 # 테스트 생성 파일
 test/tmp/

@@ -141,6 +141,29 @@ export const voiceConfigSchema = z
   .default({});
 
 /**
+ * Plasmid 시스템 설정 스키마 (GAL-1, Phase 1)
+ *
+ * 플라스미드(plasmid)는 dhelix 의 컴파일 타임에만 적용되는
+ * "의도 조각(intent fragment)" 이다. 런타임 컨텍스트로는 절대 유입되지 않으며
+ * (I-8), 활성화된 조각만 시스템 프롬프트 조립에 참여한다.
+ *
+ * `enabled` 는 기능 플래그로서 기본값 false. 사용자가 명시적으로 켜거나
+ * DHELIX_PLASMID_ENABLED=true 환경변수로 활성화한다.
+ */
+export const plasmidConfigSchema = z
+  .object({
+    /** 플라스미드 시스템 전체 활성화 플래그 (Phase 1 기본 false) */
+    enabled: z.boolean().default(false),
+    /** 프로젝트 로컬 플라스미드 디렉터리 (프로젝트 루트 상대) */
+    registryPath: z.string().default(".dhelix/plasmids"),
+    /** 공유 플라스미드 디렉터리 — 지정 시 git/team 범위 조회 */
+    sharedRegistryPath: z.string().optional(),
+    /** 임시(ephemeral) 드래프트 디렉터리 — /plasmid quick 초안 저장소 */
+    draftsPath: z.string().default(".dhelix/plasmids/.drafts"),
+  })
+  .default({});
+
+/**
  * 듀얼 모델(Architect/Editor) 라우팅 설정 스키마
  *
  * 두 개의 모델을 역할별로 나눠 사용하는 전략입니다:
@@ -195,4 +218,6 @@ export const configSchema = z.object({
   deferredTools: z.boolean().default(true),
   /** 듀얼 모델(Architect/Editor) 라우팅 설정 */
   dualModel: dualModelConfigSchema,
+  /** 플라스미드(GAL-1) 설정 — Phase 1 기본 비활성 */
+  plasmid: plasmidConfigSchema,
 });

@@ -34,6 +34,35 @@ export interface ModelPricingInfo {
 export type CapabilityTier = "high" | "medium" | "low";
 
 /**
+ * 프라이버시 티어 — 모델이 네트워크 외부로 데이터를 전송하는지 여부
+ * - "local":   로컬에서만 실행되는 모델 (Ollama, LM Studio 등). network egress 없음.
+ * - "cloud":   원격 API 호출이 필수인 상용 모델 (OpenAI, Anthropic 등).
+ * - "unknown": local/cloud 로 단정할 수 없는 경우. 보수적 분기에 사용.
+ *
+ * plasmid `privacy: local-only` 규칙은 이 필드가 `"cloud"`면 dispatch 차단에 사용.
+ */
+export type PrivacyTier = "local" | "cloud" | "unknown";
+
+/**
+ * Recombination 전략 티어 (P-1.19)
+ * - "A": full native — 최상위 function-calling + JSON schema 모델
+ * - "B": partial guidance — mid-tier, 구조화 hint 필요
+ * - "C": template-only — 로컬/소형 모델, 템플릿 폴백
+ */
+export type StrategyTier = "A" | "B" | "C";
+
+/** 네이티브 tool-call 신뢰도. `"none"`은 `supportsTools: false` 와 정합되어야 함. */
+export type ToolCallReliability = "strong" | "weak" | "none";
+
+/**
+ * Dual-model(P-1.21) 구성에서 이 모델이 선호되는 역할.
+ * - "architect": 큰 컨텍스트/추론 — 계획·리뷰·재조합
+ * - "editor":    빠른 편집·소형 모델
+ * - "either":    역할 선호 없음
+ */
+export type DualModelRole = "architect" | "editor" | "either";
+
+/**
  * 모델 능력 플래그 — 요청(request) 형식을 결정하는 데 사용
  *
  * 각 모델은 지원하는 기능이 다르므로, 이 플래그를 통해
@@ -80,6 +109,17 @@ export interface ModelCapabilities {
   readonly supportsThinking: boolean;
   /** 기본 사고 예산 (토큰 수, 0이면 컨텍스트 기반 자동 계산) */
   readonly defaultThinkingBudget: number;
+  // ── P-1.18 / P-1.21 plasmid extensions ─────────────────────────────
+  /** 프라이버시 티어 — 모델이 네트워크 외부로 데이터를 전송하는지 */
+  readonly privacyTier: PrivacyTier;
+  /** Recombination 전략 티어 (P-1.19) — A=full native, B=partial guidance, C=template-only */
+  readonly strategyTier: StrategyTier;
+  /** JSON mode / 구조화 출력 지원 여부 */
+  readonly supportsJsonMode: boolean;
+  /** Tool call 신뢰도 */
+  readonly toolCallReliability: ToolCallReliability;
+  /** 듀얼모델에서 선호되는 역할 */
+  readonly preferredDualModelRole: DualModelRole;
 }
 
 /** 알 수 없거나 로컬 모델에 적용할 기본 가격 ($1/M 입력, $3/M 출력) */
@@ -109,6 +149,12 @@ const DEFAULTS: ModelCapabilities = {
   supportsCaching: false,
   supportsThinking: false,
   defaultThinkingBudget: 0,
+  // ── plasmid extensions (safe fallbacks) ──
+  privacyTier: "unknown",
+  strategyTier: "B",
+  supportsJsonMode: false,
+  toolCallReliability: "strong",
+  preferredDualModelRole: "either",
 };
 
 /**
@@ -122,6 +168,7 @@ const DEFAULTS: ModelCapabilities = {
 const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
   // ─── MiniMax 시리즈 ───────────────────────────────────────────────
   // MiniMax-M2.5: Local LLM — 1M context, tool calling support
+  // MiniMax는 pricing 0(무료) + 로컬-first 배포 의도이므로 privacyTier 는 "local".
   [
     /^minimax/i,
     {
@@ -134,6 +181,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
       capabilityTier: "medium",
       useMaxCompletionTokens: false,
+      privacyTier: "local",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "either",
     },
   ],
 
@@ -146,6 +198,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 0.15, outputPerMillion: 0.6 },
       capabilityTier: "medium",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // gpt-4o: OpenAI의 주력 멀티모달 모델
@@ -156,6 +213,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 2.5, outputPerMillion: 10 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "either",
     },
   ],
   // gpt-4.1: GPT-4 후속 모델 — 100만 토큰 컨텍스트
@@ -167,6 +229,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 2, outputPerMillion: 8 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
   // gpt-5.1-codex: 코드 특화 모델 (Azure Responses API 호환)
@@ -180,6 +247,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsTemperature: true,
       pricing: { inputPerMillion: 0.25, outputPerMillion: 2 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // gpt-5-mini: GPT-5의 경량 버전
@@ -191,6 +263,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 0.25, outputPerMillion: 2 },
       capabilityTier: "medium",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // gpt-5-nano: GPT-5의 초경량 버전 — 가장 저렴
@@ -202,6 +279,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 0.05, outputPerMillion: 0.4 },
       capabilityTier: "medium",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // gpt-5 범용: 가장 뒤에 배치 (gpt-5-mini, gpt-5-nano 등이 먼저 매칭되도록)
@@ -214,6 +296,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsTemperature: true,
       pricing: { inputPerMillion: 2, outputPerMillion: 8 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
   // gpt-3.5: 레거시 모델 — cl100k 토크나이저, max_tokens 사용
@@ -225,6 +312,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       useMaxCompletionTokens: false, // 레거시 모델이므로 max_tokens 사용
       pricing: { inputPerMillion: 0.5, outputPerMillion: 1.5 },
       capabilityTier: "medium",
+      privacyTier: "cloud",
+      strategyTier: "C",
+      supportsJsonMode: false,
+      toolCallReliability: "weak",
+      preferredDualModelRole: "editor",
     },
   ],
   // gpt-4-turbo: GPT-4의 고속 버전 — 128K 컨텍스트
@@ -236,6 +328,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       useMaxCompletionTokens: false,
       pricing: { inputPerMillion: 10, outputPerMillion: 30 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "either",
     },
   ],
   // gpt-4 (기본): 레거시 GPT-4 — 8K 컨텍스트, 가장 비쌈
@@ -248,6 +345,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       useMaxCompletionTokens: false,
       pricing: { inputPerMillion: 30, outputPerMillion: 60 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: false,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "either",
     },
   ],
 
@@ -267,6 +369,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 3, outputPerMillion: 12 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // o1: 대형 추론 모델
@@ -281,6 +388,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 15, outputPerMillion: 60 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
   // o3-mini: 소형 차세대 추론 모델
@@ -295,6 +407,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 1.1, outputPerMillion: 4.4 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // o3: 대형 차세대 추론 모델
@@ -309,6 +426,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "o200k",
       pricing: { inputPerMillion: 10, outputPerMillion: 40 },
       capabilityTier: "high",
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
 
@@ -328,6 +450,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsCaching: true, // Anthropic 프롬프트 캐싱 지원
       supportsThinking: true, // Extended Thinking 지원
       defaultThinkingBudget: 16384, // 사고 예산 16K 토큰
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
   // Claude Sonnet 4: 균형 잡힌 모델 — 성능과 비용의 최적 균형
@@ -342,6 +469,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsCaching: true,
       supportsThinking: true,
       defaultThinkingBudget: 10000,
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
   // Claude Haiku 4: 경량 고속 모델 — 가장 저렴하고 빠름
@@ -356,6 +488,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsCaching: true,
       supportsThinking: true,
       defaultThinkingBudget: 5000,
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // Claude 3 Opus: 이전 세대 최상위 모델
@@ -370,6 +507,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsCaching: true,
       supportsThinking: true,
       defaultThinkingBudget: 16384,
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
   // Claude 3 Haiku: 이전 세대 경량 모델
@@ -384,6 +526,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsCaching: true,
       supportsThinking: true,
       defaultThinkingBudget: 5000,
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // Claude 3.5 Sonnet: 이전 세대 균형 모델
@@ -398,6 +545,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsCaching: true,
       supportsThinking: true,
       defaultThinkingBudget: 10000,
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "architect",
     },
   ],
   // Claude 범용 패턴: 위에서 매칭되지 않은 모든 Claude 모델
@@ -412,6 +564,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       supportsCaching: true,
       supportsThinking: true,
       defaultThinkingBudget: 10000,
+      privacyTier: "cloud",
+      strategyTier: "A",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "either",
     },
   ],
 
@@ -428,6 +585,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "llama",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 }, // 로컬 실행이므로 무료
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "C",
+      supportsJsonMode: false,
+      toolCallReliability: "none", // supportsTools: false 와 정합
+      preferredDualModelRole: "editor",
     },
   ],
   // llama3.1+: 도구 지원, 131K 컨텍스트
@@ -438,11 +600,16 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "llama",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "C",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
 
   // ─── Mistral Codestral ────────────────────────────────────────────
-  // 코드 특화 모델 — 256K 컨텍스트
+  // 코드 특화 모델 — 256K 컨텍스트 (Mistral 로컬 배포 기준)
   [
     /^codestral/i,
     {
@@ -451,6 +618,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.3, outputPerMillion: 0.9 },
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "C",
+      supportsJsonMode: false,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
 
@@ -464,6 +636,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.27, outputPerMillion: 1.1 },
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "C",
+      supportsJsonMode: false,
+      toolCallReliability: "none", // supportsTools: false
+      preferredDualModelRole: "editor",
     },
   ],
   // deepseek-coder-v2 / deepseek-v3: 도구 지원, 128K 컨텍스트
@@ -474,6 +651,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0.27, outputPerMillion: 1.1 },
       capabilityTier: "medium",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "either",
     },
   ],
 
@@ -486,6 +668,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "C",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
   // qwen2.5-coder-32b: 대형 코드 모델 — 131K 컨텍스트
@@ -497,6 +684,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "editor",
     },
   ],
 
@@ -509,6 +701,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 2, outputPerMillion: 6 },
       capabilityTier: "medium",
+      privacyTier: "cloud",
+      strategyTier: "B",
+      supportsJsonMode: true,
+      toolCallReliability: "strong",
+      preferredDualModelRole: "either",
     },
   ],
 
@@ -522,6 +719,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "C",
+      supportsJsonMode: false,
+      toolCallReliability: "weak",
+      preferredDualModelRole: "editor",
     },
   ],
 
@@ -535,6 +737,11 @@ const MODEL_OVERRIDES: ReadonlyArray<[RegExp, Partial<ModelCapabilities>]> = [
       tokenizer: "cl100k",
       pricing: { inputPerMillion: 0, outputPerMillion: 0 },
       capabilityTier: "low",
+      privacyTier: "local",
+      strategyTier: "C",
+      supportsJsonMode: false,
+      toolCallReliability: "weak",
+      preferredDualModelRole: "editor",
     },
   ],
 ];

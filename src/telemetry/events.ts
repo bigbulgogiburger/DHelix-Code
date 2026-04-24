@@ -128,6 +128,30 @@ export interface AgentIterationEvent extends BaseEvent {
   readonly model: string;
 }
 
+/**
+ * Plasmid runtime access attempt — I-8 compile-runtime hermeticity 위반 시도 기록.
+ *
+ * `.dhelix/plasmids/**`(드래프트 포함)나 플라스미드 예약 파일(metadata.yaml / body.md)에
+ * 접근하려는 도구 호출이 preflight 단계에서 차단될 때마다 발행됩니다. 정상 운영 상태에서
+ * 이 카운터는 **항상 0** 이어야 하며, 1회 이상 증가 시 에이전트 프롬프트·템플릿 회귀를
+ * 조사해야 합니다 (PRD §10.1 I-8 / §12.3 내부 측정).
+ */
+export interface PlasmidRuntimeAccessAttemptEvent extends BaseEvent {
+  readonly type: "plasmid.runtime_access_attempt";
+  /** 차단된 도구 이름 (예: "file_read", "bash_exec") */
+  readonly toolName: string;
+  /** 정규화된(canonical) 경로 — 대소문자/separator/traversal 해석 완료 */
+  readonly path: string;
+  /** 어느 인자가 규칙에 걸렸는지 (예: "path", "pattern", "command#cat") */
+  readonly argKey: string;
+  /** 일치한 패턴의 regex source 문자열 (telemetry 라벨용) */
+  readonly pattern: string;
+  /** 항상 true — Layer B 는 match 시 예외 없이 차단 */
+  readonly blocked: true;
+  /** 어느 레이어가 차단했는지 — 향후 loader/search 레이어 추가에 대비 */
+  readonly layer: "preflight";
+}
+
 /** 모든 텔레메트리 이벤트 타입의 유니온 */
 export type TelemetryEvent =
   | ToolDecisionEvent
@@ -135,7 +159,8 @@ export type TelemetryEvent =
   | LLMCallEvent
   | SessionEvent
   | ErrorEvent
-  | AgentIterationEvent;
+  | AgentIterationEvent
+  | PlasmidRuntimeAccessAttemptEvent;
 
 /**
  * 인메모리(in-memory) 이벤트 버퍼.
