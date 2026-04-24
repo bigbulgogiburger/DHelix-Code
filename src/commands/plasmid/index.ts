@@ -29,6 +29,7 @@ import { editSubcommand } from "./edit.js";
 import { archiveSubcommand } from "./archive.js";
 import { inspectSubcommand } from "./inspect.js";
 import { researchSubcommand } from "./research.js";
+import { challengeSubcommand } from "./challenge.js";
 import { type CommandDeps, defaultDeps } from "./deps.js";
 
 type Subcommand =
@@ -40,7 +41,8 @@ type Subcommand =
   | "edit"
   | "archive"
   | "inspect"
-  | "research";
+  | "research"
+  | "challenge";
 
 const SUBCOMMANDS: readonly Subcommand[] = [
   "list",
@@ -52,6 +54,7 @@ const SUBCOMMANDS: readonly Subcommand[] = [
   "archive",
   "inspect",
   "research",
+  "challenge",
 ];
 
 function usage(): string {
@@ -69,14 +72,15 @@ function usage(): string {
     "  archive <id>                  Move to .dhelix/plasmids/archive/ (foundational refused)",
     "  inspect compression <id>      Body→summary token counts + preserved constraints",
     "",
-    "Subcommands (Phase 5 — research-assisted authoring):",
+    "Subcommands (Phase 5):",
     "  research \"<intent>\" [--dry-run] [--from-file <path>] [--template <name>]",
     "                              [--locale <ko|en>] [--force-network]",
     "                                Draft a plasmid from web research.",
     "                                Equivalent: /plasmid --research \"<intent>\" ...",
-    "",
-    "Foundational challenge ceremony (Phase 5) is wired by Team 4 — see",
-    "/plasmid challenge once that branch lands.",
+    "  challenge <id> [--action <override|amend|revoke>] [--rationale \"<text>\"]",
+    "                              [--dependents <keep|orphan|revoke>]",
+    "                              [--confirm \"REVOKE <id>\"] [--yes]",
+    "                                Foundational ceremony (override/amend/revoke)",
   ].join("\n");
 }
 
@@ -92,9 +96,9 @@ export function makePlasmidCommand(
 ): SlashCommand {
   return {
     name: "plasmid",
-    description: "Plasmid registry / activation / editor",
+    description: "Plasmid registry / activation / editor / challenge",
     usage:
-      "/plasmid <list|show|validate|activate|deactivate|edit|archive|inspect|research> [args...]",
+      "/plasmid <list|show|validate|activate|deactivate|edit|archive|inspect|research|challenge> [args...]",
     async execute(argStr: string, context: CommandContext): Promise<CommandResult> {
       const deps =
         typeof depsOrFactory === "function" ? depsOrFactory(context) : depsOrFactory;
@@ -160,6 +164,8 @@ async function dispatch(
       return inspectSubcommand(rest, context, deps);
     case "research":
       return researchSubcommand(rest, context, deps);
+    case "challenge":
+      return challengeSubcommand(rest, context, deps);
   }
 }
 

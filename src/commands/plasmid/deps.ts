@@ -10,7 +10,16 @@
  * `builtin-commands.ts`. Tests pass an in-memory / tmpdir-backed deps
  * object directly into `makePlasmidCommand(...)`.
  */
-import type { LoadResult, PlasmidMetadata, PlasmidScope } from "../../plasmids/types.js";
+import type {
+  ChallengeAction,
+  ChallengeLogEntry,
+  CooldownDecision,
+  LoadResult,
+  OverridePending,
+  PlasmidId,
+  PlasmidMetadata,
+  PlasmidScope,
+} from "../../plasmids/types.js";
 import { ActivationStore } from "../../plasmids/activation.js";
 import {
   loadPlasmids as realLoadPlasmids,
@@ -100,6 +109,52 @@ const loadPlasmids: LoadPlasmidsFn = (opts) => {
   return realLoadPlasmids(rest);
 };
 
+// ─── Phase 5 — Governance seam types (Team 3 contract surface) ────────────
+//
+// Team 3 owns the runtime modules (`challenges-log.ts`, `cooldown.ts`,
+// `overrides-pending.ts`) but until those are merged, Team 4 (`challenge.ts`)
+// must compile against a stable type contract. The shapes below mirror Phase
+// 5 dev-guide §4 verbatim. When Team 3 lands, `defaultDeps` will wire the
+// real implementations; the shape is identical so no consumer change is
+// needed.
+
+/** Append a single entry to `.dhelix/governance/challenges.log` (JSONL). */
+export type AppendChallengeFn = (
+  entry: ChallengeLogEntry,
+  workingDirectory?: string,
+) => Promise<void>;
+
+/** Read every entry from the challenge log. Returns `[]` when missing. */
+export type ReadChallengesLogFn = (
+  workingDirectory?: string,
+) => Promise<readonly ChallengeLogEntry[]>;
+
+/**
+ * Decide whether the given (plasmid, action) pair is allowed to proceed
+ * given the cooldown contract from `metadata.challengeable`. Override
+ * actions never start a cooldown; amend/revoke do (P-1.10 §4.2).
+ */
+export type CheckCooldownFn = (input: {
+  readonly plasmidId: PlasmidId;
+  readonly action: ChallengeAction;
+  readonly cooldown: string; // `\d+[hdw]`
+  readonly log: readonly ChallengeLogEntry[];
+  readonly now?: Date;
+}) => CooldownDecision;
+
+/** Single-shot override queue (atomic JSON file). */
+export interface OverridesPendingStore {
+  readonly enqueue: (
+    plasmidId: PlasmidId,
+    rationale: string,
+    workingDirectory?: string,
+  ) => Promise<OverridePending>;
+  readonly peek: (
+    workingDirectory?: string,
+  ) => Promise<readonly OverridePending[]>;
+  readonly path: (workingDirectory?: string) => string;
+}
+
 /**
  * Everything the /plasmid command tree needs from the outside world.
  *
@@ -158,6 +213,15 @@ export interface CommandDeps {
    * `runResearchMode`; tests stub for deterministic results. Phase-5 only.
    */
   readonly runResearch?: RunResearchFn;
+  // ─── Phase 5 — Foundational challenge governance (Team 3 wiring) ──────
+  /** Append-only challenge log writer. Optional → `/plasmid challenge` errors when missing. */
+  readonly appendChallenge?: AppendChallengeFn;
+  /** Read the full challenge log (used for cooldown + auditing). */
+  readonly readChallengesLog?: ReadChallengesLogFn;
+  /** Cooldown decision (P-1.10 §4). */
+  readonly checkCooldown?: CheckCooldownFn;
+  /** One-shot override queue accessor. */
+  readonly overridesPending?: OverridesPendingStore;
 }
 
 /** Default production deps factory. */
