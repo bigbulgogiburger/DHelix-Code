@@ -20,6 +20,8 @@ import type {
   PlasmidMetadata,
   PlasmidScope,
 } from "../../plasmids/types.js";
+import { join } from "node:path";
+
 import { ActivationStore } from "../../plasmids/activation.js";
 import {
   loadPlasmids as realLoadPlasmids,
@@ -37,6 +39,7 @@ import {
 } from "../../plasmids/governance/challenges-log.js";
 import { checkCooldown as realCheckCooldown } from "../../plasmids/governance/cooldown.js";
 import { OverridesPendingStore as RealOverridesPendingStore } from "../../plasmids/governance/overrides-pending.js";
+import { OVERRIDE_PENDING_PATH } from "../../plasmids/types.js";
 
 /**
  * Loader options as seen by the `/plasmid` commands.
@@ -292,8 +295,7 @@ export function defaultDeps(workingDirectory: string): CommandDeps {
         // Note: the absolute path is owned by the store itself; we mirror the
         // dev-guide §0 well-known constant here for callers that only want a
         // pretty-printed location.
-        path: (cwd) =>
-          `${cwd ?? workingDirectory}/.dhelix/governance/overrides.pending.json`,
+        path: (cwd) => join(cwd ?? workingDirectory, OVERRIDE_PENDING_PATH),
       };
     })(),
   };

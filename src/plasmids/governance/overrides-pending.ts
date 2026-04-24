@@ -197,3 +197,34 @@ export class OverridesPendingStore {
     }
   }
 }
+
+// ─── Module-level helper for the recombination executor ─────────────────────
+//
+// `executor.ts` Stage 1 dynamic-imports this module and looks for a top-level
+// `consumeOverride` function — a narrow contract that lets the executor stay
+// decoupled from the class shape. Without this wrapper the consume path
+// silently no-ops in production (the executor's `typeof !== "function"`
+// guard returns early), so foundational override entries enqueued by
+// `/plasmid challenge` would never actually be consumed.
+//
+// Each call instantiates its own store; the store carries no in-memory state
+// that needs to outlive the call (the on-disk JSON file IS the state).
+
+/**
+ * Executor-facing wrapper around {@link OverridesPendingStore.consumeOverride}.
+ *
+ * Returns `true` exactly once per pending entry for the given `plasmidId`,
+ * then `false` on subsequent calls — the same one-shot semantics the class
+ * method provides.
+ *
+ * The `workingDirectory` arg lets the caller (executor) point at any project
+ * root; in practice this is always the recombination working directory.
+ */
+export async function consumeOverride(req: {
+  readonly workingDirectory: string;
+  readonly plasmidId: PlasmidId;
+  readonly signal?: AbortSignal;
+}): Promise<boolean> {
+  const store = new OverridesPendingStore({ workingDirectory: req.workingDirectory });
+  return store.consumeOverride(req.plasmidId, req.signal);
+}
