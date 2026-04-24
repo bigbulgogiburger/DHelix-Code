@@ -10,12 +10,18 @@
  * `builtin-commands.ts`. Tests pass an in-memory / tmpdir-backed deps
  * object directly into `makePlasmidCommand(...)`.
  */
-import type { LoadResult, PlasmidScope } from "../../plasmids/types.js";
+import type { LoadResult, PlasmidMetadata, PlasmidScope } from "../../plasmids/types.js";
 import { ActivationStore } from "../../plasmids/activation.js";
 import {
   loadPlasmids as realLoadPlasmids,
   type LoaderOptions as RealLoaderOptions,
 } from "../../plasmids/loader.js";
+import {
+  webSearchAdapter,
+  webFetchAdapter,
+  type WebSearchFn,
+  type WebFetchFn,
+} from "../../plasmids/research/web-adapter.js";
 
 /**
  * Loader options as seen by the `/plasmid` commands.
@@ -32,6 +38,53 @@ export interface LoaderOptions extends RealLoaderOptions {
 
 /** Loader signature as seen by commands — re-exported for test convenience. */
 export type LoadPlasmidsFn = (opts: LoaderOptions) => Promise<LoadResult>;
+
+/**
+ * Research-mode entrypoint signature — Phase 5 Team 1 owns the production
+ * implementation in `src/plasmids/research-mode.ts` (`runResearchMode`).
+ *
+ * We declare a structural seam here rather than importing the function
+ * directly so the Team-2 wiring (this file + `commands/plasmid/research.ts`)
+ * can land independently of Team 1. The orchestrator can flip the default
+ * factory to import the real symbol once Team 1 merges.
+ *
+ * Phase 5 dev-guide §2 contract:
+ *   - `input.intent`        — natural-language request
+ *   - `input.currentDraft?` — partial metadata when entering from `--from-file`
+ *   - `input.maxSources?`   — defaults to RESEARCH_MAX_SOURCES (5)
+ *   - `input.locale?`       — "ko" | "en"
+ *
+ *   - `deps.webSearch` / `deps.webFetch` — DI adapters
+ *   - `deps.allowNetwork`                — false ⇒ throw PRIVACY_BLOCKED
+ *
+ * Returns markdown body + metadata patch + provenance bundle.
+ */
+export interface ResearchInput {
+  readonly intent: string;
+  readonly currentDraft?: Partial<PlasmidMetadata>;
+  readonly maxSources?: number;
+  readonly locale?: "ko" | "en";
+}
+
+export interface ResearchModeDeps {
+  readonly webSearch: WebSearchFn;
+  readonly webFetch: WebFetchFn;
+  readonly allowNetwork: boolean;
+  readonly now?: () => Date;
+}
+
+export interface ResearchResult {
+  readonly synthesizedDraft: string;
+  readonly metadataPatch: Partial<PlasmidMetadata>;
+  readonly sources: import("../../plasmids/types.js").ResearchSource;
+  readonly warnings: readonly string[];
+}
+
+export type RunResearchFn = (
+  input: ResearchInput,
+  deps: ResearchModeDeps,
+  signal: AbortSignal,
+) => Promise<ResearchResult>;
 
 /**
  * Phase-1 production loader wrapper. Drops the advisory fields before
@@ -77,6 +130,34 @@ export interface CommandDeps {
   readonly editorCommand?: string;
   /** Clock — defaults to `() => new Date()`. Tests inject for determinism. */
   readonly now?: () => Date;
+  // ─── Phase 5 — research-assisted authoring (Team 2 owns these) ───────────
+  /**
+   * `WebSearchFn` adapter. Production wiring goes through the existing
+   * `web_search` tool; tests stub a deterministic generator. Optional so
+   * Phase-1..4 callers that never use `--research` keep compiling.
+   */
+  readonly webSearch?: WebSearchFn;
+  /** `WebFetchFn` adapter. Mirrors `webSearch` semantics. */
+  readonly webFetch?: WebFetchFn;
+  /**
+   * Resolves the privacy tier of the **active** LLM provider so the research
+   * gate can refuse cloud calls when the user is on a local-only provider
+   * without `--force-network`. Returns `"unknown"` when the runtime cannot
+   * detect the tier (Phase-5 conservative default).
+   *
+   * Conservative interpretation rule (per dev-guide §3): when the result is
+   * `"unknown"` we DO NOT block the cloud call — gating only fires for an
+   * explicit `"local"` tier. Rationale: blocking on `"unknown"` would break
+   * every existing flow that has not yet wired a tier detector. The privacy
+   * gate at the **plasmid** level (`privacy: local-only` on `--from-file`)
+   * still fires unconditionally and is the primary safety net.
+   */
+  readonly getActiveProviderPrivacyTier?: () => "local" | "cloud" | "unknown";
+  /**
+   * Research orchestrator hook. Production factory wires Team 1's
+   * `runResearchMode`; tests stub for deterministic results. Phase-5 only.
+   */
+  readonly runResearch?: RunResearchFn;
 }
 
 /** Default production deps factory. */
@@ -97,5 +178,17 @@ export function defaultDeps(workingDirectory: string): CommandDeps {
     getActiveProviderBaseUrl: () => process.env.OPENAI_BASE_URL ?? undefined,
     editorCommand: process.env.EDITOR ?? undefined,
     now: () => new Date(),
+    // Phase 5 — research path. Production wires the real adapters; tier
+    // detection defaults to `"unknown"` until a richer provider-introspection
+    // hook lands (Phase 6 candidate). See `CommandDeps.getActiveProviderPrivacyTier`
+    // for the conservative interpretation rule.
+    webSearch: webSearchAdapter,
+    webFetch: webFetchAdapter,
+    getActiveProviderPrivacyTier: () => "unknown",
+    // `runResearch` is intentionally left undefined by the production factory
+    // until Team 1's `runResearchMode` is exported. The orchestrator should
+    // flip this to `runResearchMode` after the Team-1 merge. Tests inject
+    // a stub directly.
+    runResearch: undefined,
   };
 }

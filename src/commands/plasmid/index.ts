@@ -1,5 +1,5 @@
 /**
- * `/plasmid` dispatcher — routes to 6 Phase-1 subcommands.
+ * `/plasmid` dispatcher — routes to all subcommands.
  *
  * Subcommands
  *   list        - tabular index with filters
@@ -8,6 +8,10 @@
  *   activate    - add ids to activation set
  *   deactivate  - remove ids (L4 refused)
  *   edit        - open body.md in $EDITOR
+ *   archive     - move to .dhelix/plasmids/archive/ (foundational refused)
+ *   inspect     - body→summary token counts + preserved constraints
+ *   research    - Phase 5 research-assisted authoring (also via `--research`)
+ *   challenge   - Phase 5 foundational ceremony (override / amend / revoke)
  *
  * With no args — prints usage + help. With an unknown subcommand, returns
  * `success: false` and a hint pointing at /plasmid with no args.
@@ -24,6 +28,7 @@ import { deactivateSubcommand } from "./deactivate.js";
 import { editSubcommand } from "./edit.js";
 import { archiveSubcommand } from "./archive.js";
 import { inspectSubcommand } from "./inspect.js";
+import { researchSubcommand } from "./research.js";
 import { type CommandDeps, defaultDeps } from "./deps.js";
 
 type Subcommand =
@@ -34,7 +39,8 @@ type Subcommand =
   | "deactivate"
   | "edit"
   | "archive"
-  | "inspect";
+  | "inspect"
+  | "research";
 
 const SUBCOMMANDS: readonly Subcommand[] = [
   "list",
@@ -45,6 +51,7 @@ const SUBCOMMANDS: readonly Subcommand[] = [
   "edit",
   "archive",
   "inspect",
+  "research",
 ];
 
 function usage(): string {
@@ -61,6 +68,15 @@ function usage(): string {
     "  edit <id>                     Open body.md in $EDITOR",
     "  archive <id>                  Move to .dhelix/plasmids/archive/ (foundational refused)",
     "  inspect compression <id>      Body→summary token counts + preserved constraints",
+    "",
+    "Subcommands (Phase 5 — research-assisted authoring):",
+    "  research \"<intent>\" [--dry-run] [--from-file <path>] [--template <name>]",
+    "                              [--locale <ko|en>] [--force-network]",
+    "                                Draft a plasmid from web research.",
+    "                                Equivalent: /plasmid --research \"<intent>\" ...",
+    "",
+    "Foundational challenge ceremony (Phase 5) is wired by Team 4 — see",
+    "/plasmid challenge once that branch lands.",
   ].join("\n");
 }
 
@@ -78,7 +94,7 @@ export function makePlasmidCommand(
     name: "plasmid",
     description: "Plasmid registry / activation / editor",
     usage:
-      "/plasmid <list|show|validate|activate|deactivate|edit|archive|inspect> [args...]",
+      "/plasmid <list|show|validate|activate|deactivate|edit|archive|inspect|research> [args...]",
     async execute(argStr: string, context: CommandContext): Promise<CommandResult> {
       const deps =
         typeof depsOrFactory === "function" ? depsOrFactory(context) : depsOrFactory;
@@ -103,6 +119,14 @@ async function dispatch(
   if (tokens.length === 0) {
     return { output: usage(), success: true };
   }
+
+  // Phase 5: `--research` may appear anywhere in the args (idiomatic CLI form
+  // `/plasmid --research "intent" --dry-run`). When detected, route the entire
+  // remainder through `researchSubcommand` and let it parse its own flags.
+  if (tokens.includes("--research")) {
+    return researchSubcommand(tokens, context, deps);
+  }
+
   const [sub, ...rest] = tokens;
   if (sub === undefined) {
     return { output: usage(), success: true };
@@ -134,6 +158,8 @@ async function dispatch(
       return archiveSubcommand(rest, context, deps);
     case "inspect":
       return inspectSubcommand(rest, context, deps);
+    case "research":
+      return researchSubcommand(rest, context, deps);
   }
 }
 
