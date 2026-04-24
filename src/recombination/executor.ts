@@ -23,6 +23,7 @@ import { createHash } from "node:crypto";
 import {
   mkdir,
   readFile,
+  readdir,
   rename,
   unlink,
   writeFile,
@@ -30,7 +31,11 @@ import {
 import { dirname, join } from "node:path";
 
 import { getModelCapabilities } from "../llm/model-capabilities.js";
-import type { LoadedPlasmid } from "../plasmids/types.js";
+import type {
+  LoadedPlasmid,
+  PlasmidId,
+  PlasmidTier,
+} from "../plasmids/types.js";
 import { ActivationStore } from "../plasmids/activation.js";
 import { loadPlasmids } from "../plasmids/loader.js";
 import { projectProfileRelativePath } from "./compression/index.js";
@@ -47,6 +52,7 @@ import {
   wiringValidationError,
 } from "./errors.js";
 import { acquire, type LockHandle } from "./lock.js";
+import { writeBlob } from "./object-store.js";
 import { enforcePrivacy, selectStrategies } from "./strategy.js";
 import {
   createTranscript,
@@ -55,15 +61,19 @@ import {
 } from "./transcript.js";
 import {
   CONSTITUTION_FILE,
+  RECOMBINATION_TRANSCRIPTS_DIR,
   type AssembledSection,
   type CompiledPlasmidIR,
   type CompressionOutput,
+  type CurePlan,
+  type CureStep,
   type ExecuteRecombinationFn,
   type ExecutorDeps,
   type GeneratedArtifact,
   type InterpretResult,
   type PipelineStrategies,
   type PreReorgSnapshot,
+  type RebuildLineage,
   type RecombinationErrorCode,
   type RecombinationOptions,
   type RecombinationResult,
@@ -72,8 +82,28 @@ import {
   type StaticValidationMode,
   type WrittenFile,
 } from "./types.js";
-import { validateWiring } from "./wiring-validator.js";
+import { validateWiring as validateWiringRaw } from "./wiring-validator.js";
+import { restoreCure } from "./cure/restorer.js";
 import { writePlasmidRef } from "./cure/refs.js";
+
+/**
+ * Phase 4 — pass `plasmidTiers` as a 5th context arg to the validator so
+ * Team 3's Permission Alignment check can enforce
+ * `PLASMID_TIER_TRUST_CEILING`. The current Team-3 worktree exports the
+ * 4-arg signature; TS sees the broader type and JS ignores the extra arg,
+ * so this stays compatible with both the stale and the merged branches.
+ */
+interface WiringValidatorContext {
+  readonly plasmidTiers: ReadonlyMap<PlasmidId, PlasmidTier>;
+}
+type ValidateWiringFn = (
+  artifacts: readonly GeneratedArtifact[],
+  reorgPlan: ReorgPlan,
+  workingDirectory: string,
+  signal?: AbortSignal,
+  context?: WiringValidatorContext,
+) => ReturnType<typeof validateWiringRaw>;
+const validateWiring: ValidateWiringFn = validateWiringRaw as ValidateWiringFn;
 
 export const EXECUTOR_VERSION = "1.0.0";
 
@@ -88,13 +118,6 @@ export const executeRecombination: ExecuteRecombinationFn = async (
   opts: RecombinationOptions,
   deps: ExecutorDeps,
 ): Promise<RecombinationResult> => {
-  if (opts.mode === "rebuild") {
-    throw new RecombinationError(
-      "RECOMBINATION_PLAN_ERROR",
-      "/recombination --mode rebuild is a Phase-4 feature and not yet implemented.",
-      { mode: opts.mode },
-    );
-  }
   throwIfAborted(opts.signal, "stage-0");
 
   let lock: LockHandle | undefined;
@@ -111,6 +134,23 @@ export const executeRecombination: ExecuteRecombinationFn = async (
     // ── Stage 0: preflight ─────────────────────────────────────────────
     const stage0Started = now();
     lock = await acquire(opts.workingDirectory);
+
+    // ── Phase 4: rebuild mode — internal cure of the latest transcript
+    // runs BEFORE plasmids are loaded so the pipeline that follows sees a
+    // pristine working tree (barring user edits we explicitly preserve).
+    // Lineage data is captured here and recorded onto the new transcript
+    // right after `createTranscript` below.
+    let pendingRebuildLineage: RebuildLineage | null = null;
+    let rebuildFallbackMessage: string | null = null;
+    if (opts.mode === "rebuild") {
+      const rebuildOutcome = await performRebuildCure(opts);
+      if (rebuildOutcome.kind === "no-transcript") {
+        rebuildFallbackMessage =
+          "rebuild fallback: no prior transcript found — proceeding as extend";
+      } else {
+        pendingRebuildLineage = rebuildOutcome.lineage;
+      }
+    }
 
     const loadResult = await loadPlasmids({
       workingDirectory: opts.workingDirectory,
@@ -143,7 +183,15 @@ export const executeRecombination: ExecuteRecombinationFn = async (
       activePlasmidIds: activePlasmids.map((p) => p.metadata.id),
     });
     transcript.recordStageStart(0, "preflight", stage0Started);
-    transcript.recordStageFinish(0, now(), "ok");
+    if (pendingRebuildLineage !== null) {
+      transcript.recordRebuildLineage(pendingRebuildLineage);
+    }
+    transcript.recordStageFinish(
+      0,
+      now(),
+      "ok",
+      rebuildFallbackMessage ?? undefined,
+    );
 
     // ── Stage 1: input collection ───────────────────────────────────────
     throwIfAborted(opts.signal, "stage-1");
@@ -263,6 +311,7 @@ export const executeRecombination: ExecuteRecombinationFn = async (
         reorgPlan,
         opts.workingDirectory,
         opts.signal,
+        { plasmidTiers: buildPlasmidTiersMap(activePlasmids) },
       );
       if (preview.warnCount > 0 || preview.errorCount > 0) {
         transcript.recordStageFinish(3, now(), "warn", "approval withheld (warnings present)");
@@ -303,15 +352,19 @@ export const executeRecombination: ExecuteRecombinationFn = async (
         }
       });
       transcript.recordFile(writtenFiles[writtenFiles.length - 1]!);
+      // Phase 4 — content-addressed archive for Cure v1 3-way merge base.
+      // Blob write is best-effort: failures never fail Stage 4 (I-7 advisory).
+      await bestEffortBlob(opts.workingDirectory, art.contentHash, art.contents, opts.signal);
     }
 
     // 4b — write compression sections + project profile
     for (const section of compression.sections) {
       const abs = resolveSectionPath(opts.workingDirectory, section);
       await atomicWrite(abs, section.markdown);
+      const sectionHash = sha256(section.markdown);
       const entry: WrittenFile = {
         path: abs,
-        contentHash: sha256(section.markdown),
+        contentHash: sectionHash,
         bytes: Buffer.byteLength(section.markdown, "utf-8"),
         op: "create",
       };
@@ -324,6 +377,7 @@ export const executeRecombination: ExecuteRecombinationFn = async (
           /* ignore */
         }
       });
+      await bestEffortBlob(opts.workingDirectory, sectionHash, section.markdown, opts.signal);
     }
     if (compression.projectProfileMarkdown.trim() !== "") {
       // Use Team 3's canonical path helper — PRD §7.1 locks this to
@@ -335,9 +389,10 @@ export const executeRecombination: ExecuteRecombinationFn = async (
         projectProfileRelativePath(),
       );
       await atomicWrite(profilePath, compression.projectProfileMarkdown);
+      const profileHash = sha256(compression.projectProfileMarkdown);
       const entry: WrittenFile = {
         path: profilePath,
-        contentHash: sha256(compression.projectProfileMarkdown),
+        contentHash: profileHash,
         bytes: Buffer.byteLength(compression.projectProfileMarkdown, "utf-8"),
         op: "create",
       };
@@ -350,6 +405,12 @@ export const executeRecombination: ExecuteRecombinationFn = async (
           /* ignore */
         }
       });
+      await bestEffortBlob(
+        opts.workingDirectory,
+        profileHash,
+        compression.projectProfileMarkdown,
+        opts.signal,
+      );
     }
 
     // 4c — apply the reorg plan to DHELIX.md (atomic + invariance check).
@@ -363,14 +424,21 @@ export const executeRecombination: ExecuteRecombinationFn = async (
     const afterTree = parseConstitution(nextConstitution);
     verifyUserAreaInvariance(beforeTree, afterTree);
     await atomicWrite(constitutionPath, nextConstitution);
+    const constitutionHash = sha256(nextConstitution);
     const constEntry: WrittenFile = {
       path: constitutionPath,
-      contentHash: sha256(nextConstitution),
+      contentHash: constitutionHash,
       bytes: Buffer.byteLength(nextConstitution, "utf-8"),
       op: existingConstitution === "" ? "create" : "update",
     };
     writtenFiles.push(constEntry);
     transcript.recordFile(constEntry);
+    await bestEffortBlob(
+      opts.workingDirectory,
+      constitutionHash,
+      nextConstitution,
+      opts.signal,
+    );
     rollbackActions.push(async () => {
       try {
         await atomicWrite(constitutionPath, existingConstitution);
@@ -393,6 +461,7 @@ export const executeRecombination: ExecuteRecombinationFn = async (
       reorgPlan,
       opts.workingDirectory,
       opts.signal,
+      { plasmidTiers: buildPlasmidTiersMap(activePlasmids) },
     );
     transcript.recordWiring(report);
 
@@ -638,6 +707,174 @@ function isNodeError(err: unknown): err is NodeError {
  * recorded on the transcript. Foundational L4 failures win over tier-specific
  * codes so audit consumers can quickly surface the highest-severity signal.
  */
+/**
+ * Build a `plasmidId → tier` lookup map for the wiring validator's
+ * Permission Alignment check. Consumed as the 5th arg context object.
+ */
+function buildPlasmidTiersMap(
+  activePlasmids: readonly LoadedPlasmid[],
+): ReadonlyMap<PlasmidId, PlasmidTier> {
+  const map = new Map<PlasmidId, PlasmidTier>();
+  for (const p of activePlasmids) {
+    map.set(p.metadata.id, p.metadata.tier);
+  }
+  return map;
+}
+
+/**
+ * Write `contents` to the content-addressed object store. Failures are
+ * swallowed — blob archival is advisory (I-7) and MUST NOT fail the
+ * pipeline.
+ */
+async function bestEffortBlob(
+  cwd: string,
+  hash: string,
+  contents: string,
+  signal?: AbortSignal,
+): Promise<void> {
+  try {
+    await writeBlob(cwd, hash, contents, signal);
+  } catch {
+    /* best effort — intentionally ignored per I-7 advisory */
+  }
+}
+
+interface RebuildCureSuccess {
+  readonly kind: "consumed";
+  readonly lineage: RebuildLineage;
+}
+interface RebuildCureFallback {
+  readonly kind: "no-transcript";
+}
+type RebuildCureOutcome = RebuildCureSuccess | RebuildCureFallback;
+
+/**
+ * Internal `/cure`-equivalent executed at the start of `/recombination
+ * --mode rebuild`. Deletes the artifacts + strips the markers recorded in
+ * the most recent transcript, then hands off to the normal Stage-0..7
+ * pipeline so the rebuild runs on a clean slate.
+ *
+ * The cure is executed with `approvalMode: "auto"` + `mergeMode:
+ * "keep-user"` so user edits inside marker blocks are preserved (Team 4
+ * Phase-4 3-way merge). Team 4 may not have landed yet — the extension
+ * `CureOptions & { mergeMode }` stays type-safe via an intersection cast.
+ */
+async function performRebuildCure(
+  opts: RecombinationOptions,
+): Promise<RebuildCureOutcome> {
+  const latestId = await readLatestTranscriptId(opts.workingDirectory);
+  if (latestId === null) {
+    return { kind: "no-transcript" };
+  }
+  const transcript = await readTranscriptTolerant(opts.workingDirectory, latestId);
+  if (transcript === null) {
+    // Corrupt / missing transcript — act like a fallback rebuild rather
+    // than crashing the run.
+    return { kind: "no-transcript" };
+  }
+
+  const steps: CureStep[] = [];
+  const writtenFiles = Array.isArray(transcript.writtenFiles)
+    ? transcript.writtenFiles
+    : [];
+  for (const file of writtenFiles) {
+    if (file.op !== "create" && file.op !== "update") continue;
+    steps.push({
+      kind: "delete-file",
+      path: file.path,
+      expectedHash: file.contentHash ?? "",
+    });
+  }
+  const reorgMarkerIds = Array.isArray(transcript.reorgMarkerIds)
+    ? transcript.reorgMarkerIds
+    : [];
+  for (const markerId of reorgMarkerIds) {
+    steps.push({ kind: "remove-marker", markerId });
+  }
+
+  const plan: CurePlan = {
+    transcriptIds: [latestId],
+    steps,
+    warnings: [],
+    preview: `rebuild internal cure of ${latestId}`,
+  };
+
+  // Team 4 Phase-4 adds a `mergeMode` field to CureOptions. Keep the cast
+  // tight to that single optional property so a merged Team-4 branch
+  // upgrades the typing transparently; earlier branches simply ignore the
+  // extra key at runtime.
+  const cureOptions = {
+    workingDirectory: opts.workingDirectory,
+    mode: { kind: "transcript" as const, id: latestId },
+    dryRun: false,
+    approvalMode: "auto" as const,
+    mergeMode: "keep-user" as const,
+    ...(opts.signal !== undefined ? { signal: opts.signal } : {}),
+  } as Parameters<typeof restoreCure>[0]["options"];
+
+  const cureResult = await restoreCure({ options: cureOptions, plan });
+
+  const lineage: RebuildLineage = {
+    rebuiltFromTranscriptId: latestId,
+    rebuiltAt: new Date().toISOString(),
+    consumedArtifactCount: cureResult.filesDeleted.length,
+    consumedMarkerCount: cureResult.markersRemoved.length,
+  };
+  return { kind: "consumed", lineage };
+}
+
+/**
+ * Lexical scan of the transcripts directory — returns the most recent
+ * transcript id or null. Mirrors `cure/planner.ts#listTranscriptIds` but
+ * kept local so the executor doesn't create a circular dep on cure/.
+ */
+async function readLatestTranscriptId(cwd: string): Promise<string | null> {
+  const dir = join(cwd, RECOMBINATION_TRANSCRIPTS_DIR);
+  let entries: readonly string[];
+  try {
+    entries = await readdir(dir);
+  } catch (err) {
+    if (isNodeError(err) && err.code === "ENOENT") return null;
+    throw err;
+  }
+  const ids = entries
+    .filter((f) => f.endsWith(".json"))
+    .map((f) => f.slice(0, -".json".length))
+    .sort();
+  return ids.length === 0 ? null : (ids[ids.length - 1] ?? null);
+}
+
+/** Shape-tolerant transcript reader — enough fields to drive the rebuild cure. */
+interface RebuildReadableTranscript {
+  readonly writtenFiles?: ReadonlyArray<{
+    readonly path: string;
+    readonly contentHash?: string;
+    readonly op?: "create" | "update" | "delete";
+  }>;
+  readonly reorgMarkerIds?: readonly string[];
+}
+
+async function readTranscriptTolerant(
+  cwd: string,
+  transcriptId: string,
+): Promise<RebuildReadableTranscript | null> {
+  const path = join(cwd, RECOMBINATION_TRANSCRIPTS_DIR, `${transcriptId}.json`);
+  let raw: string;
+  try {
+    raw = await readFile(path, "utf-8");
+  } catch (err) {
+    if (isNodeError(err) && err.code === "ENOENT") return null;
+    throw err;
+  }
+  try {
+    const parsed = JSON.parse(raw) as unknown;
+    if (typeof parsed !== "object" || parsed === null) return null;
+    return parsed as RebuildReadableTranscript;
+  } catch {
+    return null;
+  }
+}
+
 function rollbackErrorCode(decision: RollbackDecision): RecombinationErrorCode {
   if (decision.foundationalL4Triggered === true)
     return "VALIDATION_FAILED_FOUNDATIONAL_L4";

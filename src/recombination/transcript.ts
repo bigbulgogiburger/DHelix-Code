@@ -22,6 +22,7 @@ import type {
   OverrideRecord,
   PipelineStrategies,
   PreReorgSnapshot,
+  RebuildLineage,
   RecombinationErrorCode,
   RecombinationMode,
   RecombinationStageId,
@@ -83,6 +84,12 @@ export interface TranscriptBuilder {
   recordPreReorgSnapshot(snapshot: PreReorgSnapshot): void;
   /** Phase 3 — reorg ops actually applied at Stage 2d. Only included when set. */
   recordReorgOps(ops: readonly ReorgOp[]): void;
+  /**
+   * Phase 4 — set by the executor in `rebuild` mode after the internal
+   * cure completes, pointing at the transcript whose artifacts were
+   * consumed. Only included in `build()` when set.
+   */
+  recordRebuildLineage(lineage: RebuildLineage): void;
   build(finishedAt: Date): RecombinationTranscript;
 }
 
@@ -102,6 +109,7 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
   let validationOverride: OverrideRecord | undefined;
   let preReorgSnapshot: PreReorgSnapshot | undefined;
   let reorgOps: readonly ReorgOp[] | undefined;
+  let rebuildLineage: RebuildLineage | undefined;
 
   return {
     id,
@@ -167,6 +175,9 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
     recordReorgOps(ops) {
       reorgOps = [...ops];
     },
+    recordRebuildLineage(lineage) {
+      rebuildLineage = lineage;
+    },
     build(finishedAt: Date): RecombinationTranscript {
       return {
         id,
@@ -188,6 +199,7 @@ export function createTranscript(seed: TranscriptSeed): TranscriptBuilder {
         ...(validationOverride !== undefined ? { validationOverride } : {}),
         ...(preReorgSnapshot !== undefined ? { preReorgSnapshot } : {}),
         ...(reorgOps !== undefined ? { reorgOps: [...reorgOps] } : {}),
+        ...(rebuildLineage !== undefined ? { rebuildLineage } : {}),
       };
     },
   };

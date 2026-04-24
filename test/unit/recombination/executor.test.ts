@@ -244,17 +244,16 @@ describe("executeRecombination — happy path", () => {
 });
 
 describe("executeRecombination — error paths", () => {
-  it("rejects mode='rebuild' with a RECOMBINATION_PLAN_ERROR", async () => {
+  it("falls back gracefully when mode='rebuild' runs with no prior transcript", async () => {
+    // Phase 4: the rebuild guard is removed. With zero existing transcripts
+    // the executor proceeds as if mode='extend' and emits a stage-0 note.
+    await seedPlasmid(workdir, "rebuild-fallback");
+    await activate(workdir, ["rebuild-fallback"]);
     const deps = buildDeps();
-    try {
-      await executeRecombination(baseOpts("rebuild"), deps);
-      throw new Error("expected to throw");
-    } catch (err) {
-      expect(err).toBeInstanceOf(RecombinationError);
-      if (err instanceof RecombinationError) {
-        expect(err.code).toBe("RECOMBINATION_PLAN_ERROR");
-      }
-    }
+    const result = await executeRecombination(baseOpts("rebuild"), deps);
+    expect(result.applied).toBe(true);
+    expect(result.transcript.mode).toBe("rebuild");
+    expect(result.transcript.rebuildLineage).toBeUndefined();
   });
 
   it("returns applied=false and records wiring errors when strict validation fails", async () => {
