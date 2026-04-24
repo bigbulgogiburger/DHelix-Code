@@ -32,7 +32,7 @@ import {
   webFetchAdapter,
   type WebSearchFn,
   type WebFetchFn,
-} from "../../plasmids/research/web-adapter.js";
+} from "./web-adapter.js";
 import {
   appendChallenge as realAppendChallenge,
   readChallengesLog as realReadChallengesLog,

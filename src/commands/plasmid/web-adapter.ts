@@ -26,7 +26,7 @@ import { createHash } from "node:crypto";
 import { webSearchTool } from "../../tools/definitions/web-search.js";
 import { webFetchTool } from "../../tools/definitions/web-fetch.js";
 import type { ToolContext } from "../../tools/types.js";
-import { PlasmidError } from "../errors.js";
+import { PlasmidError } from "../../plasmids/errors.js";
 
 /**
  * Single search hit produced by `webSearchAdapter`. Mirrors the

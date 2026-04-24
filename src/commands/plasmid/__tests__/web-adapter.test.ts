@@ -1,5 +1,10 @@
 /**
- * Phase 5 — Unit tests for `src/plasmids/research/web-adapter.ts`.
+ * Phase 5 — Unit tests for `src/commands/plasmid/web-adapter.ts`.
+ *
+ * The adapter lives at Layer 5 (Platform / commands) because it wraps Layer-3
+ * tool definitions (`web_search`, `web_fetch`). Placing it under `plasmids/`
+ * would reach upward across layers (Leaf → Infrastructure) and is forbidden
+ * by the CLAUDE.md dependency rule.
  *
  * Coverage matrix (Team-2 owns this surface — dev-guide §3):
  *   1. parseWebSearchOutput — Brave/DDG markdown shape (single + multi-hit)
@@ -7,9 +12,6 @@
  *   3. computeContentSha256 — deterministic, stable for the same body
  *   4. stripFetchAnnotations — discards `[Cached response]` etc., keeps body
  *   5. webSearchAdapter — error mapping → PLASMID_RESEARCH_NETWORK_ERROR
- *
- * The adapter wraps real tool definitions; unit tests stub the tool
- * functions only by exercising the pure helpers + small mocked call paths.
  */
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -19,10 +21,10 @@ import {
   stripFetchAnnotations,
   webFetchAdapter,
   webSearchAdapter,
-} from "../research/web-adapter.js";
-import { PlasmidError } from "../errors.js";
-import { webSearchTool } from "../../tools/definitions/web-search.js";
-import { webFetchTool } from "../../tools/definitions/web-fetch.js";
+} from "../web-adapter.js";
+import { PlasmidError } from "../../../plasmids/errors.js";
+import { webSearchTool } from "../../../tools/definitions/web-search.js";
+import { webFetchTool } from "../../../tools/definitions/web-fetch.js";
 
 describe("parseWebSearchOutput", () => {
   it("parses the canonical Brave/DDG markdown layout into structured hits", () => {

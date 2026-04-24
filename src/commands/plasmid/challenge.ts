@@ -565,13 +565,27 @@ export async function challengeSubcommand(
       return missingGovernance(action);
     }
     const log = await deps.readChallengesLog(context.workingDirectory);
-    const decision = deps.checkCooldown({
-      plasmidId: id,
-      action,
-      cooldown: rules["require-cooldown"],
-      log,
-      ...(deps.now ? { now: deps.now() } : {}),
-    });
+    // `checkCooldown` can throw on malformed on-disk data (hand-edited
+    // challenges.log with a bad ISO timestamp) — surface as structured
+    // failure instead of letting it bubble as an uncaught exception.
+    let decision;
+    try {
+      decision = deps.checkCooldown({
+        plasmidId: id,
+        action,
+        cooldown: rules["require-cooldown"],
+        log,
+        ...(deps.now ? { now: deps.now() } : {}),
+      });
+    } catch (err) {
+      return {
+        output: [
+          `[PLASMID_CHALLENGE_COOLDOWN] cooldown check failed: ${err instanceof Error ? err.message : String(err)}`,
+          `Inspect .dhelix/governance/challenges.log for malformed entries and retry.`,
+        ].join("\n"),
+        success: false,
+      };
+    }
     if (!decision.ok) {
       const remainingHours = (decision.remainingMs / 3_600_000).toFixed(1);
       return {

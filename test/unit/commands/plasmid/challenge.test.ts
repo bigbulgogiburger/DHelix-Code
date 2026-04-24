@@ -671,6 +671,37 @@ describe("/plasmid challenge — cooldown semantics", () => {
     expect(r2.output).toContain("PLASMID_CHALLENGE_COOLDOWN");
   });
 
+  it("checkCooldown throw (malformed on-disk data) → graceful error (not crash)", async () => {
+    // Simulates Team 3's real `checkCooldown` behaviour when the challenges.log
+    // contains a hand-edited entry with an invalid ISO timestamp — the real
+    // function throws in that case; the subcommand MUST catch and return a
+    // structured failure rather than letting it bubble as uncaught.
+    const fx = await buildDeps({
+      initial: [{ metadata: meta({ foundational: true }) }],
+      editorCommand: "true",
+    });
+    cleanups.push(fx.cleanup);
+
+    const throwingDeps: CommandDeps = {
+      ...fx.deps,
+      checkCooldown: () => {
+        throw new Error(
+          'Cannot compute cooldown for plasmid "core-values": prior entry has invalid timestamp "bad"',
+        );
+      },
+    };
+
+    const r = await challengeSubcommand(
+      ["core-values", "--action", "amend", "--rationale", LONG_RATIONALE],
+      makeContext(fx.workingDirectory),
+      throwingDeps,
+    );
+    expect(r.success).toBe(false);
+    expect(r.output).toContain("PLASMID_CHALLENGE_COOLDOWN");
+    // Must surface the root cause so an operator can find the bad entry.
+    expect(r.output).toMatch(/invalid timestamp|challenges\.log/u);
+  });
+
   it("override does not start cooldown — subsequent amend still passes", async () => {
     const fx = await buildDeps({
       initial: [{ metadata: meta({ foundational: true }) }],
