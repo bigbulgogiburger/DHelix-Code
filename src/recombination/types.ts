@@ -324,6 +324,12 @@ export interface RecombinationTranscript {
    * /cure to construct a precise reverse plan instead of heuristic removal.
    */
   readonly reorgOps?: readonly ReorgOp[];
+  /**
+   * Phase 4 — set on transcripts produced by `/recombination --mode rebuild`.
+   * Points at the transcript whose artifacts were internally cured before
+   * this rebuild ran. Absent on Phase 2/3 transcripts.
+   */
+  readonly rebuildLineage?: RebuildLineage;
 }
 
 // ─── Error catalog (PRD §10.3) ───────────────────────────────────────────────
@@ -912,3 +918,202 @@ export const PLASMIDS_ARCHIVE_DIR = ".dhelix/plasmids/archive";
 export const ROLLBACK_GRACE_PERIOD_MS = 10_000;
 /** Hardcoded minimum foundational-L4 failure rate that triggers rollback. */
 export const FOUNDATIONAL_L4_ROLLBACK_THRESHOLD = 0.05;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 4 — ADVANCED GENERATORS + /recombination --mode rebuild + CURE v1
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Ownership (Phase 4 5-team split):
+//   Team 1 — agent-generator (.dhelix/agents/<name>.md via agentDefinitionSchema)
+//   Team 2 — hook-generator (.dhelix/hooks/<Event>/<name>.sh) + harness-generator
+//            (.dhelix/harness/<name>.md settings-recipe doc)
+//   Team 3 — wiring-validator extensions: Permission Alignment + Cyclical Dep
+//   Team 4 — Cure v1 3-way merge (restorer) + content-addressed blob lookup
+//   Team 5 — executor --mode rebuild + Phase-4 generator dispatch + object
+//            store (`.dhelix/recombination/objects/<hash>`) write at Stage 4
+//
+// Invariants preserved by this phase:
+//   - I-1  Plasmid .md never mutated; blob store lives under .recombination/
+//          which is I-8 blocked from runtime.
+//   - I-5  Object store writes are append-only; blobs keyed by sha256.
+//   - I-7  Rebuild mode still takes the advisory lock once for the full pass.
+//   - I-8  New generator outputs (agent/hook/harness) live under .dhelix/
+//          and are loader-read, never runtime-prompt-inlined.
+//   - I-9  3-way merge of DHELIX.md marker blocks never writes outside the
+//          original marker region; user prose invariance still enforced.
+//   - I-10 Rebuild mode runs Stage 6 validation; any L1/L2/foundational-L4
+//          failure rolls back to the pre-rebuild snapshot, not pristine.
+
+// ─── Hook generator event map (PRD §6.3.3) ───────────────────────────────────
+//
+// The hook generator derives its event from `intent.params.event` — a string
+// that must match one of the 17 canonical HookEvent names. We surface it here
+// as a list constant the validator + generator both agree on.
+
+export const HOOK_GENERATOR_EVENTS = [
+  "SessionStart",
+  "UserPromptSubmit",
+  "PreToolUse",
+  "PermissionRequest",
+  "PostToolUse",
+  "PostToolUseFailure",
+  "Notification",
+  "SubagentStart",
+  "SubagentStop",
+  "Stop",
+  "TeammateIdle",
+  "TaskCompleted",
+  "ConfigChange",
+  "PreCompact",
+  "InstructionsLoaded",
+  "WorktreeCreate",
+  "WorktreeRemove",
+] as const;
+export type HookGeneratorEvent = (typeof HOOK_GENERATOR_EVENTS)[number];
+
+/** A safe hook-event type guard — consumed by generator + wiring validator. */
+export function isHookGeneratorEvent(value: unknown): value is HookGeneratorEvent {
+  return (
+    typeof value === "string" &&
+    (HOOK_GENERATOR_EVENTS as readonly string[]).includes(value)
+  );
+}
+
+// ─── Permission alignment (Team 3) ───────────────────────────────────────────
+//
+// Plasmid tier → artifact trust level ceiling. Foundational plasmids permit up
+// to T3 agents (dangerous tools ok); tactical plasmids cap at T1 (confirm
+// edits). Agent-proposed plasmids stay at T0. The wiring validator enforces
+// this mapping; generators advisory-emit `trustLevel` via GeneratedArtifact.
+
+export type ArtifactTrustLevel = "T0" | "T1" | "T2" | "T3";
+
+/** Ordered most-restrictive → least-restrictive. */
+export const TRUST_ORDER: readonly ArtifactTrustLevel[] = [
+  "T0",
+  "T1",
+  "T2",
+  "T3",
+];
+
+/**
+ * Plasmid tier → max allowed artifact trust level (inclusive).
+ *
+ * PlasmidTier is the L1–L4 code (PRD §22.1 / §4); L4 is the foundational
+ * tier per `schema.ts` ("foundational: true implies tier === L4"). Foundational
+ * plasmids earn the highest trust ceiling because they embody the project's
+ * durable principles. L1 is the most tactical tier and caps at T0 to keep
+ * blast radius small for ad-hoc rules.
+ */
+export const PLASMID_TIER_TRUST_CEILING: Readonly<
+  Record<PlasmidTier, ArtifactTrustLevel>
+> = {
+  L4: "T3",
+  L3: "T2",
+  L2: "T1",
+  L1: "T0",
+};
+
+/**
+ * Tools grouped by the minimum trust level that may call them. Generators
+ * derive `requiredTools` from intent params; wiring validator cross-checks
+ * each required tool against the artifact's declared trust level.
+ */
+export const TOOL_MIN_TRUST: Readonly<Record<string, ArtifactTrustLevel>> = {
+  read: "T0",
+  glob: "T0",
+  grep: "T0",
+  ls: "T0",
+  plan: "T0",
+  thinking: "T0",
+  todo: "T0",
+  websearch: "T0",
+  webfetch: "T0",
+  memory: "T0",
+  notebook: "T1",
+  edit: "T1",
+  write: "T2",
+  bash: "T2",
+  task: "T2",
+};
+
+// ─── Cure v1 3-way merge (Team 4) ────────────────────────────────────────────
+//
+// When a `delete-file` cure step encounters a file whose current hash differs
+// from the transcript's `expectedHash` (user edit), Cure v1 offers a 3-way
+// merge instead of a blanket CURE_CONFLICT block. The merge consumes:
+//   base    = content written at Stage 4 (fetched from object store by hash)
+//   current = user's modified file on disk
+//   target  = "" (the /cure action is "delete")
+// For non-DHELIX.md files, the merge either preserves the user's edits
+// (skip deletion + mark as kept) or escalates conflict markers depending on
+// the `ThreeWayMergeMode`. For DHELIX.md marker blocks it strips the marker
+// wrapper and retains any user edits inside the block as a new orphaned
+// user-area section (I-9 still verified post-merge).
+
+export type ThreeWayMergeMode =
+  /** Legacy: hash-mismatch blocks restore (Phase 3 default). */
+  | "block"
+  /** Attempt diff3 auto-merge; escalate to markers on conflict. */
+  | "auto"
+  /** Keep the user's file untouched; skip the delete step + record warning. */
+  | "keep-user"
+  /** Non-interactive environments only — reserved for UX prompt (Phase 5). */
+  | "prompt";
+
+export type ThreeWayMergeOutcome =
+  | "identical"
+  | "clean-merge"
+  | "kept-user"
+  | "conflict-markers";
+
+export interface ThreeWayMergeConflict {
+  readonly startLine: number;
+  readonly endLine: number;
+  readonly baseHunk: readonly string[];
+  readonly currentHunk: readonly string[];
+  readonly targetHunk: readonly string[];
+}
+
+export interface ThreeWayMergeResult {
+  readonly outcome: ThreeWayMergeOutcome;
+  readonly mergedContent: string;
+  readonly conflicts: readonly ThreeWayMergeConflict[];
+  readonly userEditDetected: boolean;
+}
+
+// ─── Object store (Team 5) ───────────────────────────────────────────────────
+//
+// Content-addressed blob store at `.dhelix/recombination/objects/<sha256>`.
+// Stage 4 writes every artifact body keyed by its `contentHash`. Cure v1
+// reads these blobs as the `base` leg of the 3-way merge. Blobs are write-
+// once; duplicates are no-ops. Lives under .recombination/ → I-8 blocked
+// from runtime readers.
+
+/** Absolute path for a blob given cwd + hex hash. */
+export function objectStorePath(workingDirectory: string, hash: string): string {
+  // First two hex chars fan-out the blob tree (like git). Pure helper.
+  const fan = hash.slice(0, 2);
+  const rest = hash.slice(2);
+  return `${workingDirectory}/${RECOMBINATION_OBJECTS_DIR}/${fan}/${rest}`;
+}
+
+// ─── Rebuild mode (Team 5) ───────────────────────────────────────────────────
+//
+// `/recombination --mode rebuild` semantics (PRD §B.3):
+//   1. Load latest transcript.
+//   2. Internal /cure: delete all writtenFiles + strip all reorgMarkerIds.
+//   3. Execute Stages 0–7 freshly on the current active plasmids.
+//   4. Emit a new transcript tagged `mode: "rebuild"`, with a
+//      `rebuiltFromTranscriptId` field pointing at the consumed transcript.
+//
+// The previous transcript is NOT deleted — it remains in the immutable
+// transcripts dir (I-5) but becomes unreachable from `/cure --latest` since
+// the new transcript is now latest. Audit log records the rebuild lineage.
+
+export interface RebuildLineage {
+  readonly rebuiltFromTranscriptId: string;
+  readonly rebuiltAt: string;
+  readonly consumedArtifactCount: number;
+  readonly consumedMarkerCount: number;
+}
