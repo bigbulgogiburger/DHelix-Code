@@ -31,6 +31,12 @@ import {
   type WebSearchFn,
   type WebFetchFn,
 } from "../../plasmids/research/web-adapter.js";
+import {
+  appendChallenge as realAppendChallenge,
+  readChallengesLog as realReadChallengesLog,
+} from "../../plasmids/governance/challenges-log.js";
+import { checkCooldown as realCheckCooldown } from "../../plasmids/governance/cooldown.js";
+import { OverridesPendingStore as RealOverridesPendingStore } from "../../plasmids/governance/overrides-pending.js";
 
 /**
  * Loader options as seen by the `/plasmid` commands.
@@ -250,9 +256,45 @@ export function defaultDeps(workingDirectory: string): CommandDeps {
     webFetch: webFetchAdapter,
     getActiveProviderPrivacyTier: () => "unknown",
     // `runResearch` is intentionally left undefined by the production factory
-    // until Team 1's `runResearchMode` is exported. The orchestrator should
-    // flip this to `runResearchMode` after the Team-1 merge. Tests inject
-    // a stub directly.
+    // because Team 1's `runResearchMode` requires an LLM seam (`deps.llm`)
+    // that the /plasmid command tree does not yet carry. Phase 6 will add an
+    // LLM provider adapter and flip this. Tests inject a stub directly so
+    // the research subcommand is fully testable today.
     runResearch: undefined,
+    // Phase 5 — Foundational challenge governance (Team 3 → Team 4 bridge).
+    // The production functions live in `src/plasmids/governance/*` with a
+    // slightly richer signature than `CommandDeps` declares; the wrappers
+    // below adapt arg orders / shapes 1:1.
+    appendChallenge: (entry, cwd) =>
+      realAppendChallenge(cwd ?? workingDirectory, entry),
+    readChallengesLog: (cwd) => realReadChallengesLog(cwd ?? workingDirectory),
+    checkCooldown: ({ plasmidId, action, cooldown, log, now }) => {
+      // Team-3 takes the full plasmid metadata so its rules can stay pure;
+      // we synthesise the minimal shape needed for the cooldown decision.
+      const stub = {
+        id: plasmidId,
+        challengeable: {
+          "require-justification": true,
+          "min-justification-length": 50,
+          "audit-log": true,
+          "require-cooldown": cooldown,
+          "require-team-consensus": false,
+          "min-approvers": 1,
+        },
+      } as unknown as Parameters<typeof realCheckCooldown>[0];
+      return realCheckCooldown(stub, action, log, now ? () => now : undefined);
+    },
+    overridesPending: (() => {
+      const store = new RealOverridesPendingStore({ workingDirectory });
+      return {
+        enqueue: (plasmidId, rationale) => store.enqueueOverride(plasmidId, rationale),
+        peek: () => store.peekPending(),
+        // Note: the absolute path is owned by the store itself; we mirror the
+        // dev-guide §0 well-known constant here for callers that only want a
+        // pretty-printed location.
+        path: (cwd) =>
+          `${cwd ?? workingDirectory}/.dhelix/governance/overrides.pending.json`,
+      };
+    })(),
   };
 }
