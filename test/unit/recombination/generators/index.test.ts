@@ -52,7 +52,7 @@ describe("generate (Stage 2b entry)", () => {
     expect(kinds).toEqual(["command", "rule", "skill"]);
   });
 
-  it("records deferred warning for agent and dispatches hook/harness (Phase 4 Team 2)", async () => {
+  it("dispatches agent + hook + harness intents (all Phase-4 generators landed)", async () => {
     const ir = makeIR({
       intents: [
         makeIntent("agent", { id: "a-1" }),
@@ -73,12 +73,31 @@ describe("generate (Stage 2b entry)", () => {
       workingDirectory: workDir,
       llm: stubLlm,
     });
-    // hook → 2 artifacts (script + manifest); harness → 1 artifact; agent still deferred.
-    expect(result.artifacts).toHaveLength(3);
+    // agent → 1 artifact; hook → 2 artifacts (script + manifest); harness → 1 artifact.
+    expect(result.warnings).toEqual([]);
+    expect(result.artifacts).toHaveLength(4);
     const kinds = result.artifacts.map((a) => a.kind).sort();
-    expect(kinds).toEqual(["harness", "hook", "hook"]);
-    expect(result.warnings).toHaveLength(1);
-    expect(result.warnings[0]).toMatch(/agent generator deferred to phase 4/);
+    expect(kinds).toEqual(["agent", "harness", "hook", "hook"]);
+  });
+
+  it("dispatches agent intents through the Phase 4 agent generator", async () => {
+    const ir = makeIR({
+      intents: [makeIntent("agent", { id: "a-1" })],
+    });
+    const bound = createGenerator({ resolver: resolverFor(workDir) });
+    const result = await bound({
+      irs: [ir],
+      strategies: makeStrategies({ artifactGeneration: "template-only" }),
+      workingDirectory: workDir,
+      llm: stubLlm,
+    });
+    expect(result.warnings).toEqual([]);
+    expect(result.artifacts).toHaveLength(1);
+    const artifact = result.artifacts[0]!;
+    expect(artifact.kind).toBe("agent");
+    expect(artifact.targetPath).toContain(
+      path.join(".dhelix", "agents", "enforce-owasp-gate.md"),
+    );
   });
 
   it("aborts early when the signal is already cancelled", async () => {

@@ -19,7 +19,7 @@ import type { RenderedSlot } from "./render.js";
 export interface SlotFillContext {
   readonly plasmid: CompiledPlasmidIR;
   readonly intent: PlasmidIntentNode;
-  readonly kind: "rule" | "skill" | "command";
+  readonly kind: "rule" | "skill" | "command" | "agent";
 }
 
 export interface SlotFillOptions {

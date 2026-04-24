@@ -1,0 +1,32 @@
+---
+name: {{frontmatter.name}}
+description: "{{frontmatter.description}}"
+{{#if frontmatter.tools}}tools: [{{join frontmatter.tools ", "}}]
+{{/if}}{{#if frontmatter.model}}model: {{frontmatter.model}}
+{{/if}}{{#if frontmatter.maxTurns}}maxTurns: {{frontmatter.maxTurns}}
+{{/if}}{{#if frontmatter.permissionMode}}permissionMode: {{frontmatter.permissionMode}}
+{{/if}}{{#if frontmatter.skills}}skills: [{{join frontmatter.skills ", "}}]
+{{/if}}{{#if frontmatter.memory}}memory: {{frontmatter.memory}}
+{{/if}}---
+
+<!-- sourcePlasmid: {{plasmid.metadata.name}} ({{plasmid.plasmidId}}) -->
+<!-- generated: true -->
+
+# {{titleCase intent.title}}
+
+## System Prompt
+
+{{!-- slot:systemPrompt --}}
+{{intent.description}}
+{{!-- /slot --}}
+
+## Capabilities
+
+{{!-- slot:capabilities --}}
+{{intent.title}}
+{{!-- /slot --}}
+
+{{#if intent.constraints}}### Constraints
+
+{{#each intent.constraints}}- {{this}}
+{{/each}}{{/if}}

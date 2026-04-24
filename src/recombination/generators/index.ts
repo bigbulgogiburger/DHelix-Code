@@ -10,9 +10,9 @@
  *   - skill   → `.dhelix/skills/<name>/SKILL.md`
  *   - command → `.dhelix/commands/<name>.md`
  *
- * Phase 4 (deferred):
- *   - agent, hook, harness → recorded as `INTENT_KIND_NOT_SUPPORTED`
- *     warnings and skipped.
+ * Phase 4 scope (landing team-by-team):
+ *   - agent   → `.dhelix/agents/<name>.md`  (Team 1, this commit)
+ *   - hook, harness → still deferred (Team 2 will land next).
  */
 
 import type {
@@ -24,6 +24,7 @@ import type {
   PlasmidIntentNode,
 } from "../types.js";
 
+import { generateAgentArtifact } from "./agent-generator.js";
 import { generateCommandArtifact } from "./command-generator.js";
 import { generateHarnessArtifact } from "./harness-generator.js";
 import { generateHookArtifacts } from "./hook-generator.js";
@@ -34,7 +35,7 @@ import {
   type TemplateResolver,
 } from "./template-resolver.js";
 
-const DEFERRED_KINDS: ReadonlySet<IntentKind> = new Set(["agent"]);
+const DEFERRED_KINDS: ReadonlySet<IntentKind> = new Set<IntentKind>();
 
 export interface GeneratorOptions {
   /** Override the resolver (tests / custom primitive roots). */
@@ -102,6 +103,9 @@ async function doGenerate(
             break;
           case "harness":
             artifacts.push(await generateHarnessArtifact(ir, intent, deps));
+            break;
+          case "agent":
+            artifacts.push(await generateAgentArtifact(ir, intent, deps));
             break;
           default:
             // Exhaustiveness check — IntentKind was extended without

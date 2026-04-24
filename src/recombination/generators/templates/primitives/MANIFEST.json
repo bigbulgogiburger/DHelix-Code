@@ -32,6 +32,11 @@
       "basename": "harness.basic.hbs",
       "kind": "harness",
       "slots": ["overview", "apply"]
+    },
+    {
+      "basename": "agent.basic.hbs",
+      "kind": "agent",
+      "slots": ["systemPrompt", "capabilities"]
     }
   ]
 }
