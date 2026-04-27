@@ -14,8 +14,8 @@
 ## 0. TL;DR
 
 - **기간**: 2주 (Week 1: 인터뷰, Week 2: POC)
-- **대상**: 5명 인터뷰 + 그 중 3명 POC (**Ollama 사용자 최소 1명 필수** — execution-plan P-1.22 반영)
-- **4가지 가설**: H1(painpoint) + H2(컨셉 매력) + H3(작성 가능) + H4(로컬 LLM 동작)
+- **대상**: 5명 인터뷰 + 그 중 3명 POC (**user-controlled LLM 사용자 최소 1명 필수** — strict-local Ollama 또는 self-hosted 예: 사내 GLM45AirFP8, v1.2 generalized)
+- **4가지 가설**: H1(painpoint) + H2(컨셉 매력) + H3(작성 가능) + H4(user-controlled LLM 동작)
 - **Decision**: 4/4 → Go / 3/4 → Pivot / ≤2/4 → Stop
 - **총 작업 시간**: ~25시간 (3인일 상당, 1인이 2주 내 수행 가능)
 
@@ -51,11 +51,17 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 
 **통과 기준**: 3명 중 2+명이 (a) 20분 내 완성 (b) Zod schema 통과 (c) self-rating ≥3 (d) Q4(매주 쓸 의향) ≥3.
 
-### H4 — Local LLM 동작 (v0.3 신규, P-1.22 반영)
+### H4 — User-controlled LLM 동작 (v0.3 신규 / v1.2 generalized)
 
-**문장**: Ollama 참가자(최소 1명)가 plasmid 작성 + 로컬 (예: `llama3.1:8b`)에서 minimal recombination 1회를 **10분 이내** 성공.
+**문장**: User-controlled LLM 참가자 (최소 1명) 가 plasmid 작성 + minimal recombination 1회를 sub-tier 별 시간 내 성공.
+- **Strict-local sub-tier** (Ollama / LM Studio / llama.cpp, 예: `llama3.1:8b`): **10분 이내**
+- **Self-hosted sub-tier** (예: 사내 GLM45AirFP8 reasoning model): **5분 이내** (reasoning trace overhead 포함)
 
-**통과 기준**: Ollama 참가자의 POC가 완료되고, 로컬 recombination 결과 artifact가 최소 1개 생성됨 + 네트워크 트래픽 0 (cascade OFF 상태).
+**통과 기준**: 참가자 POC 완료 + 로컬 recombination 결과 artifact ≥1 + cascade OFF 상태에서 sub-tier 별 traffic 검증:
+- Strict-local: localhost 외 일체 network traffic 0 (tcpdump)
+- Self-hosted: 외부 cloud provider 향 traffic 0 (사내망 endpoint traffic 은 허용)
+
+**Phase 1 진입 시 1 sub-tier 만 통과해도 Local Gate PASS** — 사용자 환경에 맞춰 선택. 둘 다 측정 가능하면 둘 다 권장.
 
 ---
 
@@ -67,7 +73,7 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 | W1 Day 1-5 | 인터뷰 5명 × 1h (+ 30분 노트 정리) | 7.5h |
 | W1 Day 5 저녁 | H1/H2 1차 평가 + POC 3명 선정 | 1h |
 | W2 Day 1-3 | POC 3명 × (5분 setup + 20분 task + 5분 debrief) = 30분, +분석 30분 | 3h |
-| W2 Day 4 | Ollama 참가자 로컬 recombination 실측 (H4) | 1h |
+| W2 Day 4 | User-controlled LLM 참가자 recombination 실측 (H4, sub-tier 별) | 1h |
 | W2 Day 5 | 종합 분석 + hypothesis-evaluation.md + go-no-go-decision.md | 8h |
 | **합계** | | **~25h / 3인일** |
 
@@ -82,11 +88,11 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 | Heavy Claude Code 사용자 | 2 | CLAUDE.md 200줄+ 경험, skill/agent 3+ 작성 경험 |
 | 팀 리드 (AI 도구 도입 책임) | 1 | 팀에 AI 코딩 도구 도입 책임자, 팀 표준화 관심 |
 | 솔로 개발자 (Polyglot) | 1 | 3+ 프로젝트에서 dhelix/claude-code 사용 |
-| **Ollama/Local LLM 사용자** | **1 (필수)** | Ollama / LM Studio / llama.cpp 사용 경험 + 로컬 머신 준비 |
+| **User-controlled LLM 사용자** | **1 (필수)** | Strict-local: Ollama / LM Studio / llama.cpp 경험 + 로컬 머신 준비 / Self-hosted: 사내 inference server endpoint 접근 (예: GLM45AirFP8) |
 
 **선정 제외**: dhelix 팀 내부 인원 (편향). `surinplatform@gmail.com` 네트워크 내 외부 개발자 우선.
 
-**섭외 스크립트**: 30분 사전 확인 → "현재 customization 작성 경험 / Ollama 사용 여부"만 체크.
+**섭외 스크립트**: 30분 사전 확인 → "현재 customization 작성 경험 / user-controlled LLM (strict-local Ollama 또는 self-hosted) 사용 여부" 체크.
 
 ---
 
@@ -160,15 +166,25 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 - [ ] 질문 횟수 + 내용 요약
 - [ ] 완성도 self-rating (5점)
 
-### 6.3 Ollama 참가자 전용 (+추가 20분, H4 측정)
+### 6.3 User-controlled LLM 참가자 전용 (+추가 20분, H4 측정 — v1.2 generalized)
 
+**Sub-tier A — Strict-local** (Ollama / LM Studio / llama.cpp):
 1. 참가자 로컬 머신에 dhelix 설치 (Phase 1 이전이면 POC용 minimal recombination 스크립트 제공)
 2. Ollama 서버 기동 확인 (`ollama list` → `llama3.1:8b` 또는 유사 모델)
-3. 방금 작성한 plasmid로 minimal recombination 1회 실행 (POC용 단일 generator — rule only)
-4. 소요 시간 + artifact 생성 여부 + 네트워크 트래픽 (tcpdump 또는 `curl` 요청 부재 관찰)
+3. 방금 작성한 plasmid 로 minimal recombination 1회 실행 (POC용 단일 generator — rule only)
+4. 소요 시간 + artifact 생성 여부 + tcpdump (localhost 외 traffic 부재 관찰)
 5. Cascade OFF 상태 재확인 (`DHELIX_CLOUD_CASCADE=off`)
+- **통과**: 10분 내 + artifact ≥1 + localhost 외 일체 traffic 0
 
-**통과 조건**: 10분 내 완료 + artifact 1개 생성 + 외부 네트워크 트래픽 0.
+**Sub-tier B — Self-hosted** (예: 사내 GLM45AirFP8 / on-prem inference server):
+1. 참가자 환경에 dhelix 설치 + `.env` 의 `LOCAL_API_BASE_URL` / `LOCAL_API_KEY` / `LOCAL_API_KEY_HEADER` 설정 확인
+2. 사내 inference endpoint 응답 확인 (`curl <endpoint>/v1/models` 또는 동등)
+3. 방금 작성한 plasmid 로 minimal recombination 1회 실행
+4. 소요 시간 + artifact 생성 여부 + tcpdump (외부 cloud provider 향 traffic 부재 — 사내망 endpoint traffic 은 허용)
+5. Cascade OFF 상태 재확인
+- **통과**: 5분 내 + artifact ≥1 + 외부 cloud (api.openai.com / api.anthropic.com 등) traffic 0
+
+**Phase 1 진입 시 1 sub-tier 만 통과해도 H4 PASS**.
 
 ### 6.4 Debrief (5분)
 
@@ -211,12 +227,12 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 | H1 | H2 | H3 | H4 | 결정 | 후속 |
 |----|----|----|----|-----|-----|
 | ✓ | ✓ | ✓ | ✓ | **Go** | Phase 1 착수, `DHELIX_PLASMID_ENABLED` feature flag 준비 |
-| ✓ | ✓ | ✓ | ✗ | **Pivot (scope)** | Local LLM support를 Phase 2+로 연기 — 단, PRD Part III (§33-38)와 모순되므로 **PRD 개정 필요** |
+| ✓ | ✓ | ✓ | ✗ | **Pivot (scope)** | User-controlled LLM support 를 Phase 2+ 로 연기 (sub-tier 둘 다 실패 시) — PRD Part III (§33-38) 와 모순되므로 **PRD 개정 필요**. 1 sub-tier 통과 시 PASS 처리. |
 | ✓ | ✓ | ✗ | ✓ | **Pivot (UX)** | POC 피드백 반영 → template / `/plasmid quick` flow 재설계 → Phase 0 재실행 (2주) |
 | ✓ | ✗ | — | — | **Pivot (positioning)** | 컨셉 재설계 (예: plasmid 대신 declarative skill 확장?) |
 | ✗ | — | — | — | **Stop** | 시장 painpoint 부재. 프로젝트 중단 또는 scope 전면 재설정 |
 
-**주의**: H4만 실패는 v0.3의 Part III("Local LLM first-class") 원칙과 충돌 → 단순 연기가 아니라 **PRD 재협상** 사안.
+**주의**: H4 sub-tier 둘 다 실패는 v0.3 의 Part III ("User-controlled LLM first-class") 원칙과 충돌 → 단순 연기가 아니라 **PRD 재협상** 사안. 1 sub-tier 만 통과해도 PASS.
 
 ---
 
@@ -230,9 +246,12 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
     <participant-id>-<plasmid-name>.md  # 작성된 plasmid 원본
   poc-recordings/
     <participant-id>-screen.mp4         # 화면 녹화 (optional, 동의 시)
-  ollama-measurement/
-    <participant-id>-recombination.log  # H4 실측 로그
-    tcpdump.pcap                         # 네트워크 트래픽 증거
+  ollama-measurement/                   # v0.1 명. v1.2 부터 strict-local sub-tier 결과 alias
+    <participant-id>-recombination.log  # H4 strict-local 실측 로그
+    tcpdump.pcap                         # localhost 외 traffic 0 증거
+  self-hosted-measurement/               # v1.2 신규 — self-hosted sub-tier 결과
+    <participant-id>-recombination.log  # H4 self-hosted 실측 로그 (예: GLM45AirFP8)
+    tcpdump.pcap                         # 외부 cloud provider traffic 0 증거
   hypothesis-evaluation.md              # H1-H4 각각의 판정 + 증거 링크
   go-no-go-decision.md                  # 최종 결정 + 후속 액션
 ```
@@ -247,7 +266,7 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 |-----|-----|
 | 자료 준비 (스크립트, 템플릿, 샘플 plasmid) | 10h (Phase -1 말) |
 | 인터뷰 5명 × 1h | 5h |
-| POC 3명 × 30분 + Ollama +20분 | 2h |
+| POC 3명 × 30분 + user-controlled LLM sub-tier +20분 | 2h |
 | 노트 정리 (각 세션 +30분) | 4h |
 | 종합 분석 + 문서화 | 4h |
 | **합계** | **~25h = 3인일** |
@@ -258,7 +277,7 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 
 ## 11. Open Questions → Phase 0 실행 전 해결
 
-- [ ] Ollama 참가자 섭외 채널 (LinkedIn / Reddit r/LocalLLaMA / 국내 커뮤니티?) — W0 중 결정
+- [ ] User-controlled LLM 참가자 섭외 채널 — strict-local: LinkedIn / Reddit r/LocalLLaMA / 국내 커뮤니티 / self-hosted: 사내 동료 또는 enterprise dev 네트워크 — W0 중 결정
 - [ ] 녹화 저장 정책 (90일 후 삭제? S3 암호화?) — legal 검토
 - [ ] 인센티브 제공 여부 (상품권? Anthropic credit?) — 예산 확인
 - [ ] Pivot 시 재실행을 동일 참가자로 할지 / 새 참가자로 할지 — Pivot 게이트에서 재논의
@@ -270,3 +289,4 @@ Plasmid & Recombination System (GAL-1)이 **실제 painpoint를 해결**하고 *
 | 버전 | 날짜 | 변경 |
 |-----|-----|-----|
 | 0.1 | 2026-04-23 | 초안. DD-5 + execution-plan §4 통합. H4(Local LLM) 추가. Ollama 참가자 필수화 (P-1.22). 4×4 Go/No-Go 매트릭스. |
+| 1.2 | 2026-04-27 | **H4 일반화 — "Local LLM" → "user-controlled LLM (cloud-bypass)"**. Sub-tier 도입: strict-local (Ollama, fully offline, <10분, localhost 외 0) + self-hosted (사내 GLM45AirFP8 등, <5분, 외부 cloud 0). Phase 1 진입 시 1 sub-tier 통과로 PASS. §6.3 절차 분기. §8 Pivot 조건 sub-tier 둘 다 실패로 변경. §9 결과 디렉토리: 기존 `ollama-measurement/` 는 strict-local sub-tier 결과로 alias 유지 (backward-compat) + `self-hosted-measurement/` 신규. |

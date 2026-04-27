@@ -57,7 +57,7 @@
 
 ### 1.2 경쟁 포지셔닝
 
-| 제품 | 커스터마이징 | 합성 | 가역 | 검증 | 로컬 LLM |
+| 제품 | 커스터마이징 | 합성 | 가역 | 검증 | User-controlled LLM (cloud-bypass) |
 |------|----------|-----|-----|-----|--------|
 | Cursor | `.cursorrules` 1개 | ✗ | ✗ | ✗ | ✗ |
 | Claude Code | skills+hooks+CLAUDE.md (수동) | 수동 | ✗ | ✗ | ✗ |
@@ -65,7 +65,7 @@
 | Custom GPTs | GPT 설정 | ✗ | ✗ | ✗ | ✗ |
 | Aider | `.aider.conf` | ✗ | ✗ | ✗ | 부분 |
 | `harness-setup` (기존) | 스택 감지 one-shot | ✗ | ✗ | ✗ | ✗ |
-| **dhelix-code GAL-1** | **plasmid** | **✓** | **✓** | **✓** | **✓ first-class** |
+| **dhelix-code GAL-1** | **plasmid** | **✓** | **✓** | **✓** | **✓ first-class (strict-local + self-hosted)** |
 
 ### 1.3 타깃 사용자
 
@@ -73,11 +73,11 @@
 2. **Team lead** — 팀 표준을 plasmid로 배포
 3. **Polyglot engineer** — 스택마다 다른 에이전트 성격
 4. **Researcher** — 실험/회귀 반복이 필요한 연구자
-5. **Privacy-conscious developer** — 법무/의료/방산, 로컬 LLM 필수
+5. **Privacy / data-sovereignty developer** — 법무/의료/방산/엔터프라이즈, 외부 cloud 미전송 필수 (사내 self-hosted 또는 fully-offline)
 6. **Cost-sensitive developer** — 학생/인디, 로컬 LLM 선호
-7. **Offline developer** — 네트워크 제한 환경
+7. **Offline developer** — 네트워크 제한 환경 (strict-local 한정)
 
-페르소나 5-7은 로컬 LLM first-class 지원으로 흡수.
+페르소나 5-7은 **user-controlled LLM (cloud-bypass)** first-class 지원으로 흡수. 두 sub-tier 지원: **strict-local** (Ollama / LM Studio / llama.cpp, fully offline) + **self-hosted** (사내 inference server, 외부 cloud 0 — 예: GLM45AirFP8 on internal infra).
 
 ---
 
@@ -283,17 +283,18 @@ Acceptance:
 - Plasmid 초안 제시 → 저장
 ```
 
-### 5.5 Story: 로컬 LLM 환경 (v0.3 신규)
+### 5.5 Story: User-controlled LLM 환경 (v0.3 신규, v0.4 일반화)
 ```
-As a privacy-conscious developer
-I want plasmid system without cloud API calls
-So that my code never leaves my machine
+As a privacy / data-sovereignty conscious developer
+I want plasmid system without external cloud API calls
+So that my code stays under my control (local machine OR my organization's infra)
 
-Acceptance:
-- Ollama llama3.1:8b 환경에서 /recombination 성공
-- Wall-clock < 10분 (10 plasmid)
-- Validation pass rate ≥ 70% (local tier)
-- Network traffic = 0 (cascade OFF 상태)
+Acceptance (any user-controlled LLM):
+- /recombination 성공 — strict-local (예: Ollama llama3.1:8b) 또는 self-hosted (예: 사내 GLM45AirFP8)
+- Wall-clock < 10분 (10 plasmid, strict-local 기준 / self-hosted 는 보통 더 빠름)
+- Validation pass rate ≥ 70% (local-tier capability)
+- External cloud traffic = 0 (cascade OFF 상태, tcpdump 외부 cloud provider 0)
+- Strict-local sub-tier: 위 + localhost 외 일체 network traffic 0
 ```
 
 ### 5.6 Story: Foundational plasmid 도전 (v0.3 신규)
@@ -1211,13 +1212,13 @@ privacy: local-only
 
 ### Phase 0 — Market Validation (2주, Hardening DD-5)
 
-**목표**: H1 (painpoint) + H2 (컨셉 매력) + H3 (작성 가능) + H4 (로컬 LLM 동작) 검증.
+**목표**: H1 (painpoint) + H2 (컨셉 매력) + H3 (작성 가능) + H4 (user-controlled LLM 동작) 검증.
 
-- Week 1: 5명 인터뷰 (1명 이상 Ollama 사용자) + 3 POC plasmid 수동 작성
-- Week 2: 3명 POC 사용 (Ollama 1명 포함) + 피드백
+- Week 1: 5명 인터뷰 (1명 이상 user-controlled LLM 사용자 — strict-local Ollama 또는 self-hosted) + 3 POC plasmid 수동 작성
+- Week 2: 3명 POC 사용 (user-controlled LLM 참가자 1명 포함) + 피드백
 - Week 2 말: **Go/No-Go Gate**
 
-**Go 조건**: 4가지 가설 모두 충족. 로컬 LLM 환경에서 10 plasmid recombination 10분 이내.
+**Go 조건**: 4가지 가설 모두 충족. User-controlled LLM 환경에서 10 plasmid recombination 10분 이내 + 외부 cloud traffic 0.
 
 ### Phase 1 — Foundation (5주)
 
@@ -1231,9 +1232,9 @@ privacy: local-only
 - [ ] `eval-seeds` schema + Phase 1 template 10종 (각 L1/L2/L4 seed 포함)
 - [ ] Feature flag (`DHELIX_PLASMID_ENABLED`)
 
-**Phase 2 진입 조건** (Cloud + Local Gate 동시):
+**Phase 2 진입 조건** (Cloud + Local + Hermeticity + Alpha Gate 4종 동시 — v0.4 split):
 - Cloud: 10 plasmid recombination < 3분, validation pass ≥90%
-- Local (Ollama llama3.1:8b): < 10분, pass ≥70%, cascade OFF 시 network traffic 0
+- Local (user-controlled LLM, primary: self-hosted GLM45AirFP8 / secondary: strict-local Ollama llama3.1:8b): < 10분 (strict-local) / < 5분 (self-hosted), pass ≥70%, cascade OFF 시 **외부 cloud traffic 0** (strict-local 은 추가로 localhost 외 traffic 0)
 
 ### Phase 2 — Recombination MVP (5주)
 
@@ -2496,11 +2497,21 @@ Phase 1 완료 조건은 Cloud + Local **둘 다**:
 - Validation pass ≥90%
 - Constitution reorg LLM-based 정상
 
-### Local Gate (Ollama llama3.1:8b 최소)
+### Local Gate (user-controlled LLM, v0.4 일반화)
+
+**Sub-tier A — strict-local** (Ollama llama3.1:8b 최소, fully offline):
 - 10 plasmid recombination < 10분
 - Validation pass ≥70%
 - Deterministic fallback 정상
-- Privacy: cascade OFF 시 network traffic 0
+- Privacy: cascade OFF 시 **localhost 외 일체 network traffic 0** (tcpdump 검증)
+
+**Sub-tier B — self-hosted** (예: 사내 GLM45AirFP8 / on-prem inference server):
+- 10 plasmid recombination < 5분 (reasoning model 기준 reasoning trace overhead 포함)
+- Validation pass ≥80% (large-model capability)
+- Privacy: cascade OFF 시 **외부 cloud provider 향 traffic 0** (tcpdump 검증, 사내망 traffic 은 허용)
+- 외부 cloud bypass 정합성: telemetry / WebFetch / WebSearch 가 self-hosted endpoint 외 호출 안 함
+
+**Phase 1 진입 시 1개 sub-tier 만 통과해도 Local Gate PASS** — user 환경에 따라 선택. 사용자 환경에 둘 다 있으면 둘 다 측정 권장.
 
 ### Hermeticity Gate
 - I-8 3층 방어 동작 검증
@@ -2540,7 +2551,7 @@ Phase 1 완료 조건은 Cloud + Local **둘 다**:
 
 1. **PRD v0.3 승인** (현 문서)
 2. **Phase -1 Action Items 24건 착수** (아카이브된 Hardening v2.0 §19 참조)
-3. **Phase 0 준비** — Ollama 참가자 섭외 (5명 중 1+, 로컬 LLM 환경 검증)
+3. **Phase 0 준비** — user-controlled LLM 참가자 섭외 (5명 중 1+, strict-local Ollama 또는 self-hosted 환경 검증)
 4. **src/plasmids/, src/recombination/ 모듈 스캐폴딩**
 5. **기존 eval harness (src/skills/creator/evals/) 재사용 통합 점검**
 6. **샘플 plasmid 10종 작성** (eval-seeds 포함, dogfood)

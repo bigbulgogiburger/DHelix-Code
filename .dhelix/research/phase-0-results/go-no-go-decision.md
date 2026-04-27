@@ -76,20 +76,32 @@
 
 **Phase 1 W3 반영**: P-1.4 §1.1 patterns 목록에 industry template 3-5개 추가
 
-### ADJ-4: Alpha gate external validation 의무화
+### ADJ-4: Alpha gate external validation 의무화 (v1.2 — Hybrid + Local LLM 일반화)
 
 **현재** (execution-plan §5 Phase 1 Exit Gate): Cloud + Local + Hermeticity 3 gate
 
 **Phase 0 한계**: Self-dogfood bias. Empirical proof 약함.
 
-**추가 gate (v0.2)**:
-- **Alpha Gate** (Phase 1 W5 추가): **실제 외부 사용자 3-5명** plasmid 작성 + recombination 실측
-- 기준:
-  - 3명 중 2+ 명 20분 내 plasmid 완성 (ADJ-1 반영된 시간 기준, 즉 실제로는 L1-L2 only 기준 20분)
-  - Ollama 사용자 1명 이상 H4 재검증
-  - Anna/Chris 같은 Heavy CC user 페르소나 1+ 명, Emma 같은 Privacy persona 1+ 명
+**추가 gate (v0.2 → v0.4 split, v1.2 reframe)**:
 
-**Phase 1 W5 실행**: alpha 사용자 섭외 시작 (Phase 0 참가자 연락처 reuse 시도 → 실패 시 외부 채널).
+- **Alpha Gate v0.2** (초안): 실제 외부 사용자 3-5명 plasmid 작성 + recombination 실측
+- **Alpha Gate v0.4 (v1.2 reframe)**: **Engineering Alpha (Claude) + Market Alpha (real human ≥1)** 분리.
+  - Engineering Alpha: Track A-I (POC re-execution / I-8 adversarial / schema fuzz / cure 3-way / Cloud+Local Gate 실측 / 8-stage E2E) — Claude 직접 실행
+  - Market Alpha: real human ≥1 명 (≥1 명 권장 / 잔여 분량 Phase 6 dogfood 로 이전)
+  - Pivot scenario A/B/C 살려둠 — 외부 검증 신호가 부족하면 Phase 6 결과로 발동
+
+- **Local LLM 정의 일반화 (v1.2)**: "Local LLM" 의 의미를 **user-controlled inference (cloud-bypass)** 로 추상화.
+  - **Strict-local** sub-tier (Ollama / LM Studio / llama.cpp, fully offline) — *aspirational secondary*
+  - **Self-hosted** sub-tier (예: 사내 GLM45AirFP8) — *primary test target for v0.4*
+  - Local Gate 기준 변경: `tcpdump network 0` → sub-tier 별 (strict-local: localhost 외 0 / self-hosted: 외부 cloud provider 0)
+  - H4 spirit 유지 (cloud bypass, data sovereignty), strict-local 은 superset
+
+- 기준 (v1.2):
+  - Real human 1+ 명 plasmid 1+ 작성 + post-survey 완료
+  - User-controlled LLM 사용자 0 또는 1 명 — 0 명이면 H4 "deferred to Phase 6 dogfood" 명시
+  - Heavy CC user / Team lead / Privacy 또는 data-sovereignty persona 우선 섭외 (단 1 명만 확보해도 진행)
+
+**Phase 1 W5 실행**: alpha 사용자 섭외 + Engineering Alpha 병렬 실행. Engineering Alpha 는 사용자 환경 (예: GLM45AirFP8 사내 endpoint) 으로 즉시 시작 가능.
 
 ---
 
@@ -105,9 +117,13 @@ Phase 1 W5 alpha gate 결과가 self-dogfood 결과와 크게 괴리하면:
 
 **Pivot**: Quick-first 기본값 축소 — `--template <id>` 강제 (사용자가 빈 template 로 시작 금지).
 
-### Scenario C: H4 Ollama 성능 실측 <10분 달성 실패
+### Scenario C: H4 user-controlled LLM 성능 실측 sub-tier 둘 다 실패 (v1.2 generalized)
 
-**Pivot**: Local LLM first-class 지위 재고. Part III (PRD §33-38) 후순위 → v0.5 로 연기 + v0.4는 cloud only.
+**조건**: strict-local (Ollama < 10분) + self-hosted (사내 < 5분) 둘 다 실측 실패. 혹은 외부 cloud bypass 무결성 위반 발견.
+
+**Pivot**: User-controlled LLM first-class 지위 재고. Part III (PRD §33-38) 후순위 → v0.5 로 연기 + v0.4는 cloud only.
+
+**완화**: 1 sub-tier 만 통과해도 Local Gate PASS. 둘 다 실패해야 Pivot.
 
 이 시나리오별 roadmap 은 execution-plan §3.4 에 로그.
 
@@ -127,11 +143,12 @@ Phase 1 W5 alpha gate 결과가 self-dogfood 결과와 크게 괴리하면:
 2. P-1.18 ModelCapabilities 확장 + Ollama probe
 3. P-1.23 eval-seeds schema + frontmatter parser
 
-### Week 5 (Alpha Gate)
+### Week 5 (Alpha Gate — v1.2 hybrid)
 
-1. 3-5명 external alpha 섭외 (priority: Chris-like team lead, Emma-like privacy user)
-2. Alpha POC 실행 + external hypothesis re-validation
-3. Phase 0 결과와 delta 분석 → Phase 2 계획 조정
+1. **Engineering Alpha (Claude)** 즉시 착수 — Track A-I 9개, 사용자 환경 LLM (예: GLM45AirFP8 사내 endpoint) 으로 실행
+2. **Market Alpha** 병렬 — real human ≥1 명 섭외 (priority: Chris-like team lead, Emma-like data-sovereignty / privacy user)
+3. Alpha POC 실행 + external hypothesis re-validation
+4. Phase 0 결과와 delta 분석 → Phase 2 계획 조정 (잔여 인원분 Phase 6 dogfood 로 이전)
 
 ---
 
@@ -148,3 +165,4 @@ Phase 1 W5 alpha gate 결과가 self-dogfood 결과와 크게 괴리하면:
 | 버전 | 날짜 | 변경 |
 |-----|-----|-----|
 | 1.0 | 2026-04-23 | 초안. Go tentative decision. 4 adjustments (시간 기대치, L4 priority, industry template, alpha gate). Pivot scenarios 예방적 기록. |
+| 1.2 | 2026-04-27 | **ADJ-4 reframe + Local LLM 일반화**. (a) Alpha Gate split — Engineering (Claude, Track A-I) + Market (real human ≥1, hybrid). 잔여 분량 Phase 6 dogfood 이전. (b) "Local LLM" 정의 → **user-controlled inference (cloud-bypass)** 으로 추상화. Sub-tier: strict-local (Ollama, fully offline) + self-hosted (사내 GLM45AirFP8 등 — primary v0.4). Local Gate 기준 sub-tier 별. Pivot Scenario C 도 generalized — 1 sub-tier 통과 시 PASS. Pivot scenarios A/B/C 살림 (Phase 6 dogfood 로 발동 가능). |

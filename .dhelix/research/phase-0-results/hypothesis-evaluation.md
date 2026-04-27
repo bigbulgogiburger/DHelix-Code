@@ -14,7 +14,7 @@ Phase 0 POC Protocol (docs/research/phase-0-poc-protocol.md) §2 가설 원문:
 - **H1** (Painpoint): 5명 중 3+ 명이 3+ painpoint 언급
 - **H2** (컨셉 매력): 5명 중 3+ 명이 Q10 ≥4 AND Q11 yes/conditional
 - **H3** (작성 가능): 3명 중 2+ 명이 20분 내 + Zod pass + self-rating ≥3 + Q4(매주 작성 의향) ≥3
-- **H4** (Local LLM): Ollama 참가자가 plasmid 완성 + minimal recombination 10분 내 + artifact 1개 + network 0
+- **H4** (User-controlled LLM, v1.2 generalized): user-controlled LLM 참가자 (strict-local Ollama 또는 self-hosted 예: 사내 GLM45AirFP8) 가 plasmid 완성 + minimal recombination 시간 sub-tier 별 (strict-local <10분 / self-hosted <5분) + artifact 1개 + 외부 cloud traffic 0 (strict-local 은 추가로 localhost 외 0)
 
 ---
 
@@ -111,9 +111,11 @@ Phase 0 POC Protocol (docs/research/phase-0-poc-protocol.md) §2 가설 원문:
 
 ---
 
-## H4 — Local LLM 동작
+## H4 — User-controlled LLM 동작 (v1.2 generalized)
 
-### Emma 측정 (single data point)
+**v1.2 reframe (2026-04-27)**: H4 의 spirit 은 **cloud bypass + data sovereignty**. Phase 0 측정은 strict-local (Ollama llama3.1:8b, Emma persona) 가정으로 진행되었으나, sub-tier 두 가지로 일반화: **strict-local** (fully offline) + **self-hosted** (사내 inference, 외부 cloud 0). 아래 Emma 측정은 strict-local sub-tier 의 single data point. Self-hosted sub-tier (예: GLM45AirFP8) 는 Engineering Alpha Track F/G 에서 실측 예정.
+
+### Emma 측정 (single data point, strict-local sub-tier)
 
 | 검증 항목 | 기대 | 실측 (simulation) | 판정 |
 |---------|-----|------------------|-----|
@@ -144,7 +146,7 @@ Phase 0 POC Protocol (docs/research/phase-0-poc-protocol.md) §2 가설 원문:
 | H1 Painpoint | ✅ PASS | High (4/5) |
 | H2 컨셉 매력 | ✅ PASS | High (4/5) |
 | H3 작성 가능 | ⚠️ CONDITIONAL PASS | Medium (time 초과 2/3, 그 외 3/3) |
-| H4 Local LLM | ✅ PASS | Medium (single data point) |
+| H4 User-controlled LLM | ✅ PASS (strict-local only) | Medium (single data point — self-hosted sub-tier 미측정) |
 
 **전체**: **Go (tentative)** — Phase 1 alpha external validation 필수
 
@@ -154,7 +156,7 @@ Phase 0 POC Protocol (docs/research/phase-0-poc-protocol.md) §2 가설 원문:
 
 - P01-P05 는 Claude 시뮬레이션 — 실제 사용자 behavior 와 괴리 가능
 - POC 시간 측정은 "Claude 가 예상한" 20~25분 — 실제 사용자는 cognitive load, 환경 방해 등으로 1.5~2배 예상
-- H4 Ollama 측정은 "기술적으로 가능한" 수치 — Emma 의 실제 장비 (RTX 4070) 기준으로 optimal path 가정
+- H4 strict-local (Ollama) 측정은 "기술적으로 가능한" 수치 — Emma 의 실제 장비 (RTX 4070) 기준으로 optimal path 가정. **Self-hosted sub-tier (GLM45AirFP8) 는 v0.4 Engineering Alpha 에서 실측 예정** (Phase 0 미커버).
 - External validation (3-5명 real alpha) 를 통해 각 hypothesis 의 신뢰도 상향/하향 조정 필요
 
 ## 다음 단계
