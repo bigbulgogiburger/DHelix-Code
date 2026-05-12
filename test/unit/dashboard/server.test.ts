@@ -284,6 +284,72 @@ describe("DashboardServer", () => {
   });
 
   // -------------------------------------------------------------------------
+  // GET /api/plasmids/health — Phase 6 GAL-1
+  // -------------------------------------------------------------------------
+
+  describe("GET /api/plasmids/health (no datasource configured)", () => {
+    it("plasmidHealth 미주입 시 404", async () => {
+      const res = await httpGet(port, "/api/plasmids/health");
+      expect(res.status).toBe(404);
+      const body = JSON.parse(res.body);
+      expect(typeof body.error).toBe("string");
+    });
+  });
+
+  describe("GET /api/plasmids/health (with datasource)", () => {
+    let serverWithHealth: DashboardServer;
+    let healthPort: number;
+
+    beforeEach(async () => {
+      healthPort = nextPort();
+      serverWithHealth = new DashboardServer({
+        port: healthPort,
+        sessions: createMockSessions(),
+        mcp: createMockMcp(),
+        jobs: createMockJobs(),
+        metrics: createMockMetrics(),
+        plasmidHealth: {
+          getHealth: async () => ({
+            counts: {
+              totalPlasmids: 3,
+              activePlasmidIds: ["a", "b"],
+              foundationalIds: ["c"],
+              byTier: { L1: 1, L2: 1, L4: 1 },
+            },
+            lastRecombination: {
+              transcriptId: "2026-05-04T07-26-05Z-bbbb",
+              timestamp: "2026-05-04T07:26:05Z",
+            },
+            transcriptsCount: 5,
+            governance: {
+              pendingOverrideCount: 1,
+              pendingOverridePlasmidIds: ["c"],
+              lastChallengeAt: "2026-05-04T07:00:00Z",
+            },
+          }),
+        },
+      });
+      await serverWithHealth.start();
+    });
+
+    afterEach(async () => {
+      await serverWithHealth.stop();
+    });
+
+    it("plasmidHealth 주입 시 200 + payload", async () => {
+      const res = await httpGet(healthPort, "/api/plasmids/health");
+      expect(res.status).toBe(200);
+      const body = JSON.parse(res.body);
+      expect(body.health.counts.totalPlasmids).toBe(3);
+      expect(body.health.counts.activePlasmidIds).toEqual(["a", "b"]);
+      expect(body.health.lastRecombination.transcriptId).toBe(
+        "2026-05-04T07-26-05Z-bbbb",
+      );
+      expect(body.health.governance.pendingOverrideCount).toBe(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
   // 404 — 알 수 없는 경로
   // -------------------------------------------------------------------------
 

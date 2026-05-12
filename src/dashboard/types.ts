@@ -128,6 +128,44 @@ export interface MetricsDataSource {
 }
 
 /**
+ * Plasmid 헬스 정보 — GET /api/plasmids/health 응답 (Phase 6 GAL-1)
+ *
+ * `.dhelix/plasmids/`, `.dhelix/recombination/`, `.dhelix/governance/` 의
+ * 운영 상태 스냅샷. 외부 dashboard UI 가 이 endpoint 만 polling 해도 plasmid
+ * 시스템의 헬스를 한 눈에 볼 수 있도록 평탄화된 구조로 둔다.
+ */
+export interface DashboardPlasmidHealth {
+  /** plasmid 작성/활성 카운트 */
+  readonly counts: {
+    readonly totalPlasmids: number;
+    readonly activePlasmidIds: readonly string[];
+    readonly foundationalIds: readonly string[];
+    readonly byTier: Readonly<Record<string, number>>;
+  };
+  /** 최근 recombination 1건 요약 (없으면 null) */
+  readonly lastRecombination: {
+    readonly transcriptId: string;
+    readonly timestamp: string;
+  } | null;
+  /** transcript 디렉토리 항목 수 (audit 용) */
+  readonly transcriptsCount: number;
+  /** governance — pending overrides + last challenge */
+  readonly governance: {
+    readonly pendingOverrideCount: number;
+    readonly pendingOverridePlasmidIds: readonly string[];
+    readonly lastChallengeAt: string | null;
+  };
+}
+
+/**
+ * Plasmid 헬스 데이터 소스 — DashboardServer 가 health 스냅샷을 조회하는 인터페이스
+ */
+export interface PlasmidHealthDataSource {
+  /** 현재 plasmid 시스템 헬스 스냅샷을 반환합니다 */
+  readonly getHealth: () => Promise<DashboardPlasmidHealth>;
+}
+
+/**
  * DashboardServer 생성자에 전달하는 설정 인터페이스
  */
 export interface DashboardServerConfig {
@@ -141,6 +179,8 @@ export interface DashboardServerConfig {
   readonly jobs: JobDataSource;
   /** 메트릭 데이터 소스 */
   readonly metrics: MetricsDataSource;
+  /** Plasmid 헬스 데이터 소스 — 미주입 시 /api/plasmids/health 가 404 (Phase 6) */
+  readonly plasmidHealth?: PlasmidHealthDataSource;
 }
 
 // ---------------------------------------------------------------------------

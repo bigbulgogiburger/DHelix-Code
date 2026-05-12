@@ -77,9 +77,15 @@ export function defaultDeps(workingDirectory: string, model?: string): CommandDe
   const registryPath = ".dhelix/plasmids";
   const modelId = model ?? process.env.DHELIX_MODEL ?? "gpt-4o";
 
-  const baseURL = process.env.OPENAI_BASE_URL ?? "https://api.openai.com/v1";
-  const apiKeyFromEnv = process.env.OPENAI_API_KEY;
-  const apiKeyHeaderFromEnv = process.env.OPENAI_API_KEY_HEADER;
+  // OPENAI_* 우선, 미설정이면 LOCAL_* fallback — Phase 6 dogfood/E2E가 LOCAL
+  // provider만 사용하는 환경에서도 recombination이 동작하도록 한다.
+  const baseURL =
+    process.env.OPENAI_BASE_URL ??
+    process.env.LOCAL_API_BASE_URL ??
+    "https://api.openai.com/v1";
+  const apiKeyFromEnv = process.env.OPENAI_API_KEY ?? process.env.LOCAL_API_KEY;
+  const apiKeyHeaderFromEnv =
+    process.env.OPENAI_API_KEY_HEADER ?? process.env.LOCAL_API_KEY_HEADER;
   const llm: LLMCompletionFn = createDefaultLLM({
     model: modelId,
     baseURL,
@@ -130,14 +136,31 @@ export function defaultDeps(workingDirectory: string, model?: string): CommandDe
 }
 
 /**
- * Dynamically import a peer-team module by name. Until the team branches
- * merge the target folder does not exist — we surface a helpful error
- * instead of crashing at module load time.
+ * Lazy-load a peer-team module by folder name. Phase 1-5에서는 dynamic
+ * variable import로 머지 전 미존재 폴더를 우회했지만, 머지 완료 + Phase 6
+ * 환경에서 vite/vitest의 dynamic-variable import 분석이 실패해 정적 분기로
+ * 정리한다. 동일한 lazy 시점에 import하므로 부팅 비용은 보존된다.
  */
 async function loadPeer<T>(label: string, folder: string): Promise<T> {
   try {
-    const mod = (await import(`../../recombination/${folder}/index.js`)) as T;
-    return mod;
+    let mod: unknown;
+    switch (folder) {
+      case "interpreter":
+        mod = await import("../../recombination/interpreter/index.js");
+        break;
+      case "generators":
+        mod = await import("../../recombination/generators/index.js");
+        break;
+      case "compression":
+        mod = await import("../../recombination/compression/index.js");
+        break;
+      case "constitution":
+        mod = await import("../../recombination/constitution/index.js");
+        break;
+      default:
+        throw new Error(`unknown peer folder: ${folder}`);
+    }
+    return mod as T;
   } catch (err) {
     throw new Error(
       `${label} module is not available yet. ` +

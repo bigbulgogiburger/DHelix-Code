@@ -23,7 +23,7 @@ export const dashboardCommand: SlashCommand = {
   description: "Manage the REST API dashboard server",
   usage: "/dashboard [start|stop|status]",
 
-  async execute(args: string, _context: CommandContext): Promise<CommandResult> {
+  async execute(args: string, context: CommandContext): Promise<CommandResult> {
     const subcommand = args.trim().toLowerCase().split(/\s+/)[0] || "status";
     const portArg = args.trim().split(/\s+/)[1];
 
@@ -47,6 +47,9 @@ export const dashboardCommand: SlashCommand = {
         try {
           // Dynamic import to avoid loading dashboard module when not needed
           const { DashboardServer } = await import("../dashboard/index.js");
+          const { createFsPlasmidHealthDataSource } = await import(
+            "../dashboard/plasmid-health-source.js"
+          );
 
           // Create minimal data sources that return empty data
           // These will be enhanced once proper integration is wired
@@ -70,6 +73,8 @@ export const dashboardCommand: SlashCommand = {
                 uptime: Date.now(),
               }),
             },
+            // Phase 6 GAL-1 — fs 기반 plasmid health 자동 wire
+            plasmidHealth: createFsPlasmidHealthDataSource(context.workingDirectory),
           });
 
           await server.start();
@@ -85,6 +90,7 @@ export const dashboardCommand: SlashCommand = {
               `  GET http://localhost:${port}/api/mcp/servers`,
               `  GET http://localhost:${port}/api/jobs`,
               `  GET http://localhost:${port}/api/metrics`,
+              `  GET http://localhost:${port}/api/plasmids/health`,
               `  GET http://localhost:${port}/api/events (SSE)`,
             ].join("\n"),
             success: true,

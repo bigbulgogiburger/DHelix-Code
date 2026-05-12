@@ -16,6 +16,7 @@ import { groupToolCalls, FILE_WRITE_TOOLS, extractFilePath } from "../../tool-ca
 import { getModelCapabilities } from "../../../llm/model-capabilities.js";
 import { TOOL_TIMEOUTS } from "../../../constants.js";
 import { getPlatform } from "../../../utils/platform.js";
+import { plasmidHermeticityCheck } from "../../../plasmids/preflight-integration.js";
 
 const trace = (tag: string, msg: string) => {
   if (process.env.DHELIX_VERBOSE) process.stderr.write(`[${tag}] ${msg}\n`);
@@ -107,8 +108,12 @@ export function createExecuteToolsStage(): RuntimeStage {
         } satisfies ToolContext;
 
         const pipelineResult = await toolPipeline.execute(group, pipelineContext, {
-          // Skip pipeline preflight — preflight-policy stage already handled permission + guardrails
-          preflightChecks: [],
+          // preflight-policy stage handles permission + input guardrails. Plasmid
+          // hermeticity (I-8) is intentionally re-asserted here because it is a
+          // path-level deny that must run *immediately before* tool execution
+          // — preflight-policy stage does not include it (Phase 6 audit found
+          // a leak path: agent → bash_exec cat .dhelix/plasmids/<id>/body.md).
+          preflightChecks: [plasmidHermeticityCheck],
           enableGuardrails: false,
           postprocess: {
             maxOutputLength: ctx.maxToolResultChars,

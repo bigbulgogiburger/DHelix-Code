@@ -24,6 +24,7 @@ import {
   type McpDataSource,
   type JobDataSource,
   type MetricsDataSource,
+  type PlasmidHealthDataSource,
 } from "./types.js";
 import { DashboardEventBridge } from "./websocket.js";
 
@@ -147,6 +148,8 @@ export class DashboardServer {
   private readonly jobs: JobDataSource;
   /** 메트릭 데이터 소스 */
   private readonly metrics: MetricsDataSource;
+  /** Plasmid 헬스 데이터 소스 (선택) */
+  private readonly plasmidHealth: PlasmidHealthDataSource | undefined;
   /** SSE 이벤트 브릿지 */
   private readonly eventBridge: DashboardEventBridge;
   /** Node.js HTTP 서버 인스턴스 */
@@ -158,6 +161,7 @@ export class DashboardServer {
     this.mcp = config.mcp;
     this.jobs = config.jobs;
     this.metrics = config.metrics;
+    this.plasmidHealth = config.plasmidHealth;
     this.eventBridge = new DashboardEventBridge();
   }
 
@@ -284,6 +288,8 @@ export class DashboardServer {
         await this.handleGetJobs(res);
       } else if (pathname === "/api/metrics") {
         await this.handleGetMetrics(res);
+      } else if (pathname === "/api/plasmids/health") {
+        await this.handleGetPlasmidHealth(res);
       } else if (pathname === "/api/events") {
         this.handleSseEvents(res);
       } else {
@@ -353,6 +359,22 @@ export class DashboardServer {
   private async handleGetMetrics(res: ServerResponse): Promise<void> {
     const metrics = await this.metrics.getMetrics();
     sendJson(res, 200, { metrics });
+  }
+
+  /**
+   * GET /api/plasmids/health — Plasmid 헬스 스냅샷 (Phase 6 GAL-1)
+   *
+   * `plasmidHealth` 데이터 소스가 미주입된 환경에서는 404 를 돌려준다 —
+   * Phase 5 환경 + headless 운영자가 dashboard 만 띄울 때 의도하지 않은
+   * empty payload 를 반환하지 않도록 한다.
+   */
+  private async handleGetPlasmidHealth(res: ServerResponse): Promise<void> {
+    if (!this.plasmidHealth) {
+      sendNotFound(res, "Plasmid health data source not configured");
+      return;
+    }
+    const health = await this.plasmidHealth.getHealth();
+    sendJson(res, 200, { health });
   }
 
   /**
